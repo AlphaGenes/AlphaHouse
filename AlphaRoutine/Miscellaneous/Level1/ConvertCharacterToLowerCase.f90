@@ -1,3 +1,4 @@
+
 subroutine ConvertCharacterToLowerCase(LWordC)
 
 implicit none
@@ -14,6 +15,3 @@ enddo
 
 
 end subroutine ConvertCharacterToLowerCase
-
-
-

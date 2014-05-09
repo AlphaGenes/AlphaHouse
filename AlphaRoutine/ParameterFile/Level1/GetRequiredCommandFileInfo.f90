@@ -1,3 +1,4 @@
+
 subroutine GetRequiredCommandFileInfo(LFileNameC,LNumOfLineI,LNumOfColumnI,LReturnWordC)
 
 implicit none

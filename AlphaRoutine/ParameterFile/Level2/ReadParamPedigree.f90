@@ -1,6 +1,5 @@
-subroutine ReadParamPedigree(LFileNameC)
 
-use Pedigree
+subroutine ReadParamPedigree(LFileNameC)
 
 implicit none
 
@@ -62,4 +61,3 @@ logical :: LEndPedPresentL,LPedigreeFileKeywordPresentL,LStartPedPresentL
 !End PedigreeFile keyword and file name search
 
 end subroutine ReadParamPedigree
-
