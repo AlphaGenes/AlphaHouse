@@ -3,6 +3,8 @@ module PedigreeMod
 
 implicit none
 
+public
+
 integer :: GnAniPedI
 integer,allocatable,dimension(:,:) :: GPedI
 
