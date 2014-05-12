@@ -32,10 +32,7 @@ ${bin}/ParameterFileModL2.o: AlphaRoutine/ParameterFile/Level2/*.f90
 	$(MAKE) -C AlphaRoutine/ParameterFile/Level2;
 	${comp} ${opt} -I${bin} -c AlphaRoutine/ParameterFile/Level2/ParameterFileModL2.f90 -o ${bin}/ParameterFileModL2.o -module ${bin}/
 
-clean: # Cleanup object and module files
-	rm -f *.{a,o,mod}
-
-cleanbin: # Cleanup object and module files in binary folder
+clean: # Cleanup object and module files in binary folder
 	rm -f ${bin}/*.{a,o,mod}
 
 help: # Help
