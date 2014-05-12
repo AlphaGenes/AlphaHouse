@@ -4,45 +4,39 @@ bin=../AlphaHouseBin
 
 all: AlphaModule AlphaRoutine
 	ar cr ${bin}/AlphaHouse.a ${bin}/*.o;
-	@echo "AlphaHouseBin success"
+	@echo "AlphaHouseBin: DONE"
 
 # --- AlphaModule ---
 
-AlphaModule: GeneralPurposeMod.o PedigreeMod.o
+AlphaModule: ${bin}/GeneralPurposeMod.o ${bin}/PedigreeMod.o
 
-GeneralPurposeMod.o: AlphaModule/GeneralPurposeMod.f90
-	${comp} ${opt} -c AlphaModule/GeneralPurposeMod.f90 -o ${bin}/GeneralPurposeMod.o -module ${bin}
+${bin}/GeneralPurposeMod.o: AlphaModule/GeneralPurposeMod.f90
+	${comp} ${opt} -c AlphaModule/GeneralPurposeMod.f90 -o ${bin}/GeneralPurposeMod.o -module ${bin}/
 
-PedigreeMod.o: AlphaModule/PedigreeMod.f90
-	${comp} ${opt} -c AlphaModule/PedigreeMod.f90 -o ${bin}/PedigreeMod.o -module ${bin}
+${bin}/PedigreeMod.o: AlphaModule/PedigreeMod.f90
+	${comp} ${opt} -c AlphaModule/PedigreeMod.f90 -o ${bin}/PedigreeMod.o -module ${bin}/
 
 # --- AlphaRoutine ---
 
-AlphaRoutine: MiscellaneousModL1.o ParameterFileModL1.o ParameterFileModL2.o
+AlphaRoutine: ${bin}/MiscellaneousModL1.o ${bin}/ParameterFileModL1.o ${bin}/ParameterFileModL2.o
 
-MiscellaneousModL1.o: AlphaRoutine/Miscellaneous/Level1/MiscellaneousModL1.f90
-	${comp} ${opt} -I${bin} -c AlphaRoutine/Miscellaneous/Level1/MiscellaneousModL1.f90 -o ${bin}/MiscellaneousModL1.o -module ${bin}
+${bin}/MiscellaneousModL1.o: AlphaRoutine/Miscellaneous/Level1/*.f90
+	$(MAKE) -C AlphaRoutine/Miscellaneous/Level1/;
+	${comp} ${opt} -I${bin} -c AlphaRoutine/Miscellaneous/Level1/MiscellaneousModL1.f90 -o ${bin}/MiscellaneousModL1.o -module ${bin}/
 
-AlphaRoutine/Miscellaneous/Level1/MiscellaneousModL1.f90:
-	cd AlphaRoutine/Miscellaneous/Level1
-	make
+${bin}/ParameterFileModL1.o: AlphaRoutine/ParameterFile/Level1/*.f90
+	$(MAKE) -C AlphaRoutine/ParameterFile/Level1;
+	${comp} ${opt} -I${bin} -c AlphaRoutine/ParameterFile/Level1/ParameterFileModL1.f90 -o ${bin}/ParameterFileModL1.o -module ${bin}/
 
-ParameterFileModL1.o: AlphaRoutine/ParameterFile/Level1/ParameterFileModL1.f90
-	${comp} ${opt} -I${bin} -c AlphaRoutine/ParameterFile/Level1/ParameterFileModL1.f90 -o ${bin}/ParameterFileModL1.o -module ${bin}
+${bin}/ParameterFileModL2.o: AlphaRoutine/ParameterFile/Level2/*.f90
+	$(MAKE) -C AlphaRoutine/ParameterFile/Level2;
+	${comp} ${opt} -I${bin} -c AlphaRoutine/ParameterFile/Level2/ParameterFileModL2.f90 -o ${bin}/ParameterFileModL2.o -module ${bin}/
 
-AlphaRoutine/ParameterFile/Level1/ParameterFileModL1.f90:
-	cd AlphaRoutine/ParameterFile/Level1
-	make
+clean: # Cleanup object and module files
+	rm -f *.{a,o,mod}
 
-ParameterFileModL2.o: AlphaRoutine/ParameterFile/Level2/ParameterFileModL2.f90
-	${comp} ${opt} -I${bin} -c AlphaRoutine/ParameterFile/Level2/ParameterFileModL2.f90 -o ${bin}/ParameterFileModL2.o -module ${bin}
-
-AlphaRoutine/ParameterFile/Level2/ParameterFileModL2.f90:
-	cd AlphaRoutine/ParameterFile/Level2
-	make
-
-clean: # Cleanup in current folder and in ${bin}
-	rm -f ${bin}/*.{a,o,mod,lst}
+cleanbin: # Cleanup object and module files in binary folder
+	rm -f ${bin}/*.{a,o,mod}
 
 help: # Help
 	@echo '\nTarget: Dependency # Description'; \
