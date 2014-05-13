@@ -5,3 +5,4 @@ ParameterFile/ParameterFileMod.f90
 Pedigree/PedigreeMod.f90
 GeneralPurpose/GeneralPurposeMod.f90
 Miscellaneous/MiscellaneousMod.f90
+ThirdPartyRoutines/ThirdPartyRoutinesMod.f90

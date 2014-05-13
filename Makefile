@@ -7,7 +7,7 @@ all: ${bin}/AlphaHouse.a
 
 # --- AlphaHouse library ---
 
-${bin}/AlphaHouse.a: ${bin}/MiscellaneousMod.o ${bin}/ParameterFileMod.o ${bin}/GeneralPurposeMod.o ${bin}/PedigreeMod.o
+${bin}/AlphaHouse.a: ${bin}/ThirdPartyRoutinesMod.o ${bin}/MiscellaneousMod.o ${bin}/ParameterFileMod.o ${bin}/GeneralPurposeMod.o ${bin}/PedigreeMod.o
 	ar cr ${bin}/AlphaHouse.a ${bin}/*.o;
 
 # --- AlphaModules ---
@@ -27,6 +27,12 @@ ${bin}/ParameterFileMod.o: ParameterFile/*.f90
 ${bin}/PedigreeMod.o: Pedigree/*.f90
 	$(MAKE) -C Pedigree/;
 	${comp} ${opt} -c Pedigree/PedigreeMod.f90 -o ${bin}/PedigreeMod.o -module ${bin}/
+
+# --- ThirdPartyRoutines ---
+
+${bin}/ThirdPartyRoutinesMod.o: ThirdPartyRoutines/*.f90
+	$(MAKE) -C ThirdPartyRoutines/;
+	${comp} ${opt} -c ThirdPartyRoutines/ThirdPartyRoutinesMod.f90 -o ${bin}/ThirdPartyRoutinesMod.o -module ${bin}/
 
 # --- Utilities ---
 
