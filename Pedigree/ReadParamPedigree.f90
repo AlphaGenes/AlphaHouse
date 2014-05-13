@@ -1,4 +1,3 @@
-
 subroutine ReadParamPedigree(LFileNameC)
 
 implicit none
@@ -22,14 +21,14 @@ logical :: LEndPedPresentL,LPedigreeFileKeywordPresentL,LStartPedPresentL
 
 !Start check validity of '@StartPedigree@' and '@EndPedigree@'
 	if ((LStartPedPresentL==.true.).and.(LEndPedPresentL==.true.)) then
-	
+
 	else
 		write(*,*) 'Error in the validity of @StartPedigree@ and @EndPedigree@'
 		write(*,*) 'Check pedigree commands in spec file'
 		stop
 	endif
-!End check validity of '@StartPedigree@' and '@EndPedigree@'	
-	
+!End check validity of '@StartPedigree@' and '@EndPedigree@'
+
 !Start PedigreeFile keyword and file name search
 	LSearchStartI=LStartPedLineI+1
 	LSeachEndI=LEndPedLineI-1
@@ -37,16 +36,16 @@ logical :: LEndPedPresentL,LPedigreeFileKeywordPresentL,LStartPedPresentL
 	LSubModeI=2
 	call CheckKeyWordPresence(LKeyWordC,LFileNameC,LSearchStartI,LSeachEndI,LLineWithPedigreeFileKeywordC,LPedigreeFileKeywordPresentL,LSubModeI)
 
-	
+
 	!Start check validity of PedigreeFile keyword
 		if (LPedigreeFileKeywordPresentL==.true.) then
-	
+
 		else
 			write(*,*) 'Error in the validity of PedigreeFile keyword'
 			write(*,*) 'Check pedigree commands in spec file'
 			stop
 		endif
-	!End check validity of PedigreeFile keyword	
+	!End check validity of PedigreeFile keyword
 
 	!Start read pedigree file name
 	GPedFileNameC='ll'
@@ -56,7 +55,7 @@ logical :: LEndPedPresentL,LPedigreeFileKeywordPresentL,LStartPedPresentL
 		!print*, trim(GPedFileNameC)
 
 	!End read pedigree file name
-	
+
 	close(1)
 !End PedigreeFile keyword and file name search
 

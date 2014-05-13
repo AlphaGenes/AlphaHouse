@@ -1,5 +1,0 @@
-module MiscellaneousModL1
-
-implicit none
-
-contains

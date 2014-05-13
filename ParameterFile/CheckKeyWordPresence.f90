@@ -1,4 +1,9 @@
 
+subroutine GG
+implicit none
+  print*,"b"
+end subroutine GG
+
 subroutine CheckKeyWordPresence(LKeyWordC,LFileNameC,LSearchStartI,LSeachEndI,LNumOfLineI,LWordPresentL,LSubModeI)
 
 implicit none
@@ -23,14 +28,14 @@ if (LSubModeI==1) then
 			LnLineI=LnLineI-1
 			exit
 		else
-			if (trim(LMatchWordC)==trim(LKeyWordC)) then	
+			if (trim(LMatchWordC)==trim(LKeyWordC)) then
 				LWordPresentL=.true.
 				LNumOfLineI=LnLineI
 			endif
 		endif
 
 	enddo
-	
+
 endif
 
 if (LSubModeI==2) then
@@ -42,7 +47,7 @@ if (LSubModeI==2) then
 	do i=LSearchStartI,LSeachEndI
 		read (1,*,iostat=LTmpI) LMatchWordC
 		LnLineI=i
-		if (trim(LMatchWordC)==trim(LKeyWordC)) then	
+		if (trim(LMatchWordC)==trim(LKeyWordC)) then
 			LWordPresentL=.true.
 			LNumOfLineI=LnLineI
 			exit
@@ -50,7 +55,7 @@ if (LSubModeI==2) then
 
 	enddo
 
-endif	
+endif
 
 close(1)
 

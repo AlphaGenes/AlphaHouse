@@ -20,7 +20,7 @@ ${mod}.f90: ${mod}Start ${src} ${mod}End # Cat all source files in one module fi
 	for file in ${src}; do \
 		cat _space.txt $${file} _space.txt >> _tmp.f90; \
 	done;
-	@cat _space.txt _msg.txt _space.txt ${mod}Start _tmp.f90 ${mod}End > ${mod}.f90;
+	@cat _space.txt _msg.txt _space.txt ${mod}Start _space.txt _tmp.f90 _space.txt ${mod}End > ${mod}.f90;
 	@rm -f _msg.txt _space.txt _tmp.f90
 
 clean: # Remove the generated file
