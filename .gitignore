@@ -1,3 +1,6 @@
+*.o
+*.mod
+*.a
 ParameterFile/ParameterFileMod.f90
 Pedigree/PedigreeMod.f90
 GeneralPurpose/GeneralPurposeMod.f90

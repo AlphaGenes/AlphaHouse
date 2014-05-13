@@ -2,11 +2,13 @@ comp=ifort
 opt=
 bin=../AlphaHouseBin
 
-# TODO: figure out what should be the target so that we go and check the *.f90 files
+all: ${bin}/AlphaHouse.a
+	@echo "AlphaHouseBin: DONE"
+
+# --- AlphaHouse library ---
 
 ${bin}/AlphaHouse.a: ${bin}/MiscellaneousMod.o ${bin}/ParameterFileMod.o ${bin}/GeneralPurposeMod.o ${bin}/PedigreeMod.o
 	ar cr ${bin}/AlphaHouse.a ${bin}/*.o;
-	@echo "AlphaHouseBin: DONE"
 
 # --- AlphaModules ---
 
