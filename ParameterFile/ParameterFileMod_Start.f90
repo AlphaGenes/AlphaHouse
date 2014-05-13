@@ -1,6 +1,5 @@
 module ParameterFileMod
 
 implicit none
-integer :: gghgh
 
 contains

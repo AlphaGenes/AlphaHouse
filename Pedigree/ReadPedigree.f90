@@ -3,7 +3,7 @@ subroutine ReadPedigree
 implicit none
 
 
-GnAniPedI
+GnAniPedI=1
 allocate(GPedOrigC(GnAniPedI,3))
 
 end subroutine ReadPedigree

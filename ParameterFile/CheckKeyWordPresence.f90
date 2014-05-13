@@ -1,9 +1,3 @@
-
-subroutine GG
-implicit none
-  print*,"b"
-end subroutine GG
-
 subroutine CheckKeyWordPresence(LKeyWordC,LFileNameC,LSearchStartI,LSeachEndI,LNumOfLineI,LWordPresentL,LSubModeI)
 
 implicit none
