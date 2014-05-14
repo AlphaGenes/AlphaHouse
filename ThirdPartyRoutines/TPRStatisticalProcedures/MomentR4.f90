@@ -1,5 +1,16 @@
 !###########################################################################################################################################################
 
+!> @brief Compute moments (single precision)
+!> @author ???
+!> @todo Add author
+!> @param[in]  DATA = input data
+!> @param[in]  n = number of records
+!> @param[out] ave = average
+!> @param[out] adev = ???
+!> @param[out] sdev = standard deviation
+!> @param[out] var = variance
+!> @param[out] skew = skewness
+!> @param[out] curt = kurtosis
 SUBROUTINE momentR4(DATA,n,ave,adev,sdev,var,skew,curt)
 IMPLICIT NONE
 INTEGER n
