@@ -62,7 +62,6 @@ doc: docsrc docbin # Create documentation
 
 docsrc: # Create documentation with the source
 	@echo "\n * Create documentation with the source...\n";
-	mkdir -p DoxygenDoc;
 	cat Doxygen.txt | sed -e "s/SOURCE_BROWSER=NO/SOURCE_BROWSER=YES/" > Doxygen.tmp;
 	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log;
 	rm -f Doxygen.tmp;
@@ -70,7 +69,6 @@ docsrc: # Create documentation with the source
 
 docbin: # Create documentation without the source for the binary folder
 	@echo "\n * Create documentation without the source for the binary folder...\n";
-	mkdir -p ${bin}/DoxygenDoc;
 	cat Doxygen.txt | sed -e "s|OUTPUT_DIRECTORY=DoxygenDoc|OUTPUT_DIRECTORY=${bin}/DoxygenDoc|" > Doxygen.tmp;
 	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log;
 	rm -f Doxygen.tmp;
