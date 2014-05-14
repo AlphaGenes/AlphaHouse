@@ -1,12 +1,11 @@
 !###########################################################################################################################################################
 
-!> @brief Compute moments (single precision)
-!> @author ???
-!> @todo Add author
+!> @brief Compute statistical moments of a variable (single precision)
+!> @author TP modified by JH
 !> @param[in]  DATA = input data
 !> @param[in]  n = number of records
 !> @param[out] ave = average
-!> @param[out] adev = ???
+!> @param[out] adev = mean absolute deviation
 !> @param[out] sdev = standard deviation
 !> @param[out] var = variance
 !> @param[out] skew = skewness
