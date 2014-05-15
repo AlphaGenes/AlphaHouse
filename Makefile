@@ -21,14 +21,22 @@ ${bin}/AlphaHouse.a: ${binobj} # Build library
 
 # --- Modules ---
 
+rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+
 define make-target
-${bin}/$(1)Mod.o: $(1)/*.f90 # Go into module folder, collate all the code in one file, and compile that file
+
+# Required modules
+reqMod$(1):=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " $(1)/$(1)Mod_Start.f90 | awk '{ print $$2 }'))))
+# Source files
+reqSrc$(1):=$(strip $(call rwildcard,,$(1)/*.f90))
+${bin}/$(1)Mod.o: $${reqMod$(1)} $${reqSrc$(1)} # Go into module folder, collate all the code in one file, and compile that file
 	@echo "\n * Go into module folder $(1), collate all the code in one file, and compile that file...\n"
 	$$(MAKE) -C $(1)/;
-	$${comp} $${opt} -c $(1)/$(1)Mod.f90 -o $${bin}/$(1)Mod.o -module $${bin}/
+	$${comp} $${opt} -I$${bin} -c $(1)/$(1)Mod.f90 -o $${bin}/$(1)Mod.o -module $${bin}/
+
 endef
 
-# $(info $(foreach i,${dirs},$(call make-target,${i})))
+#$(info $(foreach i,${dirs},$(call make-target,${i})))
 $(foreach i,${dirs},$(eval $(call make-target,${i})))
 
 # --- Documentation ---
