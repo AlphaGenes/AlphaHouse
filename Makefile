@@ -1,43 +1,53 @@
-comp:=ifort
+.PHONY: all test doc clean help
+
+# General vars
+FC:=ifort
 opt:=
 bin:=../AlphaHouseBin
 
 # List of module directories (should only need to edit this!!!)
-dirs:=GeneralPurpose Miscellaneous ParameterFile Pedigree ThirdPartyRoutines
+mod:=GeneralPurpose Miscellaneous ParameterFile Pedigree ThirdPartyRoutines
 
-# Get folder names, object file names, and target names
-src:=$(addsuffix Mod.f90,${dirs})
-obj:=$(addsuffix Mod.o,${dirs})
-binobj:=$(addprefix ${bin}/,${obj})
+# Get various stuff
+src:=$(addsuffix Mod.f90,${mod})
+obj:=$(addprefix ${bin}/,$(addsuffix Mod.o,${mod}))
+
+# --- AlphaHouse library ---
 
 all: ${bin}/AlphaHouse.a # Build the library
 	@echo "\n * AlphaHouseBin: DONE\n"
 
-# --- AlphaHouse library ---
-
-${bin}/AlphaHouse.a: ${binobj} # Build library
+${bin}/AlphaHouse.a: ${obj} # Build library
 	@echo "\n * Build library...\n"
-	ar cr ${bin}/AlphaHouse.a ${binobj};
+	ar cr ${bin}/AlphaHouse.a ${obj};
 
 # --- Modules ---
 
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
-define make-target
+define make-module
 
-# Required modules
-reqMod$(1):=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " $(1)/$(1)Mod_Start.f90 | awk '{ print $$2 }'))))
-# Source files
-reqSrc$(1):=$(strip $(call rwildcard,,$(1)/*.f90))
-${bin}/$(1)Mod.o: $${reqMod$(1)} $${reqSrc$(1)} # Go into module folder, collate all the code in one file, and compile that file
-	@echo "\n * Go into module folder $(1), collate all the code in one file, and compile that file...\n"
-	$$(MAKE) -C $(1)/;
-	$${comp} $${opt} -I$${bin} -c $(1)/$(1)Mod.f90 -o $${bin}/$(1)Mod.o -module $${bin}/
+${1}: ${bin}/${1}Mod.o # Build module ${1}
 
 endef
 
-#$(info $(foreach i,${dirs},$(call make-target,${i})))
-$(foreach i,${dirs},$(eval $(call make-target,${i})))
+define make-target
+
+# Required modules
+reqMod${1}:=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " ${1}/${1}Mod_Start.f90 | awk '{ print $$2 }'))))
+# Source files
+reqSrc${1}:=$(strip $(call rwildcard,,${1}/*.f90))
+${bin}/${1}Mod.o: $${reqMod${1}} $${reqSrc${1}} # Go into module folder, collate all the code in one file, and compile that file
+	@echo "\n * Go into module folder ${1}, collate all the code in one file, and compile that file...\n"
+	$${MAKE} -C ${1}/;
+	$${FC} $${opt} -I$${bin} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/
+
+endef
+
+#$(info $(foreach i,${mod},$(call make-module,${i})))
+$(foreach i,${mod},$(eval $(call make-module,${i})))
+#$(info $(foreach i,${mod},$(call make-target,${i})))
+$(foreach i,${mod},$(eval $(call make-target,${i})))
 
 # --- Documentation ---
 
@@ -90,4 +100,4 @@ cleandocbin: # Remove auto-generated documentation without the source in the bin
 help: # Help
 	@echo '\nTarget: Dependency # Description';
 	@echo '==================================================';
-	@egrep -e '^[[:alnum:].+_()%]*:' -e '^\$$' Makefile
+	@egrep -e '^[[:alnum:].+_()%]*: ' Makefile
