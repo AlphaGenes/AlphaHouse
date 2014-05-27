@@ -1,4 +1,4 @@
-.PHONY: all test doc clean help
+.DEFAULT_GOAL:=build
 
 # General vars
 FC:=ifort
@@ -13,13 +13,17 @@ src:=$(addsuffix Mod.f90,${mod})
 obj:=$(addprefix ${bin}/,$(addsuffix Mod.o,${mod}))
 test:=$(addsuffix /test,${mod}) # TODO: this does not work for TPR!!! Should we reorganize TPR as other modules?
 
+all: build test doc
+
 # --- AlphaHouse library ---
 
-all: ${bin}/AlphaHouse.a # Build the library
-	@echo "\n * AlphaHouseBin: DONE\n"
+build: .buildecho ${bin}/AlphaHouse.a # Build the library
+	@echo "\n * AlphaHouseBin DONE\n"
+
+.buildecho:
+	@echo "\n * Building...\n"
 
 ${bin}/AlphaHouse.a: ${obj} # Build library
-	@echo "\n * Build library...\n"
 	ar cr ${bin}/AlphaHouse.a ${obj};
 
 # --- Modules ---
@@ -52,15 +56,20 @@ $(foreach i,${mod},$(eval $(call make-target,${i})))
 
 # --- Test ---
 
-test: ${obj} ${test} # Unit testing - main target
-	@echo "\n * Testing: DONE\n"
+test: .testecho ${obj} ${test} # Unit testing - main target
+	@echo "\n * Testing DONE \n"
+
+.testecho:
+	@echo "\n * Testing... \n"
 
 ${test}: # Unit testing - individual targets
-	${MAKE} -C $@ test
+	@echo "\n $@ \n"
+	${MAKE} -C $@
 
 # --- Documentation ---
 
 doc: docsrc docbin # Create documentation
+	@echo "\n * Documentation DONE \n"
 
 docsrc: # Create documentation with the source in this folder
 	@echo "\n * Create documentation with the source in this folder...\n";
@@ -84,7 +93,11 @@ docbin: # Create documentation without the source in the binary folder
 
 # --- Cleanup ---
 
-cleanall: cleanbin cleansrc cleandoc # Cleanup everything
+clean: cleanbin cleansrc # Remove auto-generated source files and compiled files
+	@echo "\n * Cleanup DONE \n"
+
+cleanall: cleanbin cleansrc cleantest cleandoc # Remove all auto-generated and compiled files and other files
+	@echo "\n * Cleanup-all DONE \n"
 
 cleanbin: # Remove object, module, and library files in the binary folder
 	@echo "\n * Remove object, module, and library files in the binary folder...\n"
@@ -95,9 +108,9 @@ cleansrc: # Remove auto-generated source files
 	rm -f $(addprefix */,${src})
 
 cleantest:=$(addsuffix .clean,${test})
-cleantest: cleantestecho ${cleantest} # Remove test output files - main target
+cleantest: .cleantestecho ${cleantest} # Remove test output files - main target
 
-cleantestecho: # Remove test output files - echo
+.cleantestecho: # Remove test output files - echo
 	@echo "\n * Remove test output files...\n"
 
 ${cleantest}: # Remove test output files - individual targets
@@ -118,4 +131,6 @@ cleandocbin: # Remove auto-generated documentation without the source in the bin
 help: # Help
 	@echo '\nTarget: Dependency # Description';
 	@echo '==================================================';
-	@egrep -e '^[[:alnum:].+_()%]*: ' Makefile
+	@egrep -e '^[[:alnum:]+_()%]*: ' Makefile
+
+.PHONY: all build test doc clean help ${mod} ${test}

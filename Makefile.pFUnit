@@ -1,4 +1,6 @@
-.PHONY: test mod clean help
+
+# pFUnit support
+# TODO: make it more general and push to AlphaSuite and use in all places
 
 # General vars
 FC:=ifort
@@ -11,14 +13,12 @@ mod:=$(shell cd ..; basename $$(pwd))
 
 # Find test suites and associated files
 TEST:=$(wildcard *.pf)
-#SRC=$(wildcard *.f90)
-#OBJ=$(SRC:.f90=.o) $(TEST:.pf=.o)
 OBJ=$(TEST:.pf=.o) ${bin}/${mod}Mod.o
 
 test: ${mod} test.x # Run tests
 	./test.x
 
-${mod}: # Compile module
+${mod}: # Compile module under testing
 	${MAKE} -C ../.. $@
 
 %.f90: %.pf # Parse tests
@@ -36,4 +36,6 @@ clean: # Remove test output files
 help: # Help
 	@echo '\nTarget: Dependency # Description';
 	@echo '==================================================';
-	@egrep -e '^[[:alnum:].+_()%]*: ' Makefile
+	@egrep -e '^[[:alnum:]+_()%]*: ' Makefile
+
+.PHONY: test mod clean help
