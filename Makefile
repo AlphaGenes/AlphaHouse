@@ -11,6 +11,7 @@ mod:=GeneralPurpose Miscellaneous ParameterFile Pedigree ThirdPartyRoutines
 # Get various stuff
 src:=$(addsuffix Mod.f90,${mod})
 obj:=$(addprefix ${bin}/,$(addsuffix Mod.o,${mod}))
+test:=$(addsuffix /test,${mod}) # TODO: this does not work for TPR!!! Should we reorganize TPR as other modules?
 
 # --- AlphaHouse library ---
 
@@ -49,6 +50,14 @@ $(foreach i,${mod},$(eval $(call make-module,${i})))
 #$(info $(foreach i,${mod},$(call make-target,${i})))
 $(foreach i,${mod},$(eval $(call make-target,${i})))
 
+# --- Test ---
+
+test: ${obj} ${test} # Unit testing - main target
+	@echo "\n * Testing: DONE\n"
+
+${test}: # Unit testing - individual targets
+	${MAKE} -C $@ test
+
 # --- Documentation ---
 
 doc: docsrc docbin # Create documentation
@@ -84,6 +93,15 @@ cleanbin: # Remove object, module, and library files in the binary folder
 cleansrc: # Remove auto-generated source files
 	@echo "\n * Remove auto-generated source files...\n"
 	rm -f $(addprefix */,${src})
+
+cleantest:=$(addsuffix .clean,${test})
+cleantest: cleantestecho ${cleantest} # Remove test output files - main target
+
+cleantestecho: # Remove test output files - echo
+	@echo "\n * Remove test output files...\n"
+
+${cleantest}: # Remove test output files - individual targets
+	${MAKE} -C $(basename $@) clean
 
 cleandoc: cleandocsrc cleandocbin # Remove auto-generated documentation
 

@@ -1,0 +1,39 @@
+.PHONY: test mod clean help
+
+# General vars
+FC:=ifort
+PFUNIT:=/usr/local/pFUnit-serial
+DRIVER:=${PFUNIT}/include/driver.F90
+bin=../../../AlphaHouseBin
+
+# Find the module name (assume there is a Module_Start.f90 file)
+mod:=$(shell cd ..; basename $$(pwd))
+
+# Find test suites and associated files
+TEST:=$(wildcard *.pf)
+#SRC=$(wildcard *.f90)
+#OBJ=$(SRC:.f90=.o) $(TEST:.pf=.o)
+OBJ=$(TEST:.pf=.o) ${bin}/${mod}Mod.o
+
+test: ${mod} test.x # Run tests
+	./test.x
+
+${mod}: # Compile module
+	${MAKE} -C ../.. $@
+
+%.f90: %.pf # Parse tests
+	${PFUNIT}/bin/pFUnitParser.py $< $@ -I.
+
+%.o: %.f90 # Compile tests
+	${FC} -c $< -I${PFUNIT}/mod -I${bin}
+
+test.x: ${DRIVER} ${OBJ} testSuites.inc # Link tests with the driver
+	${FC} -o $@ -I${PFUNIT}/mod -I${bin} -I. ${DRIVER} ${OBJ} -L${PFUNIT}/lib -lpfunit
+
+clean: # Remove test output files
+	rm -f *.o *.mod *.x *~ test.txt
+
+help: # Help
+	@echo '\nTarget: Dependency # Description';
+	@echo '==================================================';
+	@egrep -e '^[[:alnum:].+_()%]*: ' Makefile
