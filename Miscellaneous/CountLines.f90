@@ -1,9 +1,10 @@
 subroutine CountLines(LFileNameC,LnLineI)
 implicit none
 
-character(len=*) :: LFileNameC
-character(len=3000) :: LDumC
-integer :: LnLineI,f
+character(len=*), intent(in) :: LFileNameC
+character(len=100) :: LDumC
+integer, intent(out) :: LnLineI
+integer :: f
 
 open (unit=1,file=trim(LFileNameC),status="old")
 
