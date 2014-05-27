@@ -9,7 +9,7 @@ open (unit=1,file=trim(LFileNameC),status="old")
 
 LnLineI=0
 do
-	read (101,*,iostat=f) LDumC
+	read (1,*,iostat=f) LDumC
 	LnLineI=LnLineI+1
 	if (f/=0) then
 		LnLineI=LnLineI-1
