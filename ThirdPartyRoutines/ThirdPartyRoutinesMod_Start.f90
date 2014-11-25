@@ -1,3 +1,8 @@
+
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 module ThirdPartyRoutinesMod
 
-contains
+  implicit none
+
+  contains

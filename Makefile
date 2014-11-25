@@ -19,7 +19,7 @@ mod:=GeneralPurpose IntelRNG Miscellaneous ParameterFile Pedigree # ThirdPartyRo
 # Get various stuff
 src:=$(addsuffix Mod.f90,${mod})
 obj:=$(addprefix ${bin}/,$(addsuffix Mod.o,${mod}))
-test:=$(addsuffix /test,${mod}) # TODO: this does not work for TPR!!! Should we reorganize TPR as other modules?
+test:=$(addsuffix /Test,${mod}) # TODO: this does not work for TPR!!! Should we reorganize TPR as other modules?
 
 all: build test doc
 

@@ -1,8 +1,11 @@
+
+!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 module GeneralPurposeMod
 
-implicit none
+  implicit none
 
-integer :: nInd
-character(len=200),allocatable,dimension(:) :: OriginalId
+  integer :: nInd
+  character(len=200),allocatable,dimension(:) :: OriginalId
 
-contains
+  contains
