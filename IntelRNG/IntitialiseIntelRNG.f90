@@ -26,9 +26,9 @@ subroutine IntitialiseIntelRNG
     close(unit=1)
     print*,"Seed value taken from the file ",trim(name)//"Seed.txt: ",LIdumI
   else
-    call RANDOM_SEED
-    call RANDOM_SEED(get=LIdumI(1:1)) ! need to pass a vector
-    print*,"Seed value generated from the current date and time: ",LIdumI
+    call random_seed
+    call random_seed(get=LIdumI(1:1)) ! need to pass a vector
+    print*,"Seed value generated from the system: ",LIdumI
   end if
 
   ! Save the used seed for reproducibility
