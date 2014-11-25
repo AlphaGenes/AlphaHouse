@@ -5,6 +5,7 @@ FC:=ifort
 MKLROOT:=/opt/intel/mkl
 bin:=../AlphaHouseBin
 optdir:=-I. -I${bin} -I${MKLROOT}/include
+#mkl=-L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
 opt:=
 
 # Debug flags
@@ -13,7 +14,7 @@ ifeq (${debug}, true)
 endif
 
 # List of module directories (should only need to edit this!!!)
-mod:=GeneralPurpose Miscellaneous ParameterFile Pedigree ThirdPartyRoutines
+mod:=GeneralPurpose IntelRNG Miscellaneous ParameterFile Pedigree # ThirdPartyRoutines
 
 # Get various stuff
 src:=$(addsuffix Mod.f90,${mod})
