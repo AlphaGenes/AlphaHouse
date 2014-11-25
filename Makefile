@@ -2,8 +2,15 @@
 
 # General vars
 FC:=ifort
-opt:=
+MKLROOT:=/opt/intel/mkl
 bin:=../AlphaHouseBin
+optdir:=-I. -I${bin} -I${MKLROOT}/include
+opt:=
+
+# Debug flags
+ifeq (${debug}, true)
+  opt:=${opt} -g -traceback -debug all -check all -ftrapuv -warn all
+endif
 
 # List of module directories (should only need to edit this!!!)
 mod:=GeneralPurpose Miscellaneous ParameterFile Pedigree ThirdPartyRoutines
@@ -38,14 +45,19 @@ endef
 
 define make-target
 
-# Required modules
+# Required modules for the target
 reqMod${1}:=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " ${1}/${1}Mod_Start.f90 | awk '{ print $$2 }'))))
-# Source files
+# ...remove false positives from the above
+reqMod${1}:=$(filter-out,$(filter-out,${mod},${reqMod${1}}),${reqMod${1}})
+
+# Source files of the target
 reqSrc${1}:=$(strip $(call rwildcard,,${1}/*.f90))
+
+# Make
 ${bin}/${1}Mod.o: $${reqMod${1}} $${reqSrc${1}} # Go into module folder, collate all the code in one file, and compile that file
 	@echo "\n * Go into module folder ${1}, collate all the code in one file, and compile that file...\n"
 	$${MAKE} -C ${1}/;
-	$${FC} $${opt} -I$${bin} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/
+	$${FC} $${opt} $${optdir} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/
 
 endef
 
