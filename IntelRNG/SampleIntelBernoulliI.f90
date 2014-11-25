@@ -22,13 +22,13 @@ function SampleIntelBernoulliI(n,p)
     nOpt=n
   else
     nOpt=1
-  endif
+  end if
 
   if (present(p)) then
     pOpt=p
   else
     pOpt=0.5
-  endif
+  end if
 
   allocate(SampleIntelBernoulliI(nOpt))
 
@@ -37,7 +37,7 @@ function SampleIntelBernoulliI(n,p)
   if (RNGErrCode /= vsl_status_ok) then
     print*,"SampleIntelBernoulliI failed"
     stop
-  endif
+  end if
 
   return
 

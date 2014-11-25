@@ -20,19 +20,19 @@ function SampleIntelUniformI(n,a,b)
     nOpt=n
   else
     nOpt=1
-  endif
+  end if
 
   if (present(a)) then
     aOpt=a
   else
     aOpt=0
-  endif
+  end if
 
   if (present(b)) then
     bOpt=b
   else
     bOpt=1
-  endif
+  end if
 
   allocate(SampleIntelUniformI(nOpt))
 
@@ -41,7 +41,7 @@ function SampleIntelUniformI(n,a,b)
   if (RNGErrCode /= vsl_status_ok) then
     print*,"SampleIntelUniformI failed"
     stop
-  endif
+  end if
 
   return
 

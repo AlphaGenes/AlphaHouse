@@ -29,7 +29,7 @@ subroutine IntitialiseIntelRNG
     call RANDOM_SEED
     call RANDOM_SEED(get=LIdumI(1:1)) ! need to pass a vector
     print*,"Seed value generated from the current date and time: ",LIdumI
-  endif
+  end if
 
   ! Save the used seed for reproducibility
   open(unit=1,file=trim(name)//"SeedUsed.txt",status="unknown")
@@ -42,7 +42,7 @@ subroutine IntitialiseIntelRNG
   if (RNGErrCode /= vsl_status_ok) then
     print*,"IntitialiseIntelRNG failed"
     stop
-  endif
+  end if
 
 end subroutine IntitialiseIntelRNG
 

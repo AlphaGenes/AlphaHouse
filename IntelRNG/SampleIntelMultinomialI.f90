@@ -25,7 +25,7 @@ function SampleIntelMultinomialI(n,p)
     nOpt=n
   else
     nOpt=1
-  endif
+  end if
 
   k=size(p)
 

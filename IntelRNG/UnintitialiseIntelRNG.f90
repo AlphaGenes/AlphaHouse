@@ -14,7 +14,7 @@ subroutine UnintitialiseIntelRNG
   if (RNGErrCode /= vsl_status_ok) then
     print*,"UnintitialiseIntelRNG failed"
     stop
-  endif
+  end if
 
 end subroutine UnintitialiseIntelRNG
 

@@ -23,19 +23,19 @@ function SampleIntelGumbelRD(n,a,b)
     nOpt=n
   else
     nOpt=1
-  endif
+  end if
 
   if (present(a)) then
     aOpt=a
   else
     aOpt=0.d0
-  endif
+  end if
 
   if (present(b)) then
     bOpt=b
   else
     bOpt=1.d0
-  endif
+  end if
 
   allocate(SampleIntelGumbelRD(nOpt))
 
@@ -44,7 +44,7 @@ function SampleIntelGumbelRD(n,a,b)
   if (RNGErrCode /= vsl_status_ok) then
     print*,"SampleIntelGumbelRD failed"
     stop
-  endif
+  end if
 
   return
 
