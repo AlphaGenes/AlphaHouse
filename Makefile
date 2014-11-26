@@ -58,7 +58,7 @@ reqSrc${1}:=$(strip $(call rwildcard,,${1}/*.f90))
 
 # Make
 ${bin}/${1}Mod.o: $${reqMod${1}} $${reqSrc${1}} # Go into module folder, collate all the code in one file, and compile that file
-	@echo "\n * Go into module folder ${1}, collate all the code in one file, and compile that file...\n"
+	@echo "\n * Go into module folder ${1}, collate all the code in one file, compile that file, and put object and module files into $${bin}...\n"
 	$${MAKE} -C ${1}/;
 	$${FC} $${opt} $${optdir} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/
 
