@@ -5,8 +5,9 @@ FC:=ifort
 MKLROOT:=/opt/intel/mkl
 bin:=../AlphaHouseBin
 optdir:=-I. -I${bin} -I${MKLROOT}/include
-#mkl=-L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
 opt:=
+prog:=AlphaHouse
+progDesc:=A set of housekeeping routines for the Alpha programs
 
 # Debug flags
 ifeq (${debug}, true)
@@ -32,6 +33,7 @@ build: .buildecho ${bin}/AlphaHouse.a # Build the library
 	@echo "\n * Building...\n"
 
 ${bin}/AlphaHouse.a: ${obj} # Build library
+	@echo "\n * Creating the AlphaHouse library...\n"
 	ar cr ${bin}/AlphaHouse.a ${obj};
 
 # --- Modules ---
@@ -81,24 +83,24 @@ ${test}: # Unit testing - individual targets
 
 # --- Documentation ---
 
-doc: docsrc docbin # Create documentation
+doc: docsrc docbin # Create developer documentation
 	@echo "\n * Documentation DONE \n"
 
-docsrc: # Create documentation with the source in this folder
-	@echo "\n * Create documentation with the source in this folder...\n";
+docsrc: # Create developer documentation in this folder
+	@echo "\n * Create developer documentation in this folder...\n";
 	mkdir -p DoxygenDoc;
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"AlphaHouse\"|"\
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"A set of housekeeping routines for the Alpha programs\"|"\
+	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|"\
+														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|"\
 														-e "s|SOURCE_BROWSER=NO|SOURCE_BROWSER=YES|" > Doxygen.tmp;
 	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log;
 	rm -f Doxygen.tmp;
 	cd DoxygenDoc && ln -sf html/index.html .
 
-docbin: # Create documentation without the source in the binary folder
-	@echo "\n * Create documentation without the source in the binary folder...\n";
+docbin: # Create developer documentation in the binary folder
+	@echo "\n * Create developer documentation in the binary folder...\n";
 	mkdir -p ${bin}/DoxygenDoc;
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"AlphaHouse\"|"\
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"A set of housekeeping routines for the Alpha programs\"|"\
+	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|"\
+														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|"\
 														-e "s|OUTPUT_DIRECTORY=DoxygenDoc|OUTPUT_DIRECTORY=${bin}/DoxygenDoc|" > Doxygen.tmp;
 	doxygen Doxygen.tmp > ${bin}/DoxygenDoc/Doxygen.log;
 	rm -f Doxygen.tmp;
@@ -129,14 +131,14 @@ cleantest: .cleantestecho ${cleantest} # Remove test output files - main target
 ${cleantest}: # Remove test output files - individual targets
 	${MAKE} -C $(basename $@) clean
 
-cleandoc: cleandocsrc cleandocbin # Remove auto-generated documentation
+cleandoc: cleandocsrc cleandocbin # Remove auto-generated developer documentation
 
-cleandocsrc: # Remove auto-generated documentation with the source in this folder
-	@echo "\n * Remove auto-generated documentation with the source in this folder...\n";
+cleandocsrc: # Remove auto-generated developer documentation in this folder
+	@echo "\n * Remove auto-generated developer documentation in this folder...\n";
 	rm -Rf DoxygenDoc
 
-cleandocbin: # Remove auto-generated documentation without the source in the binary folder
-	@echo "\n * Remove auto-generated documentation without the source in the binary folder...\n";
+cleandocbin: # Remove auto-generated developer documentation in the binary folder
+	@echo "\n * Remove auto-generated developer documentation in the binary folder...\n";
 	rm -Rf ${bin}/DoxygenDoc
 
 # --- Utilities ---
