@@ -12,10 +12,10 @@ function SampleIntelUniformRS(n,a,b)
 
   implicit none
 
-  integer(kind=4),optional :: n
+  integer(kind=4),optional,intent(in) :: n
   integer(kind=4) :: nOpt
 
-  real(kind=4),optional :: a,b
+  real(kind=4),optional,intent(in) :: a,b
   real(kind=4) :: aOpt,bOpt
   real(kind=4),dimension(:),allocatable :: SampleIntelUniformRS
 

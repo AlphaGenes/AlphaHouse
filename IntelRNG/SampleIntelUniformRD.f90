@@ -12,10 +12,10 @@ function SampleIntelUniformRD(n,a,b)
 
   implicit none
 
-  integer(kind=4),optional :: n
+  integer(kind=4),optional,intent(in) :: n
   integer(kind=4) :: nOpt
 
-  real(kind=8),optional :: a,b
+  real(kind=8),optional,intent(in) :: a,b
   real(kind=8) :: aOpt,bOpt
   real(kind=8),dimension(:),allocatable :: SampleIntelUniformRD
 

@@ -12,7 +12,7 @@ function SampleIntelUniformI(n,a,b)
 
   implicit none
 
-  integer(kind=4),optional :: n,a,b
+  integer(kind=4),optional,intent(in) :: n,a,b
   integer(kind=4) :: nOpt,aOpt,bOpt
   integer(kind=4),dimension(:),allocatable :: SampleIntelUniformI
 

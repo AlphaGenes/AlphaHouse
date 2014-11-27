@@ -121,6 +121,7 @@ cleanbin: # Remove object, module, and library files in the binary folder
 cleansrc: # Remove auto-generated source files
 	@echo "\n * Remove auto-generated source files...\n"
 	rm -f $(addprefix */,${src})
+	rm -f */*__genmod.{f90,mod}
 
 cleantest:=$(addsuffix .clean,${test})
 cleantest: .cleantestecho ${cleantest} # Remove test output files - main target

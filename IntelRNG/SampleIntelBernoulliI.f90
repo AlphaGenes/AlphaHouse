@@ -11,11 +11,11 @@ function SampleIntelBernoulliI(n,p)
 
   implicit none
 
-  integer(kind=4),optional :: n
+  integer(kind=4),optional,intent(in) :: n
   integer(kind=4) :: nOpt
   integer(kind=4),dimension(:),allocatable :: SampleIntelBernoulliI
 
-  real(kind=8),optional :: p
+  real(kind=8),optional,intent(in) :: p
   real(kind=8) :: pOpt
 
   if (present(n)) then
