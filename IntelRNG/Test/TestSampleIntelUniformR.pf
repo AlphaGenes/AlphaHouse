@@ -1,0 +1,55 @@
+@test
+subroutine TestSampleIntelUniformRS()
+
+  use pFUnit_mod
+  use IntelRNGMod
+
+  implicit none
+
+  integer(kind=4) :: n
+
+  real(kind=4),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelUniformRS()
+  @assertEqual(count(x(1:1) <= 1.0),1,"Samples from Uniform(0,1) should be <= 1.")
+
+  x=SampleIntelUniformRS(n=n)
+  @assertEqual(count(x >= 0.0),n,"Samples from Uniform(0,1) should be >= 0.0")
+  @assertEqual(count(x <= 1.0),n,"Samples from Uniform(0,1) should be <= 1.0")
+
+  call UnintitialiseIntelRNG
+
+end subroutine TestSampleIntelUniformRS
+
+@test
+subroutine TestSampleIntelUniformRD()
+
+  use pFUnit_mod
+  use IntelRNGMod
+
+  implicit none
+
+  integer(kind=4) :: n
+
+  real(kind=8),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelUniformRD()
+  @assertEqual(count(x(1:1) <= 1.0),1,"Samples from Uniform(0,1) should be <= 1.")
+
+  x=SampleIntelUniformRD(n=n)
+  @assertEqual(count(x >= 0.0),n,"Samples from Uniform(0,1) should be >= 0.0")
+  @assertEqual(count(x <= 1.0),n,"Samples from Uniform(0,1) should be <= 1.0")
+
+  call UnintitialiseIntelRNG
+
+end subroutine TestSampleIntelUniformRD

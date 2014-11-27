@@ -1,0 +1,23 @@
+@test
+subroutine TestSampleIntelBernoulliI()
+
+  use pFUnit_mod
+  use IntelRNGMod
+
+  implicit none
+
+  integer(kind=4),dimension(2) :: x
+
+  call IntitialiseIntelRNG
+
+  x=0
+  @assertEqual(SampleIntelBernoulliI(    p=0.0d0),x(1:1),"Samples from Bernoulli(p=0) should be 0.")
+  @assertEqual(SampleIntelBernoulliI(n=2,p=0.0d0),x,     "Samples from Bernoulli(p=0) should be 0.")
+
+  x=1
+  @assertEqual(SampleIntelBernoulliI(    p=1.0d0),x(1:1),"Samples from Bernoulli(p=1) should be 1.")
+  @assertEqual(SampleIntelBernoulliI(n=2,p=1.0d0),x,     "Samples from Bernoulli(p=1) should be 1.")
+
+  call UnintitialiseIntelRNG
+
+end subroutine TestSampleIntelBernoulliI

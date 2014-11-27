@@ -27,7 +27,7 @@ function SampleIntelBernoulliI(n,p)
   if (present(p)) then
     pOpt=p
   else
-    pOpt=0.5
+    pOpt=0.5d0
   end if
 
   allocate(SampleIntelBernoulliI(nOpt))

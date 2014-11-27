@@ -6,36 +6,43 @@
 FC:=ifort
 PFUNIT:=/usr/local/pFUnit-serial
 DRIVER:=${PFUNIT}/include/driver.F90
-bin=../../../AlphaHouseBin
+bin:=../../../AlphaHouseBin
 
-# Find the module name (assume there is a Module_Start.f90 file)
+# MKL
+include ../../../Makefile.MKLRoot
+
+# Include and library directories
+incdir:=-I${PFUNIT}/mod ${MKLINC} -I${bin}
+libdir:=-L${PFUNIT}/lib ${MKLLIB}
+
+# Find the module name
 mod:=$(shell cd ..; basename $$(pwd))
 
 # Find test suites and associated files
 TEST:=$(wildcard *.pf)
-OBJ=$(TEST:.pf=.o) ${bin}/${mod}Mod.o
+OBJ:=$(TEST:.pf=.o) ${bin}/${mod}Mod.o
 
 test: ${mod} test.x # Run tests
 	./test.x
 
 ${mod}: # Compile module under testing
-	${MAKE} -C ../.. $@
+	@${MAKE} -C ../.. $@
 
 %.f90: %.pf # Parse tests
-	${PFUNIT}/bin/pFUnitParser.py $< $@ -I.
+	@${PFUNIT}/bin/pFUnitParser.py $< $@ -I.
 
 %.o: %.f90 # Compile tests
-	${FC} -c $< -I${PFUNIT}/mod -I${bin}
+	@${FC} -c $< ${incdir}
 
 test.x: ${DRIVER} ${OBJ} testSuites.inc # Link tests with the driver
-	${FC} -o $@ -I${PFUNIT}/mod -I${bin} -I. ${DRIVER} ${OBJ} -L${PFUNIT}/lib -lpfunit
+	@${FC} ${OBJ} ${DRIVER} -o $@ -lpfunit ${incdir} ${libdir}
 
 clean: # Remove test output files
-	rm -f *.o *.mod *.x *~ test.txt
+	rm -f *.o *.mod *.x *~ test.txt test.xSeedUsed.txt
 
 help: # Help
-	@echo '\nTarget: Dependency # Description';
-	@echo '==================================================';
-	@egrep -e '^[[:alnum:]+_()%]*: ' Makefile
+	@printf '\nTarget: Dependency # Description'; \
+	printf '=================================================='; \
+	egrep -e '^[[:alnum:]+_()%]*: ' Makefile
 
 .PHONY: test mod clean help

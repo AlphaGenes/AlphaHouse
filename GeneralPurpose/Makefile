@@ -1,1 +1,2 @@
-include ../Makefile.src2mod
+default:
+	$(MAKE) -C .. GeneralPurpose

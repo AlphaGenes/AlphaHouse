@@ -1,13 +1,19 @@
 .DEFAULT_GOAL:=build
 
 # General vars
-FC:=ifort
-MKLROOT:=/opt/intel/mkl
-bin:=../AlphaHouseBin
-optdir:=-I. -I${bin} -I${MKLROOT}/include
-opt:=
 prog:=AlphaHouse
 progDesc:=A set of housekeeping routines for the Alpha programs
+
+FC:=ifort
+bin:=../AlphaHouseBin
+
+# MKL
+include ../Makefile.MKLRoot
+incdir:=${MKLINC}
+libdir:=${MKLLIB}
+
+# Options
+opt:=
 
 # Debug flags
 ifeq (${debug}, true)
@@ -26,14 +32,14 @@ all: build test doc
 
 # --- AlphaHouse library ---
 
-build: .buildecho ${bin}/AlphaHouse.a # Build the library
-	@echo "\n * AlphaHouseBin DONE\n"
+build: .buildecho ${bin}/AlphaHouse.a # Build library
+	@printf "\n * ${prog} build DONE\n"
 
 .buildecho:
-	@echo "\n * Building...\n"
+	@printf "\n * ${prog} build...\n"
 
 ${bin}/AlphaHouse.a: ${obj} # Build library
-	@echo "\n * Creating the AlphaHouse library...\n"
+	@printf "\n * ${prog} create library...\n"
 	ar cr ${bin}/AlphaHouse.a ${obj};
 
 # --- Modules ---
@@ -49,7 +55,7 @@ endef
 define make-target
 
 # Required modules for the target
-reqMod${1}:=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " ${1}/${1}Mod_Start.f90 | awk '{ print $$2 }'))))
+reqMod${1}:=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " ${1}/${1}Mod.f90 | awk '{ print $$2 }'))))
 # ...remove false positives from the above
 reqMod${1}:=$(filter-out,$(filter-out,${mod},${reqMod${1}}),${reqMod${1}})
 
@@ -57,10 +63,9 @@ reqMod${1}:=$(filter-out,$(filter-out,${mod},${reqMod${1}}),${reqMod${1}})
 reqSrc${1}:=$(strip $(call rwildcard,,${1}/*.f90))
 
 # Make
-${bin}/${1}Mod.o: $${reqMod${1}} $${reqSrc${1}} # Go into module folder, collate all the code in one file, and compile that file
-	@echo "\n * Go into module folder ${1}, collate all the code in one file, compile that file, and put object and module files into $${bin}...\n"
-	$${MAKE} -C ${1}/;
-	$${FC} $${opt} $${optdir} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/
+${bin}/${1}Mod.o: Makefile $${reqMod${1}} $${reqSrc${1}} # Go into module folder and compile, compile, and put object and module files into ${bin}
+	@printf "\n * Go into module folder ${1}, compile, and put object and module files into $${bin}...\n"
+	$${FC} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/ $${opt} $${incdir}
 
 endef
 
@@ -72,81 +77,89 @@ $(foreach i,${mod},$(eval $(call make-target,${i})))
 # --- Test ---
 
 test: .testecho ${obj} ${test} # Unit testing - main target
-	@echo "\n * Testing DONE \n"
+	@printf "\n * ${prog} test DONE \n"
 
 .testecho:
-	@echo "\n * Testing... \n"
+	@printf "\n * ${prog} test... \n"
 
 ${test}: # Unit testing - individual targets
-	@echo "\n $@ \n"
-	${MAKE} -C $@
+	@printf "\n $@ \n"; \
+	if [ -d $@ ]; then \
+	  ${MAKE} -C $@; \
+	else \
+	  printf "\n * ${@} test (no Test folder)...\n" ;\
+	fi
 
 # --- Documentation ---
 
 doc: docsrc docbin # Create developer documentation
-	@echo "\n * Documentation DONE \n"
+	@printf "\n * ${prog} create developer documentation DONE \n"
 
 docsrc: # Create developer documentation in this folder
-	@echo "\n * Create developer documentation in this folder...\n";
-	mkdir -p DoxygenDoc;
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|"\
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|"\
-														-e "s|SOURCE_BROWSER=NO|SOURCE_BROWSER=YES|" > Doxygen.tmp;
-	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log;
-	rm -f Doxygen.tmp;
+	@printf "\n * ${prog} create developer documentation in this folder...\n"; \
+	rm -Rf DoxygenDoc; \
+	mkdir -p DoxygenDoc; \
+	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|" \
+														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|" \
+														-e "s|FILE_PATTERNS=|FILE_PATTERNS=*.f90|" \
+														-e "s|SOURCE_BROWSER=NO|SOURCE_BROWSER=YES|" > Doxygen.tmp; \
+	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log; \
+	rm -f Doxygen.tmp; \
 	cd DoxygenDoc && ln -sf html/index.html .
 
 docbin: # Create developer documentation in the binary folder
-	@echo "\n * Create developer documentation in the binary folder...\n";
-	mkdir -p ${bin}/DoxygenDoc;
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|"\
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|"\
-														-e "s|OUTPUT_DIRECTORY=DoxygenDoc|OUTPUT_DIRECTORY=${bin}/DoxygenDoc|" > Doxygen.tmp;
-	doxygen Doxygen.tmp > ${bin}/DoxygenDoc/Doxygen.log;
-	rm -f Doxygen.tmp;
+	@printf "\n * ${prog} create developer documentation in the binary folder...\n"; \
+	rm -Rf ${bin}/DoxygenDoc; \
+	mkdir -p ${bin}/DoxygenDoc; \
+	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|" \
+														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|" \
+														-e "s|FILE_PATTERNS=|FILE_PATTERNS=*.f90|" \
+														-e "s|OUTPUT_DIRECTORY=DoxygenDoc|OUTPUT_DIRECTORY=${bin}/DoxygenDoc|" > Doxygen.tmp; \
+	doxygen Doxygen.tmp > ${bin}/DoxygenDoc/Doxygen.log; \
+	rm -f Doxygen.tmp; \
 	cd ${bin}/DoxygenDoc && ln -sf html/index.html .
 
 # --- Cleanup ---
 
-clean: cleanbin cleansrc # Remove auto-generated source files and compiled files
-	@echo "\n * Cleanup DONE \n"
+clean: cleanbin # Cleanup compiled files
+	rm -f */*__genmod.{f90,mod}
+	@printf "\n * ${prog} cleanup DONE \n"
 
-cleanall: cleanbin cleansrc cleantest cleandoc # Remove all auto-generated and compiled files and other files
-	@echo "\n * Cleanup-all DONE \n"
+cleanall: cleanbin cleantest cleandoc # Cleanup compiled files and other files
+	@printf "\n * ${prog} cleanup-all DONE \n"
 
-cleanbin: # Remove object, module, and library files in the binary folder
-	@echo "\n * Remove object, module, and library files in the binary folder...\n"
+cleanbin: # Cleanup object, module, and library files in the binary folder
+	@printf "\n * ${prog} cleanup object, module, and library files in the binary folder...\n"
 	rm -f ${bin}/*.{o,mod,a}
 
-cleansrc: # Remove auto-generated source files
-	@echo "\n * Remove auto-generated source files...\n"
-	rm -f $(addprefix */,${src})
-	rm -f */*__genmod.{f90,mod}
-
 cleantest:=$(addsuffix .clean,${test})
-cleantest: .cleantestecho ${cleantest} # Remove test output files - main target
+cleantest: .cleantestecho ${cleantest} # Cleanup test output files - main target
 
-.cleantestecho: # Remove test output files - echo
-	@echo "\n * Remove test output files...\n"
+.cleantestecho: # Cleanup test output files - echo
+	@printf "\n * ${prog} cleanup test output files...\n"
 
-${cleantest}: # Remove test output files - individual targets
-	${MAKE} -C $(basename $@) clean
+${cleantest}: # Cleanup test output files - individual targets
+	@if [ -d $(basename $@) ]; then \
+	  ${MAKE} -C $(basename $@) clean; \
+	else \
+	  printf "\n * $(basename $@) (no Test folder)...\n" ;\
+	fi
 
 cleandoc: cleandocsrc cleandocbin # Remove auto-generated developer documentation
 
-cleandocsrc: # Remove auto-generated developer documentation in this folder
-	@echo "\n * Remove auto-generated developer documentation in this folder...\n";
+cleandocsrc: # Cleanup developer documentation in this folder
+	@printf "\n * ${prog} cleanup developer documentation in this folder...\n";
 	rm -Rf DoxygenDoc
 
-cleandocbin: # Remove auto-generated developer documentation in the binary folder
-	@echo "\n * Remove auto-generated developer documentation in the binary folder...\n";
+cleandocbin: # Cleanup developer documentation in the binary folder
+	@printf "\n * ${prog} cleanup developer documentation in the binary folder...\n";
 	rm -Rf ${bin}/DoxygenDoc
 
 # --- Utilities ---
 
 help: # Help
-	@echo '\nTarget: Dependency # Description';
-	@echo '==================================================';
-	@egrep -e '^[[:alnum:]+_()%]*: ' Makefile
+	@printf '\nTarget: Dependency # Description'; \
+	printf '=================================================='; \
+	egrep -e '^[[:alnum:]+_()%]*: ' Makefile
 
 .PHONY: all build test doc clean help ${mod} ${test}

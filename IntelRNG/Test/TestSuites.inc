@@ -1,0 +1,7 @@
+! Register your test suites here
+ADD_TEST_SUITE(TestSampleIntelUniformI_suite)
+ADD_TEST_SUITE(TestSampleIntelBernoulliI_suite)
+ADD_TEST_SUITE(TestSampleIntelMultinomialI_suite)
+
+ADD_TEST_SUITE(TestSampleIntelUniformR_suite)
+!ADD_TEST_SUITE(TestSampleIntelGumbelR_suite)

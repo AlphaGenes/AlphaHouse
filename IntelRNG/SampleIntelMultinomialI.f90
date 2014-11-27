@@ -7,19 +7,17 @@ function SampleIntelMultinomialI(n,p)
   ! n input (integer), number of samples to generate (default 1)
   ! p input (real), probabilities for the different categories
 
-  ! Inspired by genmul() from RANLIB (John Burkardt).
-
   ! TODO: This is not from Intel so might consider some other name
 
   implicit none
 
-  integer(kind=4),optional :: n
+  integer(kind=4),optional,intent(in) :: n
   integer(kind=4) :: nOpt,i,j,k
   integer(kind=4),dimension(:),allocatable :: SampleIntelMultinomialI
   integer(kind=4),dimension(1) :: b
 
-  real(kind=8) :: pi,ptot
-  real(kind=8),dimension(:) :: p
+  real(kind=8) :: pi,psum,psumtmp
+  real(kind=8),dimension(:),intent(inout) :: p
 
   if (present(n)) then
     nOpt=n
@@ -29,24 +27,50 @@ function SampleIntelMultinomialI(n,p)
 
   k=size(p)
 
-  if (sum(p) > 0.99999e+00 ) then !TODO: is 0.99999e+00 enough?
-    print*,"SampleIntelMultinomialI: sum of given probabilities > 1"
-    stop
+  psum=sum(p)
+  if (abs(psum - 1.0d0) > 1e-7) then
+    p=p/psum ! rescale
   end if
+  psum=1.0d0
 
   allocate(SampleIntelMultinomialI(nOpt))
 
-  do j=1,n
-    ptot=1.0d0
+  ! Over samples
+  do j=1,nOpt
+
+    ! Over categories of a sample
+    psumtmp=psum
     do i=1,k
-      pi=p(i)/ptot
-      b=SampleIntelBernoulliI(p=pi)
-      if (b(1) > 0 .or. i == k) then
-        SampleIntelMultinomialI(j)=i
-        exit
+
+      if (p(i) > 0.0d0) then ! sample only if needed (border case)
+
+        if (p(i) < 1.0d0) then ! likewise
+          pi=p(i)/psumtmp
+
+          if (pi < 1.0d0) then ! likewise
+            b=SampleIntelBernoulliI(p=pi)
+
+            if (b(1) > 0) then
+              SampleIntelMultinomialI(j)=i
+              exit
+            end if
+
+            psumtmp=psumtmp-p(i)
+
+          else
+            SampleIntelMultinomialI(j)=i
+            exit
+          end if
+
+        else
+          SampleIntelMultinomialI(j)=i
+          exit
+        end if
+
       end if
-      ptot=ptot-p(i)
+
     end do
+
   end do
 
   return
