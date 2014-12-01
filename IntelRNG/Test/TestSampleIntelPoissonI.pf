@@ -1,0 +1,42 @@
+@test
+subroutine TestSampleIntelPoissonI()
+
+  use pFUnit_mod
+  use IntelRNGMod
+
+  implicit none
+
+  integer(kind=4) :: n
+  integer(kind=4),allocatable,dimension(:) :: x
+
+  real(kind=8) :: r
+
+  call IntitialiseIntelRNG
+
+  allocate(x(2))
+
+  x(1:1)=SampleIntelPoissonI()
+  @assertEqual(count(x(1:1) >= 0),1,"Samples from Poisson(lambda=1.0) should be >= 0.")
+
+  x=SampleIntelPoissonI(n=2)
+  @assertEqual(count(x >= 0),2,"Samples from Poisson(lambda=1.0) should be >= 0.")
+
+  deallocate(x)
+
+  n=100
+  allocate(x(n))
+
+  x=SampleIntelPoissonI(n=n)
+  r=sum(x)/float(n)
+  @assertTrue(r < 2,"Mean of 100 samples from Poisson(lambda=1.0) should be < 2.")
+
+  x=SampleIntelPoissonI(n=n, lambda=10.0d0)
+  print*,x
+  r=sum(x)/float(n)
+  print*,r
+  @assertTrue(r >  5,"Mean of 100 samples from Poisson(lambda=10.0) should be >  5.")
+  @assertTrue(r < 15,"Mean of 100 samples from Poisson(lambda=10.0) should be < 15.")
+
+  call UnintitialiseIntelRNG
+
+end subroutine TestSampleIntelPoissonI

@@ -2,6 +2,7 @@
 *.mod
 *.a
 *.x
-test.txt
 */*Mod.f90
 DoxygenDoc
+test.txt
+test.xSeedUsed.txt
