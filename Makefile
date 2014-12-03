@@ -42,6 +42,14 @@ ${bin}/AlphaHouse.a: ${obj} # Build library
 	@printf "\n * ${prog} create library...\n"
 	ar cr ${bin}/AlphaHouse.a ${obj};
 
+# TODO: See these links on how to create a library the "ifort way" and related complexities
+#       on different platforms Unix/OS-X/Windows
+#       https://software.intel.com/en-us/node/510789 (2014-12-03)
+#       https://software.intel.com/en-us/node/510796 (2014-12-03)
+#       https://software.intel.com/en-us/node/510790 (2014-12-03)
+#       https://software.intel.com/en-us/node/510795 (2014-12-03)
+#       https://software.intel.com/en-us/node/510802 (2014-12-03)
+
 # --- Modules ---
 
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
