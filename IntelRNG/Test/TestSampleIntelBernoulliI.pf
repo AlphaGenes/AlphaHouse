@@ -3,10 +3,11 @@ subroutine TestSampleIntelBernoulliI()
 
   use pFUnit_mod
   use IntelRNGMod
+  use ISO_Fortran_env
 
   implicit none
 
-  integer(kind=4),dimension(2) :: x
+  integer(int32),dimension(2) :: x
 
   call IntitialiseIntelRNG
 
@@ -20,4 +21,4 @@ subroutine TestSampleIntelBernoulliI()
 
   call UnintitialiseIntelRNG
 
-end subroutine TestSampleIntelBernoulliI
+end subroutine

@@ -1,0 +1,58 @@
+
+!###############################################################################
+
+function SampleIntelGaussRD(n,mu,sigma2)
+
+  ! Sample n values from a Gauss(mu,sigma2) distribution; double precision
+  ! n input (integer), number of samples to generate (default 1)
+  ! mu input (real), mean (default 0.0)
+  ! sigma2 input (real), variance (default 1.0)
+
+  ! https://software.intel.com/en-us/node/470654 (2016-03-07)
+
+  implicit none
+
+  ! Arguments
+  integer(int32),intent(in),optional :: n
+  real(real64),intent(in),optional   :: mu
+  real(real64),intent(in),optional   :: sigma2
+
+  ! Other
+  integer(int32) :: nOpt
+
+  real(real64) :: muOpt,sigma
+  real(real64),allocatable :: SampleIntelGaussRD(:)
+
+  if (present(n)) then
+    nOpt=n
+  else
+    nOpt=1
+  end if
+
+  if (present(mu)) then
+    muOpt=mu
+  else
+    muOpt=0.0d0
+  end if
+
+  if (present(sigma2)) then
+    sigma=sqrt(sigma2)
+  else
+    sigma=1.0d0
+  end if
+
+  allocate(SampleIntelGaussRD(nOpt))
+
+  RNGMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
+  RNGErrCode=vdrnggaussian(RNGMethod,RNGStream,nOpt,SampleIntelGaussRD,muOpt,sigma)
+  if (RNGErrCode /= vsl_status_ok) then
+    write(STDERR,"(a)") "ERROR: SampleIntelGaussRD failed"
+    write(STDERR,"(a)") " "
+    stop 1
+  end if
+
+  return
+
+end function
+
+!###############################################################################

@@ -1,5 +1,5 @@
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################
 
 function SampleIntelBernoulliI(n,p)
 
@@ -11,12 +11,15 @@ function SampleIntelBernoulliI(n,p)
 
   implicit none
 
-  integer(kind=4),optional,intent(in) :: n
-  integer(kind=4) :: nOpt
-  integer(kind=4),dimension(:),allocatable :: SampleIntelBernoulliI
+  ! Arguments
+  integer(int32),intent(in),optional :: n
+  real(real64),intent(in),optional   :: p
 
-  real(kind=8),optional,intent(in) :: p
-  real(kind=8) :: pOpt
+  ! Other
+  integer(int32) :: nOpt
+  integer(int32),allocatable :: SampleIntelBernoulliI(:)
+
+  real(real64) :: pOpt
 
   if (present(n)) then
     nOpt=n
@@ -35,12 +38,13 @@ function SampleIntelBernoulliI(n,p)
   RNGMethod=VSL_RNG_METHOD_BERNOULLI_ICDF
   RNGErrCode=virngbernoulli(RNGMethod,RNGStream,nOpt,SampleIntelBernoulliI,pOpt)
   if (RNGErrCode /= vsl_status_ok) then
-    print*,"SampleIntelBernoulliI failed"
-    stop
+    write(STDERR,"(a)") "ERROR: SampleIntelBernoulliI failed"
+    write(STDERR,"(a)") " "
+    stop 1
   end if
 
   return
 
-end function SampleIntelBernoulliI
+end function
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################

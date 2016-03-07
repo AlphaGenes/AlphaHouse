@@ -1,7 +1,7 @@
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################
 
-subroutine IntitialiseIntelRNG
+subroutine IntitialiseIntelRNG(Seed,SeedFile,Out)
 
   ! Start an RNG stream
 
@@ -10,40 +10,48 @@ subroutine IntitialiseIntelRNG
 
   implicit none
 
-  integer(kind=4) :: BRNG
-  integer(kind=4),dimension(1) :: LIdumI
+  ! Arguments
+  integer(int32),intent(in),optional  :: Seed     ! A number to initialize RNG
+  character(len=*),optional           :: SeedFile ! File to save the seed in
+  integer(int32),intent(out),optional :: Out      ! Make the seed value available outside
 
-  logical :: LFileExistsL
+  ! Other
+  integer(int32) :: Size,Unit,BRNG
+  integer(int32),allocatable :: SeedList(:)
 
-  character(len=80) :: name
+  ! Get the size of seed array
+  call random_seed(size=Size)
+  allocate(SeedList(Size))
 
-  ! Get seed from a file (if it exists) or else from the current date and time
-  call get_command_argument(0, name)
-  inquire(file=trim(name)//"Seed.txt", exist=LFileExistsL)
-  if (LFileExistsL) then
-    open(unit=1,file=trim(name)//"Seed.txt",status="old")
-    read(unit=1,fmt=*) LIdumI(1)
-    close(unit=1)
-    print*,"Seed value taken from the file ",trim(name)//"Seed.txt: ",LIdumI
-  else
+  ! Set seed
+  if (present(Seed)) then ! using the given value
+    SeedList(1)=Seed
+  else                    ! using system/compiler value
     call random_seed
-    call random_seed(get=LIdumI(1:1)) ! need to pass a vector
-    print*,"Seed value generated from the system: ",LIdumI
+    call random_seed(get=SeedList)
   end if
 
-  ! Save the used seed for reproducibility
-  open(unit=1,file=trim(name)//"SeedUsed.txt",status="unknown")
-  write(unit=1,fmt=*) LIdumI
-  close(unit=1)
+  ! Save to a file
+  if (present(SeedFile)) then
+    open(newunit=Unit,file=trim(SeedFile),status="unknown")
+    write(Unit,*) SeedList(1)
+    close(Unit)
+  end if
 
-  ! Start a stream
+  ! Output
+  if (present(Out)) then
+      Out=SeedList(1)
+  end if
+
+  ! Start a RNG stream
   BRNG=VSL_BRNG_MT19937
-  RNGErrCode=vslnewstream(RNGStream,brng,LIdumI(1))
-  if (RNGErrCode /= vsl_status_ok) then
-    print*,"IntitialiseIntelRNG failed"
-    stop
+  RNGErrCode=vslnewstream(RNGStream,brng,SeedList(1))
+  if (RNGErrCode /= VSL_STATUS_OK) then
+    write(STDERR,"(a)") "ERROR: IntitialiseIntelRNG failed"
+    write(STDERR,"(a)") " "
+    stop 1
   end if
 
-end subroutine IntitialiseIntelRNG
+end subroutine
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################

@@ -1,0 +1,55 @@
+@test
+subroutine TestSampleIntelGammaRS()
+
+  use pFUnit_mod
+  use IntelRNGMod
+  use ISO_Fortran_env
+
+  implicit none
+
+  integer(int32) :: n
+
+  real(real32),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelGammaRS(alpha=1.0,beta=1.0)
+  @assertEqual(count(x(1:1) < 0.0),0,"Samples from Gamma should be positive")
+
+  x=SampleIntelGammaRS(n=n,alpha=1.0,beta=1.0)
+  @assertEqual(count(x < 0.0),0,"Samples from Gamma should be positive")
+
+  call UnintitialiseIntelRNG
+
+end subroutine
+
+@test
+subroutine TestSampleIntelGammaRD()
+
+  use pFUnit_mod
+  use IntelRNGMod
+  use ISO_Fortran_env
+
+  implicit none
+
+  integer(int32) :: n
+
+  real(real64),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelGammaRD(alpha=1.0d0,beta=1.0d0)
+  @assertEqual(count(x(1:1) < 0.0),0,"Samples from Gamma should be positive")
+
+  x=SampleIntelGammaRD(n=n,alpha=1.0d0,beta=1.0d0)
+  @assertEqual(count(x < 0.0),0,"Samples from Gamma should be positive")
+
+  call UnintitialiseIntelRNG
+
+end subroutine

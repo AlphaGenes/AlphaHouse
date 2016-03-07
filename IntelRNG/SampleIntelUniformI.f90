@@ -1,5 +1,5 @@
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################
 
 function SampleIntelUniformI(n,a,b)
 
@@ -12,9 +12,14 @@ function SampleIntelUniformI(n,a,b)
 
   implicit none
 
-  integer(kind=4),optional,intent(in) :: n,a,b
-  integer(kind=4) :: nOpt,aOpt,bOpt
-  integer(kind=4),dimension(:),allocatable :: SampleIntelUniformI
+  ! Arguments
+  integer(int32),intent(in),optional :: n
+  integer(int32),intent(in),optional :: a
+  integer(int32),intent(in),optional :: b
+
+  ! Other
+  integer(int32) :: nOpt,aOpt,bOpt
+  integer(int32),allocatable :: SampleIntelUniformI(:)
 
   if (present(n)) then
     nOpt=n
@@ -39,12 +44,13 @@ function SampleIntelUniformI(n,a,b)
   RNGMethod=VSL_RNG_METHOD_UNIFORM_STD
   RNGErrCode=virnguniform(RNGMethod,RNGStream,nOpt,SampleIntelUniformI,aOpt,bOpt+1)
   if (RNGErrCode /= vsl_status_ok) then
-    print*,"SampleIntelUniformI failed"
-    stop
+    write(STDERR,"(a)") "ERROR: SampleIntelUniformI failed"
+    write(STDERR,"(a)") " "
+    stop 1
   end if
 
   return
 
-end function SampleIntelUniformI
+end function
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################

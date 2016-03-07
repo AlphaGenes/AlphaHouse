@@ -1,5 +1,5 @@
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################
 
 subroutine UnintitialiseIntelRNG
 
@@ -12,10 +12,11 @@ subroutine UnintitialiseIntelRNG
 
   RNGErrCode=vsldeletestream(RNGStream)
   if (RNGErrCode /= vsl_status_ok) then
-    print*,"UnintitialiseIntelRNG failed"
-    stop
+    write(STDERR,"(a)") "ERROR: UnintitialiseIntelRNG failed"
+    write(STDERR,"(a)") " "
+    stop 1
   end if
 
 end subroutine UnintitialiseIntelRNG
 
-!@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+!###############################################################################

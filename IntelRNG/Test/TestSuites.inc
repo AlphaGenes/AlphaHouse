@@ -5,4 +5,6 @@ ADD_TEST_SUITE(TestSampleIntelMultinomialI_suite)
 ADD_TEST_SUITE(TestSampleIntelPoissonI_suite)
 
 ADD_TEST_SUITE(TestSampleIntelUniformR_suite)
-!ADD_TEST_SUITE(TestSampleIntelGumbelR_suite)
+ADD_TEST_SUITE(TestSampleIntelGaussR_suite)
+ADD_TEST_SUITE(TestSampleIntelGammaR_suite)
+ADD_TEST_SUITE(TestSampleIntelGumbelR_suite)

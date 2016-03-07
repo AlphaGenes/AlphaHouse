@@ -3,13 +3,14 @@ subroutine TestSampleIntelMultinomialI()
 
   use pFUnit_mod
   use IntelRNGMod
+  use ISO_Fortran_env
 
   implicit none
 
-  integer(kind=4) :: n
-  integer(kind=4),allocatable,dimension(:) :: x
+  integer(int32) :: n
+  integer(int32),allocatable,dimension(:) :: x
 
-  real(kind=8),allocatable,dimension(:) :: p,pObs
+  real(real64),allocatable,dimension(:) :: p,pObs
 
   call IntitialiseIntelRNG
 
@@ -40,10 +41,9 @@ subroutine TestSampleIntelMultinomialI()
   pObs(1)=count(x == 1)/float(n)
   pObs(2)=count(x == 2)/float(n)
   pObs(3)=count(x == 3)/float(n)
-  !print*,pObs
   @assertGreaterThan(pObs(1),pObs(2),"In Multinomial(p=(0.6,0.3,0.1)), Pr(class 1) > Pr(class 2).")
   @assertGreaterThan(pObs(2),pObs(3),"In Multinomial(p=(0.6,0.3,0.1)), Pr(class 2) > Pr(class 3).")
 
   call UnintitialiseIntelRNG
 
-end subroutine TestSampleIntelMultinomialI
+end subroutine

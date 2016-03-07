@@ -3,12 +3,13 @@ subroutine TestSampleIntelUniformRS()
 
   use pFUnit_mod
   use IntelRNGMod
+  use ISO_Fortran_env
 
   implicit none
 
-  integer(kind=4) :: n
+  integer(int32) :: n
 
-  real(kind=4),allocatable,dimension(:) :: x
+  real(real32),allocatable,dimension(:) :: x
 
   call IntitialiseIntelRNG
 
@@ -24,19 +25,20 @@ subroutine TestSampleIntelUniformRS()
 
   call UnintitialiseIntelRNG
 
-end subroutine TestSampleIntelUniformRS
+end subroutine
 
 @test
 subroutine TestSampleIntelUniformRD()
 
   use pFUnit_mod
   use IntelRNGMod
+  use ISO_Fortran_env
 
   implicit none
 
-  integer(kind=4) :: n
+  integer(int32) :: n
 
-  real(kind=8),allocatable,dimension(:) :: x
+  real(real64),allocatable,dimension(:) :: x
 
   call IntitialiseIntelRNG
 
@@ -52,4 +54,4 @@ subroutine TestSampleIntelUniformRD()
 
   call UnintitialiseIntelRNG
 
-end subroutine TestSampleIntelUniformRD
+end subroutine

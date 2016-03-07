@@ -1,0 +1,91 @@
+@test
+subroutine TestSampleIntelGaussRS()
+
+  use pFUnit_mod
+  use IntelRNGMod
+  use ISO_Fortran_env
+
+  implicit none
+
+  integer(int32) :: n
+
+  real(real32) :: mean1,mean2,sd1,sd2
+  real(real32),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelGaussRS()
+  @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
+  @assertEqual(count(x(1:1) > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
+
+  x=SampleIntelGaussRS(n=n)
+  @assertEqual(count(x < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
+  @assertEqual(count(x > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
+  mean1=sum(x)/real(n)
+  x(:)=x(:)-mean1
+  x(:)=x(:)*x(:)
+  sd1=sqrt(sum(x)/real(n))
+
+  x=SampleIntelGaussRS(n=n,mu=10.0)
+  mean2=sum(x)/real(n)
+  @assertTrue(mean1 < mean2,"Mean of samples from Gauss(0,1) should be smaller than the mean of samples from Gauss(10,1)")
+
+  x=SampleIntelGaussRS(n=n,sigma2=10.0)
+  mean2=sum(x)/real(n)
+  x(:)=x(:)-mean2
+  x(:)=x(:)*x(:)
+  sd2=sqrt(sum(x)/real(n))
+  @assertTrue(sd1 < sd2,"Standard deviation of samples from Gauss(0,1) should be smaller than the standard deviation of samples from Gauss(0,10)")
+
+  call UnintitialiseIntelRNG
+
+end subroutine
+
+@test
+subroutine TestSampleIntelGaussRD()
+
+  use pFUnit_mod
+  use IntelRNGMod
+  use ISO_Fortran_env
+
+  implicit none
+
+  integer(int32) :: n
+
+  real(real64) :: mean1,mean2,sd1,sd2
+  real(real64),allocatable,dimension(:) :: x
+
+  call IntitialiseIntelRNG
+
+  n=100
+  allocate(x(n))
+
+  x(1:1)=SampleIntelGaussRD()
+  @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
+  @assertEqual(count(x(1:1) > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
+
+  x=SampleIntelGaussRD(n=n)
+  @assertEqual(count(x < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
+  @assertEqual(count(x > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
+  mean1=sum(x)/dble(n)
+  x(:)=x(:)-mean1
+  x(:)=x(:)*x(:)
+  sd1=sqrt(sum(x)/dble(n))
+
+  x=SampleIntelGaussRD(n=n,mu=10.0d0)
+  mean2=sum(x)/dble(n)
+  @assertTrue(mean1 < mean2,"Mean of samples from Gauss(0,1) should be smaller than the mean of samples from Gauss(10,1)")
+
+  x=SampleIntelGaussRD(n=n,sigma2=10.0d0)
+  mean2=sum(x)/dble(n)
+  x(:)=x(:)-mean2
+  x(:)=x(:)*x(:)
+  sd2=sqrt(sum(x)/dble(n))
+  @assertTrue(sd1 < sd2,"Standard deviation of samples from Gauss(0,1) should be smaller than the standard deviation of samples from Gauss(0,10)")
+
+  call UnintitialiseIntelRNG
+
+end subroutine

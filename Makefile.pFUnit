@@ -22,7 +22,7 @@ mod:=$(shell cd ..; basename $$(pwd))
 TEST:=$(wildcard *.pf)
 OBJ:=$(TEST:.pf=.o) ${bin}/${mod}Mod.o
 
-test: ${mod} test.x # Run tests
+test: ${mod} test.x Makefile TestSuites.inc # Run tests
 	./test.x
 
 ${mod}: # Compile module under testing
@@ -38,7 +38,7 @@ test.x: ${DRIVER} ${OBJ} testSuites.inc # Link tests with the driver
 	@${FC} ${OBJ} ${DRIVER} -o $@ -lpfunit ${incdir} ${libdir}
 
 clean: # Remove test output files
-	rm -f *.o *.mod *.x *~ test.txt test.xSeedUsed.txt
+	rm -f *.o *.mod *.x *~ test.txt
 
 help: # Help
 	@printf '\nTarget: Dependency # Description'; \
