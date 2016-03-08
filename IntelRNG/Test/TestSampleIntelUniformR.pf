@@ -1,5 +1,5 @@
 @test
-subroutine TestSampleIntelUniformRS()
+subroutine TestSampleIntelUniformS()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -16,10 +16,10 @@ subroutine TestSampleIntelUniformRS()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelUniformRS()
+  x(1:1)=SampleIntelUniformS()
   @assertEqual(count(x(1:1) <= 1.0),1,"Samples from Uniform(0,1) should be <= 1.")
 
-  x=SampleIntelUniformRS(n=n)
+  x=SampleIntelUniformS(n=n)
   @assertEqual(count(x >= 0.0),n,"Samples from Uniform(0,1) should be >= 0.0")
   @assertEqual(count(x <= 1.0),n,"Samples from Uniform(0,1) should be <= 1.0")
 
@@ -28,7 +28,7 @@ subroutine TestSampleIntelUniformRS()
 end subroutine
 
 @test
-subroutine TestSampleIntelUniformRD()
+subroutine TestSampleIntelUniformD()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -45,10 +45,10 @@ subroutine TestSampleIntelUniformRD()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelUniformRD()
+  x(1:1)=SampleIntelUniformD()
   @assertEqual(count(x(1:1) <= 1.0),1,"Samples from Uniform(0,1) should be <= 1.")
 
-  x=SampleIntelUniformRD(n=n)
+  x=SampleIntelUniformD(n=n)
   @assertEqual(count(x >= 0.0),n,"Samples from Uniform(0,1) should be >= 0.0")
   @assertEqual(count(x <= 1.0),n,"Samples from Uniform(0,1) should be <= 1.0")
 

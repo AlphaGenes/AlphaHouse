@@ -1,5 +1,5 @@
 @test
-subroutine TestSampleIntelGaussRS()
+subroutine TestSampleIntelGaussS()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -17,11 +17,11 @@ subroutine TestSampleIntelGaussRS()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelGaussRS()
+  x(1:1)=SampleIntelGaussS()
   @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
   @assertEqual(count(x(1:1) > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
 
-  x=SampleIntelGaussRS(n=n)
+  x=SampleIntelGaussS(n=n)
   @assertEqual(count(x < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
   @assertEqual(count(x > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
   mean1=sum(x)/real(n)
@@ -29,11 +29,11 @@ subroutine TestSampleIntelGaussRS()
   x(:)=x(:)*x(:)
   sd1=sqrt(sum(x)/real(n))
 
-  x=SampleIntelGaussRS(n=n,mu=10.0)
+  x=SampleIntelGaussS(n=n,mu=10.0)
   mean2=sum(x)/real(n)
   @assertTrue(mean1 < mean2,"Mean of samples from Gauss(0,1) should be smaller than the mean of samples from Gauss(10,1)")
 
-  x=SampleIntelGaussRS(n=n,sigma2=10.0)
+  x=SampleIntelGaussS(n=n,sigma2=10.0)
   mean2=sum(x)/real(n)
   x(:)=x(:)-mean2
   x(:)=x(:)*x(:)
@@ -45,7 +45,7 @@ subroutine TestSampleIntelGaussRS()
 end subroutine
 
 @test
-subroutine TestSampleIntelGaussRD()
+subroutine TestSampleIntelGaussD()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -63,11 +63,11 @@ subroutine TestSampleIntelGaussRD()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelGaussRD()
+  x(1:1)=SampleIntelGaussD()
   @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
   @assertEqual(count(x(1:1) > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
 
-  x=SampleIntelGaussRD(n=n)
+  x=SampleIntelGaussD(n=n)
   @assertEqual(count(x < -10.0),0,"Samples from Gauss(0,1) should be > -10.0")
   @assertEqual(count(x > +10.0),0,"Samples from Gauss(0,1) should be < +10.0")
   mean1=sum(x)/dble(n)
@@ -75,11 +75,11 @@ subroutine TestSampleIntelGaussRD()
   x(:)=x(:)*x(:)
   sd1=sqrt(sum(x)/dble(n))
 
-  x=SampleIntelGaussRD(n=n,mu=10.0d0)
+  x=SampleIntelGaussD(n=n,mu=10.0d0)
   mean2=sum(x)/dble(n)
   @assertTrue(mean1 < mean2,"Mean of samples from Gauss(0,1) should be smaller than the mean of samples from Gauss(10,1)")
 
-  x=SampleIntelGaussRD(n=n,sigma2=10.0d0)
+  x=SampleIntelGaussD(n=n,sigma2=10.0d0)
   mean2=sum(x)/dble(n)
   x(:)=x(:)-mean2
   x(:)=x(:)*x(:)

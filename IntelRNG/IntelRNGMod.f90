@@ -34,10 +34,10 @@ module IntelRNGMod
   ! Continuous
   ! TODO: should we make an interface and have generic for either single or double precision
   !       but do we determine single or double based on inputs or???
-  public :: SampleIntelUniformRS,SampleIntelUniformRD
-  public :: SampleIntelGaussRS,SampleIntelGaussRD
-  public :: SampleIntelGammaRS,SampleIntelGammaRD
-  public :: SampleIntelGumbelRS,SampleIntelGumbelRD
+  public :: SampleIntelUniformS,SampleIntelUniformD
+  public :: SampleIntelGaussS,SampleIntelGaussD
+  public :: SampleIntelGammaS,SampleIntelGammaD
+  public :: SampleIntelGumbelS,SampleIntelGumbelD
 
   contains
 
@@ -52,14 +52,14 @@ module IntelRNGMod
     include "SampleIntelPoissonI.f90"
 
     ! Continuous
-    include "SampleIntelUniformRS.f90"
-    include "SampleIntelUniformRD.f90"
-    include "SampleIntelGaussRS.f90"
-    include "SampleIntelGaussRD.f90"
-    include "SampleIntelGammaRS.f90"
-    include "SampleIntelGammaRD.f90"
-    include "SampleIntelGumbelRS.f90"
-    include "SampleIntelGumbelRD.f90"
+    include "SampleIntelUniformS.f90"
+    include "SampleIntelUniformD.f90"
+    include "SampleIntelGaussS.f90"
+    include "SampleIntelGaussD.f90"
+    include "SampleIntelGammaS.f90"
+    include "SampleIntelGammaD.f90"
+    include "SampleIntelGumbelS.f90"
+    include "SampleIntelGumbelD.f90"
 
 end module
 

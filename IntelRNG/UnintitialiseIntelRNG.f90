@@ -17,6 +17,6 @@ subroutine UnintitialiseIntelRNG
     stop 1
   end if
 
-end subroutine UnintitialiseIntelRNG
+end subroutine
 
 !###############################################################################

@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelGumbelRS(n,a,b)
+function SampleIntelGumbelS(n,a,b)
 
   ! Sample n values from a Gumbel(a,b) (=type-I extreme value) distribution; single precision
   ! n input (integer), number of samples to generate (default 1)
@@ -21,7 +21,7 @@ function SampleIntelGumbelRS(n,a,b)
   integer(int32) :: nOpt
 
   real(real32) :: aOpt,bOpt
-  real(real32),allocatable :: SampleIntelGumbelRS(:)
+  real(real32),allocatable :: SampleIntelGumbelS(:)
 
   if (present(n)) then
     nOpt=n
@@ -41,12 +41,12 @@ function SampleIntelGumbelRS(n,a,b)
     bOpt=1.0
   end if
 
-  allocate(SampleIntelGumbelRS(nOpt))
+  allocate(SampleIntelGumbelS(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_GUMBEL_ICDF
-  RNGErrCode=vsrnggumbel(RNGMethod,RNGStream,nOpt,SampleIntelGumbelRS,aOpt,bOpt)
+  RNGErrCode=vsrnggumbel(RNGMethod,RNGStream,nOpt,SampleIntelGumbelS,aOpt,bOpt)
   if (RNGErrCode /= vsl_status_ok) then
-    write(STDERR,"(a)") "ERROR: SampleIntelGumbelRS failed"
+    write(STDERR,"(a)") "ERROR: SampleIntelGumbelS failed"
     write(STDERR,"(a)") " "
     stop 1
   end if

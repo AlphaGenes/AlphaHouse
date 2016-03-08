@@ -1,5 +1,5 @@
 @test
-subroutine TestSampleIntelGumbelRS()
+subroutine TestSampleIntelGumbelS()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -16,10 +16,10 @@ subroutine TestSampleIntelGumbelRS()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelGumbelRS()
+  x(1:1)=SampleIntelGumbelS()
   @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gumbel(0,1) should be > -10.0")
 
-  x=SampleIntelGumbelRS(n=n)
+  x=SampleIntelGumbelS(n=n)
   @assertEqual(count(x < -10.0),0,"Samples from Gumbel(0,1) should be > -10.0")
   @assertEqual(count(x > 100.0),0,"Samples from Gumbel(0,1) should be < 100.0")
 
@@ -28,7 +28,7 @@ subroutine TestSampleIntelGumbelRS()
 end subroutine
 
 @test
-subroutine TestSampleIntelGumbelRD()
+subroutine TestSampleIntelGumbelD()
 
   use pFUnit_mod
   use IntelRNGMod
@@ -45,10 +45,10 @@ subroutine TestSampleIntelGumbelRD()
   n=100
   allocate(x(n))
 
-  x(1:1)=SampleIntelGumbelRD()
+  x(1:1)=SampleIntelGumbelD()
   @assertEqual(count(x(1:1) < -10.0),0,"Samples from Gumbel(0,1) should be > -10.0")
 
-  x=SampleIntelGumbelRD(n=n)
+  x=SampleIntelGumbelD(n=n)
   @assertEqual(count(x < -10.0),0,"Samples from Gumbel(0,1) should be > -10.0")
   @assertEqual(count(x > 100.0),0,"Samples from Gumbel(0,1) should be < 100.0")
 

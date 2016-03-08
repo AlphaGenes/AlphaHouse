@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelUniformRD(n,a,b)
+function SampleIntelUniformD(n,a,b)
 
   ! Sample n values from a Uniform(a,b) distribution; double precision
   ! n input (integer), number of samples to generate (default 1)
@@ -21,7 +21,7 @@ function SampleIntelUniformRD(n,a,b)
   integer(int32) :: nOpt
 
   real(real64) :: aOpt,bOpt
-  real(real64),allocatable :: SampleIntelUniformRD(:)
+  real(real64),allocatable :: SampleIntelUniformD(:)
 
   if (present(n)) then
     nOpt=n
@@ -41,18 +41,18 @@ function SampleIntelUniformRD(n,a,b)
     bOpt=1.d0
   end if
 
-  allocate(SampleIntelUniformRD(nOpt))
+  allocate(SampleIntelUniformD(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
-  RNGErrCode=vdrnguniform(RNGMethod,RNGStream,nOpt,SampleIntelUniformRD,aOpt,bOpt)
+  RNGErrCode=vdrnguniform(RNGMethod,RNGStream,nOpt,SampleIntelUniformD,aOpt,bOpt)
   if (RNGErrCode /= vsl_status_ok) then
-    write(STDERR,"(a)") "ERROR: SampleIntelUniformRD failed"
+    write(STDERR,"(a)") "ERROR: SampleIntelUniformD failed"
     write(STDERR,"(a)") " "
     stop 1
   end if
 
   return
 
-end function SampleIntelUniformRD
+end function
 
 !###############################################################################

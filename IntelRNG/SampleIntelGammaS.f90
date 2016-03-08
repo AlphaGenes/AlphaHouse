@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelGammaRS(n,alpha,a,beta)
+function SampleIntelGammaS(n,alpha,a,beta)
 
   ! Sample n values from a Gamma(alpha,a,beta) distribution; single precision
   ! n input (integer), number of samples to generate (default 1)
@@ -23,7 +23,7 @@ function SampleIntelGammaRS(n,alpha,a,beta)
   integer(int32) :: nOpt
 
   real(real32) :: aOpt
-  real(real32),allocatable :: SampleIntelGammaRS(:)
+  real(real32),allocatable :: SampleIntelGammaS(:)
 
   if (present(n)) then
     nOpt=n
@@ -32,7 +32,7 @@ function SampleIntelGammaRS(n,alpha,a,beta)
   end if
 
   if (.not. (alpha > 0.0)) then
-    write(STDERR,"(a)") "ERROR: SampleIntelGammaRS requires alpha (shape) parameter to be greater than zero"
+    write(STDERR,"(a)") "ERROR: SampleIntelGammaS requires alpha (shape) parameter to be greater than zero"
     write(STDERR,"(a)") " "
     stop 1
   end if
@@ -44,17 +44,17 @@ function SampleIntelGammaRS(n,alpha,a,beta)
   end if
 
   if (.not. (beta > 0.0)) then
-    write(STDERR,"(a)") "ERROR: SampleIntelGammaRS requires beta (scale) parameter to be greater than zero"
+    write(STDERR,"(a)") "ERROR: SampleIntelGammaS requires beta (scale) parameter to be greater than zero"
     write(STDERR,"(a)") " "
     stop 1
   end if
 
-  allocate(SampleIntelGammaRS(nOpt))
+  allocate(SampleIntelGammaS(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM
-  RNGErrCode=vsrnggamma(RNGMethod,RNGStream,nOpt,SampleIntelGammaRS,alpha,aOpt,beta)
+  RNGErrCode=vsrnggamma(RNGMethod,RNGStream,nOpt,SampleIntelGammaS,alpha,aOpt,beta)
   if (RNGErrCode /= vsl_status_ok) then
-    write(STDERR,"(a)") "ERROR: SampleIntelGammaRS failed"
+    write(STDERR,"(a)") "ERROR: SampleIntelGammaS failed"
     write(STDERR,"(a)") " "
     stop 1
   end if
