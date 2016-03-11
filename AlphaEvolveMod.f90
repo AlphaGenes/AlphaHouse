@@ -19,8 +19,7 @@ module AlphaEvolveMod
     real(real64) :: GainStand
     real(real64) :: PopInb
     real(real64) :: RatePopInb
-    real(real64) :: PopInb2
-    real(real64) :: IndInb
+    real(real64) :: PrgInb
   end type
 
   private
