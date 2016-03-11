@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-module AlphaSuiteMod
+module AlphaHouseMod
 
   use ISO_Fortran_Env
 

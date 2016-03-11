@@ -4,7 +4,7 @@
 module AlphaEvolveMod
 
   use ISO_Fortran_Env, STDIN=>input_unit,STDOUT=>output_unit,STDERR=>error_unit
-  use AlphaSuiteMod, only : Int2Char,Real2Char
+  use AlphaHouseMod, only : Int2Char,Real2Char
 
   implicit none
 
