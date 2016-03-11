@@ -12,6 +12,7 @@ module AlphaStatMod
   private
   public :: CalcMean,CalcVar,CalcSD
   public :: CalcDescStat,DescStatS,DescStatD
+  public :: CalcDescStatSymMatrix,DescStatMatrixS,DescStatMatrixD
   public :: CalcCorrelation,CorrelationS,CorrelationD
 
   interface CalcMean
@@ -24,6 +25,10 @@ module AlphaStatMod
 
   interface CalcSD
     module procedure CalcSDS, CalcSDD
+  end interface
+
+  interface CalcDescStat
+    module procedure CalcDescStatS, CalcDescStatD
   end interface
 
   type :: DescStatS
@@ -48,8 +53,22 @@ module AlphaStatMod
     real(real64)   :: Max
   end type
 
-  interface CalcDescStat
-    module procedure CalcDescStatS, CalcDescStatD
+  interface CalcDescStatSymMatrix
+    module procedure CalcDescStatSymMatrixS, CalcDescStatSymMatrixD
+  end interface
+
+  type :: DescStatMatrixS
+    type(DescStatS) :: Diag
+    type(DescStatS) :: OffDiag
+  end type
+
+  type :: DescStatMatrixD
+    type(DescStatD) :: Diag
+    type(DescStatD) :: OffDiag
+  end type
+
+  interface CalcCorrelation
+    module procedure CalcCorrelationS, CalcCorrelationD
   end interface
 
   type :: CorrelationS
@@ -65,10 +84,6 @@ module AlphaStatMod
     real(real64)   :: Var1
     real(real64)   :: Var2
   end type
-
-  interface CalcCorrelation
-    module procedure CalcCorrelationS, CalcCorrelationD
-  end interface
 
   contains
 
@@ -305,6 +320,95 @@ module AlphaStatMod
 
     !###########################################################################
 
+    subroutine CalcDescStatSymMatrixS(x,Out)
+      implicit none
+
+      ! Arguments
+      real(real32),intent(in)           :: x(:,:)
+      type(DescStatMatrixS),intent(out) :: Out
+
+      ! Other
+      integer(int32) i,j,k,n,p!,MinNP
+      real(real32),allocatable :: Diag(:)
+      real(real32),allocatable :: OffDiag(:)
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      ! Start of an attempt to work with non-symmetric matrices
+      ! MinNP=min([n,p])
+      ! allocate(Diag(MinNP))
+
+      allocate(Diag(n))
+      do i=1,n
+        Diag(i)=x(i,i)
+      end do
+      call CalcDescStatS(Diag,Out%Diag)
+      deallocate(Diag)
+
+      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiag(k)=x(i,j)
+        end do
+      end do
+      call CalcDescStatS(OffDiag,Out%OffDiag)
+      deallocate(OffDiag)
+    end subroutine
+
+    !###########################################################################
+
+    subroutine CalcDescStatSymMatrixD(x,Out)
+      implicit none
+
+      ! Arguments
+      real(real64),intent(in)           :: x(:,:)
+      type(DescStatMatrixD),intent(out) :: Out
+
+      ! Other
+      integer(int32) i,j,k,n,p!,MinNP
+      real(real64),allocatable :: Diag(:)
+      real(real64),allocatable :: OffDiag(:)
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      ! Start of an attempt to work with non-symmetric matrices
+      ! MinNP=min([n,p])
+      ! allocate(Diag(MinNP))
+
+      allocate(Diag(n))
+      do i=1,n
+        Diag(i)=x(i,i)
+      end do
+      call CalcDescStatD(Diag,Out%Diag)
+      deallocate(Diag)
+
+      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiag(k)=x(i,j)
+        end do
+      end do
+      call CalcDescStatD(OffDiag,Out%OffDiag)
+      deallocate(OffDiag)
+    end subroutine
+
+    !###########################################################################
     subroutine CalcCorrelationS(x,y,Out)
       implicit none
       ! Arguments
