@@ -409,6 +409,7 @@ module AlphaStatMod
     end subroutine
 
     !###########################################################################
+
     subroutine CalcCorrelationS(x,y,Out)
       implicit none
       ! Arguments
