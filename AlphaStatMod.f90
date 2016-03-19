@@ -89,38 +89,39 @@ module AlphaStatMod
 
     !###########################################################################
 
-    subroutine CalcMeanS(x,Out)
+    function CalcMeanS(x) result(Res)
       implicit none
 
       ! Arguments
       real(real32),intent(in)  :: x(:)
-      real(real32),intent(out) :: Out
+      real(real32)             :: Res
 
-      Out=sum(x(:))/real(size(x))
-    end subroutine
+      Res=sum(x(:))/real(size(x))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcMeanD(x,Out)
+    function CalcMeanD(x) result(Res)
       implicit none
 
       ! Arguments
       real(real64),intent(in)  :: x(:)
-      real(real64),intent(out) :: Out
+      real(real64)             :: Res
 
-      Out=sum(x(:))/dble(size(x))
-    end subroutine
+      Res=sum(x(:))/dble(size(x))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcVarS(x,Out,Mean)
+    function CalcVarS(x,Mean) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)  :: x(:)
-      real(real32),intent(out) :: Out
+      real(real32),intent(in)          :: x(:)
       real(real32),intent(in),optional :: Mean
-
+      real(real32)                     :: Res
       ! Other
       integer(int32) i,n
 
@@ -139,25 +140,26 @@ module AlphaStatMod
       else
         MeanIn=Mean
       end if
-      Out=0.0
+      Res=0.0
 
       do i=1,n
         Dev=x(i)-MeanIn
-        Out=Out+Dev*Dev
+        Res=Res+Dev*Dev
       end do
 
-      Out=Out/(nR-1.0)
-    end subroutine
+      Res=Res/(nR-1.0)
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcVarD(x,Out,Mean)
+    function CalcVarD(x,Mean) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)  :: x(:)
-      real(real64),intent(out) :: Out
+      real(real64),intent(in)          :: x(:)
       real(real64),intent(in),optional :: Mean
+      real(real64)                     :: Res
 
       ! Other
       integer(int32) i,n
@@ -177,60 +179,53 @@ module AlphaStatMod
       else
         MeanIn=Mean
       end if
-      Out=0.0d0
+      Res=0.0d0
 
       do i=1,n
         Dev=x(i)-MeanIn
-        Out=Out+Dev*Dev
+        Res=Res+Dev*Dev
       end do
 
-      Out=Out/(nR-1.0d0)
-    end subroutine
+      Res=Res/(nR-1.0d0)
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcSDS(x,Out,Mean)
+    function CalcSDS(x,Mean) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)  :: x(:)
-      real(real32),intent(out) :: Out
+      real(real32),intent(in)          :: x(:)
       real(real32),intent(in),optional :: Mean
+      real(real32)                     :: Res
 
-      if (present(Mean)) then
-        call CalcVarS(x,Out,Mean)
-      else
-        call CalcVarS(x,Out)
-      end if
-      Out=sqrt(Out)
-    end subroutine
+      Res=sqrt(CalcVarS(x,Mean))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcSDD(x,Out,Mean)
+    function CalcSDD(x,Mean) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)  :: x(:)
-      real(real64),intent(out) :: Out
+      real(real64),intent(in)          :: x(:)
       real(real64),intent(in),optional :: Mean
+      real(real64)                     :: Res
 
-      if (present(Mean)) then
-        call CalcVarD(x,Out,Mean)
-      else
-        call CalcVarD(x,Out)
-      end if
-      Out=sqrt(Out)
-    end subroutine
+      Res=sqrt(CalcVarD(x,Mean))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcDescStatS(x,Out)
+    function CalcDescStatS(x) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)   :: x(:)
-      type(DescStatS),intent(out) :: Out
+      real(real32),intent(in) :: x(:)
+      type(DescStatS)         :: Res
 
       ! Other
       integer(int32) i,n
@@ -244,40 +239,41 @@ module AlphaStatMod
       end if
 
       nR=real(n)
-      Out%Mean=sum(x(:))/nR
-      Out%Var=0.0
-      Out%Skew=0.0
-      Out%Curt=0.0
+      Res%Mean=sum(x(:))/nR
+      Res%Var=0.0
+      Res%Skew=0.0
+      Res%Curt=0.0
 
       do i=1,n
-        Dev=x(i)-Out%Mean
+        Dev=x(i)-Res%Mean
         Mul=Dev*Dev
-        Out%Var=Out%Var+Mul
+        Res%Var=Res%Var+Mul
         Mul=Mul*Dev
-        Out%Skew=Out%Skew+Mul
+        Res%Skew=Res%Skew+Mul
         Mul=Mul*Dev
-        Out%Curt=Out%Curt+Mul
+        Res%Curt=Res%Curt+Mul
       end do
 
-      Out%Var=Out%Var/(nR-1.0)
-      Out%SD=sqrt(Out%Var)
-      if (Out%Var > 0.0) then
-        Out%Skew=Out%Skew/(nR*Out%SD**3)
-        Out%Curt=Out%Curt/(nR*Out%Var**2)-3.0
+      Res%Var=Res%Var/(nR-1.0)
+      Res%SD=sqrt(Res%Var)
+      if (Res%Var > 0.0) then
+        Res%Skew=Res%Skew/(nR*Res%SD**3)
+        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0
       end if
 
-      Out%Min=minval(x(:))
-      Out%Max=maxval(x(:))
-    end subroutine
+      Res%Min=minval(x(:))
+      Res%Max=maxval(x(:))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcDescStatD(x,Out)
+    function CalcDescStatD(x) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)   :: x(:)
-      type(DescStatD),intent(out) :: Out
+      real(real64),intent(in) :: x(:)
+      type(DescStatD)         :: Res
 
       ! Other
       integer(int32) i,n
@@ -292,40 +288,41 @@ module AlphaStatMod
       end if
 
       nR=dble(n)
-      Out%Mean=sum(x(:))/nR
-      Out%Var=0.0d0
-      Out%Skew=0.0d0
-      Out%Curt=0.0d0
+      Res%Mean=sum(x(:))/nR
+      Res%Var=0.0d0
+      Res%Skew=0.0d0
+      Res%Curt=0.0d0
 
       do i=1,n
-        Dev=x(i)-Out%Mean
+        Dev=x(i)-Res%Mean
         Mul=Dev*Dev
-        Out%Var=Out%Var+Mul
+        Res%Var=Res%Var+Mul
         Mul=Mul*Dev
-        Out%Skew=Out%Skew+Mul
+        Res%Skew=Res%Skew+Mul
         Mul=Mul*Dev
-        Out%Curt=Out%Curt+Mul
+        Res%Curt=Res%Curt+Mul
       end do
 
-      Out%Var=Out%Var/(nR-1.0d0)
-      Out%SD=sqrt(Out%Var)
-      if (Out%Var > 0.0d0) then
-        Out%Skew=Out%Skew/(nR*Out%SD**3)
-        Out%Curt=Out%Curt/(nR*Out%Var**2)-3.0d0
+      Res%Var=Res%Var/(nR-1.0d0)
+      Res%SD=sqrt(Res%Var)
+      if (Res%Var > 0.0d0) then
+        Res%Skew=Res%Skew/(nR*Res%SD**3)
+        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0d0
       end if
 
-      Out%Min=minval(x(:))
-      Out%Max=maxval(x(:))
-    end subroutine
+      Res%Min=minval(x(:))
+      Res%Max=maxval(x(:))
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcDescStatSymMatrixS(x,Out)
+    function CalcDescStatSymMatrixS(x) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)           :: x(:,:)
-      type(DescStatMatrixS),intent(out) :: Out
+      real(real32),intent(in) :: x(:,:)
+      type(DescStatMatrixS)   :: Res
 
       ! Other
       integer(int32) i,j,k,n,p!,MinNP
@@ -348,7 +345,7 @@ module AlphaStatMod
       do i=1,n
         Diag(i)=x(i,i)
       end do
-      call CalcDescStatS(Diag,Out%Diag)
+      Res%Diag=CalcDescStatS(Diag)
       deallocate(Diag)
 
       allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
@@ -359,18 +356,19 @@ module AlphaStatMod
           OffDiag(k)=x(i,j)
         end do
       end do
-      call CalcDescStatS(OffDiag,Out%OffDiag)
+      Res%OffDiag=CalcDescStatS(OffDiag)
       deallocate(OffDiag)
-    end subroutine
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcDescStatSymMatrixD(x,Out)
+    function CalcDescStatSymMatrixD(x) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)           :: x(:,:)
-      type(DescStatMatrixD),intent(out) :: Out
+      real(real64),intent(in) :: x(:,:)
+      type(DescStatMatrixD)   :: Res
 
       ! Other
       integer(int32) i,j,k,n,p!,MinNP
@@ -393,7 +391,7 @@ module AlphaStatMod
       do i=1,n
         Diag(i)=x(i,i)
       end do
-      call CalcDescStatD(Diag,Out%Diag)
+      Res%Diag=CalcDescStatD(Diag)
       deallocate(Diag)
 
       allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
@@ -404,18 +402,19 @@ module AlphaStatMod
           OffDiag(k)=x(i,j)
         end do
       end do
-      call CalcDescStatD(OffDiag,Out%OffDiag)
+      Res%OffDiag=CalcDescStatD(OffDiag)
       deallocate(OffDiag)
-    end subroutine
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcCorrelationS(x,y,Out)
+    function CalcCorrelationS(x,y) result(Res)
       implicit none
       ! Arguments
-      real(real32),intent(in)        :: x(:)
-      real(real32),intent(in)        :: y(:)
-      type(CorrelationS),intent(out) :: Out
+      real(real32),intent(in) :: x(:)
+      real(real32),intent(in) :: y(:)
+      type(CorrelationS)      :: Res
 
       ! Other
       integer(int32) :: i,n
@@ -435,20 +434,21 @@ module AlphaStatMod
         SumXY=SumXY+DevX*DevY
         SumYY=SumYY+DevY*DevY
       end do
-      Out%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Out%Cov=SumXY/(nR-1.0)
-      Out%Var1=SumXX/(nR-1.0)
-      Out%Var2=SumYY/(nR-1.0)
-    end subroutine
+      Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
+      Res%Cov=SumXY/(nR-1.0)
+      Res%Var1=SumXX/(nR-1.0)
+      Res%Var2=SumYY/(nR-1.0)
+      return
+    end function
 
     !###########################################################################
 
-    subroutine CalcCorrelationD(x,y,Out)
+    function CalcCorrelationD(x,y) result(Res)
       implicit none
       ! Arguments
-      real(real64),intent(in)        :: x(:)
-      real(real64),intent(in)        :: y(:)
-      type(CorrelationD),intent(out) :: Out
+      real(real64),intent(in) :: x(:)
+      real(real64),intent(in) :: y(:)
+      type(CorrelationD)      :: Res
 
       ! Other
       integer(int32) :: i,n
@@ -468,11 +468,12 @@ module AlphaStatMod
         SumXY=SumXY+DevX*DevY
         SumYY=SumYY+DevY*DevY
       end do
-      Out%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Out%Cov=SumXY/(nR-1.0d0)
-      Out%Var1=SumXX/(nR-1.0d0)
-      Out%Var2=SumYY/(nR-1.0d0)
-    end subroutine
+      Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
+      Res%Cov=SumXY/(nR-1.0d0)
+      Res%Var1=SumXX/(nR-1.0d0)
+      Res%Var2=SumYY/(nR-1.0d0)
+      return
+    end function
 
     !###########################################################################
 end module

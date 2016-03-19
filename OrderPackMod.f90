@@ -20,7 +20,7 @@ module OrderPackMod
 
     !###########################################################################
 
-    Subroutine D_MrgRnk (XDONT, IRNGT)
+    function D_MrgRnk (XDONT) result(IRNGT)
       ! __________________________________________________________
       !   MRGRNK = Merge-sort ranking of an array
       !   For performance reasons, the first 2 passes are taken
@@ -28,7 +28,7 @@ module OrderPackMod
       ! __________________________________________________________
       ! __________________________________________________________
         Real(real64), Dimension (:), Intent (In) :: XDONT
-        Integer(int32), Dimension (:), Intent (Out) :: IRNGT
+        Integer(int32), Dimension (:)            :: IRNGT
       ! __________________________________________________________
         Real(real64) :: XVALA, XVALB
       !
@@ -218,11 +218,11 @@ module OrderPackMod
       !
         Return
       !
-    End Subroutine
+    end function
 
     !###########################################################################
 
-    Subroutine R_MrgRnk (XDONT, IRNGT)
+    function R_MrgRnk (XDONT) result(IRNGT)
       ! __________________________________________________________
       !   MRGRNK = Merge-sort ranking of an array
       !   For performance reasons, the first 2 passes are taken
@@ -230,7 +230,7 @@ module OrderPackMod
       ! __________________________________________________________
       ! _________________________________________________________
         Real(real32), Dimension (:), Intent (In) :: XDONT
-        Integer(int32), Dimension (:), Intent (Out) :: IRNGT
+        Integer(int32), Dimension (:)            :: IRNGT
       ! __________________________________________________________
         Real(real32) :: XVALA, XVALB
       !
@@ -420,11 +420,11 @@ module OrderPackMod
       !
         Return
       !
-    End Subroutine
+    End function
 
     !###########################################################################
 
-    Subroutine I_MrgRnk (XDONT, IRNGT)
+    function I_MrgRnk (XDONT) result(IRNGT)
       ! __________________________________________________________
       !   MRGRNK = Merge-sort ranking of an array
       !   For performance reasons, the first 2 passes are taken
@@ -432,7 +432,7 @@ module OrderPackMod
       ! __________________________________________________________
       ! __________________________________________________________
         Integer(int32), Dimension (:), Intent (In)  :: XDONT
-        Integer(int32), Dimension (:), Intent (Out) :: IRNGT
+        Integer(int32), Dimension (:)               :: IRNGT
       ! __________________________________________________________
         Integer(int32) :: XVALA, XVALB
       !
@@ -622,7 +622,7 @@ module OrderPackMod
       !
         Return
       !
-    End Subroutine
+    End function
 
     !###########################################################################
 end module

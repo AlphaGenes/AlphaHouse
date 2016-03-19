@@ -25,13 +25,13 @@ module AlphaHouseMod
 
     !###########################################################################
 
-    subroutine CountLines(FileName,nLines)
+    function CountLines(FileName) result(nLines)
 
       implicit none
 
       ! Arguments
       character(len=*),intent(in) :: FileName
-      integer(int32),intent(out)  :: nLines
+      integer(int32)              :: nLines
 
       ! Other
       integer(int32) :: f,Unit
@@ -49,7 +49,8 @@ module AlphaHouseMod
         end if
       end do
       close(Unit)
-    end subroutine
+      return
+    end function
 
     !###########################################################################
 
@@ -70,6 +71,7 @@ module AlphaHouseMod
         write(Tmp,"(i0)") i
       end if
       Res=trim(Tmp)
+      return
     end function
 
     !###########################################################################
@@ -91,6 +93,7 @@ module AlphaHouseMod
         write(Tmp,"(f)") r
       end if
       Res=trim(Tmp)
+      return
     end function
 
     !###########################################################################
@@ -112,18 +115,19 @@ module AlphaHouseMod
         write(Tmp,"(f)") r
       end if
       Res=trim(Tmp)
+      return
     end function
 
     !###########################################################################
 
-    subroutine RandomOrder(order,n)
+    function RandomOrder(n) result(Order)
       ! Generate a random ordering of the integers 1 ... n.
 
       implicit none
 
       ! Arguments
       integer(int32),intent(in)  :: n
-      integer(int32),intent(out) :: order(n)
+      integer(int32)             :: Order(n)
 
       ! Other
       integer(int32) :: i,j,k
@@ -131,7 +135,7 @@ module AlphaHouseMod
       real(real64) :: wk(n)
 
       do i=1,n
-        order(i)=i
+        Order(i)=i
       end do
 
       ! Starting at the end, swap the current last indicator with one
@@ -140,14 +144,33 @@ module AlphaHouseMod
       do i=n,2,-1
         j=1 + i * wk(i)
         if (j < i) then
-          k=order(i)
-          order(i)=order(j)
-          order(j)=k
+          k=Order(i)
+          Order(i)=Order(j)
+          Order(j)=k
         end if
       end do
 
       return
-    end subroutine
+    end function
+
+    !###########################################################################
+
+    function ToLower(StringIn) result(StringOut)
+      ! From https://groups.google.com/forum/#!topic/comp.lang.fortran/CKx1L2Ahkxg
+      character(len=*),intent(in) :: StringIn
+      character(len(StringIn))    :: StringOut
+      integer :: i,n
+
+      ! Copy input string
+      StringOut=StringIn
+
+      ! Convert case character by character
+      do i=1,len(StringOut)
+        n=index(UPPER_CASE,StringOut(i:i))
+        if (n /= 0) StringOut(i:i)=LOWER_CASE(n:n)
+      end do
+      return
+    end function
 
     !###########################################################################
 
@@ -191,24 +214,6 @@ module AlphaHouseMod
       end if
       deallocate(SeedList)
     end subroutine
-
-    !###########################################################################
-
-    function ToLower(StringIn) result(StringOut)
-      ! From https://groups.google.com/forum/#!topic/comp.lang.fortran/CKx1L2Ahkxg
-      character(len=*),intent(in) :: StringIn
-      character(len(StringIn))    :: StringOut
-      integer :: i,n
-
-      ! Copy input string
-      StringOut=StringIn
-
-      ! Convert case character by character
-      do i=1,len(StringOut)
-        n=index(UPPER_CASE,StringOut(i:i))
-        if (n /= 0) StringOut(i:i)=LOWER_CASE(n:n)
-      end do
-    end function
 
     !###########################################################################
 end module
