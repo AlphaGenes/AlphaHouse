@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelMultinomialI(n,p)
+function SampleIntelMultinomialI(n,p) result(Res)
 
   ! Sample n values from a Multinomial(p) distribution
   ! n input (integer), number of samples to generate (default 1)
@@ -14,10 +14,10 @@ function SampleIntelMultinomialI(n,p)
   ! Arguments
   integer(int32),intent(in),optional :: n
   real(real64),intent(in)            :: p(:)
+  integer(int32),allocatable         :: Res(:)
 
   ! Other
   integer(int32) :: nOpt,i,j,k
-  integer(int32),allocatable :: SampleIntelMultinomialI(:)
   integer(int32) :: b(1)
 
   real(real64) :: pi,psum,psumtmp
@@ -39,7 +39,7 @@ function SampleIntelMultinomialI(n,p)
   end if
   psum=1.0d0
 
-  allocate(SampleIntelMultinomialI(nOpt))
+  allocate(Res(nOpt))
 
   ! Over samples
   do j=1,nOpt
@@ -57,19 +57,19 @@ function SampleIntelMultinomialI(n,p)
             b=SampleIntelBernoulliI(p=pi)
 
             if (b(1) > 0) then
-              SampleIntelMultinomialI(j)=i
+              Res(j)=i
               exit
             end if
 
             psumtmp=psumtmp-pInternal(i)
 
           else
-            SampleIntelMultinomialI(j)=i
+            Res(j)=i
             exit
           end if
 
         else
-          SampleIntelMultinomialI(j)=i
+          Res(j)=i
           exit
         end if
 

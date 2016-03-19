@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelGaussS(n,mu,sigma2)
+function SampleIntelGaussS(n,mu,sigma2) result(Res)
 
   ! Sample n values from a Gauss(mu,sigma2) distribution; single precision
   ! n input (integer), number of samples to generate (default 1)
@@ -16,12 +16,12 @@ function SampleIntelGaussS(n,mu,sigma2)
   integer(int32),intent(in),optional :: n
   real(real32),intent(in),optional   :: mu
   real(real32),intent(in),optional   :: sigma2
+  real(real32),allocatable           :: Res(:)
 
   ! Other
   integer(int32) :: nOpt
 
   real(real32) :: muOpt,sigma
-  real(real32),allocatable :: SampleIntelGaussS(:)
 
   if (present(n)) then
     nOpt=n
@@ -41,10 +41,10 @@ function SampleIntelGaussS(n,mu,sigma2)
     sigma=1.0
   end if
 
-  allocate(SampleIntelGaussS(nOpt))
+  allocate(Res(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
-  RNGErrCode=vsrnggaussian(RNGMethod,RNGStream,nOpt,SampleIntelGaussS,muOpt,sigma)
+  RNGErrCode=vsrnggaussian(RNGMethod,RNGStream,nOpt,Res,muOpt,sigma)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelGaussS failed"
     write(STDERR,"(a)") " "

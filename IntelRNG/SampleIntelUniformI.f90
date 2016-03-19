@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelUniformI(n,a,b)
+function SampleIntelUniformI(n,a,b) result(Res)
 
   ! Sample n values from a discrete Uniform(a,b) distribution
   ! n input (integer), number of samples to generate (default 1)
@@ -16,10 +16,10 @@ function SampleIntelUniformI(n,a,b)
   integer(int32),intent(in),optional :: n
   integer(int32),intent(in),optional :: a
   integer(int32),intent(in),optional :: b
+  integer(int32),allocatable         :: Res(:)
 
   ! Other
   integer(int32) :: nOpt,aOpt,bOpt
-  integer(int32),allocatable :: SampleIntelUniformI(:)
 
   if (present(n)) then
     nOpt=n
@@ -39,10 +39,10 @@ function SampleIntelUniformI(n,a,b)
     bOpt=1
   end if
 
-  allocate(SampleIntelUniformI(nOpt))
+  allocate(Res(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_UNIFORM_STD
-  RNGErrCode=virnguniform(RNGMethod,RNGStream,nOpt,SampleIntelUniformI,aOpt,bOpt+1)
+  RNGErrCode=virnguniform(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt+1)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelUniformI failed"
     write(STDERR,"(a)") " "

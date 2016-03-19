@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelUniformS(n,a,b)
+function SampleIntelUniformS(n,a,b) result(Res)
 
   ! Sample n values values from a Uniform(a,b) distribution; single precision
   ! n input (integer), number of samples to generate (default 1)
@@ -16,12 +16,11 @@ function SampleIntelUniformS(n,a,b)
   integer(int32),intent(in),optional :: n
   real(real32),intent(in),optional   :: a
   real(real32),intent(in),optional   :: b
-
+  real(real32),allocatable           :: Res(:)
   ! Other
   integer(int32) :: nOpt
 
   real(real32) :: aOpt,bOpt
-  real(real32),allocatable :: SampleIntelUniformS(:)
 
   if (present(n)) then
     nOpt=n
@@ -41,10 +40,10 @@ function SampleIntelUniformS(n,a,b)
     bOpt=1.0
   end if
 
-  allocate(SampleIntelUniformS(nOpt))
+  allocate(Res(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_UNIFORM_STD ! should we use here VSL_RNG_METHOD_UNIFORM_STD_ACCURATE?
-  RNGErrCode=vsrnguniform(RNGMethod,RNGStream,nOpt,SampleIntelUniformS,aOpt,bOpt)
+  RNGErrCode=vsrnguniform(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelUniformS failed"
     write(STDERR,"(a)") " "

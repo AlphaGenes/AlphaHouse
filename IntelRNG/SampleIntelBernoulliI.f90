@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelBernoulliI(n,p)
+function SampleIntelBernoulliI(n,p) result(Res)
 
   ! Sample n values from a Bernoulli(p) distribution
   ! n input (integer), number of samples to generate (default 1)
@@ -14,10 +14,10 @@ function SampleIntelBernoulliI(n,p)
   ! Arguments
   integer(int32),intent(in),optional :: n
   real(real64),intent(in),optional   :: p
+  integer(int32),allocatable         :: Res(:)
 
   ! Other
   integer(int32) :: nOpt
-  integer(int32),allocatable :: SampleIntelBernoulliI(:)
 
   real(real64) :: pOpt
 
@@ -33,10 +33,10 @@ function SampleIntelBernoulliI(n,p)
     pOpt=0.5d0
   end if
 
-  allocate(SampleIntelBernoulliI(nOpt))
+  allocate(Res(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_BERNOULLI_ICDF
-  RNGErrCode=virngbernoulli(RNGMethod,RNGStream,nOpt,SampleIntelBernoulliI,pOpt)
+  RNGErrCode=virngbernoulli(RNGMethod,RNGStream,nOpt,Res,pOpt)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelBernoulliI failed"
     write(STDERR,"(a)") " "

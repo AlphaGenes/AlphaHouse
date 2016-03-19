@@ -1,7 +1,7 @@
 
 !###############################################################################
 
-function SampleIntelGammaD(n,alpha,a,beta)
+function SampleIntelGammaD(n,alpha,a,beta) result(Res)
 
   ! Sample n values from a Gamma(alpha,a,beta) distribution; double precision
   ! n input (integer), number of samples to generate (default 1)
@@ -18,12 +18,12 @@ function SampleIntelGammaD(n,alpha,a,beta)
   real(real64),intent(in)            :: alpha
   real(real64),intent(in),optional   :: a
   real(real64),intent(in)            :: beta
+  real(real64),allocatable           :: Res(:)
 
   ! Other
   integer(int32) :: nOpt
 
   real(real64) :: aOpt
-  real(real64),allocatable :: SampleIntelGammaD(:)
 
   if (present(n)) then
     nOpt=n
@@ -49,10 +49,10 @@ function SampleIntelGammaD(n,alpha,a,beta)
     stop 1
   end if
 
-  allocate(SampleIntelGammaD(nOpt))
+  allocate(Res(nOpt))
 
   RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
-  RNGErrCode=vdrnggamma(RNGMethod,RNGStream,nOpt,SampleIntelGammaD,alpha,aOpt,beta)
+  RNGErrCode=vdrnggamma(RNGMethod,RNGStream,nOpt,Res,alpha,aOpt,beta)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelGammaD failed"
     write(STDERR,"(a)") " "
