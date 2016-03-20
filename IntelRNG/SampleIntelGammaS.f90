@@ -51,7 +51,7 @@ function SampleIntelGammaS(n,alpha,a,beta) result(Res)
 
   allocate(Res(nOpt))
 
-  RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM
+  RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
   RNGErrCode=vsrnggamma(RNGMethod,RNGStream,nOpt,Res,alpha,aOpt,beta)
   if (RNGErrCode /= vsl_status_ok) then
     write(STDERR,"(a)") "ERROR: SampleIntelGammaS failed"
