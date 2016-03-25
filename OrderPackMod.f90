@@ -3,7 +3,8 @@
 
 module OrderPackMod
   ! From http://www.fortran-2000.com/rank/MrgRnk.f90 (2016-02-15)
-  ! Modified to work with ISO_Fortran_Env types
+  ! Modified to work with ISO_Fortran_Env types and converted to
+  ! functions
 
   use ISO_Fortran_Env
 
@@ -27,16 +28,18 @@ module OrderPackMod
       !   out of the standard loop, and use dedicated coding.
       ! __________________________________________________________
       ! __________________________________________________________
-        Real(real64), Dimension (:), Intent (In) :: XDONT
-        Integer(int32), Dimension (:)            :: IRNGT
+        Real(real64), Dimension (:), Intent (In)  :: XDONT
+        Integer(int32), Dimension (:),allocatable :: IRNGT
       ! __________________________________________________________
         Real(real64) :: XVALA, XVALB
       !
-        Integer(int32), Dimension (SIZE(IRNGT)) :: JWRKT
+        Integer(int32), Dimension (SIZE(XDONT)) :: JWRKT
         Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
         Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
       !
-        NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
+        NVAL = SIZE(XDONT)
+        allocate(IRNGT(NVAL))
+
         Select Case (NVAL)
         Case (:0)
            Return
@@ -229,16 +232,18 @@ module OrderPackMod
       !   out of the standard loop, and use dedicated coding.
       ! __________________________________________________________
       ! _________________________________________________________
-        Real(real32), Dimension (:), Intent (In) :: XDONT
-        Integer(int32), Dimension (:)            :: IRNGT
+        Real(real32), Dimension (:), Intent (In)  :: XDONT
+        Integer(int32), Dimension (:),allocatable :: IRNGT
       ! __________________________________________________________
         Real(real32) :: XVALA, XVALB
       !
-        Integer(int32), Dimension (SIZE(IRNGT)) :: JWRKT
+        Integer(int32), Dimension (SIZE(XDONT)) :: JWRKT
         Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
         Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
       !
-        NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
+        NVAL = SIZE(XDONT)
+        allocate(IRNGT(NVAL))
+
         Select Case (NVAL)
         Case (:0)
            Return
@@ -432,15 +437,17 @@ module OrderPackMod
       ! __________________________________________________________
       ! __________________________________________________________
         Integer(int32), Dimension (:), Intent (In)  :: XDONT
-        Integer(int32), Dimension (:)               :: IRNGT
+        Integer(int32), Dimension (:),allocatable   :: IRNGT
       ! __________________________________________________________
         Integer(int32) :: XVALA, XVALB
       !
-        Integer(int32), Dimension (SIZE(IRNGT)) :: JWRKT
+        Integer(int32), Dimension (SIZE(XDONT)) :: JWRKT
         Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
         Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
       !
-        NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
+        NVAL = SIZE(XDONT)
+        allocate(IRNGT(NVAL))
+
         Select Case (NVAL)
         Case (:0)
            Return
