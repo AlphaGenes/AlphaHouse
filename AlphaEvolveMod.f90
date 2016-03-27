@@ -55,7 +55,7 @@ module AlphaEvolveMod
       real(real64),intent(in),optional  :: FBase          ! F is multiplier of difference used to mutate
       real(real64),intent(in),optional  :: FHigh1         ! F is multiplier of difference used to mutate
       real(real64),intent(in),optional  :: FHigh2         ! F is multiplier of difference used to mutate
-      type(EvolveCrit),intent(out)      :: BestCriterion  ! Criterion for the best solution found
+      type(EvolveCrit),intent(out)      :: BestCriterion  ! Criterion for the best solution
 
       interface
         function CalcCriterion(Sol,CritType) result(Criterion)
@@ -88,18 +88,19 @@ module AlphaEvolveMod
 
       real(real64) :: RanNum,FInt,FBaseInt,FHigh1Int,FHigh2Int,CRInt,CRBurnInInt,CRLateInt
       real(real64) :: AcceptRate,OldChrom(nParam,nSol),NewChrom(nParam,nSol),Chrom(nParam)
+      real(real64) :: BestCriterionStopValue
 
       logical :: DiffOnly,BestSolChanged
 
       character(len=100) :: DumC,DumC2
 
-      type(EvolveCrit) :: Criterion(nSol),CriterionHold,BestCriterionStop
+      type(EvolveCrit) :: Criterion(nSol),CriterionHold
 
       ! --- Initialize ---
 
       LastGenPrint=0
       BestCriterion%Value=-huge(RanNum)
-      BestCriterionStop%Value=-huge(RanNum)
+      BestCriterionStopValue=-huge(RanNum)
 
       ! --- Printout ---
 
@@ -193,9 +194,7 @@ module AlphaEvolveMod
 
         ! --- Generate competitors ---
 
-        ! TODO: Paralelize this loop? Is it worth it? Would be possible if
-        !       CalcCriterion would be pure (no I/O and having side effects
-        !       outside of the function/subroutine, like module variables)
+        ! TODO: Paralelize this loop?
         BestSolChanged=.false.
         AcceptRate=0.0d0
         do Sol=1,nSol
@@ -269,7 +268,7 @@ module AlphaEvolveMod
 
         OldChrom(:,:)=NewChrom(:,:)
 
-        ! --- Find the best solution in this generation ---
+        ! --- The current best solution ---
 
         BestSol=maxloc(Criterion(:)%Value,dim=1)
         if (Criterion(BestSol)%Value > BestCriterion%Value) then
@@ -286,11 +285,11 @@ module AlphaEvolveMod
           end if
         end if
 
-        ! --- Test if solution is improving to stop early ---
+        ! --- Test if solution is improving to continue or stop early ---
 
         if (mod(Gen,nGenStop) == 0) then
-          if ((BestCriterion%Value-BestCriterionStop%Value) > StopTolerance) then
-            BestCriterionStop=BestCriterion
+          if ((BestCriterion%Value-BestCriterionStopValue) > StopTolerance) then
+            BestCriterionStopValue=BestCriterion%Value
           else
             DumC=Real2Char(StopTolerance)!,fmt="(f9.5)")
             DumC2=Int2Char(nGenStop)
@@ -302,15 +301,8 @@ module AlphaEvolveMod
 
       end do ! Gen
 
-      ! --- The winner ---
+      ! --- The winner solution ---
 
-! TODO: no need with the new setup - just take max criterion from the last generation!!!!
-
-      ! Re-evaluate the winner to fill any potential global objects!!!
-      ! (if CalcCriterion does not include any global objects, then this would not be needed,
-      !  could avoid it, but if CalcCriterion is so expensive for this to be relevant,
-      !  then this optimisation technique is not usable in first place)
-      BestCriterion=CalcCriterion(NewChrom(:,BestSol),CritType)
       call Log(Unit,Gen,AcceptRate,BestCriterion)
       write(STDOUT,"(a)") " "
       close(Unit)
