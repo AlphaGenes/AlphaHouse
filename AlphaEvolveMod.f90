@@ -13,13 +13,17 @@ module AlphaEvolveMod
     !       I have created an extended type in AlphaMateModule of base EvolveCrit here,
     !       but got bitten through using polymorphic (class() stuff) objects, where I
     !       am not allowed to do a=b etc.
-    real(real64) :: Value
-    real(real64) :: Penalty
-    real(real64) :: Gain
-    real(real64) :: GainStand
-    real(real64) :: PopInb
-    real(real64) :: RatePopInb
-    real(real64) :: PrgInb
+    real(real64)               :: Value
+    real(real64)               :: Penalty
+    real(real64)               :: Gain
+    real(real64)               :: GainStand
+    real(real64)               :: PopInb
+    real(real64)               :: RatePopInb
+    real(real64)               :: PrgInb
+    integer(int32),allocatable :: nVec(:)
+    real(real64),allocatable   :: xVec(:)
+    integer(int32),allocatable :: MatingPlan(:,:)
+    real(real64),allocatable   :: GenomeEdit(:)
   end type
 
   private
@@ -54,13 +58,13 @@ module AlphaEvolveMod
       type(EvolveCrit),intent(out)      :: BestCriterion  ! Criterion for the best solution found
 
       interface
-        subroutine CalcCriterion(Sol,CritType,Criterion)
+        function CalcCriterion(Sol,CritType) result(Criterion)
           use ISO_Fortran_Env
           import :: EvolveCrit
           real(real64),intent(inout)   :: Sol(:)
           character(len=*),intent(in)  :: CritType
-          type(EvolveCrit),intent(out) :: Criterion
-        end subroutine
+          type(EvolveCrit)             :: Criterion
+        end function
 
         subroutine LogHeader(LogUnit)
           use ISO_Fortran_Env
@@ -145,7 +149,7 @@ module AlphaEvolveMod
         nInit=size(Init(:,:),2)
         do Sol=1,nInit
           OldChrom(:,Sol)=Init(:,Sol)
-          call CalcCriterion(OldChrom(:,Sol),CritType,Criterion(Sol))
+          Criterion(Sol)=CalcCriterion(OldChrom(:,Sol),CritType)
         end do
         nInit=Sol
       else
@@ -153,7 +157,7 @@ module AlphaEvolveMod
       end if
       do Sol=nInit,nSol
         call random_number(OldChrom(:,Sol))
-        call CalcCriterion(OldChrom(:,Sol),CritType,Criterion(Sol))
+        Criterion(Sol)=CalcCriterion(OldChrom(:,Sol),CritType)
       end do
 
       ! --- Evolve ---
@@ -249,7 +253,7 @@ module AlphaEvolveMod
 
           ! --- Evaluate and Select ---
 
-          call CalcCriterion(Chrom,CritType,CriterionHold)      ! Merit of competitor
+          CriterionHold=CalcCriterion(Chrom,CritType)           ! Merit of competitor
           if (CriterionHold%Value >= Criterion(Sol)%Value) then ! If competitor is better or equal, keep it
             NewChrom(:,Sol)=Chrom(:)                            !   ("equal" to force evolution)
             Criterion(Sol)=CriterionHold
@@ -300,11 +304,13 @@ module AlphaEvolveMod
 
       ! --- The winner ---
 
+! TODO: no need with the new setup - just take max criterion from the last generation!!!!
+
       ! Re-evaluate the winner to fill any potential global objects!!!
       ! (if CalcCriterion does not include any global objects, then this would not be needed,
       !  could avoid it, but if CalcCriterion is so expensive for this to be relevant,
       !  then this optimisation technique is not usable in first place)
-      call CalcCriterion(NewChrom(:,BestSol),CritType,BestCriterion)
+      BestCriterion=CalcCriterion(NewChrom(:,BestSol),CritType)
       call Log(Unit,Gen,AcceptRate,BestCriterion)
       write(STDOUT,"(a)") " "
       close(Unit)
