@@ -147,7 +147,6 @@ module AlphaEvolveMod
           OldChrom(:,Sol)=Init(:,Sol)
           call CalcCriterion(OldChrom(:,Sol),CritType,Criterion(Sol))
         end do
-        nInit=Sol
       else
         nInit=1
       end if
