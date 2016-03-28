@@ -82,9 +82,9 @@ module AlphaEvolveMod
       end interface
 
       ! Other
-      integer(int32) :: nInit, Param, ParamLoc, Sol, Gen, LastGenPrint
+      integer(int32) :: nInit, Param, ParamLoc, Sol, Gen, LastGenPrint, Unit
       integer(int32) :: SolA, SolB, SolC, BestSol
-      integer(int32) :: Unit
+      ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt
       real(real64) :: AcceptRate, OldChrom(nParam, nSol), NewChrom(nParam, nSol), Chrom(nParam)
@@ -195,10 +195,21 @@ module AlphaEvolveMod
         ! --- Generate competitors ---
 
         ! TODO: Paralelize this loop?
+        !       The main reason would be to speed up the code as CalcCriterion() might take quite some time for larger problems
+        !       - some variables are local, say SolA, SolB, ...
+        !       - global variable is NewChrom, but is indexed with Sol so this should not be a problem
+        !       - AcceptRate needs to be in sync between the threads!!!
+        !       - we relly on random_number a lot here and updating the RNG state for each thread can be slow
+        !         and I (GG) am also not sure if we should not have thread specific RNGs
         BestSolChanged = .false.
         AcceptRate = 0.0d0
 
+        ! call OMP_set_num_threads(1)
+
+        ! $OMP PARALLEL DO DEFAULT(PRIVATE)
         do Sol = 1, nSol
+
+          ! print *, "#Threads: ", OMP_get_num_threads(), "Thread; ", OMP_get_thread_num()+1, ", Solution: ", Sol
 
           ! --- Mutate and recombine ---
 
@@ -257,11 +268,13 @@ module AlphaEvolveMod
           if (CriterionHold%Value >= Criterion(Sol)%Value) then ! If competitor is better or equal, keep it
             NewChrom(:,Sol) = Chrom(:)                          !   ("equal" to force evolution)
             Criterion(Sol) = CriterionHold
+            ! $OMP ATOMIC
             AcceptRate = AcceptRate + 1.0d0
           else
             NewChrom(:,Sol) = OldChrom(:,Sol)                   ! Else keep the old solution
           end if
         end do ! Sol
+        ! $OMP END PARALLEL DO
 
         AcceptRate = AcceptRate / dble(nSol)
 
