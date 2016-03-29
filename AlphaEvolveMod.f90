@@ -20,10 +20,13 @@ module AlphaEvolveMod
     real(real64)                :: PopInb
     real(real64)                :: RatePopInb
     real(real64)                :: PrgInb
+    real(real64), allocatable   :: GenericIndVal(:)
+    real(real64), allocatable   :: GenericMatVal(:)
     integer(int32), allocatable :: nVec(:)
     real(real64), allocatable   :: xVec(:)
     integer(int32), allocatable :: MatingPlan(:,:)
     real(real64), allocatable   :: GenomeEdit(:)
+
   end type
 
   private
@@ -35,7 +38,7 @@ module AlphaEvolveMod
 
     subroutine EvolAlgDE(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
       StopTolerance, nGenPrint, File, CritType, CRBurnIn, CRLate, FBase, FHigh1, FHigh2,&
-      CalcCriterion, LogHeader, Log, BestCriterion)
+      CalcCriterion, LogHead, Log, BestCriterion)
 
       implicit none
 
@@ -66,7 +69,7 @@ module AlphaEvolveMod
           type(EvolveCrit)             :: Criterion
         end function
 
-        subroutine LogHeader(LogUnit)
+        subroutine LogHead(LogUnit)
           use ISO_Fortran_Env
           integer(int32), intent(in) :: LogUnit
         end subroutine
@@ -105,7 +108,7 @@ module AlphaEvolveMod
       ! --- Printout ---
 
       open(newunit=Unit, file=trim(File), status="unknown")
-      call LogHeader(LogUnit=Unit)
+      call LogHead(LogUnit=Unit)
 
       ! --- Set parameters ---
 
