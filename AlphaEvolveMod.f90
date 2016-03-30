@@ -22,6 +22,7 @@ module AlphaEvolveMod
     real(real64)                :: PrgInb
     real(real64), allocatable   :: GenericIndVal(:)
     real(real64), allocatable   :: GenericMatVal(:)
+    real(real64)                :: Cost
     integer(int32), allocatable :: nVec(:)
     real(real64), allocatable   :: xVec(:)
     integer(int32), allocatable :: MatingPlan(:,:)
