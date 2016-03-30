@@ -10,10 +10,15 @@ module AlphaStatMod
   implicit none
 
   private
+  ! Types
+  public :: DescStatS,DescStatD
+  public :: DescStatMatrixS,DescStatMatrixD
+  public :: CorrelationS,CorrelationD
+  ! Methods
   public :: CalcMean,CalcVar,CalcSD
-  public :: CalcDescStat,DescStatS,DescStatD
-  public :: CalcDescStatSymMatrix,DescStatMatrixS,DescStatMatrixD
-  public :: CalcCorrelation,CorrelationS,CorrelationD
+  public :: CalcDescStat
+  public :: CalcDescStatMatrix,CalcDescStatSymMatrix,CalcDescStatLowTriMatrix
+  public :: CalcCorrelation
 
   interface CalcMean
     module procedure CalcMeanS, CalcMeanD
@@ -57,12 +62,22 @@ module AlphaStatMod
     module procedure CalcDescStatSymMatrixS, CalcDescStatSymMatrixD
   end interface
 
+  interface CalcDescStatLowTriMatrix
+    module procedure CalcDescStatSymMatrixS, CalcDescStatSymMatrixD
+  end interface
+
+  interface CalcDescStatMatrix
+    module procedure CalcDescStatMatrixS, CalcDescStatMatrixD
+  end interface
+
   type :: DescStatMatrixS
+    type(DescStatS) :: All
     type(DescStatS) :: Diag
     type(DescStatS) :: OffDiag
   end type
 
   type :: DescStatMatrixD
+    type(DescStatD) :: All
     type(DescStatD) :: Diag
     type(DescStatD) :: OffDiag
   end type
@@ -317,7 +332,119 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatSymMatrixS(x) result(Res)
+    function CalcDescStatSymMatrixS(x,Diag) result(Res)
+      implicit none
+
+      ! Arguments
+      real(real32),intent(in)     :: x(:,:)
+      logical,intent(in),optional :: Diag
+      type(DescStatMatrixS)       :: Res
+
+      ! Other
+      integer(int32) i,j,k,n,p
+      real(real32),allocatable :: DiagVal(:)
+      real(real32),allocatable :: OffDiagVal(:)
+      logical                  :: DiagInternal
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatSymMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      if (present(Diag)) then
+        DiagInternal=Diag
+      else
+        DiagInternal=.true.
+      end if
+
+      ! Diagonal
+      if (DiagInternal) then
+        allocate(DiagVal(n))
+        do i=1,n
+          DiagVal(i)=x(i,i)
+        end do
+        Res%Diag=CalcDescStatS(DiagVal)
+      end if
+
+      ! Off-diagonal (lower-triangle only!!!)
+      allocate(OffDiagVal(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiagVal(k)=x(i,j)
+        end do
+      end do
+      Res%OffDiag=CalcDescStatS(OffDiagVal)
+
+      if (DiagInternal) then
+        Res%All=CalcDescStatS([DiagVal,OffDiagVal])
+      end if
+      return
+    end function
+
+    !###########################################################################
+
+    function CalcDescStatSymMatrixD(x,Diag) result(Res)
+      implicit none
+
+      ! Arguments
+      real(real64),intent(in)     :: x(:,:)
+      logical,intent(in),optional :: Diag
+      type(DescStatMatrixD)       :: Res
+
+      ! Other
+      integer(int32) i,j,k,n,p
+      real(real64),allocatable :: DiagVal(:)
+      real(real64),allocatable :: OffDiagVal(:)
+      logical                  :: DiagInternal
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatSymMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      if (present(Diag)) then
+        DiagInternal=Diag
+      else
+        DiagInternal=.true.
+      end if
+
+      ! Diagonal
+      if (DiagInternal) then
+        allocate(DiagVal(n))
+        do i=1,n
+          DiagVal(i)=x(i,i)
+        end do
+        Res%Diag=CalcDescStatD(DiagVal)
+      end if
+
+      ! Off-diagonal (lower-triangle only!!!)
+      allocate(OffDiagVal(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiagVal(k)=x(i,j)
+        end do
+      end do
+      Res%OffDiag=CalcDescStatD(OffDiagVal)
+
+      if (DiagInternal) then
+        Res%All=CalcDescStatD([DiagVal,OffDiagVal])
+      end if
+      return
+    end function
+
+    !###########################################################################
+
+    function CalcDescStatMatrixS(x) result(Res)
       implicit none
 
       ! Arguments
@@ -325,45 +452,40 @@ module AlphaStatMod
       type(DescStatMatrixS)   :: Res
 
       ! Other
-      integer(int32) i,j,k,n,p!,MinNP
+      integer(int32) i,j,k,l,n,p,MinNP
       real(real32),allocatable :: Diag(:)
       real(real32),allocatable :: OffDiag(:)
 
       n=size(x,1)
       p=size(x,2)
-      if (n /= p) then
-        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
 
-      ! Start of an attempt to work with non-symmetric matrices
-      ! MinNP=min([n,p])
-      ! allocate(Diag(MinNP))
+      MinNP=minval([n,p])
+      allocate(Diag(MinNP))
+      allocate(OffDiag(n*p-MinNP))
 
-      allocate(Diag(n))
-      do i=1,n
-        Diag(i)=x(i,i)
-      end do
-      Res%Diag=CalcDescStatS(Diag)
-      deallocate(Diag)
-
-      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
-      do j=1,(p-1)
-        do i=(j+1),n
-          k=k+1
-          OffDiag(k)=x(i,j)
+      l=0
+      do j=1,p
+        do i=1,n
+          if (i == j) then
+            k=k+1
+            Diag(k)=x(i,j)
+          else
+            l=l+1
+            OffDiag(l)=x(i,j)
+          end if
         end do
       end do
+
+      Res%Diag=CalcDescStatS(Diag)
       Res%OffDiag=CalcDescStatS(OffDiag)
-      deallocate(OffDiag)
+      Res%All=CalcDescStatS([Diag,OffDiag])
       return
     end function
 
     !###########################################################################
 
-    function CalcDescStatSymMatrixD(x) result(Res)
+    function CalcDescStatMatrixD(x) result(Res)
       implicit none
 
       ! Arguments
@@ -371,39 +493,34 @@ module AlphaStatMod
       type(DescStatMatrixD)   :: Res
 
       ! Other
-      integer(int32) i,j,k,n,p!,MinNP
+      integer(int32) i,j,k,l,n,p,MinNP
       real(real64),allocatable :: Diag(:)
       real(real64),allocatable :: OffDiag(:)
 
       n=size(x,1)
       p=size(x,2)
-      if (n /= p) then
-        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
 
-      ! Start of an attempt to work with non-symmetric matrices
-      ! MinNP=min([n,p])
-      ! allocate(Diag(MinNP))
+      MinNP=minval([n,p])
+      allocate(Diag(MinNP))
+      allocate(OffDiag(n*p-MinNP))
 
-      allocate(Diag(n))
-      do i=1,n
-        Diag(i)=x(i,i)
-      end do
-      Res%Diag=CalcDescStatD(Diag)
-      deallocate(Diag)
-
-      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
-      do j=1,(p-1)
-        do i=(j+1),n
-          k=k+1
-          OffDiag(k)=x(i,j)
+      l=0
+      do j=1,p
+        do i=1,n
+          if (i == j) then
+            k=k+1
+            Diag(k)=x(i,j)
+          else
+            l=l+1
+            OffDiag(l)=x(i,j)
+          end if
         end do
       end do
+
+      Res%Diag=CalcDescStatD(Diag)
       Res%OffDiag=CalcDescStatD(OffDiag)
-      deallocate(OffDiag)
+      Res%All=CalcDescStatD([Diag,OffDiag])
       return
     end function
 
