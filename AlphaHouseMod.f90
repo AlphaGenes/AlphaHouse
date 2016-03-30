@@ -8,7 +8,7 @@ module AlphaHouseMod
   implicit none
 
   private
-  public :: CountLines,Int2Char,Real2Char,RandomOrder,SetSeed,ToLower
+  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed
 
   ! List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -16,6 +16,10 @@ module AlphaHouseMod
 
   interface Real2Char
     module procedure RealS2Char,RealD2Char
+  end interface
+
+  interface FindLoc
+    module procedure FindLocC, FindLocI, FindLocS, FindLocD
   end interface
 
   ! TODO: add Char2Real
@@ -174,6 +178,77 @@ module AlphaHouseMod
 
     !###########################################################################
 
+    function FindLocI(Val,Vec) result(i)
+      implicit none
+      integer(int32) :: Val
+      integer(int32) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocC(Val,Vec) result(i)
+      implicit none
+      character(len=*) :: Val
+      character(len=*) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocS(Val,Vec) result(i)
+      implicit none
+      real(real32) :: Val
+      real(real32) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocD(Val,Vec) result(i)
+      implicit none
+      real(real64) :: Val
+      real(real64) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
     subroutine SetSeed(Seed,SeedFile,Out)
 
       implicit none
