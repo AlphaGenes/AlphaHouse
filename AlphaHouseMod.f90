@@ -8,6 +8,7 @@ module AlphaHouseMod
   implicit none
 
   private
+  ! Methods
   public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed
 
   ! List of characters for case conversion in ToLower

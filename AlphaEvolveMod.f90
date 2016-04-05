@@ -31,15 +31,20 @@ module AlphaEvolveMod
   end type
 
   private
-  public :: EvolAlgDE, EvolveCrit
+  ! Types
+  public :: EvolveCrit
+  ! Methods
+  public :: DifferentialEvolution, RandomSearch
 
   contains
 
     !###########################################################################
 
-    subroutine EvolAlgDE(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
+    subroutine DifferentialEvolution(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
       StopTolerance, nGenPrint, File, CritType, CRBurnIn, CRLate, FBase, FHigh1, FHigh2,&
       CalcCriterion, LogHead, Log, BestCriterion)
+
+      ! Evolutionary Algorithm - Differential Evolution (continuous representation of solution)
 
       implicit none
 
@@ -49,9 +54,9 @@ module AlphaEvolveMod
       real(real64), intent(in), optional  :: Init(:,:)      ! Initial solutions to start with
       integer(int32), intent(in)          :: nGen           ! No. of generations to run
       integer(int32), intent(in)          :: nGenBurnIn     ! No. of generations with more
-      integer(int32), intent(in)          :: nGenStop       ! Stop after no progress for nGenerationStop
+      integer(int32), intent(in)          :: nGenStop       ! Stop after no progress for nGenStop
       real(real64), intent(in)            :: StopTolerance  ! Stopping tolerance
-      integer(int32), intent(in)          :: nGenPrint      ! Print changed solution every nGenerationPrint
+      integer(int32), intent(in)          :: nGenPrint      ! Print changed solution every nGenPrint
       character(len=*), intent(in)        :: File           ! Which file to write to
       character(len=*), intent(in)        :: CritType       ! Passed to CalcCriterion
       real(real64), intent(in), optional  :: CRBurnIn       ! Crossover rate for nGenBurnIn
@@ -95,8 +100,6 @@ module AlphaEvolveMod
       real(real64) :: BestCriterionStopValue
 
       logical :: DiffOnly, BestSolChanged
-
-      character(len=100) :: DumC, DumC2
 
       type(EvolveCrit) :: Criterion(nSol), CriterionHold
 
@@ -309,9 +312,9 @@ module AlphaEvolveMod
           if ((BestCriterion%Value - BestCriterionStopValue) > StopTolerance) then
             BestCriterionStopValue = BestCriterion%Value
           else
-            DumC = Real2Char(StopTolerance)!,fmt="(f9.5)")
-            DumC2 = Int2Char(nGenStop)
-            write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", trim(adjustl(DumC)), " in the last ", trim(adjustl(DumC2)), " generations. Stopping the optimisation."
+            write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", &
+              trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nGenStop)), &
+              " generations. Stopping the optimisation."
             write(STDOUT, "(a)") " "
             exit
           end if
@@ -322,6 +325,142 @@ module AlphaEvolveMod
       ! --- The winner solution ---
 
       call Log(Unit, Gen, AcceptRate, BestCriterion)
+      write(STDOUT, "(a)") " "
+      close(Unit)
+    end subroutine
+
+    !###########################################################################
+
+    subroutine RandomSearch(nParam, Init, nSamp, nSampStop, StopTolerance, &
+      nSampPrint,  File, CritType, CalcCriterion, LogHead, Log, BestCriterion)
+
+      ! Random search (continuous representation of solution)
+
+      implicit none
+
+      ! Arguments
+      integer(int32), intent(in)            :: nParam         ! No. of parameters in a solution
+      real(real64), intent(inout), optional :: Init(:,:)      ! Initial solutions to test
+      integer(int32), intent(in)            :: nSamp          ! No. of samples to test
+      integer(int32), intent(in), optional  :: nSampStop      ! Stop after no progress for nSampStop
+      real(real64), intent(in)              :: StopTolerance  ! Stopping tolerance
+      integer(int32), intent(in)            :: nSampPrint     ! Print changed solution every nSampPrint
+      character(len=*), intent(in)          :: File           ! Which file to write to
+      character(len=*), intent(in)          :: CritType       ! Passed to CalcCriterion
+      type(EvolveCrit), intent(out)         :: BestCriterion  ! Criterion for the best solution
+
+      interface
+        function CalcCriterion(Sol, CritType) result(Criterion)
+          use ISO_Fortran_Env
+          import :: EvolveCrit
+          real(real64), intent(inout)  :: Sol(:)
+          character(len=*), intent(in) :: CritType
+          type(EvolveCrit)             :: Criterion
+        end function
+
+        subroutine LogHead(LogUnit)
+          use ISO_Fortran_Env
+          integer(int32), intent(in) :: LogUnit
+        end subroutine
+
+        subroutine Log(LogUnit, Gen, AcceptRate, Criterion)
+          use ISO_Fortran_Env
+          import :: EvolveCrit
+          integer(int32), intent(in)   :: LogUnit
+          integer(int32), intent(in)   :: Gen
+          real(real64), intent(in)     :: AcceptRate
+          type(EvolveCrit), intent(in) :: Criterion
+        end subroutine
+      end interface
+
+      ! Other
+      integer(int32) :: nInit, Samp, LastSampPrint, Unit
+      ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
+
+      real(real64) :: RanNum, AcceptRate, BestCriterionStopValue, Sol(nParam)
+
+      logical :: BestSolChanged
+
+      type(EvolveCrit) :: CriterionHold
+
+      ! --- Initialize ---
+
+      AcceptRate = 0.0d0
+      LastSampPrint = 0
+      BestCriterion%Value = -huge(RanNum)
+      BestCriterionStopValue = -huge(RanNum)
+
+      ! --- Printout ---
+
+      open(newunit=Unit, file=trim(File), status="unknown")
+      call LogHead(LogUnit=Unit)
+
+      ! --- Initialise solutions to test ---
+
+      if (present(Init)) then
+        nInit = size(Init, dim=2)
+        do Samp = 1, nInit
+          CriterionHold = CalcCriterion(Init(:, Samp), CritType)
+          if (CriterionHold%Value > BestCriterion%Value) then
+            BestCriterion = CriterionHold
+            BestSolChanged = .true.
+            AcceptRate = AcceptRate + 1.0d0
+          end if
+        end do
+      else
+        nInit = 1
+      end if
+
+      ! --- Search ---
+
+      do Samp = nInit, nSamp
+
+        BestSolChanged = .false.
+
+        ! --- Generate a competitor ---
+
+        call random_number(Sol(:))
+
+        ! --- Evaluate and Select ---
+
+        CriterionHold = CalcCriterion(Sol(:), CritType) ! Merit of competitor
+        if (CriterionHold%Value > BestCriterion%Value) then       ! If competitor is better keep it
+          BestCriterion = CriterionHold
+          BestSolChanged = .true.
+          AcceptRate = AcceptRate + 1.0d0
+        end if
+
+        ! --- Monitor ---
+
+        if (BestSolChanged) then
+          if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
+            LastSampPrint = Samp
+            AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+            call Log(Unit, Samp, AcceptRate, BestCriterion)
+            AcceptRate = 0.0d0
+          end if
+        end if
+
+        ! --- Test if solution is improving to continue or stop early ---
+
+        if (mod(Samp, nSampStop) == 0) then
+          if ((BestCriterion%Value - BestCriterionStopValue) > StopTolerance) then
+            BestCriterionStopValue = BestCriterion%Value
+          else
+            write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", &
+              trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nSampStop)), &
+              " samples. Stopping the optimisation."
+            write(STDOUT, "(a)") " "
+            exit
+          end if
+        end if
+
+      end do ! SampOverThread
+
+      ! --- The winner solution ---
+
+      AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+      call Log(Unit, Samp, AcceptRate, BestCriterion)
       write(STDOUT, "(a)") " "
       close(Unit)
     end subroutine
