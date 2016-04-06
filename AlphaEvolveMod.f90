@@ -413,6 +413,7 @@ module AlphaEvolveMod
 
       ! --- Search ---
 
+      ! TODO: parallelise this loop?
       do Samp = nInit, nSamp
 
         BestSolChanged = .false.
@@ -423,8 +424,8 @@ module AlphaEvolveMod
 
         ! --- Evaluate and Select ---
 
-        CriterionHold = CalcCriterion(Sol(:), CritType) ! Merit of competitor
-        if (CriterionHold%Value > BestCriterion%Value) then       ! If competitor is better keep it
+        CriterionHold = CalcCriterion(Sol(:), CritType)     ! Merit of competitor
+        if (CriterionHold%Value > BestCriterion%Value) then ! If competitor is better keep it
           BestCriterion = CriterionHold
           BestSolChanged = .true.
           AcceptRate = AcceptRate + 1.0d0
@@ -434,9 +435,9 @@ module AlphaEvolveMod
 
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
-            LastSampPrint = Samp
             AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
             call Log(Unit, Samp, AcceptRate, BestCriterion)
+            LastSampPrint = Samp
             AcceptRate = 0.0d0
           end if
         end if
@@ -449,13 +450,13 @@ module AlphaEvolveMod
           else
             write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", &
               trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nSampStop)), &
-              " samples. Stopping the optimisation."
+              " samples. Stopping the random search."
             write(STDOUT, "(a)") " "
             exit
           end if
         end if
 
-      end do ! SampOverThread
+      end do ! Samp
 
       ! --- The winner solution ---
 
