@@ -4,7 +4,7 @@
 module AlphaEvolveMod
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
-  use AlphaHouseMod, only : Int2Char, Real2Char
+  use AlphaHouseMod, only : Int2Char, Real2Char, ToLower
 
   implicit none
 
@@ -27,7 +27,11 @@ module AlphaEvolveMod
     real(real64), allocatable   :: xVec(:)
     integer(int32), allocatable :: MatingPlan(:,:)
     real(real64), allocatable   :: GenomeEdit(:)
-
+    contains
+      procedure :: AssignEvolveCrit
+      generic   :: assignment(=) => AssignEvolveCrit
+      procedure :: UpdateMeanEvolveCrit
+      generic   :: UpdateMean => UpdateMeanEvolveCrit
   end type
 
   private
@@ -37,6 +41,89 @@ module AlphaEvolveMod
   public :: DifferentialEvolution, RandomSearch
 
   contains
+
+    !###########################################################################
+
+    subroutine AssignEvolveCrit(Out, In)
+      implicit none
+      class(EvolveCrit), intent(out) :: Out
+      class(EvolveCrit), intent(in)  :: In
+      Out%Value           = In%Value
+      Out%Penalty         = In%Penalty
+      Out%Gain            = In%Gain
+      Out%GainStand       = In%GainStand
+      Out%PopInb          = In%PopInb
+      Out%RatePopInb      = In%RatePopInb
+      Out%PrgInb          = In%PrgInb
+      if (allocated(In%GenericIndVal)) then
+        allocate(Out%GenericIndVal(size(In%GenericIndVal)))
+        Out%GenericIndVal = In%GenericIndVal
+      end if
+      if (allocated(In%GenericMatVal)) then
+        allocate(Out%GenericMatVal(size(In%GenericMatVal)))
+        Out%GenericMatVal = In%GenericMatVal
+      end if
+      Out%Cost            = In%Cost
+      if (allocated(In%nVec)) then
+        allocate(Out%nVec(size(In%nVec)))
+        Out%nVec          = In%nVec
+      end if
+      if (allocated(In%xVec)) then
+        allocate(Out%xVec(size(In%xVec)))
+        Out%xVec          = In%xVec
+      end if
+      if (allocated(In%MatingPlan)) then
+        allocate(Out%MatingPlan(size(In%MatingPlan, dim=1), size(In%MatingPlan, dim=2)))
+        Out%MatingPlan    = In%MatingPlan
+      end if
+      if (allocated(In%GenomeEdit)) then
+        allocate(Out%GenomeEdit(size(In%GenomeEdit)))
+        Out%GenomeEdit    = In%GenomeEdit
+      end if
+    end subroutine
+
+    !###########################################################################
+
+    subroutine UpdateMeanEvolveCrit(This, Add, n)
+      implicit none
+      ! Arguments
+      class(EvolveCrit), intent(inout) :: This
+      class(EvolveCrit), intent(in)    :: Add
+      integer(int32), intent(in)       :: n
+      ! Other
+      real(real64) :: nR, kR
+
+      nR = dble(n)
+      kR = (nR - 1.0d0) / nR
+
+      This%Value           = This%Value         * kR + Add%Value         / nR
+      This%Penalty         = This%Penalty       * kR + Add%Penalty       / nR
+      This%Gain            = This%Gain          * kR + Add%Gain          / nR
+      This%GainStand       = This%GainStand     * kR + Add%GainStand     / nR
+      This%PopInb          = This%PopInb        * kR + Add%PopInb        / nR
+      This%RatePopInb      = This%RatePopInb    * kR + Add%RatePopInb    / nR
+      This%PrgInb          = This%PrgInb        * kR + Add%PrgInb        / nR
+      if (allocated(This%GenericIndVal)) then
+        This%GenericIndVal = This%GenericIndVal * kR + Add%GenericIndVal / nR
+      end if
+      if (allocated(This%GenericMatVal)) then
+        This%GenericMatVal = This%GenericMatVal * kR + Add%GenericMatVal / nR
+      end if
+      This%Cost            = This%Cost          * kR + Add%Cost          / nR
+      if (allocated(This%nVec)) then
+        This%nVec          = This%nVec          * kR + Add%nVec          / nR
+      end if
+      if (allocated(This%xVec)) then
+        This%xVec          = This%xVec          * kR + Add%xVec          / nR
+      end if
+      if (allocated(This%MatingPlan)) then
+        This%MatingPlan    = This%MatingPlan    * kR + Add%MatingPlan    / nR
+      end if
+      if (allocated(This%GenomeEdit)) then
+        This%GenomeEdit    = This%GenomeEdit    * kR + Add%GenomeEdit    / nR
+      end if
+      return
+    end subroutine
 
     !###########################################################################
 
@@ -331,14 +418,15 @@ module AlphaEvolveMod
 
     !###########################################################################
 
-    subroutine RandomSearch(nParam, Init, nSamp, nSampStop, StopTolerance, &
-      nSampPrint,  File, CritType, CalcCriterion, LogHead, Log, BestCriterion)
+    subroutine RandomSearch(Mode, nParam, Init, nSamp, nSampStop, StopTolerance, &
+      nSampPrint, File, CritType, CalcCriterion, LogHead, Log, BestCriterion)
 
-      ! Random search (continuous representation of solution)
+      ! Random search
 
       implicit none
 
       ! Arguments
+      character(len=*), intent(in)          :: Mode           ! Mode of search (max or avg)
       integer(int32), intent(in)            :: nParam         ! No. of parameters in a solution
       real(real64), intent(inout), optional :: Init(:,:)      ! Initial solutions to test
       integer(int32), intent(in)            :: nSamp          ! No. of samples to test
@@ -379,32 +467,65 @@ module AlphaEvolveMod
 
       real(real64) :: RanNum, AcceptRate, BestCriterionStopValue, Sol(nParam)
 
-      logical :: BestSolChanged
+      logical :: ModeAvg, ModeMax, BestSolChanged
 
       type(EvolveCrit) :: CriterionHold
 
+      ! --- Mode ---
+
+      ModeAvg = .false.
+      ModeMax = .false.
+
+      if      (ToLower(trim(Mode)) == "avg") then
+        ModeAvg = .true.
+      else if (ToLower(trim(Mode)) == "max") then
+        ModeMax = .true.
+      else
+        write (STDERR, "(a)") "ERROR: Mode must be either avg or max!"
+        write (STDERR, "(a)") " "
+        stop 1
+      end if
+
       ! --- Initialize ---
 
-      AcceptRate = 0.0d0
       LastSampPrint = 0
-      BestCriterion%Value = -huge(RanNum)
-      BestCriterionStopValue = -huge(RanNum)
+
+      if (ModeAvg) then
+        BestCriterion%Value = 0.0d0
+        BestCriterionStopValue = 0.0d0
+        BestSolChanged = .true.
+        AcceptRate = 1.0d0
+      end if
+
+      if (ModeMax) then
+        BestCriterion%Value = -huge(RanNum)
+        BestCriterionStopValue = -huge(RanNum)
+        BestSolChanged = .false.
+        AcceptRate = 0.0d0
+      end if
 
       ! --- Printout ---
 
       open(newunit=Unit, file=trim(File), status="unknown")
       call LogHead(LogUnit=Unit)
 
-      ! --- Initialise solutions to test ---
+      ! --- Initialise with the provided solutions ---
 
       if (present(Init)) then
         nInit = size(Init, dim=2)
         do Samp = 1, nInit
           CriterionHold = CalcCriterion(Init(:, Samp), CritType)
-          if (CriterionHold%Value > BestCriterion%Value) then
-            BestCriterion = CriterionHold
-            BestSolChanged = .true.
-            AcceptRate = AcceptRate + 1.0d0
+          if      (ModeAvg) then
+            if (Samp == 1) then
+              BestCriterion = CriterionHold
+            else
+              call BestCriterion%UpdateMean(CriterionHold, Samp)
+            end if
+          else if (ModeMax) then
+            if (CriterionHold%Value > BestCriterion%Value) then
+              BestCriterion = CriterionHold
+              AcceptRate = AcceptRate + 1.0d0
+            end if
           end if
         end do
       else
@@ -424,21 +545,38 @@ module AlphaEvolveMod
 
         ! --- Evaluate and Select ---
 
-        CriterionHold = CalcCriterion(Sol(:), CritType)     ! Merit of competitor
-        if (CriterionHold%Value > BestCriterion%Value) then ! If competitor is better keep it
-          BestCriterion = CriterionHold
+        ! Merit of the competitor
+        CriterionHold = CalcCriterion(Sol(:), CritType)
+
+        if      (ModeAvg) then
+          ! Update the mean
+          if (Samp == 1) then
+            BestCriterion = CriterionHold
+          else
+            call BestCriterion%UpdateMean(CriterionHold, Samp)
+          end if
           BestSolChanged = .true.
-          AcceptRate = AcceptRate + 1.0d0
+        else if (ModeMax) then
+          ! If the competitor is better, keep it
+          if (CriterionHold%Value > BestCriterion%Value) then
+            BestCriterion = CriterionHold
+            BestSolChanged = .true.
+            AcceptRate = AcceptRate + 1.0d0
+          end if
         end if
 
         ! --- Monitor ---
 
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
-            AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
-            call Log(Unit, Samp, AcceptRate, BestCriterion)
+            if      (ModeAvg) then
+              call Log(Unit, Samp, AcceptRate, BestCriterion)
+            else if (ModeMax) then
+              AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+              call Log(Unit, Samp, AcceptRate, BestCriterion)
+              AcceptRate = 0.0d0
+            end if
             LastSampPrint = Samp
-            AcceptRate = 0.0d0
           end if
         end if
 
@@ -460,7 +598,9 @@ module AlphaEvolveMod
 
       ! --- The winner solution ---
 
-      AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+      if (ModeMax) then
+        AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+      end if
       call Log(Unit, Samp, AcceptRate, BestCriterion)
       write(STDOUT, "(a)") " "
       close(Unit)
