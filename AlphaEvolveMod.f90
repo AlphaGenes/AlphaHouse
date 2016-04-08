@@ -8,198 +8,98 @@ module AlphaEvolveMod
 
   implicit none
 
-  type :: EvolveCrit
-    ! TODO: How do I get this done generically? This is a type specific for AlphaMate
-    !       I have created an extended type in AlphaMateModule of base EvolveCrit here,
-    !       but got bitten through using polymorphic (class() stuff) objects, where I
-    !       am not allowed to do a=b etc.
-    real(real64)                :: Value
-    real(real64)                :: Penalty
-    real(real64)                :: Gain
-    real(real64)                :: GainStand
-    real(real64)                :: PopInb
-    real(real64)                :: RatePopInb
-    real(real64)                :: PrgInb
-    real(real64), allocatable   :: GenericIndVal(:)
-    real(real64), allocatable   :: GenericMatVal(:)
-    real(real64)                :: Cost
-    integer(int32), allocatable :: nVec(:)
-    real(real64), allocatable   :: xVec(:)
-    integer(int32), allocatable :: MatingPlan(:,:)
-    real(real64), allocatable   :: GenomeEdit(:)
+  type :: AlphaEvolveSol
+    real(real64) :: Criterion
     contains
-      procedure :: AssignEvolveCrit
-      generic   :: assignment(=) => AssignEvolveCrit
-      procedure :: UpdateMeanEvolveCrit
-      generic   :: UpdateMean => UpdateMeanEvolveCrit
+      procedure         :: Initialise    => InitialiseAlphaEvolveSol
+      procedure         :: Assign        => AssignAlphaEvolveSol
+      generic, public   :: Assignment(=) => Assign
+      procedure         :: UpdateMean    => UpdateMeanAlphaEvolveSol
+      procedure         :: CalcCriterion => CalcCriterionAlphaEvolveSol
+      procedure, nopass :: LogHead       => LogHeadAlphaEvolveSol
+      procedure         :: Log           => LogAlphaEvolveSol
+
+      ! procedure         :: InitialiseAlphaEvolveSol
+      ! generic, public   :: Initialise    => InitialiseAlphaEvolveSol
+
+      ! procedure         :: AssignAlphaEvolveSol
+      ! generic, public   :: Assignment(=) => AssignAlphaEvolveSol
+
+      ! procedure         :: UpdateMeanAlphaEvolveSol
+      ! generic, public   :: UpdateMean    => UpdateMeanAlphaEvolveSol
+
+      ! procedure         :: CalcCriterionAlphaEvolveSol
+      ! generic, public   :: CalcCriterion => CalcCriterionAlphaEvolveSol
+
+      ! procedure, nopass :: LogHeadAlphaEvolveSol
+      ! generic, public   :: LogHead       => LogHeadAlphaEvolveSol
+
+      ! procedure         :: LogAlphaEvolveSol
+      ! generic, public   :: Log           => LogAlphaEvolveSol
   end type
 
   private
   ! Types
-  public :: EvolveCrit
+  public :: AlphaEvolveSol
   ! Methods
   public :: DifferentialEvolution, RandomSearch
 
   contains
-
-    !###########################################################################
-
-    subroutine AssignEvolveCrit(Out, In)
-      implicit none
-      class(EvolveCrit), intent(out) :: Out
-      class(EvolveCrit), intent(in)  :: In
-      Out%Value           = In%Value
-      Out%Penalty         = In%Penalty
-      Out%Gain            = In%Gain
-      Out%GainStand       = In%GainStand
-      Out%PopInb          = In%PopInb
-      Out%RatePopInb      = In%RatePopInb
-      Out%PrgInb          = In%PrgInb
-      if (allocated(In%GenericIndVal)) then
-        allocate(Out%GenericIndVal(size(In%GenericIndVal)))
-        Out%GenericIndVal = In%GenericIndVal
-      end if
-      if (allocated(In%GenericMatVal)) then
-        allocate(Out%GenericMatVal(size(In%GenericMatVal)))
-        Out%GenericMatVal = In%GenericMatVal
-      end if
-      Out%Cost            = In%Cost
-      if (allocated(In%nVec)) then
-        allocate(Out%nVec(size(In%nVec)))
-        Out%nVec          = In%nVec
-      end if
-      if (allocated(In%xVec)) then
-        allocate(Out%xVec(size(In%xVec)))
-        Out%xVec          = In%xVec
-      end if
-      if (allocated(In%MatingPlan)) then
-        allocate(Out%MatingPlan(size(In%MatingPlan, dim=1), size(In%MatingPlan, dim=2)))
-        Out%MatingPlan    = In%MatingPlan
-      end if
-      if (allocated(In%GenomeEdit)) then
-        allocate(Out%GenomeEdit(size(In%GenomeEdit)))
-        Out%GenomeEdit    = In%GenomeEdit
-      end if
-    end subroutine
-
-    !###########################################################################
-
-    subroutine UpdateMeanEvolveCrit(This, Add, n)
-      implicit none
-      ! Arguments
-      class(EvolveCrit), intent(inout) :: This
-      class(EvolveCrit), intent(in)    :: Add
-      integer(int32), intent(in)       :: n
-      ! Other
-      real(real64) :: nR, kR
-
-      nR = dble(n)
-      kR = (nR - 1.0d0) / nR
-
-      This%Value           = This%Value         * kR + Add%Value         / nR
-      This%Penalty         = This%Penalty       * kR + Add%Penalty       / nR
-      This%Gain            = This%Gain          * kR + Add%Gain          / nR
-      This%GainStand       = This%GainStand     * kR + Add%GainStand     / nR
-      This%PopInb          = This%PopInb        * kR + Add%PopInb        / nR
-      This%RatePopInb      = This%RatePopInb    * kR + Add%RatePopInb    / nR
-      This%PrgInb          = This%PrgInb        * kR + Add%PrgInb        / nR
-      if (allocated(This%GenericIndVal)) then
-        This%GenericIndVal = This%GenericIndVal * kR + Add%GenericIndVal / nR
-      end if
-      if (allocated(This%GenericMatVal)) then
-        This%GenericMatVal = This%GenericMatVal * kR + Add%GenericMatVal / nR
-      end if
-      This%Cost            = This%Cost          * kR + Add%Cost          / nR
-      if (allocated(This%nVec)) then
-        This%nVec          = This%nVec          * kR + Add%nVec          / nR
-      end if
-      if (allocated(This%xVec)) then
-        This%xVec          = This%xVec          * kR + Add%xVec          / nR
-      end if
-      if (allocated(This%MatingPlan)) then
-        This%MatingPlan    = This%MatingPlan    * kR + Add%MatingPlan    / nR
-      end if
-      if (allocated(This%GenomeEdit)) then
-        This%GenomeEdit    = This%GenomeEdit    * kR + Add%GenomeEdit    / nR
-      end if
-      return
-    end subroutine
-
     !###########################################################################
 
     subroutine DifferentialEvolution(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
       StopTolerance, nGenPrint, File, CritType, CRBurnIn, CRLate, FBase, FHigh1, FHigh2,&
-      CalcCriterion, LogHead, Log, BestCriterion)
+      BestSol)
 
       ! Evolutionary Algorithm - Differential Evolution (continuous representation of solution)
 
       implicit none
 
       ! Arguments
-      integer(int32), intent(in)          :: nParam         ! No. of parameters in a solution
-      integer(int32), intent(in)          :: nSol           ! No. of solutions to test each generation
-      real(real64), intent(in), optional  :: Init(:,:)      ! Initial solutions to start with
-      integer(int32), intent(in)          :: nGen           ! No. of generations to run
-      integer(int32), intent(in)          :: nGenBurnIn     ! No. of generations with more
-      integer(int32), intent(in)          :: nGenStop       ! Stop after no progress for nGenStop
-      real(real64), intent(in)            :: StopTolerance  ! Stopping tolerance
-      integer(int32), intent(in)          :: nGenPrint      ! Print changed solution every nGenPrint
-      character(len=*), intent(in)        :: File           ! Which file to write to
-      character(len=*), intent(in)        :: CritType       ! Passed to CalcCriterion
-      real(real64), intent(in), optional  :: CRBurnIn       ! Crossover rate for nGenBurnIn
-      real(real64), intent(in), optional  :: CRLate         ! Crossover rate
-      real(real64), intent(in), optional  :: FBase          ! F is multiplier of difference used to mutate
-      real(real64), intent(in), optional  :: FHigh1         ! F is multiplier of difference used to mutate
-      real(real64), intent(in), optional  :: FHigh2         ! F is multiplier of difference used to mutate
-      type(EvolveCrit), intent(out)       :: BestCriterion  ! Criterion for the best solution
-
-      interface
-        function CalcCriterion(Sol, CritType) result(Criterion)
-          use ISO_Fortran_Env
-          import :: EvolveCrit
-          real(real64), intent(inout)  :: Sol(:)
-          character(len=*), intent(in) :: CritType
-          type(EvolveCrit)             :: Criterion
-        end function
-
-        subroutine LogHead(LogUnit)
-          use ISO_Fortran_Env
-          integer(int32), intent(in) :: LogUnit
-        end subroutine
-
-        subroutine Log(LogUnit, Gen, AcceptRate, Criterion)
-          use ISO_Fortran_Env
-          import :: EvolveCrit
-          integer(int32), intent(in)   :: LogUnit
-          integer(int32), intent(in)   :: Gen
-          real(real64), intent(in)     :: AcceptRate
-          type(EvolveCrit), intent(in) :: Criterion
-        end subroutine
-      end interface
+      integer(int32), intent(in)             :: nParam         ! No. of parameters in a solution
+      integer(int32), intent(in)             :: nSol           ! No. of solutions to test each generation
+      real(real64), intent(in), optional     :: Init(:,:)      ! Initial solutions to start with
+      integer(int32), intent(in)             :: nGen           ! No. of generations to run
+      integer(int32), intent(in)             :: nGenBurnIn     ! No. of generations with more
+      integer(int32), intent(in)             :: nGenStop       ! Stop after no progress for nGenStop
+      real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
+      integer(int32), intent(in)             :: nGenPrint      ! Print changed solution every nGenPrint
+      character(len=*), intent(in)           :: File           ! Which file to write to
+      character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
+      real(real64), intent(in), optional     :: CRBurnIn       ! Crossover rate for nGenBurnIn
+      real(real64), intent(in), optional     :: CRLate         ! Crossover rate
+      real(real64), intent(in), optional     :: FBase          ! F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh1         ! F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh2         ! F is multiplier of difference used to mutate
+      class(AlphaEvolveSol), intent(out)     :: BestSol        ! The best evolved solution
+      !class(*), intent(inout)                :: BestSol        ! The best evolved solution
 
       ! Other
-      integer(int32) :: nInit, Param, ParamLoc, Sol, Gen, LastGenPrint, Unit
-      integer(int32) :: SolA, SolB, SolC, BestSol
+      integer(int32) :: nInit, Param, ParamLoc, Gen, LastGenPrint, Unit
+      integer(int32) :: i, a, b, c, j
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt
       real(real64) :: AcceptRate, OldChrom(nParam, nSol), NewChrom(nParam, nSol), Chrom(nParam)
-      real(real64) :: BestCriterionStopValue
+      real(real64) :: BestSolCriterion
 
       logical :: DiffOnly, BestSolChanged
 
-      type(EvolveCrit) :: Criterion(nSol), CriterionHold
+      class(AlphaEvolveSol), allocatable :: Sol(:), HoldSol
+      !class(*), allocatable :: Sol(:), HoldSol
+
+      allocate(Sol(nSol), source=BestSol)
+      allocate(HoldSol, source=BestSol)
 
       ! --- Initialize ---
 
       LastGenPrint = 0
-      BestCriterion%Value = -huge(RanNum)
-      BestCriterionStopValue = -huge(RanNum)
+      BestSolCriterion = -huge(RanNum)
 
-      ! --- Printout ---
+      ! --- Printout log header ---
 
       open(newunit=Unit, file=trim(File), status="unknown")
-      call LogHead(LogUnit=Unit)
+      call HoldSol%LogHead(LogUnit=Unit)
 
       ! --- Set parameters ---
 
@@ -242,17 +142,17 @@ module AlphaEvolveMod
 
       if (present(Init)) then
         nInit = size(Init, dim=2)
-        do Sol = 1, nInit
-          OldChrom(:,Sol) = Init(:,Sol)
-          Criterion(Sol) = CalcCriterion(OldChrom(:,Sol), CritType)
+        do i = 1, nInit
+          OldChrom(:,i) = Init(:,i)
+          call Sol(i)%CalcCriterion(OldChrom(:,i), CritType)
         end do
-        nInit = Sol
+        nInit = i
       else
         nInit = 1
       end if
-      do Sol = nInit, nSol
-        call random_number(OldChrom(:,Sol))
-        Criterion(Sol) = CalcCriterion(OldChrom(:,Sol), CritType)
+      do i = nInit, nSol
+        call random_number(OldChrom(:,i))
+        call Sol(i)%CalcCriterion(OldChrom(:,i), CritType)
       end do
 
       ! --- Evolve ---
@@ -290,8 +190,8 @@ module AlphaEvolveMod
 
         ! TODO: Paralelize this loop?
         !       The main reason would be to speed up the code as CalcCriterion() might take quite some time for larger problems
-        !       - some variables are local, say SolA, SolB, ...
-        !       - global variable is NewChrom, but is indexed with Sol so this should not be a problem
+        !       - some variables are local, say a, b, ...
+        !       - global variable is NewChrom, but is indexed with i so this should not be a problem
         !       - AcceptRate needs to be in sync between the threads!!!
         !       - we relly on random_number a lot here and updating the RNG state for each thread can be slow
         !         and I (GG) am also not sure if we should not have thread specific RNGs
@@ -301,27 +201,27 @@ module AlphaEvolveMod
         ! call OMP_set_num_threads(1)
 
         ! $OMP PARALLEL DO DEFAULT(PRIVATE)
-        do Sol = 1, nSol
+        do i = 1, nSol
 
           ! print *, "#Threads: ", OMP_get_num_threads(), "Thread; ", OMP_get_thread_num()+1, ", Solution: ", Sol
 
           ! --- Mutate and recombine ---
 
           ! Get three different solutions
-          SolA = Sol
-          do while (SolA == Sol)
+          a = i
+          do while (a == i)
             call random_number(RanNum)
-            SolA = int(RanNum * nSol) + 1
+            a = int(RanNum * nSol) + 1
           end do
-          SolB = Sol
-          do while ((SolB == Sol) .or. (SolB == SolA))
+          b = i
+          do while ((b == i) .or. (b == a))
             call random_number(RanNum)
-            SolB = int(RanNum * nSol) + 1
+            b = int(RanNum * nSol) + 1
           end do
-          SolC = Sol
-          do while ((SolC == Sol) .or. (SolC == SolA) .or. (SolC == SolB))
+          c = i
+          do while ((c == i) .or. (c == a) .or. (c == b))
             call random_number(RanNum)
-            SolC = int(RanNum * nSol) + 1
+            c = int(RanNum * nSol) + 1
           end do
 
           ! Mate the solutions
@@ -334,21 +234,21 @@ module AlphaEvolveMod
               call random_number(RanNum)
               if ((RanNum < 0.8d0) .or. DiffOnly) then
                 ! Differential mutation (with prob 0.8 or 1)
-                Chrom(Param) = OldChrom(Param, SolC) + FInt * (OldChrom(Param, SolA) - OldChrom(Param, SolB))
+                Chrom(Param) = OldChrom(Param, c) + FInt * (OldChrom(Param, a) - OldChrom(Param, b))
               else
                 ! Non-differential mutation (to avoid getting stuck)
                 call random_number(RanNum)
                 if (RanNum < 0.5d0) then
                   call random_number(RanNum)
-                  Chrom(Param) = OldChrom(Param, SolC) * (0.9d0 + 0.2d0 * RanNum)
+                  Chrom(Param) = OldChrom(Param, c) * (0.9d0 + 0.2d0 * RanNum)
                 else
                   call random_number(RanNum)
-                  Chrom(Param) = OldChrom(Param, SolC) + 0.01d0 * FInt * (OldChrom(Param, SolA) + 0.01d0) * (RanNum - 0.5d0)
+                  Chrom(Param) = OldChrom(Param, c) + 0.01d0 * FInt * (OldChrom(Param, a) + 0.01d0) * (RanNum - 0.5d0)
                 end if
               end if
             else
               ! Do not recombine
-              Chrom(Param) = OldChrom(Param, Sol)
+              Chrom(Param) = OldChrom(Param, i)
             end if
             Param = Param + 1
             if (Param > nParam) then
@@ -358,16 +258,16 @@ module AlphaEvolveMod
 
           ! --- Evaluate and Select ---
 
-          CriterionHold = CalcCriterion(Chrom, CritType)        ! Merit of competitor
-          if (CriterionHold%Value >= Criterion(Sol)%Value) then ! If competitor is better or equal, keep it
-            NewChrom(:,Sol) = Chrom(:)                          !   ("equal" to force evolution)
-            Criterion(Sol) = CriterionHold
+          call HoldSol%CalcCriterion(Chrom, CritType)     ! Merit of competitor
+          if (HoldSol%Criterion >= Sol(i)%Criterion) then ! If competitor is better or equal, keep it
+            NewChrom(:,i) = Chrom(:)                      !   ("equal" to force evolution)
+            Sol(i) = HoldSol
             ! $OMP ATOMIC
             AcceptRate = AcceptRate + 1.0d0
           else
-            NewChrom(:,Sol) = OldChrom(:,Sol)                   ! Else keep the old solution
+            NewChrom(:,i) = OldChrom(:,i)                 ! Else keep the old solution
           end if
-        end do ! Sol
+        end do ! i
         ! $OMP END PARALLEL DO
 
         AcceptRate = AcceptRate / dble(nSol)
@@ -378,10 +278,10 @@ module AlphaEvolveMod
 
         ! --- The current best solution ---
 
-        BestSol = maxloc(Criterion(:)%Value, dim=1)
-        if (Criterion(BestSol)%Value > BestCriterion%Value) then
+        j = maxloc(Sol(:)%Criterion, dim=1)
+        if (Sol(j)%Criterion > BestSol%Criterion) then
           BestSolChanged = .true.
-          BestCriterion = Criterion(BestSol)
+          BestSol = Sol(j)
         end if
 
         ! --- Monitor ---
@@ -389,17 +289,17 @@ module AlphaEvolveMod
         if (BestSolChanged) then
           if ((Gen == 1) .or. ((Gen - LastGenPrint) >= nGenPrint)) then
             LastGenPrint = Gen
-            call Log(Unit, Gen, AcceptRate, BestCriterion)
+            call BestSol%Log(Unit, Gen, AcceptRate)
           end if
         end if
 
         ! --- Test if solution is improving to continue or stop early ---
 
         if (mod(Gen, nGenStop) == 0) then
-          if ((BestCriterion%Value - BestCriterionStopValue) > StopTolerance) then
-            BestCriterionStopValue = BestCriterion%Value
+          if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then ! TODO
+            BestSolCriterion = BestSol%Criterion
           else
-            write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", &
+            write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
               trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nGenStop)), &
               " generations. Stopping the optimisation."
             write(STDOUT, "(a)") " "
@@ -411,7 +311,7 @@ module AlphaEvolveMod
 
       ! --- The winner solution ---
 
-      call Log(Unit, Gen, AcceptRate, BestCriterion)
+      call BestSol%Log(Unit, Gen, AcceptRate)
       write(STDOUT, "(a)") " "
       close(Unit)
     end subroutine
@@ -419,57 +319,37 @@ module AlphaEvolveMod
     !###########################################################################
 
     subroutine RandomSearch(Mode, nParam, Init, nSamp, nSampStop, StopTolerance, &
-      nSampPrint, File, CritType, CalcCriterion, LogHead, Log, BestCriterion)
+      nSampPrint, File, CritType, BestSol)
 
       ! Random search
 
       implicit none
 
       ! Arguments
-      character(len=*), intent(in)          :: Mode           ! Mode of search (max or avg)
-      integer(int32), intent(in)            :: nParam         ! No. of parameters in a solution
-      real(real64), intent(inout), optional :: Init(:,:)      ! Initial solutions to test
-      integer(int32), intent(in)            :: nSamp          ! No. of samples to test
-      integer(int32), intent(in), optional  :: nSampStop      ! Stop after no progress for nSampStop
-      real(real64), intent(in)              :: StopTolerance  ! Stopping tolerance
-      integer(int32), intent(in)            :: nSampPrint     ! Print changed solution every nSampPrint
-      character(len=*), intent(in)          :: File           ! Which file to write to
-      character(len=*), intent(in)          :: CritType       ! Passed to CalcCriterion
-      type(EvolveCrit), intent(out)         :: BestCriterion  ! Criterion for the best solution
-
-      interface
-        function CalcCriterion(Sol, CritType) result(Criterion)
-          use ISO_Fortran_Env
-          import :: EvolveCrit
-          real(real64), intent(inout)  :: Sol(:)
-          character(len=*), intent(in) :: CritType
-          type(EvolveCrit)             :: Criterion
-        end function
-
-        subroutine LogHead(LogUnit)
-          use ISO_Fortran_Env
-          integer(int32), intent(in) :: LogUnit
-        end subroutine
-
-        subroutine Log(LogUnit, Gen, AcceptRate, Criterion)
-          use ISO_Fortran_Env
-          import :: EvolveCrit
-          integer(int32), intent(in)   :: LogUnit
-          integer(int32), intent(in)   :: Gen
-          real(real64), intent(in)     :: AcceptRate
-          type(EvolveCrit), intent(in) :: Criterion
-        end subroutine
-      end interface
+      character(len=*), intent(in)           :: Mode           ! Mode of search (max or avg)
+      integer(int32), intent(in)             :: nParam         ! No. of parameters in a solution
+      real(real64), intent(inout), optional  :: Init(:,:)      ! Initial solutions to test
+      integer(int32), intent(in)             :: nSamp          ! No. of samples to test
+      integer(int32), intent(in), optional   :: nSampStop      ! Stop after no progress for nSampStop
+      real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
+      integer(int32), intent(in)             :: nSampPrint     ! Print changed solution every nSampPrint
+      character(len=*), intent(in)           :: File           ! Which file to write to
+      character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
+      class(AlphaEvolveSol), intent(out)     :: BestSol        ! The best found solution
+      !class(*), intent(inout)                :: BestSol        ! The best found solution
 
       ! Other
       integer(int32) :: nInit, Samp, LastSampPrint, Unit
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
-      real(real64) :: RanNum, AcceptRate, BestCriterionStopValue, Sol(nParam)
+      real(real64) :: RanNum, AcceptRate, BestSolCriterion, Chrom(nParam)
 
       logical :: ModeAvg, ModeMax, BestSolChanged
 
-      type(EvolveCrit) :: CriterionHold
+      class(AlphaEvolveSol), allocatable :: HoldSol
+      !class(*), allocatable :: HoldSol
+
+      allocate(HoldSol, source=BestSol)
 
       ! --- Mode ---
 
@@ -491,39 +371,37 @@ module AlphaEvolveMod
       LastSampPrint = 0
 
       if (ModeAvg) then
-        BestCriterion%Value = 0.0d0
-        BestCriterionStopValue = 0.0d0
+        BestSolCriterion = 0.0d0
         BestSolChanged = .true.
         AcceptRate = 1.0d0
       end if
 
       if (ModeMax) then
-        BestCriterion%Value = -huge(RanNum)
-        BestCriterionStopValue = -huge(RanNum)
+        BestSolCriterion = -huge(RanNum)
         BestSolChanged = .false.
         AcceptRate = 0.0d0
       end if
 
-      ! --- Printout ---
+      ! --- Printout log header ---
 
       open(newunit=Unit, file=trim(File), status="unknown")
-      call LogHead(LogUnit=Unit)
+      call HoldSol%LogHead(LogUnit=Unit)
 
       ! --- Initialise with the provided solutions ---
 
       if (present(Init)) then
         nInit = size(Init, dim=2)
         do Samp = 1, nInit
-          CriterionHold = CalcCriterion(Init(:, Samp), CritType)
+          call HoldSol%CalcCriterion(Init(:, Samp), CritType)
           if      (ModeAvg) then
             if (Samp == 1) then
-              BestCriterion = CriterionHold
+              BestSol = HoldSol
             else
-              call BestCriterion%UpdateMean(CriterionHold, Samp)
+              call BestSol%UpdateMean(HoldSol, Samp)
             end if
           else if (ModeMax) then
-            if (CriterionHold%Value > BestCriterion%Value) then
-              BestCriterion = CriterionHold
+            if (HoldSol%Criterion > BestSolCriterion) then
+              BestSol = HoldSol
               AcceptRate = AcceptRate + 1.0d0
             end if
           end if
@@ -541,25 +419,25 @@ module AlphaEvolveMod
 
         ! --- Generate a competitor ---
 
-        call random_number(Sol(:))
+        call random_number(Chrom(:))
 
         ! --- Evaluate and Select ---
 
         ! Merit of the competitor
-        CriterionHold = CalcCriterion(Sol(:), CritType)
+        call HoldSol%CalcCriterion(Chrom(:), CritType)
 
         if      (ModeAvg) then
           ! Update the mean
           if (Samp == 1) then
-            BestCriterion = CriterionHold
+            BestSol = HoldSol
           else
-            call BestCriterion%UpdateMean(CriterionHold, Samp)
+            call BestSol%UpdateMean(HoldSol, Samp)
           end if
           BestSolChanged = .true.
         else if (ModeMax) then
           ! If the competitor is better, keep it
-          if (CriterionHold%Value > BestCriterion%Value) then
-            BestCriterion = CriterionHold
+          if (HoldSol%Criterion > BestSol%Criterion) then
+            BestSol = HoldSol
             BestSolChanged = .true.
             AcceptRate = AcceptRate + 1.0d0
           end if
@@ -570,10 +448,10 @@ module AlphaEvolveMod
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
             if      (ModeAvg) then
-              call Log(Unit, Samp, AcceptRate, BestCriterion)
+              call BestSol%Log(Unit, Samp, AcceptRate)
             else if (ModeMax) then
               AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
-              call Log(Unit, Samp, AcceptRate, BestCriterion)
+              call BestSol%Log(Unit, Samp, AcceptRate)
               AcceptRate = 0.0d0
             end if
             LastSampPrint = Samp
@@ -583,10 +461,10 @@ module AlphaEvolveMod
         ! --- Test if solution is improving to continue or stop early ---
 
         if (mod(Samp, nSampStop) == 0) then
-          if ((BestCriterion%Value - BestCriterionStopValue) > StopTolerance) then
-            BestCriterionStopValue = BestCriterion%Value
+          if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then
+            BestSolCriterion = BestSol%Criterion
           else
-            write(STDOUT, "(5a)") "NOTE: Objective did not improve for ", &
+            write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
               trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nSampStop)), &
               " samples. Stopping the random search."
             write(STDOUT, "(a)") " "
@@ -601,10 +479,110 @@ module AlphaEvolveMod
       if (ModeMax) then
         AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
       end if
-      call Log(Unit, Samp, AcceptRate, BestCriterion)
+      call BestSol%Log(Unit, Samp, AcceptRate)
       write(STDOUT, "(a)") " "
       close(Unit)
     end subroutine
 
     !###########################################################################
+
+    subroutine InitialiseAlphaEvolveSol(This)
+      implicit none
+
+      ! Argument
+      class(AlphaEvolveSol), intent(out) :: This
+
+      ! Initialisation
+      This%Criterion = 0.0d0
+    end subroutine
+
+    !###########################################################################
+
+    subroutine AssignAlphaEvolveSol(Out, In)
+      implicit none
+
+      ! Arguments
+      class(AlphaEvolveSol), intent(out) :: Out
+      class(AlphaEvolveSol), intent(in)  :: In
+
+      ! Assignments
+      Out%Criterion = In%Criterion
+    end subroutine
+
+    !###########################################################################
+
+    subroutine UpdateMeanAlphaEvolveSol(This, Add, n)
+      implicit none
+
+      ! Arguments
+      class(AlphaEvolveSol), intent(inout) :: This
+      class(AlphaEvolveSol), intent(in)    :: Add
+      integer(int32), intent(in)           :: n
+
+      ! Other
+      real(real64) :: nR, kR
+
+      ! Updates
+      nR = dble(n)
+      kR = (nR - 1.0d0) / nR
+
+      This%Criterion = This%Criterion * kR + Add%Criterion / nR
+    end subroutine
+
+    !###########################################################################
+
+    subroutine CalcCriterionAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here
+      implicit none
+
+      ! Arguments
+      class(AlphaEvolveSol)        :: This      ! Solution
+      real(real64), intent(inout)  :: Chrom(:)  ! Internal representation of the solution
+      character(len=*), intent(in) :: CritType  ! Type of criterion; not used here
+
+      ! Initialize the solution
+      call This%Initialise()
+
+      ! Criterion (just a random number here for simplicity)
+      call random_number(This%Criterion)
+    end subroutine
+
+    !###########################################################################
+
+    subroutine LogHeadAlphaEvolveSol(LogUnit)
+      implicit none
+      integer(int32), intent(in), optional :: LogUnit
+
+      character(len=12) :: colnamelogstdout(3)
+      character(len=22) :: colnamelogunit(3)
+      !                      123456789012
+      colnamelogstdout(1) = "        Step"
+      colnamelogstdout(2) = "  AcceptRate"
+      colnamelogstdout(3) = "   Criterion"
+      !                    1234567890123456789012
+      colnamelogunit(1) = "                  Step"
+      colnamelogunit(2) = "            AcceptRate"
+      colnamelogunit(3) = "             Criterion"
+      write(STDOUT, "(3a12)")    colnamelogstdout(:)
+      if (present(LogUnit)) then
+        write(LogUnit, "(3a22)") colnamelogunit(:)
+      end if
+    end subroutine
+
+    !###########################################################################
+
+    subroutine LogAlphaEvolveSol(This, LogUnit, Gen, AcceptRate)
+      implicit none
+      class(AlphaEvolveSol), intent(in)    :: This
+      integer(int32), intent(in), optional :: LogUnit
+      integer(int32), intent(in)           :: Gen
+      real(real64), intent(in)             :: AcceptRate
+      write(STDOUT,  "(i12, 2(1x, f11.5))")     Gen, AcceptRate, This%Criterion
+      if (present(LogUnit)) then
+        write(LogUnit, "(i22, 2(1x, es21.14))") Gen, AcceptRate, This%Criterion
+      end if
+    end subroutine
+
+    !###########################################################################
 end module
+
+!###############################################################################
