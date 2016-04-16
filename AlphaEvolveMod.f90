@@ -13,29 +13,10 @@ module AlphaEvolveMod
     contains
       procedure         :: Initialise    => InitialiseAlphaEvolveSol
       procedure         :: Assign        => AssignAlphaEvolveSol
-      generic, public   :: Assignment(=) => Assign
       procedure         :: UpdateMean    => UpdateMeanAlphaEvolveSol
       procedure         :: CalcCriterion => CalcCriterionAlphaEvolveSol
       procedure, nopass :: LogHead       => LogHeadAlphaEvolveSol
       procedure         :: Log           => LogAlphaEvolveSol
-
-      ! procedure         :: InitialiseAlphaEvolveSol
-      ! generic, public   :: Initialise    => InitialiseAlphaEvolveSol
-
-      ! procedure         :: AssignAlphaEvolveSol
-      ! generic, public   :: Assignment(=) => AssignAlphaEvolveSol
-
-      ! procedure         :: UpdateMeanAlphaEvolveSol
-      ! generic, public   :: UpdateMean    => UpdateMeanAlphaEvolveSol
-
-      ! procedure         :: CalcCriterionAlphaEvolveSol
-      ! generic, public   :: CalcCriterion => CalcCriterionAlphaEvolveSol
-
-      ! procedure, nopass :: LogHeadAlphaEvolveSol
-      ! generic, public   :: LogHead       => LogHeadAlphaEvolveSol
-
-      ! procedure         :: LogAlphaEvolveSol
-      ! generic, public   :: Log           => LogAlphaEvolveSol
   end type
 
   private
@@ -88,13 +69,14 @@ module AlphaEvolveMod
       class(AlphaEvolveSol), allocatable :: Sol(:), HoldSol
       !class(*), allocatable :: Sol(:), HoldSol
 
+      ! --- Allocate and Initialize ---
+
       allocate(Sol(nSol), source=BestSol)
       allocate(HoldSol, source=BestSol)
 
-      ! --- Initialize ---
-
       LastGenPrint = 0
       BestSolCriterion = -huge(RanNum)
+      BestSol%Criterion = BestSolCriterion
 
       ! --- Printout log header ---
 
@@ -261,7 +243,7 @@ module AlphaEvolveMod
           call HoldSol%CalcCriterion(Chrom, CritType)     ! Merit of competitor
           if (HoldSol%Criterion >= Sol(i)%Criterion) then ! If competitor is better or equal, keep it
             NewChrom(:,i) = Chrom(:)                      !   ("equal" to force evolution)
-            Sol(i) = HoldSol
+            call Sol(i)%Assign(HoldSol)
             ! $OMP ATOMIC
             AcceptRate = AcceptRate + 1.0d0
           else
@@ -281,7 +263,7 @@ module AlphaEvolveMod
         j = maxloc(Sol(:)%Criterion, dim=1)
         if (Sol(j)%Criterion > BestSol%Criterion) then
           BestSolChanged = .true.
-          BestSol = Sol(j)
+          call BestSol%Assign(Sol(j))
         end if
 
         ! --- Monitor ---
@@ -349,8 +331,6 @@ module AlphaEvolveMod
       class(AlphaEvolveSol), allocatable :: HoldSol
       !class(*), allocatable :: HoldSol
 
-      allocate(HoldSol, source=BestSol)
-
       ! --- Mode ---
 
       ModeAvg = .false.
@@ -366,7 +346,9 @@ module AlphaEvolveMod
         stop 1
       end if
 
-      ! --- Initialize ---
+      ! --- Allocate and Initialise ---
+
+      allocate(HoldSol, source=BestSol)
 
       LastSampPrint = 0
 
@@ -378,6 +360,7 @@ module AlphaEvolveMod
 
       if (ModeMax) then
         BestSolCriterion = -huge(RanNum)
+        BestSol%Criterion = BestSolCriterion
         BestSolChanged = .false.
         AcceptRate = 0.0d0
       end if
@@ -395,13 +378,13 @@ module AlphaEvolveMod
           call HoldSol%CalcCriterion(Init(:, Samp), CritType)
           if      (ModeAvg) then
             if (Samp == 1) then
-              BestSol = HoldSol
+              call BestSol%Assign(HoldSol)
             else
               call BestSol%UpdateMean(HoldSol, Samp)
             end if
           else if (ModeMax) then
             if (HoldSol%Criterion > BestSolCriterion) then
-              BestSol = HoldSol
+              call BestSol%Assign(HoldSol)
               AcceptRate = AcceptRate + 1.0d0
             end if
           end if
@@ -429,7 +412,7 @@ module AlphaEvolveMod
         if      (ModeAvg) then
           ! Update the mean
           if (Samp == 1) then
-            BestSol = HoldSol
+            call BestSol%Assign(HoldSol)
           else
             call BestSol%UpdateMean(HoldSol, Samp)
           end if
@@ -437,7 +420,7 @@ module AlphaEvolveMod
         else if (ModeMax) then
           ! If the competitor is better, keep it
           if (HoldSol%Criterion > BestSol%Criterion) then
-            BestSol = HoldSol
+            call BestSol%Assign(HoldSol)
             BestSolChanged = .true.
             AcceptRate = AcceptRate + 1.0d0
           end if
