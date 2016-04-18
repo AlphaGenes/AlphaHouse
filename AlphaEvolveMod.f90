@@ -278,7 +278,7 @@ module AlphaEvolveMod
         ! --- Test if solution is improving to continue or stop early ---
 
         if (mod(Gen, nGenStop) == 0) then
-          if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then ! TODO
+          if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then
             BestSolCriterion = BestSol%Criterion
           else
             write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
