@@ -17,6 +17,8 @@ module AlphaEvolveMod
       procedure         :: CalcCriterion => CalcCriterionAlphaEvolveSol
       procedure, nopass :: LogHead       => LogHeadAlphaEvolveSol
       procedure         :: Log           => LogAlphaEvolveSol
+      procedure, nopass :: LogPopHead    => LogPopHeadAlphaEvolveSol
+      procedure         :: LogPop        => LogPopAlphaEvolveSol
   end type
 
   private
@@ -29,8 +31,8 @@ module AlphaEvolveMod
     !###########################################################################
 
     subroutine DifferentialEvolution(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
-      StopTolerance, nGenPrint, File, CritType, CRBurnIn, CRLate, FBase, FHigh1, FHigh2,&
-      BestSol)
+      StopTolerance, nGenPrint, LogFile, LogPop, LogPopFile, CritType, CRBurnIn, CRLate, FBase,&
+      FHigh1, FHigh2, BestSol)
 
       ! Evolutionary Algorithm - Differential Evolution (continuous representation of solution)
 
@@ -45,7 +47,9 @@ module AlphaEvolveMod
       integer(int32), intent(in)             :: nGenStop       ! Stop after no progress for nGenStop
       real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
       integer(int32), intent(in)             :: nGenPrint      ! Print changed solution every nGenPrint
-      character(len=*), intent(in)           :: File           ! Which file to write to
+      character(len=*), intent(in)           :: LogFile        ! Which file to log best solution into
+      logical, intent(in), optional          :: LogPop         ! Log all solutions
+      character(len=*), intent(in), optional :: LogPopFile     ! Which file to log all solutions into
       character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
       real(real64), intent(in), optional     :: CRBurnIn       ! Crossover rate for nGenBurnIn
       real(real64), intent(in), optional     :: CRLate         ! Crossover rate
@@ -56,7 +60,7 @@ module AlphaEvolveMod
       !class(*), intent(inout)                :: BestSol        ! The best evolved solution
 
       ! Other
-      integer(int32) :: nInit, Param, ParamLoc, Gen, LastGenPrint, Unit
+      integer(int32) :: nInit, Param, ParamLoc, Gen, LastGenPrint, LogUnit, LogPopUnit
       integer(int32) :: i, a, b, c, j
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
@@ -64,7 +68,7 @@ module AlphaEvolveMod
       real(real64) :: AcceptRate, OldChrom(nParam, nSol), NewChrom(nParam, nSol), Chrom(nParam)
       real(real64) :: BestSolCriterion
 
-      logical :: DiffOnly, BestSolChanged
+      logical :: DiffOnly, BestSolChanged, LogPopInternal
 
       class(AlphaEvolveSol), allocatable :: Sol(:), HoldSol
       !class(*), allocatable :: Sol(:), HoldSol
@@ -78,10 +82,28 @@ module AlphaEvolveMod
       BestSolCriterion = -huge(RanNum)
       BestSol%Criterion = BestSolCriterion
 
+      if (present(LogPop)) then
+        LogPopInternal = LogPop
+      else
+        LogPopInternal = .false.
+      end if
+
+      if (LogPopInternal) then
+        if (.not. present(LogPopFile)) then
+          write (STDERR, "(a)") "ERROR: When LogPop is .true. the LogPopFile must be given!"
+          write (STDERR, "(a)") " "
+          stop 1
+        end if
+      end if
+
       ! --- Printout log header ---
 
-      open(newunit=Unit, file=trim(File), status="unknown")
-      call HoldSol%LogHead(LogUnit=Unit)
+      open(newunit=LogUnit, file=trim(LogFile), status="unknown")
+      call HoldSol%LogHead(LogUnit=LogUnit)
+      if (LogPopInternal) then
+        open(newunit=LogPopUnit, file=trim(LogPopFile), status="unknown")
+        call HoldSol%LogPopHead(LogPopUnit)
+      end if
 
       ! --- Set parameters ---
 
@@ -271,7 +293,12 @@ module AlphaEvolveMod
         if (BestSolChanged) then
           if ((Gen == 1) .or. ((Gen - LastGenPrint) >= nGenPrint)) then
             LastGenPrint = Gen
-            call BestSol%Log(Unit, Gen, AcceptRate)
+            call BestSol%Log(LogUnit, Gen, AcceptRate)
+            if (LogPopInternal) then
+              do i = 1, nSol
+                call Sol(i)%LogPop(LogPopUnit, Gen, i)
+              end do
+            end if
           end if
         end if
 
@@ -293,15 +320,18 @@ module AlphaEvolveMod
 
       ! --- The winner solution ---
 
-      call BestSol%Log(Unit, Gen, AcceptRate)
+      call BestSol%Log(LogUnit, Gen, AcceptRate)
       write(STDOUT, "(a)") " "
-      close(Unit)
+      close(LogUnit)
+      if (LogPopInternal) then
+        close(LogPopUnit)
+      end if
     end subroutine
 
     !###########################################################################
 
     subroutine RandomSearch(Mode, nParam, Init, nSamp, nSampStop, StopTolerance, &
-      nSampPrint, File, CritType, BestSol)
+      nSampPrint, LogFile, CritType, BestSol)
 
       ! Random search
 
@@ -315,13 +345,13 @@ module AlphaEvolveMod
       integer(int32), intent(in), optional   :: nSampStop      ! Stop after no progress for nSampStop
       real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
       integer(int32), intent(in)             :: nSampPrint     ! Print changed solution every nSampPrint
-      character(len=*), intent(in)           :: File           ! Which file to write to
+      character(len=*), intent(in)           :: LogFile        ! Which file to log best solution into
       character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
       class(AlphaEvolveSol), intent(out)     :: BestSol        ! The best found solution
       !class(*), intent(inout)                :: BestSol        ! The best found solution
 
       ! Other
-      integer(int32) :: nInit, Samp, LastSampPrint, Unit
+      integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, AcceptRate, BestSolCriterion, Chrom(nParam)
@@ -367,8 +397,8 @@ module AlphaEvolveMod
 
       ! --- Printout log header ---
 
-      open(newunit=Unit, file=trim(File), status="unknown")
-      call HoldSol%LogHead(LogUnit=Unit)
+      open(newunit=LogUnit, file=trim(LogFile), status="unknown")
+      call HoldSol%LogHead(LogUnit=LogUnit)
 
       ! --- Initialise with the provided solutions ---
 
@@ -431,10 +461,10 @@ module AlphaEvolveMod
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
             if      (ModeAvg) then
-              call BestSol%Log(Unit, Samp, AcceptRate)
+              call BestSol%Log(LogUnit, Samp, AcceptRate)
             else if (ModeMax) then
               AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
-              call BestSol%Log(Unit, Samp, AcceptRate)
+              call BestSol%Log(LogUnit, Samp, AcceptRate)
               AcceptRate = 0.0d0
             end if
             LastSampPrint = Samp
@@ -462,9 +492,9 @@ module AlphaEvolveMod
       if (ModeMax) then
         AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
       end if
-      call BestSol%Log(Unit, Samp, AcceptRate)
+      call BestSol%Log(LogUnit, Samp, AcceptRate)
       write(STDOUT, "(a)") " "
-      close(Unit)
+      close(LogUnit)
     end subroutine
 
     !###########################################################################
@@ -535,19 +565,19 @@ module AlphaEvolveMod
       implicit none
       integer(int32), intent(in), optional :: LogUnit
 
-      character(len=12) :: colnamelogstdout(3)
-      character(len=22) :: colnamelogunit(3)
+      character(len=12) :: ColnameLogStdout(3)
+      character(len=22) :: ColnameLogUnit(3)
       !                      123456789012
-      colnamelogstdout(1) = "        Step"
-      colnamelogstdout(2) = "  AcceptRate"
-      colnamelogstdout(3) = "   Criterion"
+      ColnameLogStdout(1) = "        Step"
+      ColnameLogStdout(2) = "  AcceptRate"
+      ColnameLogStdout(3) = "   Criterion"
       !                    1234567890123456789012
-      colnamelogunit(1) = "                  Step"
-      colnamelogunit(2) = "            AcceptRate"
-      colnamelogunit(3) = "             Criterion"
-      write(STDOUT, "(3a12)")    colnamelogstdout(:)
+      ColnameLogUnit(1) = "                  Step"
+      ColnameLogUnit(2) = "            AcceptRate"
+      ColnameLogUnit(3) = "             Criterion"
+      write(STDOUT, "(3a12)")    ColnameLogStdout(:)
       if (present(LogUnit)) then
-        write(LogUnit, "(3a22)") colnamelogunit(:)
+        write(LogUnit, "(3a22)") ColnameLogUnit(:)
       end if
     end subroutine
 
@@ -563,6 +593,31 @@ module AlphaEvolveMod
       if (present(LogUnit)) then
         write(LogUnit, "(i22, 2(1x, es21.14))") Gen, AcceptRate, This%Criterion
       end if
+    end subroutine
+
+    !###########################################################################
+
+    subroutine LogPopHeadAlphaEvolveSol(LogPopUnit)
+      implicit none
+      integer(int32), intent(in) :: LogPopUnit
+
+      character(len=22) :: ColnameLogPopUnit(3)
+      !                       1234567890123456789012
+      ColnameLogPopUnit(1) = "                  Step"
+      ColnameLogPopUnit(2) = "              Solution"
+      ColnameLogPopUnit(3) = "             Criterion"
+      write(LogPopUnit, "(3a22)") ColnameLogPopUnit(:)
+    end subroutine
+
+    !###########################################################################
+
+    subroutine LogPopAlphaEvolveSol(This, LogPopUnit, Gen, i)
+      implicit none
+      class(AlphaEvolveSol), intent(in) :: This
+      integer(int32), intent(in)        :: LogPopUnit
+      integer(int32), intent(in)        :: Gen
+      integer(int32), intent(in)        :: i
+      write(LogPopUnit, "(2(i22, 1x), es21.14)") Gen, i, This%Criterion
     end subroutine
 
     !###########################################################################
