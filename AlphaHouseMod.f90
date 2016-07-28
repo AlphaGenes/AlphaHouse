@@ -23,9 +23,6 @@ module AlphaHouseMod
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
   end interface
 
-  ! TODO: add Char2Real
-  ! TODO: add Char2Int
-
   contains
 
     !###########################################################################
@@ -54,6 +51,20 @@ module AlphaHouseMod
         end if
       end do
       close(Unit)
+      return
+    end function
+
+    !###########################################################################
+
+    function Char2Int(c) result(Res)
+      ! From http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
+
+      implicit none
+
+      character(*), intent(in) :: c
+      integer(int32)           :: Res
+
+      read(c, *) Res
       return
     end function
 
@@ -250,6 +261,7 @@ module AlphaHouseMod
     end function
 
     !###########################################################################
+
     subroutine SetSeed(Seed,SeedFile,Out)
 
       implicit none
