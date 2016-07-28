@@ -111,7 +111,7 @@ module AlphaStatMod
       real(real32),intent(in)  :: x(:)
       real(real32)             :: Res
 
-      Res=sum(x(:))/real(size(x))
+      Res=sum(x(:)) / size(x)
       return
     end function
 
@@ -124,7 +124,7 @@ module AlphaStatMod
       real(real64),intent(in)  :: x(:)
       real(real64)             :: Res
 
-      Res=sum(x(:))/dble(size(x))
+      Res=sum(x(:)) / size(x)
       return
     end function
 
@@ -140,7 +140,7 @@ module AlphaStatMod
       ! Other
       integer(int32) i,n
 
-      real(real32) :: nR,MeanIn,Dev
+      real(real32) :: MeanIn,Dev
 
       n=size(x)
       if (n < 1) then
@@ -149,9 +149,8 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=real(n)
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/nR
+        MeanIn=sum(x(:))/n
       else
         MeanIn=Mean
       end if
@@ -162,7 +161,7 @@ module AlphaStatMod
         Res=Res+Dev*Dev
       end do
 
-      Res=Res/(nR-1.0)
+      Res=Res/(n-1)
       return
     end function
 
@@ -179,7 +178,7 @@ module AlphaStatMod
       ! Other
       integer(int32) i,n
 
-      real(real64) :: nR,MeanIn,Dev
+      real(real64) :: MeanIn,Dev
 
       n=size(x)
       if (n < 1) then
@@ -188,9 +187,8 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=dble(n)
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/nR
+        MeanIn=sum(x(:))/n
       else
         MeanIn=Mean
       end if
@@ -201,7 +199,7 @@ module AlphaStatMod
         Res=Res+Dev*Dev
       end do
 
-      Res=Res/(nR-1.0d0)
+      Res=Res/(n-1)
       return
     end function
 
@@ -244,7 +242,7 @@ module AlphaStatMod
 
       ! Other
       integer(int32) i,n
-      real(real32) :: nR,Dev,Mul
+      real(real32) :: Dev,Mul
 
       n=size(x)
       if (n < 1) then
@@ -253,8 +251,7 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=real(n)
-      Res%Mean=sum(x(:))/nR
+      Res%Mean=sum(x(:))/n
       Res%Var=0.0
       Res%Skew=0.0
       Res%Curt=0.0
@@ -269,11 +266,11 @@ module AlphaStatMod
         Res%Curt=Res%Curt+Mul
       end do
 
-      Res%Var=Res%Var/(nR-1.0)
+      Res%Var=Res%Var/(n-1)
       Res%SD=sqrt(Res%Var)
       if (Res%Var > 0.0) then
-        Res%Skew=Res%Skew/(nR*Res%SD**3)
-        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0
+        Res%Skew=Res%Skew/(n*Res%SD**3)
+        Res%Curt=Res%Curt/(n*Res%Var**2)-3.0
       end if
 
       Res%Min=minval(x(:))
@@ -293,7 +290,7 @@ module AlphaStatMod
       ! Other
       integer(int32) i,n
 
-      real(real64) :: nR,Dev,Mul
+      real(real64) :: Dev,Mul
 
       n=size(x)
       if (n < 1) then
@@ -302,8 +299,7 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=dble(n)
-      Res%Mean=sum(x(:))/nR
+      Res%Mean=sum(x(:))/n
       Res%Var=0.0d0
       Res%Skew=0.0d0
       Res%Curt=0.0d0
@@ -318,11 +314,11 @@ module AlphaStatMod
         Res%Curt=Res%Curt+Mul
       end do
 
-      Res%Var=Res%Var/(nR-1.0d0)
+      Res%Var=Res%Var/(n-1)
       Res%SD=sqrt(Res%Var)
       if (Res%Var > 0.0d0) then
-        Res%Skew=Res%Skew/(nR*Res%SD**3)
-        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0d0
+        Res%Skew=Res%Skew/(n*Res%SD**3)
+        Res%Curt=Res%Curt/(n*Res%Var**2)-3.0d0
       end if
 
       Res%Min=minval(x(:))
@@ -370,7 +366,7 @@ module AlphaStatMod
       end if
 
       ! Off-diagonal (lower-triangle only!!!)
-      allocate(OffDiagVal(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
       do j=1,(p-1)
         do i=(j+1),n
@@ -426,7 +422,7 @@ module AlphaStatMod
       end if
 
       ! Off-diagonal (lower-triangle only!!!)
-      allocate(OffDiagVal(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
       do j=1,(p-1)
         do i=(j+1),n
@@ -535,12 +531,11 @@ module AlphaStatMod
 
       ! Other
       integer(int32) :: i,n
-      real(real32) :: nR,MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
+      real(real32) :: MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
 
       n=size(x)
-      nR=real(n)
-      MeanX=sum(x(:))/nR
-      MeanY=sum(y(:))/nR
+      MeanX=sum(x(:))/n
+      MeanY=sum(y(:))/n
       SumXX=0.0
       SumXY=0.0
       SumYY=0.0
@@ -552,9 +547,9 @@ module AlphaStatMod
         SumYY=SumYY+DevY*DevY
       end do
       Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Res%Cov=SumXY/(nR-1.0)
-      Res%Var1=SumXX/(nR-1.0)
-      Res%Var2=SumYY/(nR-1.0)
+      Res%Cov=SumXY/(n-1)
+      Res%Var1=SumXX/(n-1)
+      Res%Var2=SumYY/(n-1)
       return
     end function
 
@@ -569,12 +564,11 @@ module AlphaStatMod
 
       ! Other
       integer(int32) :: i,n
-      real(real64) :: nR,MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
+      real(real64) :: MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
 
       n=size(x)
-      nR=dble(n)
-      MeanX=sum(x(:))/nR
-      MeanY=sum(y(:))/nR
+      MeanX=sum(x(:))/n
+      MeanY=sum(y(:))/n
       SumXX=0.0d0
       SumXY=0.0d0
       SumYY=0.0d0
@@ -586,9 +580,9 @@ module AlphaStatMod
         SumYY=SumYY+DevY*DevY
       end do
       Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Res%Cov=SumXY/(nR-1.0d0)
-      Res%Var1=SumXX/(nR-1.0d0)
-      Res%Var2=SumYY/(nR-1.0d0)
+      Res%Cov=SumXY/(n-1)
+      Res%Var1=SumXX/(n-1)
+      Res%Var2=SumYY/(n-1)
       return
     end function
 

@@ -274,7 +274,7 @@ module AlphaEvolveMod
         end do ! i
         ! $OMP END PARALLEL DO
 
-        AcceptRate = AcceptRate / dble(nSol)
+        AcceptRate = AcceptRate / nSol
 
         ! --- New parents ---
 
@@ -463,7 +463,7 @@ module AlphaEvolveMod
             if      (ModeAvg) then
               call BestSol%Log(LogUnit, Samp, AcceptRate)
             else if (ModeMax) then
-              AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+              AcceptRate = AcceptRate / (Samp - LastSampPrint)
               call BestSol%Log(LogUnit, Samp, AcceptRate)
               AcceptRate = 0.0d0
             end if
@@ -490,7 +490,7 @@ module AlphaEvolveMod
       ! --- The winner solution ---
 
       if (ModeMax) then
-        AcceptRate = AcceptRate / dble(Samp - LastSampPrint)
+        AcceptRate = AcceptRate / (Samp - LastSampPrint)
       end if
       call BestSol%Log(LogUnit, Samp, AcceptRate)
       write(STDOUT, "(a)") " "
@@ -533,13 +533,12 @@ module AlphaEvolveMod
       integer(int32), intent(in)           :: n
 
       ! Other
-      real(real64) :: nR, kR
+      real(real64) :: kR
 
       ! Updates
-      nR = dble(n)
-      kR = (nR - 1.0d0) / nR
+      kR = (dble(n) - 1.0d0) / n
 
-      This%Criterion = This%Criterion * kR + Add%Criterion / nR
+      This%Criterion = This%Criterion * kR + Add%Criterion / n
     end subroutine
 
     !###########################################################################
