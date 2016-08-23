@@ -40,10 +40,10 @@ module AlphaEvolveMod
 
       ! Arguments
       integer(int32), intent(in)             :: nParam         ! No. of parameters in a solution
-      integer(int32), intent(in)             :: nSol           ! No. of solutions to test each generation
+      integer(int32), intent(in)             :: nSol           ! No. of solutions to test each generation/Iteration
       real(real64), intent(in), optional     :: Init(:,:)      ! Initial solutions to start with
-      integer(int32), intent(in)             :: nGen           ! No. of generations to run
-      integer(int32), intent(in)             :: nGenBurnIn     ! No. of generations with more
+      integer(int32), intent(in)             :: nGen           ! No. of generations/iterations to run
+      integer(int32), intent(in)             :: nGenBurnIn     ! No. of generations/iterations with more loose parameters
       integer(int32), intent(in)             :: nGenStop       ! Stop after no progress for nGenStop
       real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
       integer(int32), intent(in)             :: nGenPrint      ! Print changed solution every nGenPrint
@@ -310,7 +310,7 @@ module AlphaEvolveMod
           else
             write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
               trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nGenStop)), &
-              " generations. Stopping the optimisation."
+              " iterations. Stopping the optimisation."
             write(STDOUT, "(a)") " "
             exit
           end if
@@ -567,11 +567,11 @@ module AlphaEvolveMod
       character(len=12) :: ColnameLogStdout(3)
       character(len=22) :: ColnameLogUnit(3)
       !                      123456789012
-      ColnameLogStdout(1) = "        Step"
+      ColnameLogStdout(1) = "   Iteration"
       ColnameLogStdout(2) = "  AcceptRate"
       ColnameLogStdout(3) = "   Criterion"
       !                    1234567890123456789012
-      ColnameLogUnit(1) = "                  Step"
+      ColnameLogUnit(1) = "             Iteration"
       ColnameLogUnit(2) = "            AcceptRate"
       ColnameLogUnit(3) = "             Criterion"
       write(STDOUT, "(3a12)")    ColnameLogStdout(:)
@@ -602,7 +602,7 @@ module AlphaEvolveMod
 
       character(len=22) :: ColnameLogPopUnit(3)
       !                       1234567890123456789012
-      ColnameLogPopUnit(1) = "                  Step"
+      ColnameLogPopUnit(1) = "             Iteration"
       ColnameLogPopUnit(2) = "              Solution"
       ColnameLogPopUnit(3) = "             Criterion"
       write(LogPopUnit, "(3a22)") ColnameLogPopUnit(:)
