@@ -293,7 +293,7 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatD(x) result(Res)
+    function CalcDescStatD(x,w) result(Res)
       implicit none
 
       ! Arguments
