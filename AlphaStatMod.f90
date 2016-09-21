@@ -104,38 +104,49 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcMeanS(x) result(Res)
+    function CalcMeanS(x, w) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)  :: x(:)
-      real(real32)             :: Res
+      real(real32),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      real(real32)                     :: Res
 
-      Res=sum(x(:)) / size(x)
+      if (.not.present(w)) then
+        Res=sum(x(:)) / size(x)
+      else
+        Res=sum(x(:)*w(:)) / sum(w)
+      end if
       return
     end function
 
     !###########################################################################
 
-    function CalcMeanD(x) result(Res)
+    function CalcMeanD(x,w) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)  :: x(:)
-      real(real64)             :: Res
+      real(real64),intent(in)          :: x(:)
+      real(real64),intent(in),optional :: w(:)
+      real(real64)                     :: Res
 
-      Res=sum(x(:)) / size(x)
+      if (.not.present(w)) then
+        Res=sum(x(:)) / size(x)
+      else
+        Res=sum(x(:)*w(:)) / sum(w)
+      end if
       return
     end function
 
     !###########################################################################
 
-    function CalcVarS(x,Mean) result(Res)
+    function CalcVarS(x,Mean,w) result(Res)
       implicit none
 
       ! Arguments
       real(real32),intent(in)          :: x(:)
       real(real32),intent(in),optional :: Mean
+      real(real32),intent(in),optional :: w(:)
       real(real32)                     :: Res
       ! Other
       integer(int32) i,n
@@ -150,7 +161,7 @@ module AlphaStatMod
       end if
 
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/n
+        MeanIn=CalcMeanS(x,w)
       else
         MeanIn=Mean
       end if
@@ -167,12 +178,13 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcVarD(x,Mean) result(Res)
+    function CalcVarD(x,Mean,w) result(Res)
       implicit none
 
       ! Arguments
       real(real64),intent(in)          :: x(:)
       real(real64),intent(in),optional :: Mean
+      real(real64),intent(in),optional :: w(:)
       real(real64)                     :: Res
 
       ! Other
@@ -188,7 +200,7 @@ module AlphaStatMod
       end if
 
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/n
+        MeanIn=CalcMeanD(x,w)
       else
         MeanIn=Mean
       end if
@@ -233,12 +245,13 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatS(x) result(Res)
+    function CalcDescStatS(x,w) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in) :: x(:)
-      type(DescStatS)         :: Res
+      real(real32),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      type(DescStatS)                  :: Res
 
       ! Other
       integer(int32) i,n
@@ -284,8 +297,9 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      real(real64),intent(in) :: x(:)
-      type(DescStatD)         :: Res
+      real(real64),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      type(DescStatD)                  :: Res
 
       ! Other
       integer(int32) i,n
