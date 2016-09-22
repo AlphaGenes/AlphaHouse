@@ -1,0 +1,7 @@
+PopulationHistoryMaCS                             ,InternalCattle
+EffectivePopulationSizeBaseMaCs                   ,Internal,0
+MutationRateMaCS                                  ,Internal,0
+ChromosomeLengthBasesMaCS                         ,External,100E+6
+ChromosomeLengthMorgansMaCS                       ,Internal,0
+NumberOfHaplotypes                                ,400
+RecombinationHotspotsOnOff                        ,Off
