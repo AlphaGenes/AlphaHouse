@@ -23,7 +23,7 @@ else
 	PROGRAM:=$(NAME)_$(VERSION)#$(MASTERVERSION)
 	RM=rm -rf
 
-	MAKEDIR=mkdir
+	MAKEDIR=mkdir -p
 
   LIBNETCDF := -L$(NETCDF)/lib -lnetcdff
 	INCNETCDF := -I$(NETCDF)/include
@@ -43,7 +43,9 @@ SRCDIR=src/
 TESTDIR=tests/
 TARGETDIR=bin/
 
-PFUNITFLAGS:=-I./$(OBJECTDIR) $(PFUNIT)/include/driver.f90 -I$(PFUNIT)/mod -I$(PFUNIT)/include -lpfunit -module $(OBJECTDIR) -fpp
+PFUNITFLAGS:=-I./$(OBJECTDIR) -I$(PFUNIT)/mod -I$(PFUNIT)/include -lpfunit -module $(OBJECTDIR) -fpp -L$(PFUNIT)/lib
+LDFLAGS:=
+DRIVER:=$(PFUNIT)/include/driver.f90
 
 HDF5FLAGS:=
 #Compiler and flags
@@ -78,6 +80,8 @@ F90FINISHED:= $(F90TESTS:.F90=.o)
 
 BUILDDATE=$(shell date +%Y%m%d-%H:%M:%S)
 
+build: all tests cleanTest
+
 all: $(PROGRAM) $(DEPENDENCIES)
 
 debug: FFLAGS:=$(FFLAGS) $(DEBUG_FLAGS)
@@ -90,11 +94,10 @@ production: FFLAGS:=$(FFLAGS) $(PRODUCTION_FLAG)
 production: PROGRAM:=$(NAME)
 production: all
 
-build: all tests cleanTest
 
 tests: $(F90TESTS) $(F90FINISHED)
 	cp $(TESTDIR)testSuites.inc .
-	$(FC) -o tests.x $(addprefix $(OBJECTDIR), $(notdir $(F90FINISHED))) $(MODULE_OBJECTS) $(PFUNITFLAGS) $(MKLINC) $(MKLLIB) $(FFLAGS)
+	$(FC) -o tests.x $(addprefix $(OBJECTDIR), $(notdir $(F90FINISHED))) $(MODULE_OBJECTS) $(DRIVER) $(PFUNITFLAGS) $(MKLINC) $(MKLLIB) $(FFLAGS)
 	$(RM) testSuites.inc
 	./tests.x -xml test_output
 
@@ -108,12 +111,14 @@ cleanTest:
 	$(RM) $(TESTDIR)*.F90
 	$(RM) $(OBJECTDIR)tests.x
 	$(RM) $(OBJECTDIR)testSuites.inc
+	$(RM) tests.x
+	$(RM) testSuites.inc
 
 $(PROGRAM):$(OBJECTS)
-	$(FC) -o $(TARGETDIR)$(PROGRAM) $^ $(FFLAGS) $(MKLINC) $(MKLLIB)
+	$(FC) -o $(TARGETDIR)$(PROGRAM) $^ $(FFLAGS) $(MKLINC) $(MKLLIB) $(LDFLAGS)
 
 $(OBJECTDIR)%.o: $(SRCDIR)%.f90
-	$(FC) -o $@ -c $< $(FFLAGS) $(MKLINC) $(MKLLIB)
+	$(FC) -o $@ -c $< $(FFLAGS) $(MKLINC) $(MKLLIB) $(LDFLAGS)
 
 directories:
 	$(MAKEDIR) $(SRCDIR)
@@ -124,9 +129,11 @@ directories:
 list: 	#Taken from http://stackoverflow.com/questions/4219255/how-do-you-get-the-list-of-targets-in-a-makefile. Answer by mklement0.
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs
 
+#$(OBJECTDIR)%.o: %.F90
+#	$(FC) -o $@ -c $< $(FFLAGS) $(PFUNITFLAGS) $(MKLLIB) $(MKLINC) $(LDFLAGS)
 
 %.o:%.F90
-	$(FC) -c -o $(addprefix $(OBJECTDIR), $(notdir $@))  $< -I$(PFUNIT)/mod -I$(PFUNIT)/include -lpfunit -module $(OBJECTDIR)
+	$(FC) -c -o $(addprefix $(OBJECTDIR), $(notdir $@))  $< $(PFUNITFLAGS) -module $(OBJECTDIR) $(LDFLAGS)
 
 %.F90: %.pf
 	$(PFUNIT)/bin/pFUnitParser.py $< $@
