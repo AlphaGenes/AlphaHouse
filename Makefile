@@ -1,173 +1,140 @@
-.DEFAULT_GOAL:=build
+#Modules
+_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90
 
-# General vars
-prog:=AlphaHouse
-progDesc:=A set of housekeeping routines for the Alpha programs
+_PROGRAM_SOURCES=main.f90
 
-FC:=ifort
-bin:=../AlphaHouseBin
+DEPENDENCIES=
+ifeq ($(OS), WINDOWS_NT)
+	OSFLAG="OSWIN"
 
-# MKL
-include ../Makefile.MKLRoot
-incdir:=${MKLINC}
-libdir:=${MKLLIB}
+	PROGRAM="ProgramName"
 
-# Options
-opt:=
+	EXE=".exe"
+	RM=del
 
-# Debug flags
-ifeq (${debug}, true)
-  opt:=${opt} -g -traceback -debug all -check all -ftrapuv -warn all
+else
+	OSFLAG:="OS_UNIX"
+#This gets the name of the current folder and the current commit and sets the program name to that.
+	FOLDERNAME:=$(shell basename $(shell pwd)) #Name of program goes here
+	NAME:=$(strip $(FOLDERNAME))
+	VERSION:=$(shell git rev-parse --short HEAD)
+	SUBVERSION:=0
+	#MASTERVERSION:=$(shell git describe --tag | cut -d "-" -f 1)
+	PROGRAM:=$(NAME)_$(VERSION)#$(MASTERVERSION)
+	RM=rm -rf
+
+	MAKEDIR=mkdir -p
+
+  LIBNETCDF := -L$(NETCDF)/lib -lnetcdff
+	INCNETCDF := -I$(NETCDF)/include
+  PFUNIT=/usr/local/pFUnit_serial
+
+	MKLROOT := /opt/intel/mkl
+	# On Eddie2
+	# MKLROOT:=/exports/applications/apps/intel/ClusterStudio2013/mkl
+	# On Eddie3
+	# MKLROOT := /exports/applications/apps/SL7/intel/parallel_studio_xe_2016/mkl
+	MKLLIB := -L$(MKLROOT)/lib -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lm -Wl,-rpath,$(MKLROOT)/lib -Wl,-rpath,/opt/intel/lib
+	MKLINC := -I$(MKLROOT)/include
 endif
+#Filenames
+OBJECTDIR=objs/
+SRCDIR=src/
+TESTDIR=tests/
+TARGETDIR=bin/
 
-# List of module directories (should only need to edit this!!!)
-mod:=GeneralPurpose IntelRNG Miscellaneous ParameterFile Pedigree # ThirdPartyRoutines
+PFUNITFLAGS:=-I./$(OBJECTDIR) -I$(PFUNIT)/mod -I$(PFUNIT)/include -lpfunit -module $(OBJECTDIR) -fpp -L$(PFUNIT)/lib
+LDFLAGS:=
+DRIVER:=$(PFUNIT)/include/driver.f90
 
-# Get various stuff
-src:=$(addsuffix Mod.f90,${mod})
-obj:=$(addprefix ${bin}/,$(addsuffix Mod.o,${mod}))
-test:=$(addsuffix /Test,${mod}) # TODO: this does not work for TPR!!! Should we reorganize TPR as other modules?
+HDF5FLAGS:=
+#Compiler and flags
+CC:=g++
+CFLAGS:= -std=c++0x -Wextra -Wall
 
-all: build test doc
+FC=ifort
 
-# --- AlphaHouse library ---
+FFLAGS= -fpp -module $(OBJECTDIR) -D $(OSFLAG) -DVERS=""commit-$(VERSION)"" -mkl
+DEBUG_FLAGS=-traceback -g -debug all -warn all -check bounds -check format \
+		-check output_conversion -check pointers
+SUPER_DEBUG_FLAGS=$(DEBUG_FLAGS) -ftrapuv -check all -gen-interfaces -warn interfaces
 
-build: .buildecho ${bin}/AlphaHouse.a # Build library
-	@printf "\n * ${prog} build DONE\n"
+PRODUCTION_FLAG=-fast
 
-.buildecho:
-	@printf "\n * ${prog} build...\n"
+MODULE_SOURCES=$(patsubst %, $(SRCDIR)%, $(_MODULE_SOURCES))
 
-${bin}/AlphaHouse.a: ${obj} # Build library
-	@printf "\n * ${prog} create library...\n"
-	ar cr ${bin}/AlphaHouse.a ${obj};
+PROGRAM_SOURCES=$(patsubst %, $(SRCDIR)%, $(_PROGRAM_SOURCES))
 
-# TODO: See these links on how to create a library the "ifort way" and related complexities
-#       on different platforms Unix/OS-X/Windows
-#       https://software.intel.com/en-us/node/510789 (2014-12-03)
-#       https://software.intel.com/en-us/node/510796 (2014-12-03)
-#       https://software.intel.com/en-us/node/510790 (2014-12-03)
-#       https://software.intel.com/en-us/node/510795 (2014-12-03)
-#       https://software.intel.com/en-us/node/510802 (2014-12-03)
+SOURCES=$(MODULE_SOURCES) $(PROGRAM_SOURCES)
 
-# --- Modules ---
+MODULE_OBJECTS =$(patsubst $(SRCDIR)%.f90, $(OBJECTDIR)%.o, $(MODULE_SOURCES))
+PROGRAM_OBJECTS=$(patsubst $(SRCDIR)%.f90, $(OBJECTDIR)%.o, $(PROGRAM_SOURCES))
 
-rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+OBJECTS= $(MODULE_OBJECTS) $(PROGRAM_OBJECTS)
 
-define make-module
+PFTESTS:=$(wildcard $(TESTDIR)*.pf)
 
-${1}: ${bin}/${1}Mod.o # Build module ${1}
+F90TESTS:=$(PFTESTS:.pf=.F90)
 
-endef
+F90FINISHED:= $(F90TESTS:.F90=.o)
 
-define make-target
+BUILDDATE=$(shell date +%Y%m%d-%H:%M:%S)
 
-# Required modules for the target
-reqMod${1}:=$(strip $(addprefix ${bin}/,$(addsuffix .o,$(shell grep -i "use " ${1}/${1}Mod.f90 | awk '{ print $$2 }'))))
-# ...remove false positives from the above
-reqMod${1}:=$(filter-out,$(filter-out,${mod},${reqMod${1}}),${reqMod${1}})
+build: all tests cleanTest
 
-# Source files of the target
-reqSrc${1}:=$(strip $(call rwildcard,,${1}/*.f90))
+all: $(PROGRAM) $(DEPENDENCIES)
 
-# Make
-${bin}/${1}Mod.o: Makefile $${reqMod${1}} $${reqSrc${1}} # Go into module folder and compile, compile, and put object and module files into ${bin}
-	@printf "\n * Go into module folder ${1}, compile, and put object and module files into $${bin}...\n"
-	$${FC} -c ${1}/${1}Mod.f90 -o $${bin}/${1}Mod.o -module $${bin}/ $${opt} $${incdir}
+debug: FFLAGS:=$(FFLAGS) $(DEBUG_FLAGS)
+debug: $(PROGRAM)
 
-endef
+superdebug: FFLAGS:=$(FFLAGS) $(SUPER_DEBUG_FLAGS)
+superdebug: all
 
-#$(info $(foreach i,${mod},$(call make-module,${i})))
-$(foreach i,${mod},$(eval $(call make-module,${i})))
-#$(info $(foreach i,${mod},$(call make-target,${i})))
-$(foreach i,${mod},$(eval $(call make-target,${i})))
+production: FFLAGS:=$(FFLAGS) $(PRODUCTION_FLAG)
+production: PROGRAM:=$(NAME)
+production: all
 
-# --- Test ---
 
-test: .testecho ${obj} ${test} # Unit testing - main target
-	@printf "\n * ${prog} test DONE \n"
+tests: $(F90TESTS) $(F90FINISHED)
+	cp $(TESTDIR)testSuites.inc .
+	$(FC) -o tests.x $(addprefix $(OBJECTDIR), $(notdir $(F90FINISHED))) $(MODULE_OBJECTS) $(DRIVER) $(PFUNITFLAGS) $(MKLINC) $(MKLLIB) $(FFLAGS)
+	$(RM) testSuites.inc
+	./tests.x -xml test_output
 
-.testecho:
-	@printf "\n * ${prog} test... \n"
+clean: cleanIntermediate
+	$(RM) $(TARGETDIR)$(NAME)_*
 
-${test}: # Unit testing - individual targets
-	@printf "\n $@ \n"; \
-	if [ -d $@ ]; then \
-	  ${MAKE} -C $@; \
-	else \
-	  printf "\n * ${@} test (no Test folder)...\n" ;\
-	fi
+cleanIntermediate: cleanTest
+	$(RM) $(OBJECTDIR)*
 
-# --- Documentation ---
+cleanTest:
+	$(RM) $(TESTDIR)*.F90
+	$(RM) $(OBJECTDIR)tests.x
+	$(RM) $(OBJECTDIR)testSuites.inc
+	$(RM) tests.x
+	$(RM) testSuites.inc
 
-doc: docsrc docbin # Create developer documentation
-	@printf "\n * ${prog} create developer documentation DONE \n"
+$(PROGRAM):$(OBJECTS)
+	$(FC) -o $(TARGETDIR)$(PROGRAM) $^ $(FFLAGS) $(MKLINC) $(MKLLIB) $(LDFLAGS)
 
-docsrc: # Create developer documentation in this folder
-	@printf "\n * ${prog} create developer documentation in this folder...\n"; \
-	rm -Rf DoxygenDoc; \
-	mkdir -p DoxygenDoc; \
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|" \
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|" \
-														-e "s|FILE_PATTERNS=|FILE_PATTERNS=*.f90|" \
-														-e "s|SOURCE_BROWSER=NO|SOURCE_BROWSER=YES|" > Doxygen.tmp; \
-	doxygen Doxygen.tmp > DoxygenDoc/Doxygen.log; \
-	rm -f Doxygen.tmp; \
-	cd DoxygenDoc && ln -sf html/index.html .
+$(OBJECTDIR)%.o: $(SRCDIR)%.f90
+	$(FC) -o $@ -c $< $(FFLAGS) $(MKLINC) $(MKLLIB) $(LDFLAGS)
 
-docbin: # Create developer documentation in the binary folder
-	@printf "\n * ${prog} create developer documentation in the binary folder...\n"; \
-	rm -Rf ${bin}/DoxygenDoc; \
-	mkdir -p ${bin}/DoxygenDoc; \
-	cat ../Doxygen.txt | sed -e "s|PROJECT_NAME=\"\"|PROJECT_NAME=\"${prog}\"|" \
-														-e "s|PROJECT_BRIEF=\"\"|PROJECT_BRIEF=\"${progDesc}\"|" \
-														-e "s|FILE_PATTERNS=|FILE_PATTERNS=*.f90|" \
-														-e "s|OUTPUT_DIRECTORY=DoxygenDoc|OUTPUT_DIRECTORY=${bin}/DoxygenDoc|" > Doxygen.tmp; \
-	doxygen Doxygen.tmp > ${bin}/DoxygenDoc/Doxygen.log; \
-	rm -f Doxygen.tmp; \
-	cd ${bin}/DoxygenDoc && ln -sf html/index.html .
+directories:
+	$(MAKEDIR) $(SRCDIR)
+	$(MAKEDIR) $(TESTDIR)
+	$(MAKEDIR) $(OBJECTDIR)
+	$(MAKEDIR) $(TARGETDIR)
 
-# --- Cleanup ---
+list: 	#Taken from http://stackoverflow.com/questions/4219255/how-do-you-get-the-list-of-targets-in-a-makefile. Answer by mklement0.
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs
 
-clean: cleanbin # Cleanup compiled files
-	rm -f */*__genmod.{f90,mod}
-	@printf "\n * ${prog} cleanup DONE \n"
+#$(OBJECTDIR)%.o: %.F90
+#	$(FC) -o $@ -c $< $(FFLAGS) $(PFUNITFLAGS) $(MKLLIB) $(MKLINC) $(LDFLAGS)
 
-cleanall: cleanbin cleantest cleandoc # Cleanup compiled files and other files
-	@printf "\n * ${prog} cleanup-all DONE \n"
+%.o:%.F90
+	$(FC) -c -o $(addprefix $(OBJECTDIR), $(notdir $@))  $< $(PFUNITFLAGS) -module $(OBJECTDIR) $(LDFLAGS)
 
-cleanbin: # Cleanup object, module, and library files in the binary folder
-	@printf "\n * ${prog} cleanup object, module, and library files in the binary folder...\n"
-	rm -f ${bin}/*.{o,mod,a}
+%.F90: %.pf
+	$(PFUNIT)/bin/pFUnitParser.py $< $@
 
-cleantest:=$(addsuffix .clean,${test})
-cleantest: .cleantestecho ${cleantest} # Cleanup test output files - main target
-
-.cleantestecho: # Cleanup test output files - echo
-	@printf "\n * ${prog} cleanup test output files...\n"
-
-${cleantest}: # Cleanup test output files - individual targets
-	@if [ -d $(basename $@) ]; then \
-	  ${MAKE} -C $(basename $@) clean; \
-	else \
-	  printf "\n * $(basename $@) (no Test folder)...\n" ;\
-	fi
-
-cleandoc: cleandocsrc cleandocbin # Remove auto-generated developer documentation
-
-cleandocsrc: # Cleanup developer documentation in this folder
-	@printf "\n * ${prog} cleanup developer documentation in this folder...\n";
-	rm -Rf DoxygenDoc
-
-cleandocbin: # Cleanup developer documentation in the binary folder
-	@printf "\n * ${prog} cleanup developer documentation in the binary folder...\n";
-	rm -Rf ${bin}/DoxygenDoc
-
-# --- Utilities ---
-
-help: # Help
-	@printf '\nTarget: Dependency # Description'; \
-	printf '=================================================='; \
-	egrep -e '^[[:alnum:]+_()%]*: ' Makefile
-
-.PHONY: all build test doc clean help ${mod} ${test}

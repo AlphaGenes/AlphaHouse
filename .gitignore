@@ -3,6 +3,7 @@
 *.a
 *.x
 */*Mod.f90
+bin/*
 DoxygenDoc
 test.txt
-test.xSeedUsed.txt
+test.x

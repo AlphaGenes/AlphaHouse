@@ -8,7 +8,8 @@ module AlphaHouseMod
   implicit none
 
   private
-  public :: CountLines,Int2Char,Real2Char,RandomOrder,SetSeed,ToLower
+  ! Methods
+  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed
 
   ! List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -18,8 +19,9 @@ module AlphaHouseMod
     module procedure RealS2Char,RealD2Char
   end interface
 
-  ! TODO: add Char2Real
-  ! TODO: add Char2Int
+  interface FindLoc
+    module procedure FindLocC, FindLocI, FindLocS, FindLocD
+  end interface
 
   contains
 
@@ -49,6 +51,20 @@ module AlphaHouseMod
         end if
       end do
       close(Unit)
+      return
+    end function
+
+    !###########################################################################
+
+    function Char2Int(c) result(Res)
+      ! From http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
+
+      implicit none
+
+      character(*), intent(in) :: c
+      integer(int32)           :: Res
+
+      read(c, *) Res
       return
     end function
 
@@ -168,6 +184,78 @@ module AlphaHouseMod
       do i=1,len(StringOut)
         n=index(UPPER_CASE,StringOut(i:i))
         if (n /= 0) StringOut(i:i)=LOWER_CASE(n:n)
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocI(Val,Vec) result(i)
+      implicit none
+      integer(int32) :: Val
+      integer(int32) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocC(Val,Vec) result(i)
+      implicit none
+      character(len=*) :: Val
+      character(len=*) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocS(Val,Vec) result(i)
+      implicit none
+      real(real32) :: Val
+      real(real32) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
+      end do
+      return
+    end function
+
+    !###########################################################################
+
+    function FindLocD(Val,Vec) result(i)
+      implicit none
+      real(real64) :: Val
+      real(real64) :: Vec(:)
+
+      integer(int32) :: i,j
+      i=0
+      do j=1,size(Vec)
+        if (Val == Vec(j)) then
+          i=j
+          exit
+        end if
       end do
       return
     end function

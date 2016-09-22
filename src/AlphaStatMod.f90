@@ -10,10 +10,15 @@ module AlphaStatMod
   implicit none
 
   private
+  ! Types
+  public :: DescStatS,DescStatD
+  public :: DescStatMatrixS,DescStatMatrixD
+  public :: CorrelationS,CorrelationD
+  ! Methods
   public :: CalcMean,CalcVar,CalcSD
-  public :: CalcDescStat,DescStatS,DescStatD
-  public :: CalcDescStatSymMatrix,DescStatMatrixS,DescStatMatrixD
-  public :: CalcCorrelation,CorrelationS,CorrelationD
+  public :: CalcDescStat
+  public :: CalcDescStatMatrix,CalcDescStatSymMatrix,CalcDescStatLowTriMatrix
+  public :: CalcCorrelation
 
   interface CalcMean
     module procedure CalcMeanS, CalcMeanD
@@ -57,12 +62,22 @@ module AlphaStatMod
     module procedure CalcDescStatSymMatrixS, CalcDescStatSymMatrixD
   end interface
 
+  interface CalcDescStatLowTriMatrix
+    module procedure CalcDescStatSymMatrixS, CalcDescStatSymMatrixD
+  end interface
+
+  interface CalcDescStatMatrix
+    module procedure CalcDescStatMatrixS, CalcDescStatMatrixD
+  end interface
+
   type :: DescStatMatrixS
+    type(DescStatS) :: All
     type(DescStatS) :: Diag
     type(DescStatS) :: OffDiag
   end type
 
   type :: DescStatMatrixD
+    type(DescStatD) :: All
     type(DescStatD) :: Diag
     type(DescStatD) :: OffDiag
   end type
@@ -89,43 +104,54 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcMeanS(x) result(Res)
+    function CalcMeanS(x, w) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in)  :: x(:)
-      real(real32)             :: Res
+      real(real32),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      real(real32)                     :: Res
 
-      Res=sum(x(:))/real(size(x))
+      if (.not.present(w)) then
+        Res=sum(x(:)) / size(x)
+      else
+        Res=sum(x(:)*w(:)) / sum(w)
+      end if
       return
     end function
 
     !###########################################################################
 
-    function CalcMeanD(x) result(Res)
+    function CalcMeanD(x,w) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in)  :: x(:)
-      real(real64)             :: Res
+      real(real64),intent(in)          :: x(:)
+      real(real64),intent(in),optional :: w(:)
+      real(real64)                     :: Res
 
-      Res=sum(x(:))/dble(size(x))
+      if (.not.present(w)) then
+        Res=sum(x(:)) / size(x)
+      else
+        Res=sum(x(:)*w(:)) / sum(w)
+      end if
       return
     end function
 
     !###########################################################################
 
-    function CalcVarS(x,Mean) result(Res)
+    function CalcVarS(x,Mean,w) result(Res)
       implicit none
 
       ! Arguments
       real(real32),intent(in)          :: x(:)
       real(real32),intent(in),optional :: Mean
+      real(real32),intent(in),optional :: w(:)
       real(real32)                     :: Res
       ! Other
       integer(int32) i,n
 
-      real(real32) :: nR,MeanIn,Dev
+      real(real32) :: MeanIn,Dev
 
       n=size(x)
       if (n < 1) then
@@ -134,9 +160,8 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=real(n)
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/nR
+        MeanIn=CalcMeanS(x,w)
       else
         MeanIn=Mean
       end if
@@ -147,24 +172,25 @@ module AlphaStatMod
         Res=Res+Dev*Dev
       end do
 
-      Res=Res/(nR-1.0)
+      Res=Res/(n-1)
       return
     end function
 
     !###########################################################################
 
-    function CalcVarD(x,Mean) result(Res)
+    function CalcVarD(x,Mean,w) result(Res)
       implicit none
 
       ! Arguments
       real(real64),intent(in)          :: x(:)
       real(real64),intent(in),optional :: Mean
+      real(real64),intent(in),optional :: w(:)
       real(real64)                     :: Res
 
       ! Other
       integer(int32) i,n
 
-      real(real64) :: nR,MeanIn,Dev
+      real(real64) :: MeanIn,Dev
 
       n=size(x)
       if (n < 1) then
@@ -173,9 +199,8 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=dble(n)
       if (.not.present(Mean)) then
-        MeanIn=sum(x(:))/nR
+        MeanIn=CalcMeanD(x,w)
       else
         MeanIn=Mean
       end if
@@ -186,7 +211,7 @@ module AlphaStatMod
         Res=Res+Dev*Dev
       end do
 
-      Res=Res/(nR-1.0d0)
+      Res=Res/(n-1)
       return
     end function
 
@@ -220,16 +245,17 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatS(x) result(Res)
+    function CalcDescStatS(x,w) result(Res)
       implicit none
 
       ! Arguments
-      real(real32),intent(in) :: x(:)
-      type(DescStatS)         :: Res
+      real(real32),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      type(DescStatS)                  :: Res
 
       ! Other
       integer(int32) i,n
-      real(real32) :: nR,Dev,Mul
+      real(real32) :: Dev,Mul
 
       n=size(x)
       if (n < 1) then
@@ -238,8 +264,7 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=real(n)
-      Res%Mean=sum(x(:))/nR
+      Res%Mean=sum(x(:))/n
       Res%Var=0.0
       Res%Skew=0.0
       Res%Curt=0.0
@@ -254,11 +279,11 @@ module AlphaStatMod
         Res%Curt=Res%Curt+Mul
       end do
 
-      Res%Var=Res%Var/(nR-1.0)
+      Res%Var=Res%Var/(n-1)
       Res%SD=sqrt(Res%Var)
       if (Res%Var > 0.0) then
-        Res%Skew=Res%Skew/(nR*Res%SD**3)
-        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0
+        Res%Skew=Res%Skew/(n*Res%SD**3)
+        Res%Curt=Res%Curt/(n*Res%Var**2)-3.0
       end if
 
       Res%Min=minval(x(:))
@@ -268,17 +293,18 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatD(x) result(Res)
+    function CalcDescStatD(x,w) result(Res)
       implicit none
 
       ! Arguments
-      real(real64),intent(in) :: x(:)
-      type(DescStatD)         :: Res
+      real(real64),intent(in)          :: x(:)
+      real(real32),intent(in),optional :: w(:)
+      type(DescStatD)                  :: Res
 
       ! Other
       integer(int32) i,n
 
-      real(real64) :: nR,Dev,Mul
+      real(real64) :: Dev,Mul
 
       n=size(x)
       if (n < 1) then
@@ -287,8 +313,7 @@ module AlphaStatMod
         stop 1
       end if
 
-      nR=dble(n)
-      Res%Mean=sum(x(:))/nR
+      Res%Mean=sum(x(:))/n
       Res%Var=0.0d0
       Res%Skew=0.0d0
       Res%Curt=0.0d0
@@ -303,11 +328,11 @@ module AlphaStatMod
         Res%Curt=Res%Curt+Mul
       end do
 
-      Res%Var=Res%Var/(nR-1.0d0)
+      Res%Var=Res%Var/(n-1)
       Res%SD=sqrt(Res%Var)
       if (Res%Var > 0.0d0) then
-        Res%Skew=Res%Skew/(nR*Res%SD**3)
-        Res%Curt=Res%Curt/(nR*Res%Var**2)-3.0d0
+        Res%Skew=Res%Skew/(n*Res%SD**3)
+        Res%Curt=Res%Curt/(n*Res%Var**2)-3.0d0
       end if
 
       Res%Min=minval(x(:))
@@ -317,7 +342,119 @@ module AlphaStatMod
 
     !###########################################################################
 
-    function CalcDescStatSymMatrixS(x) result(Res)
+    function CalcDescStatSymMatrixS(x,Diag) result(Res)
+      implicit none
+
+      ! Arguments
+      real(real32),intent(in)     :: x(:,:)
+      logical,intent(in),optional :: Diag
+      type(DescStatMatrixS)       :: Res
+
+      ! Other
+      integer(int32) i,j,k,n,p
+      real(real32),allocatable :: DiagVal(:)
+      real(real32),allocatable :: OffDiagVal(:)
+      logical                  :: DiagInternal
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatSymMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      if (present(Diag)) then
+        DiagInternal=Diag
+      else
+        DiagInternal=.true.
+      end if
+
+      ! Diagonal
+      if (DiagInternal) then
+        allocate(DiagVal(n))
+        do i=1,n
+          DiagVal(i)=x(i,i)
+        end do
+        Res%Diag=CalcDescStatS(DiagVal)
+      end if
+
+      ! Off-diagonal (lower-triangle only!!!)
+      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiagVal(k)=x(i,j)
+        end do
+      end do
+      Res%OffDiag=CalcDescStatS(OffDiagVal)
+
+      if (DiagInternal) then
+        Res%All=CalcDescStatS([DiagVal,OffDiagVal])
+      end if
+      return
+    end function
+
+    !###########################################################################
+
+    function CalcDescStatSymMatrixD(x,Diag) result(Res)
+      implicit none
+
+      ! Arguments
+      real(real64),intent(in)     :: x(:,:)
+      logical,intent(in),optional :: Diag
+      type(DescStatMatrixD)       :: Res
+
+      ! Other
+      integer(int32) i,j,k,n,p
+      real(real64),allocatable :: DiagVal(:)
+      real(real64),allocatable :: OffDiagVal(:)
+      logical                  :: DiagInternal
+
+      n=size(x,1)
+      p=size(x,2)
+      if (n /= p) then
+        write(STDERR,"(a)") "ERROR: CalcDescStatSymMatrix work only with symmetric matrices!"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+      if (present(Diag)) then
+        DiagInternal=Diag
+      else
+        DiagInternal=.true.
+      end if
+
+      ! Diagonal
+      if (DiagInternal) then
+        allocate(DiagVal(n))
+        do i=1,n
+          DiagVal(i)=x(i,i)
+        end do
+        Res%Diag=CalcDescStatD(DiagVal)
+      end if
+
+      ! Off-diagonal (lower-triangle only!!!)
+      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
+      k=0
+      do j=1,(p-1)
+        do i=(j+1),n
+          k=k+1
+          OffDiagVal(k)=x(i,j)
+        end do
+      end do
+      Res%OffDiag=CalcDescStatD(OffDiagVal)
+
+      if (DiagInternal) then
+        Res%All=CalcDescStatD([DiagVal,OffDiagVal])
+      end if
+      return
+    end function
+
+    !###########################################################################
+
+    function CalcDescStatMatrixS(x) result(Res)
       implicit none
 
       ! Arguments
@@ -325,45 +462,40 @@ module AlphaStatMod
       type(DescStatMatrixS)   :: Res
 
       ! Other
-      integer(int32) i,j,k,n,p!,MinNP
+      integer(int32) i,j,k,l,n,p,MinNP
       real(real32),allocatable :: Diag(:)
       real(real32),allocatable :: OffDiag(:)
 
       n=size(x,1)
       p=size(x,2)
-      if (n /= p) then
-        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
 
-      ! Start of an attempt to work with non-symmetric matrices
-      ! MinNP=min([n,p])
-      ! allocate(Diag(MinNP))
+      MinNP=minval([n,p])
+      allocate(Diag(MinNP))
+      allocate(OffDiag(n*p-MinNP))
 
-      allocate(Diag(n))
-      do i=1,n
-        Diag(i)=x(i,i)
-      end do
-      Res%Diag=CalcDescStatS(Diag)
-      deallocate(Diag)
-
-      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
-      do j=1,(p-1)
-        do i=(j+1),n
-          k=k+1
-          OffDiag(k)=x(i,j)
+      l=0
+      do j=1,p
+        do i=1,n
+          if (i == j) then
+            k=k+1
+            Diag(k)=x(i,j)
+          else
+            l=l+1
+            OffDiag(l)=x(i,j)
+          end if
         end do
       end do
+
+      Res%Diag=CalcDescStatS(Diag)
       Res%OffDiag=CalcDescStatS(OffDiag)
-      deallocate(OffDiag)
+      Res%All=CalcDescStatS([Diag,OffDiag])
       return
     end function
 
     !###########################################################################
 
-    function CalcDescStatSymMatrixD(x) result(Res)
+    function CalcDescStatMatrixD(x) result(Res)
       implicit none
 
       ! Arguments
@@ -371,39 +503,34 @@ module AlphaStatMod
       type(DescStatMatrixD)   :: Res
 
       ! Other
-      integer(int32) i,j,k,n,p!,MinNP
+      integer(int32) i,j,k,l,n,p,MinNP
       real(real64),allocatable :: Diag(:)
       real(real64),allocatable :: OffDiag(:)
 
       n=size(x,1)
       p=size(x,2)
-      if (n /= p) then
-        write(STDERR,"(a)") "ERROR: CalcDescStatMatrix work only with symmetric matrices!"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
 
-      ! Start of an attempt to work with non-symmetric matrices
-      ! MinNP=min([n,p])
-      ! allocate(Diag(MinNP))
+      MinNP=minval([n,p])
+      allocate(Diag(MinNP))
+      allocate(OffDiag(n*p-MinNP))
 
-      allocate(Diag(n))
-      do i=1,n
-        Diag(i)=x(i,i)
-      end do
-      Res%Diag=CalcDescStatD(Diag)
-      deallocate(Diag)
-
-      allocate(OffDiag(nint(real(n*n)/2.0-real(n)/2.0))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
       k=0
-      do j=1,(p-1)
-        do i=(j+1),n
-          k=k+1
-          OffDiag(k)=x(i,j)
+      l=0
+      do j=1,p
+        do i=1,n
+          if (i == j) then
+            k=k+1
+            Diag(k)=x(i,j)
+          else
+            l=l+1
+            OffDiag(l)=x(i,j)
+          end if
         end do
       end do
+
+      Res%Diag=CalcDescStatD(Diag)
       Res%OffDiag=CalcDescStatD(OffDiag)
-      deallocate(OffDiag)
+      Res%All=CalcDescStatD([Diag,OffDiag])
       return
     end function
 
@@ -418,12 +545,11 @@ module AlphaStatMod
 
       ! Other
       integer(int32) :: i,n
-      real(real32) :: nR,MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
+      real(real32) :: MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
 
       n=size(x)
-      nR=real(n)
-      MeanX=sum(x(:))/nR
-      MeanY=sum(y(:))/nR
+      MeanX=sum(x(:))/n
+      MeanY=sum(y(:))/n
       SumXX=0.0
       SumXY=0.0
       SumYY=0.0
@@ -435,9 +561,9 @@ module AlphaStatMod
         SumYY=SumYY+DevY*DevY
       end do
       Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Res%Cov=SumXY/(nR-1.0)
-      Res%Var1=SumXX/(nR-1.0)
-      Res%Var2=SumYY/(nR-1.0)
+      Res%Cov=SumXY/(n-1)
+      Res%Var1=SumXX/(n-1)
+      Res%Var2=SumYY/(n-1)
       return
     end function
 
@@ -452,12 +578,11 @@ module AlphaStatMod
 
       ! Other
       integer(int32) :: i,n
-      real(real64) :: nR,MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
+      real(real64) :: MeanX,MeanY,DevX,DevY,SumXX,SumXY,SumYY
 
       n=size(x)
-      nR=dble(n)
-      MeanX=sum(x(:))/nR
-      MeanY=sum(y(:))/nR
+      MeanX=sum(x(:))/n
+      MeanY=sum(y(:))/n
       SumXX=0.0d0
       SumXY=0.0d0
       SumYY=0.0d0
@@ -469,9 +594,9 @@ module AlphaStatMod
         SumYY=SumYY+DevY*DevY
       end do
       Res%Cor=SumXY/(sqrt(SumXX*SumYY)+tiny(x))
-      Res%Cov=SumXY/(nR-1.0d0)
-      Res%Var1=SumXX/(nR-1.0d0)
-      Res%Var2=SumYY/(nR-1.0d0)
+      Res%Cov=SumXY/(n-1)
+      Res%Var1=SumXX/(n-1)
+      Res%Var2=SumYY/(n-1)
       return
     end function
 
