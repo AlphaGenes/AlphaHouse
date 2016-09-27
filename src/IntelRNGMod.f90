@@ -3,12 +3,28 @@
 
 include "mkl_vsl.f90"
 
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     IntelRNGMod.f90
+!
+! DESCRIPTION:
+!> @brief    Conventient interfaces to Intel MKL Vector Statistical Library (VSL) RNG capabilities
+!
+!> @details  See https://software.intel.com/en-us/node/470592 (2014-11-25)
+!
+!> @author   Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 GGorjanc - Initial Version
+!
+!-------------------------------------------------------------------------------
 module IntelRNGMod
-
-  ! Random Number Generation (RNG) module
-  !   "interface" to the Intel MKL Vector Statistical Library (VSL) RNG capabilities
-
-  ! https://software.intel.com/en-us/node/470592 (2014-11-25)
 
   use mkl_vsl_type
   use mkl_vsl
@@ -32,8 +48,8 @@ module IntelRNGMod
   public :: SampleIntelPoissonI
 
   ! Continuous
-  ! TODO: should we make an interface and have generic for either single or double precision
-  !       but do we determine single or double based on inputs or???
+  !>@todo: should we make an interface and have generic for either single or double precision
+  !!       and determine single or double based on inputs or???
   public :: SampleIntelUniformS,SampleIntelUniformD
   public :: SampleIntelGaussS,SampleIntelGaussD
   public :: SampleIntelGammaS,SampleIntelGammaD
@@ -41,20 +57,24 @@ module IntelRNGMod
 
   contains
 
-    ! RNG stream management
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Start an Intel RNG stream (including the seed)
+    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
+    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Started RNG stream in object RNGStream, potentially created file
+    !!          (SeedFile), and potentially returned seed value (Out)
+    !---------------------------------------------------------------------------
     subroutine IntitialiseIntelRNG(Seed,SeedFile,Out)
-
-      ! Start an RNG stream
-
-      ! https://software.intel.com/en-us/node/470610 (2014-11-25)
-      ! https://software.intel.com/en-us/node/470612 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional  :: Seed     ! A number to initialize RNG
-      character(len=*),optional           :: SeedFile ! File to save the seed in
-      integer(int32),intent(out),optional :: Out      ! Make the seed value available outside
+      integer(int32),intent(in),optional  :: Seed     !< A number to initialize RNG with
+      character(len=*),optional           :: SeedFile !< File to save the seed in
+      integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
 
       ! Other
       integer(int32) :: Size,Unit,BRNG
@@ -94,13 +114,16 @@ module IntelRNGMod
       end if
     end subroutine
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   End an Intel RNG stream
+    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
+    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     subroutine UnintitialiseIntelRNG
-
-      ! Delete an RNG stream
-
-      ! https://software.intel.com/en-us/node/470610 (2014-11-25)
-      ! https://software.intel.com/en-us/node/470612 (2014-11-25)
-
       implicit none
 
       RNGErrCode=vsldeletestream(RNGStream)
@@ -111,23 +134,22 @@ module IntelRNGMod
       end if
     end subroutine
 
-    ! Discrete
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a discrete Uniform(a,b) distribution
+    !> @details See https://software.intel.com/en-us/node/470678 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelUniformI(n,a,b) result(Res)
-
-      ! Sample n values from a discrete Uniform(a,b) distribution
-      ! n input (integer), number of samples to generate (default 1)
-      ! a input (integer), minimal value (default 0)
-      ! b input (integer), maximal value (default 1)
-
-      ! https://software.intel.com/en-us/node/470678 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      integer(int32),intent(in),optional :: a
-      integer(int32),intent(in),optional :: b
-      integer(int32),allocatable         :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      integer(int32),intent(in),optional :: a      !< minimal value (default 0)
+      integer(int32),intent(in),optional :: b      !< maximal value (default 1)
+      integer(int32),allocatable         :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt,aOpt,bOpt
@@ -163,20 +185,21 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Bernoulli(p) distribution
+    !> @details See https://software.intel.com/en-us/node/470686 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelBernoulliI(n,p) result(Res)
-
-      ! Sample n values from a Bernoulli(p) distribution
-      ! n input (integer), number of samples to generate (default 1)
-      ! p input (real), probability of of a success (default 0.5)
-
-      ! https://software.intel.com/en-us/node/470686 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: p
-      integer(int32),allocatable         :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: p      !< probability of of a success (default 0.5)
+      integer(int32),allocatable         :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -208,20 +231,21 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Multinomial(p) distribution
+    !> @details Not from Intel
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelMultinomialI(n,p) result(Res)
-
-      ! Sample n values from a Multinomial(p) distribution
-      ! n input (integer), number of samples to generate (default 1)
-      ! p input (real), probabilities for the different categories
-
-      ! TODO: This is not from Intel so might consider some other name
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in)            :: p(:)
-      integer(int32),allocatable         :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in)            :: p(:)   !< probabilities for the different categories
+      integer(int32),allocatable         :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt,i,j,k
@@ -289,20 +313,21 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Poisson(lambda) distribution
+    !> @details See https://software.intel.com/en-us/node/470694 (2014-12-01)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelPoissonI(n,lambda) result(Res)
-
-      ! Sample n values from a Poisson(lambda) distribution
-      ! n input (integer), number of samples to generate (default 1)
-      ! lambda input (real), mean and variance of distribution (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470694 (2014-12-01)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: lambda
-      integer(int32),allocatable         :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: lambda !< mean and variance of distribution (default 1.0)
+      integer(int32),allocatable         :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -338,23 +363,22 @@ module IntelRNGMod
       return
     end function
 
-    ! Continuous
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Uniform(a,b) distribution (single precision)
+    !> @details See https://software.intel.com/en-us/node/470652 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelUniformS(n,a,b) result(Res)
-
-      ! Sample n values values from a Uniform(a,b) distribution; single precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! a input (real), minimal value (default 0.0)
-      ! b input (real), maximal value (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470652 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real32),intent(in),optional   :: a
-      real(real32),intent(in),optional   :: b
-      real(real32),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional   :: a      !< minimal value (default 0.0)
+      real(real32),intent(in),optional   :: b      !< maximal value (default 1.0)
+      real(real32),allocatable           :: Res(:) !< @return samples
       ! Other
       integer(int32) :: nOpt
 
@@ -391,22 +415,22 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Uniform(a,b) distribution (double precision)
+    !> @details See https://software.intel.com/en-us/node/470652 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelUniformD(n,a,b) result(Res)
-
-      ! Sample n values from a Uniform(a,b) distribution; double precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! a input (real), minimal value (default 0.0)
-      ! b input (real), maximal value (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470652 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: a
-      real(real64),intent(in),optional   :: b
-      real(real64),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: a      !< minimal value (default 0.0)
+      real(real64),intent(in),optional   :: b      !< maximal value (default 1.0)
+      real(real64),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -444,22 +468,22 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gauss(mu,sigma2) distribution (single precision)
+    !> @details See https://software.intel.com/en-us/node/470654 (2016-03-07)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGaussS(n,mu,sigma2) result(Res)
-
-      ! Sample n values from a Gauss(mu,sigma2) distribution; single precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! mu input (real), mean (default 0.0)
-      ! sigma2 input (real), variance (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470654 (2016-03-07)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real32),intent(in),optional   :: mu
-      real(real32),intent(in),optional   :: sigma2
-      real(real32),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional   :: mu     !< mean (default 0.0)
+      real(real32),intent(in),optional   :: sigma2 !< variance (default 1.0)
+      real(real32),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -497,22 +521,22 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gauss(mu,sigma2) distribution (double precision)
+    !> @details See https://software.intel.com/en-us/node/470654 (2016-03-07)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGaussD(n,mu,sigma2) result(Res)
-
-      ! Sample n values from a Gauss(mu,sigma2) distribution; double precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! mu input (real), mean (default 0.0)
-      ! sigma2 input (real), variance (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470654 (2016-03-07)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: mu
-      real(real64),intent(in),optional   :: sigma2
-      real(real64),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: mu     !< mean (default 0.0)
+      real(real64),intent(in),optional   :: sigma2 !< variance (default 1.0)
+      real(real64),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -550,30 +574,26 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gamma(alpha,a,beta) distribution (single precision)
+    !> @details See https://software.intel.com/en-us/node/470672 (2016-03-07)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGammaS(n,alpha,beta,shape,scale,rate,shift) result(Res)
-
-      ! Sample n values from a Gamma(alpha,a,beta) distribution; double precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! alpha input (real), shape
-      ! beta input (real), scale
-      ! shape input (real), the same as alpha, but to make life easier
-      ! scale input (real), the same as beta, but to make life easier
-      ! rate input (real),  the same as 1/beta, but to make life easier
-      ! a input (real), shift or displacement (default 0.0)
-
-      ! https://software.intel.com/en-us/node/470672 (2016-03-07)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real32),intent(in),optional   :: alpha
-      real(real32),intent(in),optional   :: beta
-      real(real32),intent(in),optional   :: shape
-      real(real32),intent(in),optional   :: scale
-      real(real32),intent(in),optional   :: rate
-      real(real32),intent(in),optional   :: shift
-      real(real32),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional   :: alpha  !< shape
+      real(real32),intent(in),optional   :: beta   !< scale
+      real(real32),intent(in),optional   :: shape  !< the same as alpha, but to make life easier
+      real(real32),intent(in),optional   :: scale  !< the same as beta, but to make life easier
+      real(real32),intent(in),optional   :: rate   !< the same as 1/beta, but to make life easier
+      real(real32),intent(in),optional   :: shift  !< shift or displacement (default 0.0)
+      real(real32),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -667,30 +687,26 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gamma(alpha,a,beta) distribution (double precision)
+    !> @details See https://software.intel.com/en-us/node/470672 (2016-03-07)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGammaD(n,alpha,beta,shape,scale,rate,shift) result(Res)
-
-      ! Sample n values from a Gamma(alpha,a,beta) distribution; double precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! alpha input (real), shape
-      ! beta input (real), scale
-      ! shape input (real), the same as alpha, but to make life easier
-      ! scale input (real), the same as beta, but to make life easier
-      ! rate input (real),  the same as 1/beta, but to make life easier
-      ! a input (real), shift or displacement (default 0.0)
-
-      ! https://software.intel.com/en-us/node/470672 (2016-03-07)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: alpha
-      real(real64),intent(in),optional   :: beta
-      real(real64),intent(in),optional   :: shape
-      real(real64),intent(in),optional   :: scale
-      real(real64),intent(in),optional   :: rate
-      real(real64),intent(in),optional   :: shift
-      real(real64),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: alpha  !< shape
+      real(real64),intent(in),optional   :: beta   !< scale
+      real(real64),intent(in),optional   :: shape  !< the same as alpha, but to make life easier
+      real(real64),intent(in),optional   :: scale  !< the same as beta, but to make life easier
+      real(real64),intent(in),optional   :: rate   !< the same as 1/beta, but to make life easier
+      real(real64),intent(in),optional   :: shift  !< shift or displacement (default 0.0)
+      real(real64),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -784,22 +800,22 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gumbel(a,b) (=type-I extreme value) distribution (single precision)
+    !> @details See https://software.intel.com/en-us/node/470670 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGumbelS(n,a,b) result(Res)
-
-      ! Sample n values from a Gumbel(a,b) (=type-I extreme value) distribution; single precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! a input (real), location (default 0.0)
-      ! b input (real), scale (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470670 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real32),intent(in),optional   :: a
-      real(real32),intent(in),optional   :: b
-      real(real32),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional   :: a      !< location (default 0.0)
+      real(real32),intent(in),optional   :: b      !< scale (default 1.0)
+      real(real32),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
@@ -837,22 +853,22 @@ module IntelRNGMod
       return
     end function
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sample from a Gumbel(a,b) (=type-I extreme value) distribution (double precision)
+    !> @details See https://software.intel.com/en-us/node/470670 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     function SampleIntelGumbelD(n,a,b) result(Res)
-
-      ! Sample n values from a Gumbel(a,b) (=type-I extreme value) distribution; double precision
-      ! n input (integer), number of samples to generate (default 1)
-      ! a input (real), location (default 0.0)
-      ! b input (real), scale (default 1.0)
-
-      ! https://software.intel.com/en-us/node/470670 (2014-11-25)
-
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n
-      real(real64),intent(in),optional   :: a
-      real(real64),intent(in),optional   :: b
-      real(real64),allocatable           :: Res(:)
+      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional   :: a      !< location (default 0.0)
+      real(real64),intent(in),optional   :: b      !< scale (default 1.0)
+      real(real64),allocatable           :: Res(:) !< @return samples
 
       ! Other
       integer(int32) :: nOpt
