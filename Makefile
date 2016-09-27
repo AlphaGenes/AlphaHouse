@@ -80,7 +80,7 @@ F90FINISHED:= $(F90TESTS:.F90=.o)
 
 BUILDDATE=$(shell date +%Y%m%d-%H:%M:%S)
 
-build: all tests cleanTest
+build: all doc tests cleanTest
 
 all: $(PROGRAM) $(DEPENDENCIES)
 
@@ -94,6 +94,8 @@ production: FFLAGS:=$(FFLAGS) $(PRODUCTION_FLAG)
 production: PROGRAM:=$(NAME)
 production: all
 
+doc:
+	doxygen Doxygen.txt > DoxygenDoc/Doxygen.log
 
 tests: $(F90TESTS) $(F90FINISHED)
 	cp $(TESTDIR)testSuites.inc .
