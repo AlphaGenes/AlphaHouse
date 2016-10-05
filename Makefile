@@ -1,5 +1,5 @@
 #Modules
-_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90
+_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 PedigreeTable.f90
 
 _PROGRAM_SOURCES=main.f90
 
@@ -42,6 +42,7 @@ OBJECTDIR=objs/
 SRCDIR=src/
 TESTDIR=tests/
 TARGETDIR=bin/
+DOXYGENDIR=DoxygenDoc/
 
 PFUNITFLAGS:=-I./$(OBJECTDIR) -I$(PFUNIT)/mod -I$(PFUNIT)/include -lpfunit -module $(OBJECTDIR) -fpp -L$(PFUNIT)/lib
 LDFLAGS:=
@@ -80,9 +81,11 @@ F90FINISHED:= $(F90TESTS:.F90=.o)
 
 BUILDDATE=$(shell date +%Y%m%d-%H:%M:%S)
 
+all: directories $(PROGRAM) $(DEPENDENCIES)
+
 build: all doc tests cleanTest
 
-all: $(PROGRAM) $(DEPENDENCIES)
+
 
 debug: FFLAGS:=$(FFLAGS) $(DEBUG_FLAGS)
 debug: $(PROGRAM)
@@ -95,7 +98,7 @@ production: PROGRAM:=$(NAME)
 production: all
 
 doc:
-	doxygen Doxygen.txt > DoxygenDoc/Doxygen.log
+	doxygen Doxygen.txt > $(DOXYGENDIR)Doxygen.log
 
 tests: $(F90TESTS) $(F90FINISHED)
 	cp $(TESTDIR)testSuites.inc .
@@ -127,6 +130,7 @@ directories:
 	$(MAKEDIR) $(TESTDIR)
 	$(MAKEDIR) $(OBJECTDIR)
 	$(MAKEDIR) $(TARGETDIR)
+	$(MAKEDIR) $(DOXYGENDIR)
 
 list: 	#Taken from http://stackoverflow.com/questions/4219255/how-do-you-get-the-list-of-targets-in-a-makefile. Answer by mklement0.
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs

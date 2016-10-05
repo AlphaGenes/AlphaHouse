@@ -1,0 +1,42 @@
+module TestPedigreeTable
+  use pFUnit_mod
+  use PedigreeTable
+  use ISO_Fortran_env
+
+  implicit none
+
+  integer,parameter :: SIZE = 10
+  class(PedigreeLine), allocatable :: table(:)
+
+  contains
+
+ @before
+    subroutine initialise
+         implicit none
+        integer :: i, genCount
+        character, allocatable:: id
+
+        id = "hi there"
+        genCount = 1
+        allocate(table(size))
+        do i=1,size
+            if (i > 2) then
+                call table(i)%init(id,i, i-100, i-1, i-2, genCount)
+            else
+                call table(i)%init(id,i, i-100, 0, 0, genCount)
+            endif
+
+            if (mod(i,5) == 0) genCount = genCount+1
+        enddo
+        
+    end subroutine
+
+
+    @test
+    subroutine testFounder
+        implicit none
+        @assertEqual(table(1)%isFounder(), .true.)
+        @assertEqual(table(2)%isFounder(), .true.)
+    end subroutine testFounder
+
+end module TestPedigreeTable
