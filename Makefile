@@ -106,6 +106,9 @@ tests: $(F90TESTS) $(F90FINISHED)
 	$(RM) testSuites.inc
 	./tests.x -xml test_output
 
+testsDebug : FFLAGS:=$(FFLAGS) $(DEBUG_FLAGS)
+testsDebug : tests
+
 clean: cleanIntermediate
 	$(RM) $(TARGETDIR)$(NAME)_*
 

@@ -6,7 +6,7 @@ module TestPedigreeTable
   implicit none
 
   integer,parameter :: SIZE = 10
-  class(PedigreeLine), allocatable :: table(:)
+  class(Individual), allocatable :: table(:)
 
   contains
 
@@ -31,6 +31,10 @@ module TestPedigreeTable
         
     end subroutine
 
+   @after
+    subroutine Uninit
+      deallocate(table)
+    end subroutine
 
     @test
     subroutine testFounder
@@ -39,4 +43,22 @@ module TestPedigreeTable
         @assertEqual(table(2)%isFounder(), .true.)
     end subroutine testFounder
 
+
+    @test
+    subroutine testAddOffspring
+        type(individualPointerContainer), allocatable :: Offsprings(:)
+        type(Individual) :: tmp
+        call table(1)%addOffspring(table(2))
+        @assertEqual(table(1)%GetNumberOffsprings(), 1)
+        call table(1)%getOffsprings(Offsprings)
+        tmp = Offsprings(1)%p
+        @assertEqualUserDefined(tmp, table(2))
+    end subroutine testAddOffspring
+
+    @test
+    subroutine testBuildOffspring           
+        call BuildOffspringInfortmation(table)
+        @assertEqual(table(1)%GetNumberOffsprings(), 1)
+        @assertEqual(table(2)%GetNumberOffsprings(), 2)
+    end subroutine testBuildOffspring
 end module TestPedigreeTable
