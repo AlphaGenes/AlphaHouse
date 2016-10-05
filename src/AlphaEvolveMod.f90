@@ -1,6 +1,28 @@
 
 !###############################################################################
 
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     AlphaEvolveMod.f90
+!
+! DESCRIPTION:
+!> @brief    Evolutionary algorithms
+!
+!> @details  Evolutionary algorithms such as random search, differential evolution,
+!!           genetic algorithm (not implemented), etc.
+!
+!> @author   Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 GGorjanc - Initial Version
+!
+!-------------------------------------------------------------------------------
 module AlphaEvolveMod
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
@@ -8,55 +30,62 @@ module AlphaEvolveMod
 
   implicit none
 
-  type :: AlphaEvolveSol
-    real(real64) :: Criterion
-    contains
-      procedure         :: Initialise    => InitialiseAlphaEvolveSol
-      procedure         :: Assign        => AssignAlphaEvolveSol
-      procedure         :: UpdateMean    => UpdateMeanAlphaEvolveSol
-      procedure         :: CalcCriterion => CalcCriterionAlphaEvolveSol
-      procedure, nopass :: LogHead       => LogHeadAlphaEvolveSol
-      procedure         :: Log           => LogAlphaEvolveSol
-      procedure, nopass :: LogPopHead    => LogPopHeadAlphaEvolveSol
-      procedure         :: LogPop        => LogPopAlphaEvolveSol
-  end type
-
   private
   ! Types
   public :: AlphaEvolveSol
   ! Methods
   public :: DifferentialEvolution, RandomSearch
 
+  !> @brief An evolutionary solution
+  type :: AlphaEvolveSol
+    real(real64) :: Criterion
+    contains
+      procedure         :: Initialise => InitialiseAlphaEvolveSol
+      procedure         :: Assign     => AssignAlphaEvolveSol
+      procedure         :: UpdateMean => UpdateMeanAlphaEvolveSol
+      procedure         :: Evaluate   => EvaluateAlphaEvolveSol
+      procedure, nopass :: LogHead    => LogHeadAlphaEvolveSol
+      procedure         :: Log        => LogAlphaEvolveSol
+      procedure, nopass :: LogPopHead => LogPopHeadAlphaEvolveSol
+      procedure         :: LogPop     => LogPopAlphaEvolveSol
+  end type
+
   contains
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Differential evolution
+    !> @details Differential evolution algorithm (Storn and Price) plus additions
+    !!          by Brian Kinghorn (vary parameters and genetic algorithm steps).
+    !!          This works with continuous representation of a solution.
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  The best evolved solution (BestSol); log on STDOUT and files
+    !---------------------------------------------------------------------------
     subroutine DifferentialEvolution(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
       StopTolerance, nGenPrint, LogFile, LogPop, LogPopFile, CritType, CRBurnIn, CRLate, FBase,&
       FHigh1, FHigh2, BestSol)
-
-      ! Evolutionary Algorithm - Differential Evolution (continuous representation of solution)
-
       implicit none
 
       ! Arguments
-      integer(int32), intent(in)             :: nParam         ! No. of parameters in a solution
-      integer(int32), intent(in)             :: nSol           ! No. of solutions to test each generation/Iteration
-      real(real64), intent(in), optional     :: Init(:,:)      ! Initial solutions to start with
-      integer(int32), intent(in)             :: nGen           ! No. of generations/iterations to run
-      integer(int32), intent(in)             :: nGenBurnIn     ! No. of generations/iterations with more loose parameters
-      integer(int32), intent(in)             :: nGenStop       ! Stop after no progress for nGenStop
-      real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
-      integer(int32), intent(in)             :: nGenPrint      ! Print changed solution every nGenPrint
-      character(len=*), intent(in)           :: LogFile        ! Which file to log best solution into
-      logical, intent(in), optional          :: LogPop         ! Log all solutions
-      character(len=*), intent(in), optional :: LogPopFile     ! Which file to log all solutions into
-      character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
-      real(real64), intent(in), optional     :: CRBurnIn       ! Crossover rate for nGenBurnIn
-      real(real64), intent(in), optional     :: CRLate         ! Crossover rate
-      real(real64), intent(in), optional     :: FBase          ! F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh1         ! F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh2         ! F is multiplier of difference used to mutate
-      class(AlphaEvolveSol), intent(out)     :: BestSol        ! The best evolved solution
+      integer(int32), intent(in)             :: nParam         !< No. of parameters in a solution
+      integer(int32), intent(in)             :: nSol           !< No. of solutions to test each generation/Iteration
+      real(real64), intent(in), optional     :: Init(:,:)      !< Initial solutions to start with
+      integer(int32), intent(in)             :: nGen           !< No. of generations/iterations to run
+      integer(int32), intent(in)             :: nGenBurnIn     !< No. of generations/iterations with more loose parameters
+      integer(int32), intent(in)             :: nGenStop       !< Stop after no progress for nGenStop
+      real(real64), intent(in)               :: StopTolerance  !< Stopping tolerance
+      integer(int32), intent(in)             :: nGenPrint      !< Print changed solution every nGenPrint
+      character(len=*), intent(in)           :: LogFile        !< Which file to log best solution into
+      logical, intent(in), optional          :: LogPop         !< Log all solutions
+      character(len=*), intent(in), optional :: LogPopFile     !< Which file to log all solutions into
+      character(len=*), intent(in), optional :: CritType       !< Passed to Evaluate
+      real(real64), intent(in), optional     :: CRBurnIn       !< Crossover rate for nGenBurnIn
+      real(real64), intent(in), optional     :: CRLate         !< Crossover rate
+      real(real64), intent(in), optional     :: FBase          !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh1         !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh2         !< F is multiplier of difference used to mutate
+      class(AlphaEvolveSol), intent(out)     :: BestSol        !< The best evolved solution
       !class(*), intent(inout)                :: BestSol        ! The best evolved solution
 
       ! Other
@@ -148,7 +177,7 @@ module AlphaEvolveMod
         nInit = size(Init, dim=2)
         do i = 1, nInit
           OldChrom(:,i) = Init(:,i)
-          call Sol(i)%CalcCriterion(OldChrom(:,i), CritType)
+          call Sol(i)%Evaluate(OldChrom(:,i), CritType)
         end do
         nInit = i
       else
@@ -156,7 +185,7 @@ module AlphaEvolveMod
       end if
       do i = nInit, nSol
         call random_number(OldChrom(:,i))
-        call Sol(i)%CalcCriterion(OldChrom(:,i), CritType)
+        call Sol(i)%Evaluate(OldChrom(:,i), CritType)
       end do
 
       ! --- Evolve ---
@@ -192,13 +221,13 @@ module AlphaEvolveMod
 
         ! --- Generate competitors ---
 
-        ! TODO: Paralelize this loop?
-        !       The main reason would be to speed up the code as CalcCriterion() might take quite some time for larger problems
-        !       - some variables are local, say a, b, ...
-        !       - global variable is NewChrom, but is indexed with i so this should not be a problem
-        !       - AcceptRate needs to be in sync between the threads!!!
-        !       - we relly on random_number a lot here and updating the RNG state for each thread can be slow
-        !         and I (GG) am also not sure if we should not have thread specific RNGs
+        !> @todo: Paralelize this loop?
+        !!        The main reason would be to speed up the code as Evaluate() might take quite some time for larger problems
+        !!         - some variables are local, say a, b, ...
+        !!         - global variable is NewChrom, but is indexed with i so this should not be a problem
+        !!         - AcceptRate needs to be in sync between the threads!!!
+        !!         - we relly on random_number a lot here and updating the RNG state for each thread can be slow
+        !!           and I (GG) am also not sure if we should not have thread specific RNGs
         BestSolChanged = .false.
         AcceptRate = 0.0d0
 
@@ -262,7 +291,7 @@ module AlphaEvolveMod
 
           ! --- Evaluate and Select ---
 
-          call HoldSol%CalcCriterion(Chrom, CritType)     ! Merit of competitor
+          call HoldSol%Evaluate(Chrom, CritType)          ! Merit of competitor
           if (HoldSol%Criterion >= Sol(i)%Criterion) then ! If competitor is better or equal, keep it
             NewChrom(:,i) = Chrom(:)                      !   ("equal" to force evolution)
             call Sol(i)%Assign(HoldSol)
@@ -330,24 +359,30 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Random search
+    !> @details Can either find the best solution (Mode=max) or return mean of
+    !!          the evaluated solutions (Mode=avg)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  The best found solution or mean of all evaluated solutions (BestSol);
+    !!          log on STDOUT and files
+    !---------------------------------------------------------------------------
     subroutine RandomSearch(Mode, nParam, Init, nSamp, nSampStop, StopTolerance, &
       nSampPrint, LogFile, CritType, BestSol)
-
-      ! Random search
-
       implicit none
 
       ! Arguments
-      character(len=*), intent(in)           :: Mode           ! Mode of search (max or avg)
-      integer(int32), intent(in)             :: nParam         ! No. of parameters in a solution
-      real(real64), intent(inout), optional  :: Init(:,:)      ! Initial solutions to test
-      integer(int32), intent(in)             :: nSamp          ! No. of samples to test
-      integer(int32), intent(in), optional   :: nSampStop      ! Stop after no progress for nSampStop
-      real(real64), intent(in)               :: StopTolerance  ! Stopping tolerance
-      integer(int32), intent(in)             :: nSampPrint     ! Print changed solution every nSampPrint
-      character(len=*), intent(in)           :: LogFile        ! Which file to log best solution into
-      character(len=*), intent(in), optional :: CritType       ! Passed to CalcCriterion
-      class(AlphaEvolveSol), intent(out)     :: BestSol        ! The best found solution
+      character(len=*), intent(in)           :: Mode           !< Mode of search (max or avg)
+      integer(int32), intent(in)             :: nParam         !< No. of parameters in a solution
+      real(real64), intent(inout), optional  :: Init(:,:)      !< Initial solutions to test
+      integer(int32), intent(in)             :: nSamp          !< No. of samples to test
+      integer(int32), intent(in), optional   :: nSampStop      !< Stop after no progress for nSampStop
+      real(real64), intent(in)               :: StopTolerance  !< Stopping tolerance
+      integer(int32), intent(in)             :: nSampPrint     !< Print changed solution every nSampPrint
+      character(len=*), intent(in)           :: LogFile        !< Which file to log best solution into
+      character(len=*), intent(in), optional :: CritType       !< Passed to Evaluate
+      class(AlphaEvolveSol), intent(out)     :: BestSol        !< The best found solution
       !class(*), intent(inout)                :: BestSol        ! The best found solution
 
       ! Other
@@ -405,7 +440,7 @@ module AlphaEvolveMod
       if (present(Init)) then
         nInit = size(Init, dim=2)
         do Samp = 1, nInit
-          call HoldSol%CalcCriterion(Init(:, Samp), CritType)
+          call HoldSol%Evaluate(Init(:, Samp), CritType)
           if      (ModeAvg) then
             if (Samp == 1) then
               call BestSol%Assign(HoldSol)
@@ -425,7 +460,7 @@ module AlphaEvolveMod
 
       ! --- Search ---
 
-      ! TODO: parallelise this loop?
+      !> @todo: parallelise this loop?
       do Samp = nInit, nSamp
 
         BestSolChanged = .false.
@@ -437,7 +472,7 @@ module AlphaEvolveMod
         ! --- Evaluate and Select ---
 
         ! Merit of the competitor
-        call HoldSol%CalcCriterion(Chrom(:), CritType)
+        call HoldSol%Evaluate(Chrom(:), CritType)
 
         if      (ModeAvg) then
           ! Update the mean
@@ -499,11 +534,16 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Initialise AlphaEvolve solution
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     subroutine InitialiseAlphaEvolveSol(This)
       implicit none
 
       ! Argument
-      class(AlphaEvolveSol), intent(out) :: This
+      class(AlphaEvolveSol), intent(out) :: This !< solution
 
       ! Initialisation
       This%Criterion = 0.0d0
@@ -511,12 +551,17 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Assign one AlphaEvolve solution to another
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
     subroutine AssignAlphaEvolveSol(Out, In)
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSol), intent(out) :: Out
-      class(AlphaEvolveSol), intent(in)  :: In
+      class(AlphaEvolveSol), intent(out) :: Out !< @return output solution
+      class(AlphaEvolveSol), intent(in)  :: In  !< input solution
 
       ! Assignments
       Out%Criterion = In%Criterion
@@ -524,13 +569,20 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Update (running) mean of AlphaEvolve solutions for random search
+    !!          with Mode=avg
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Solution with average metrics
+    !---------------------------------------------------------------------------
     subroutine UpdateMeanAlphaEvolveSol(This, Add, n)
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSol), intent(inout) :: This
-      class(AlphaEvolveSol), intent(in)    :: Add
-      integer(int32), intent(in)           :: n
+      class(AlphaEvolveSol), intent(inout) :: This !< solution
+      class(AlphaEvolveSol), intent(in)    :: Add  !< addition
+      integer(int32), intent(in)           :: n    !< number of previous solutions mean was based on
 
       ! Other
       real(real64) :: kR
@@ -543,14 +595,20 @@ module AlphaEvolveMod
 
     !###########################################################################
 
-    subroutine CalcCriterionAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here
+    !---------------------------------------------------------------------------
+    !> @brief   Evaluate AlphaEvolve solution
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine EvaluateAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSol)        :: This      ! Solution
-      real(real64), intent(inout)  :: Chrom(:)  ! Internal representation of the solution
-      character(len=*), intent(in) :: CritType  ! Type of criterion; not used here
+      class(AlphaEvolveSol), intent(inout) :: This      !< @return solution
+      real(real64), intent(inout)          :: Chrom(:)  !< internal representation of the solution
+      character(len=*), intent(in)         :: CritType  !< type of criterion; not used here
 
+      !> @todo is not Chrom now part of solution
       ! Initialize the solution
       call This%Initialise()
 
@@ -560,9 +618,15 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Print log head
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Print log head to STDOUT and optionally file unit
+    !---------------------------------------------------------------------------
     subroutine LogHeadAlphaEvolveSol(LogUnit)
       implicit none
-      integer(int32), intent(in), optional :: LogUnit
+      integer(int32), intent(in), optional :: LogUnit !< log file unit
 
       character(len=12) :: ColnameLogStdout(3)
       character(len=22) :: ColnameLogUnit(3)
@@ -582,12 +646,18 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Print log
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Print log to STDOUT and optionally file unit
+    !---------------------------------------------------------------------------
     subroutine LogAlphaEvolveSol(This, LogUnit, Gen, AcceptRate)
       implicit none
-      class(AlphaEvolveSol), intent(in)    :: This
-      integer(int32), intent(in), optional :: LogUnit
-      integer(int32), intent(in)           :: Gen
-      real(real64), intent(in)             :: AcceptRate
+      class(AlphaEvolveSol), intent(in)    :: This       !< solution
+      integer(int32), intent(in), optional :: LogUnit    !< log file unit
+      integer(int32), intent(in)           :: Gen        !< generation/iteration
+      real(real64), intent(in)             :: AcceptRate !< acceptance rate
       write(STDOUT,  "(i12, 2(1x, f11.5))")     Gen, AcceptRate, This%Criterion
       if (present(LogUnit)) then
         write(LogUnit, "(i22, 2(1x, es21.14))") Gen, AcceptRate, This%Criterion
@@ -596,9 +666,17 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Print population log head
+    !> @details This is meant to log all the evaluated solutions and not just the
+    !!          best one as LogHeadAlphaEvolveSol
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Print population log head to STDOUT and optionally file unit
+    !---------------------------------------------------------------------------
     subroutine LogPopHeadAlphaEvolveSol(LogPopUnit)
       implicit none
-      integer(int32), intent(in) :: LogPopUnit
+      integer(int32), intent(in) :: LogPopUnit !< log file unit
 
       character(len=22) :: ColnameLogPopUnit(3)
       !                       1234567890123456789012
@@ -610,12 +688,20 @@ module AlphaEvolveMod
 
     !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Print population log
+    !> @details This is meant to log all the evaluated solutions and not just the
+    !!          best one as LogAlphaEvolveSol
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Print population log to STDOUT and optionally file unit
+    !---------------------------------------------------------------------------
     subroutine LogPopAlphaEvolveSol(This, LogPopUnit, Gen, i)
       implicit none
-      class(AlphaEvolveSol), intent(in) :: This
-      integer(int32), intent(in)        :: LogPopUnit
-      integer(int32), intent(in)        :: Gen
-      integer(int32), intent(in)        :: i
+      class(AlphaEvolveSol), intent(in) :: This       !< solution
+      integer(int32), intent(in)        :: LogPopUnit !< population log file unit
+      integer(int32), intent(in)        :: Gen        !< generation/iteration
+      integer(int32), intent(in)        :: i          !< solution id
       write(LogPopUnit, "(2(i22, 1x), es21.14)") Gen, i, This%Criterion
     end subroutine
 
