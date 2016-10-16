@@ -3,9 +3,9 @@ module inputfile
   implicit none
 
   private
-  public:: getInputFile
-  
- ! inputFileName, initialise
+  public:: getInputFile, setInputFile
+
+  ! inputFileName, initialise
 
   integer,parameter:: fileTypeLength=2, fileLength=1000
   character(len=:), allocatable :: inputFileName
@@ -14,20 +14,26 @@ module inputfile
 
 contains
 
- function getInputFile result (inputFile)
-   character(len=:), allocatable:: inputFile
-   if (.not. allocated(inputFileName)) then
-     call initialise()
-   end if
-   inputFile=inputFileName
- end function getInputFile
+subroutine setInputFile(fileNameIn)
+  character(len=*):: fileNameIn
+
+  inputFileName = fileNameIn
+
+end subroutine setInputFile
+
+subroutine getInputFile(inputFile)
+  character(len=:), allocatable:: inputFile
+  if (.not. allocated(inputFileName)) then
+    call initialise()
+  end if
+  inputFile=inputFileName
+end subroutine getInputFile
 
 
 subroutine initialise(filePathIn)
   character(len=*), intent(in), optional::filePathIn
-  character(len=fileLength):: currentWorkingDirectory, defaultInputFilePath,currentCommandLineArgument
-  logical::defaultInputFilePathExists, filePassedIn
-  integer(kind=int32)::commandLineArguments, commandArgument,i
+  character(len=fileLength):: currentWorkingDirectory
+  integer(kind=int32):: commandArgument
   if (present(filePathIn)) then
     inputFileName=trim(filePathIn)
   else
@@ -46,9 +52,7 @@ function getFileCommandArgumentNumber() result(argumentNumber)
   integer(int32)::commandLineArguments
   integer(int32):: argumentNumber
 
-  integer(int32)::i, nextCommandArgumentExists,length
-  character(len=fileTypeLength)::checkIfInputFile
-  character(len=fileLength)::test
+  integer(int32)::i
   argumentNumber=0
 
   commandLineArguments = command_argument_count()
@@ -61,28 +65,28 @@ end function getFileCommandArgumentNumber
 
 function checkIfFileInput(i) result(isInputFileTagAndCommandExists)
   logical isInputFileTagAndCommandExists, isInputFileTag
-  integer(int32) :: commandArgumentNumber, i, nextCommandArgumentExists
+  integer(int32) :: i, nextCommandArgumentExists
   integer(int32) :: ArgumentLength
   character(len=fileTypeLength)::checkIfInputFile
 
-    isInputFileTagAndCommandExists = .false.
-    call get_command_argument(i,checkIfInputFile, length=ArgumentLength)
-    isInputFileTag = (checkIfInputFile==inputType) .and. (ArgumentLength==2)
-    if (isInputFileTag) then
-      call get_command_argument(i+1,status=nextCommandArgumentExists)
-      if (nextCommandArgumentExists==0) then
-        isInputFileTagAndCommandExists =.true.
-      else if ((nextCommandArgumentExists>0)) then
-        write(*,*) "Input file retrieval failed"
-        call writeOutInstructions()
-        stop 100
-      else if (nextCommandArgumentExists==-1) then
-        write(*,*) "Input file length to long. Length is limited to 1000 characters"
-        stop 101
-      else
-        stop 102
-      end if
+  isInputFileTagAndCommandExists = .false.
+  call get_command_argument(i,checkIfInputFile, length=ArgumentLength)
+  isInputFileTag = (checkIfInputFile==inputType) .and. (ArgumentLength==2)
+  if (isInputFileTag) then
+    call get_command_argument(i+1,status=nextCommandArgumentExists)
+    if (nextCommandArgumentExists==0) then
+      isInputFileTagAndCommandExists =.true.
+    else if ((nextCommandArgumentExists>0)) then
+      write(*,*) "Input file retrieval failed"
+      call writeOutInstructions()
+      stop 100
+    else if (nextCommandArgumentExists==-1) then
+      write(*,*) "Input file length to long. Length is limited to 1000 characters"
+      stop 101
+    else
+      stop 102
     end if
+  end if
 end function checkIfFileInput
 
 
@@ -110,8 +114,8 @@ subroutine writeOutInstructions()
   write(*,*) "Tell me the input file by using ", inputType, " YourFileName."
   write(*,*) 
   write(*,*) "Alternatively don't pass me ", inputType, "and I will use the default inputFile. & 
-              &This is the name of the exacutable followed by ", defaultPostfix, "The name of  &
-              &this exacutable is ", trim(executableName(3:len(executableName))) , "and"
+    &This is the name of the exacutable followed by ", defaultPostfix, "The name of  &
+    &this exacutable is ", trim(executableName(3:len(executableName))) , "and"
   write(*,*) "the default filename is ", trim(executableName(3:len(executableName))),defaultPostfix
 end subroutine writeOutInstructions
 

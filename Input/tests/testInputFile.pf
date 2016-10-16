@@ -1,0 +1,17 @@
+
+@test
+subroutine testSetInputFile
+  use pFUnit_mod
+  use inputfile
+
+  character(len=:), allocatable:: expected, got
+  expected ="Expected"
+  call setInputFile(expected)
+
+  call getInputFile(got)
+
+  @assertEqual(got, expected)
+
+end subroutine testSetInputFile
+
+
