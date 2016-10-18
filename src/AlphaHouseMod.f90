@@ -31,7 +31,7 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace
+  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -84,7 +84,7 @@ module AlphaHouseMod
 
     !###########################################################################
     !---------------------------------------------------------------------------
-    !> @brief   returns string that prececdes first whitespace (used to be parse string windows)
+    !> @brief   returns string that prececdes first whitespace (used to be parsestringwindows)
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    October 18, 2016
     !---------------------------------------------------------------------------

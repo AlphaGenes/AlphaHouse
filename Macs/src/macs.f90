@@ -41,7 +41,7 @@ end type
   contains
 
     subroutine getMacsInput(input, MacsSpecFileIn)
-      use UtilitySubroutines, only: ParseStringWindows,parseLine
+      use AlphaHouseMod, only: parseToFirstWhitespace,splitLineIntoTwoParts
 
       type(MacsInput), intent(out):: input
 
@@ -70,9 +70,9 @@ end type
             CYCLE
         end if
 
-        call parseLine(trim(line), first, second)
+        call splitLineIntoTwoParts(trim(line), first, second)
 
-        call ParseStringWindows(first, dumStr)
+        dumStr = parseToFirstWhitespace(first)
         if (first(1:1)=="#" .or. len(trim(line))==0) then
           cycle
         else
@@ -86,7 +86,7 @@ end type
 
           case("chromosomelengthbasesmacs")
             if (.not. allocated(second)) goto 57
-            call ParseStringWindows(second(1),dumStr)
+            dumStr = parseToFirstWhitespace(second(1))
             if (trim(dumStr) == "internal") then
               input%InternalChrLenBasesMaCS = .true.
               input%ChrLengthBasesMaCS = 0 !initialise to 0 just in case user is being stupid
@@ -100,7 +100,7 @@ end type
 
           case("mutationratemacs")
             if (.not. allocated(second)) goto 58
-            call ParseStringWindows(second(1),dumStr)
+            dumStr = parseToFirstWhitespace(second(1))
             if (trim(dumStr) == "internal") then
               input%InternalMutationRateMaCS = .true.
               input%MutationRateMaCS = 0 !initialise to 0 just in case user is being stupid
@@ -114,7 +114,7 @@ end type
 
           case("effectivepopulationsizebasemacs")
             if (.not. allocated(second)) goto 59
-            call ParseStringWindows(second(1),dumStr)
+            dumStr = parseToFirstWhitespace(second(1))
             if (trim(dumStr) == "internal") then
               input%InternalEffecPopSize = .true.
               input%EffecPopSize = 0 !initialise to 0 just in case user is being stupid
@@ -145,7 +145,7 @@ end type
 
           case("recombinationhotspotsonoff")
             if (.not. allocated(second)) goto 56
-            call ParseStringWindows(second(1),dumStr)
+            dumStr = parseToFirstWhitespace(second(1))
             if (trim(dumStr)=="off") then
               input%RecombHotspotsOnOff = .False.
             else
@@ -157,7 +157,7 @@ end type
 
           case("chromosomelengthmorgansmacs")
             if (.not. allocated(second)) goto 52
-            call ParseStringWindows(second(1),dumStr)
+            dumStr = parseToFirstWhitespace(second(1))
             if (trim(dumStr) == "internal") then
               input%InternalMorgansMaCS = .true.
               input%MorgansMaCs = 0 !initialise to 0 just in case user is being stupid
@@ -269,7 +269,7 @@ subroutine RunMacsHelper(input, ChromIn)
 end subroutine RunMacsHelper
 
 subroutine InitMacsCases(input) !PopHistoryMaCS,MacsParams,MutationRateMaCS, MorgansMaCS, InternalMorgansMaCS, InternalChrLenBasesMaCS, InternalMutationRateMaCS, ChrLengthBasesMaCS, EffecPopSize, InternalEffecPopSize)
-  use UtilitySubroutines, only: TLC
+  use AlphaHouseMod, only: toLower
 
     implicit none
     type(MacsInput), intent(inout):: input
@@ -279,7 +279,7 @@ subroutine InitMacsCases(input) !PopHistoryMaCS,MacsParams,MutationRateMaCS, Mor
     character(300) :: buffer
     integer :: size, status,k
 
-    dummy = TLC(input%PopHistoryMaCS)
+    dummy = toLower(input%PopHistoryMaCS)
     k=1
     CasePopHistMacs=""
     do 
@@ -552,7 +552,7 @@ subroutine CalculateMaCSParams(MacsParams, ChrLengthBasesMaCS, EffecPopSize, Mut
 end subroutine CalculateMaCSParams
 
 subroutine ReadRecombSpecForMacs(Chrom)
-  use UtilitySubroutines, only: countLines
+  use AlphaHouseMod, only: countLines
 
     implicit none
 
@@ -566,7 +566,7 @@ subroutine ReadRecombSpecForMacs(Chrom)
     character(len=512) :: FileString
 
     write(FileString,'("./RecombinationSpecifications/Chromosome"i0,".txt")') Chrom
-    call CountLines(Filestring,nRecBlocks)
+    nRecBlocks =  countLines(Filestring)
 
     allocate(RecombSpecStart(nRecBlocks))
     allocate(RecombSpecStop(nRecBlocks))
