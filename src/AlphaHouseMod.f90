@@ -397,6 +397,62 @@ module AlphaHouseMod
       return
     end function
 
+    !---------------------------------------------------------------------------
+    !> @brief   splits string into initial and second part, where second part is another array
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
+    subroutine splitLineIntoTwoParts(line,first, second)
+
+     implicit none
+
+    integer :: lenin,i
+    integer :: sCount1, sCount2, fCount ! SCount1 starts from 0 to avoid extra allocation
+    integer, parameter :: numberAfterComma = 10000 ! Can be max 10000 params after first comma
+    character(len=*), intent(in) :: line
+    character :: c
+    character(len=300) :: first
+    character (len=300),dimension(:), allocatable,intent(out) :: second
+    character (len=300), dimension(:), allocatable :: tmp
+    logical :: useSecond    
+    first = " "
+    useSecond = .false.
+    sCount1 = 0
+    sCount2 = 1
+    fCount = 1
+    if (allocated(second)) deallocate(second)
+    allocate(second(numberAfterComma)) ! Allocate the second array
+    lenin=len(line)
+    lenin=len_trim(line(1:lenin))  ! Trim string as no point dealing with trailing whitespace   
+    do i=1,lenin
+        c=line(i:i)
+        if(.not. (ichar(c) == 9 .or. c == " " .or. c=="")) then  !if c is not tab or whitespace
+            if (c == ',') then
+                sCount1 = sCount1 + 1
+                scount2 = 1 ! reset scount 2
+                useSecond = .true.
+                second(sCount1) = " "
+            else if (useSecond) then
+                second(sCount1)(sCount2:sCount2) = c
+                scount2 = sCount2 + 1
+            else
+                first(fCount:fCount) = c
+                fCount = fCount + 1
+            endif
+        else
+            !We know that it is either a tab or whitespace, so why add them
+            continue
+        endif
+    enddo
+    if (sCount1 > 0) then
+        allocate(tmp(sCount1)) !Allocate temp to count after
+        tmp(1:sCount1) = second(1:sCount1) ! make tmp contain values of second
+        call move_alloc(tmp, second)
+    else
+        deallocate(second) ! Deallocate second if nothing has come afterwards
+    endif
+    end subroutine splitLineIntoTwoParts
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
