@@ -940,6 +940,47 @@ module AlphaStatMod
     end function
 
     !###########################################################################
+
+      subroutine CholDc(a,p,NotPosDefin)    !(DOUBLE PRECISION MODIFIED)
+    !SG modified 3/10/15 to return error where user specified matrix is not positive definite
+    !DB modified 4/8/2016 to not use Sum as that is a intrinsic procedure
+    !DW modified 20/9/2016 to take int64
+
+    use iso_fortran_env, only : int64
+    INTEGER(kind=int64) :: n
+    real(kind=real64), intent(inout) :: a(:,:),p(:)
+    INTEGER(kind=int64) :: i,j,k
+    real(kind=real64) :: sum1
+    logical, intent(out) :: NotPosDefin
+
+    NotPosDefin = .False.
+    n = size(p)
+    ! Compute Cholesky factor
+    DO i=1,n
+      DO j=i,n
+        SUM1=a(i,j)
+        DO k=i-1,1,-1
+          SUM1=SUM1-a(i,k)*a(j,k)
+        enddo
+        IF(i.eq.j)then
+          IF(sum1.le.0.) then
+            NotPosDefin = .True.
+            return
+          endif
+          p(i)=sqrt(sum1)
+        ELSE
+          a(j,i)=sum1/p(i)
+        END IF
+      enddo
+    enddo
+
+    ! Put sd on diagonals so we have complete Cholesky factor
+    do i=1,n
+      a(i,i)=p(i)
+    enddo
+
+  end subroutine choldc
+
 end module
 
 !###############################################################################

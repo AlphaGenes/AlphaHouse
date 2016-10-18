@@ -1,12 +1,76 @@
 module UtilitySubroutines
     implicit none
 
-! Module contains subroutines and functions that are completely independent and can be completely decoupled from other modules
+! Module contains subroutines and functions that are completely independent and can be completely decoupled from other modules.
+
+  !###########################################################################################################################################################
+  !###########################################################################################################################################################
+
+!  ____  ____   __   ____  _  _  ____ 
+! (  _ \(  __) / _\ (    \( \/ )(  __)
+!  )   / ) _) /    \ ) D (/ \/ \ ) _) 
+! (__\_)(____)\_/\_/(____/\_)(_/(____)
+
+! THIS IS LEGACY - Please use Alpha*Mod files instead!
+
+
+  !###########################################################################################################################################################
+  !###########################################################################################################################################################
+
 
     contains
 
+
+  !###########################################################################################################################################################
+  
+  ! same as DescStatSingle in AlphaStatMod.f90
+  SUBROUTINE moment(DATA,n,ave,adev,sdev,var,skew,curt)
+    IMPLICIT NONE
+    INTEGER n
+    DOUBLE PRECISION adev,ave,curt,sdev,skew,var,DATA(n)
+    INTEGER j
+    DOUBLE PRECISION p,s,ep
+    IF (n.le.1) STOP 110003
+    s=0
+    DO j= 1,n
+      s=s+DATA(j)
+    END DO
+
+    ave=s/n
+    adev=0
+    var=0
+    skew=0
+    curt=0
+    ep=0
+
+    DO j=1,n
+      s=DATA(j)-ave
+      ep=ep+s
+      adev=adev+ABS(s)
+      p=s*s
+      var=var+p
+      p=p*s
+      skew=skew+p
+      p=p*s
+      curt=curt+p
+    END DO
+
+    adev=adev/n
+    var=(var-ep**2/n)/(n-1)
+    sdev=SQRT(var)
+    IF(var.ne.0)then
+      skew=skew/(n*sdev**3)
+      curt=curt/(n*var**2)-3
+    ELSE
+      !PRINT*, 'no skew or kurtosis when zero variance in moment'
+      !PAUSE 'no skew or kurtosis when zero variance in moment'
+    END IF
+    RETURN
+  END SUBROUTINE moment
+  
 !#######################################################################
 
+! same as DescStatDouble in AlphaStatMod.f90
   SUBROUTINE momentR4(DATA,n,ave,adev,sdev,var,skew,curt)
     use iso_fortran_env
     IMPLICIT NONE
@@ -98,54 +162,10 @@ module UtilitySubroutines
 
   end subroutine Pearsn
 
-  !###########################################################################################################################################################
-  
-  SUBROUTINE moment(DATA,n,ave,adev,sdev,var,skew,curt)
-    IMPLICIT NONE
-    INTEGER n
-    DOUBLE PRECISION adev,ave,curt,sdev,skew,var,DATA(n)
-    INTEGER j
-    DOUBLE PRECISION p,s,ep
-    IF (n.le.1) STOP 110003
-    s=0
-    DO j= 1,n
-      s=s+DATA(j)
-    END DO
 
-    ave=s/n
-    adev=0
-    var=0
-    skew=0
-    curt=0
-    ep=0
-
-    DO j=1,n
-      s=DATA(j)-ave
-      ep=ep+s
-      adev=adev+ABS(s)
-      p=s*s
-      var=var+p
-      p=p*s
-      skew=skew+p
-      p=p*s
-      curt=curt+p
-    END DO
-
-    adev=adev/n
-    var=(var-ep**2/n)/(n-1)
-    sdev=SQRT(var)
-    IF(var.ne.0)then
-      skew=skew/(n*sdev**3)
-      curt=curt/(n*var**2)-3
-    ELSE
-      !PRINT*, 'no skew or kurtosis when zero variance in moment'
-      !PAUSE 'no skew or kurtosis when zero variance in moment'
-    END IF
-    RETURN
-  END SUBROUTINE moment
-  
 !###############################################################################
 
+! more modern version exists in AlphaStatMod
   subroutine CholDc(a,n,np,p,NotPosDefin)    !(DOUBLE PRECISION MODIFIED)
     !SG modified 3/10/15 to return error where user specified matrix is not positive definite
     !DB modified 4/8/2016 to not use Sum as that is a intrinsic procedure
@@ -222,7 +242,7 @@ module UtilitySubroutines
 
 
     !---------------------------------------------------------------------------
-    !> @brief   Removes whitespace from a string
+    !> @brief   splits string into initial and second part, where second part is another array
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    October 18, 2016
     !---------------------------------------------------------------------------
@@ -283,6 +303,7 @@ module UtilitySubroutines
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    October 18, 2016
     !---------------------------------------------------------------------------
+    ! same as function toLower in AlphaHouseMod
     function TLC(str)
         character(*), intent(in) :: str
         character(len=512) :: TLC
@@ -392,7 +413,7 @@ module UtilitySubroutines
     end subroutine RandomOrder
 
 
-
+    ! function corresponds to SampleIntelUniformS in intelRNGMOD
     subroutine RandomOrder4byte(order,n,idum)
         use iso_fortran_env
         !modified for 4byte integers
@@ -433,7 +454,7 @@ module UtilitySubroutines
 
 
 
-   
+   ! function corresponds to SampleIntelGammaD in intelRNGMOD
     function random_gamma(idum,s, b, first) result(fn_val)
         implicit none
 
@@ -608,6 +629,7 @@ module UtilitySubroutines
     end function random_gamma
 
 
+
     function gasdev(idum)
         implicit none
         !c uses ran1
@@ -638,164 +660,8 @@ module UtilitySubroutines
     end
 
 
-   !  (C) Copr. 1986-92 Numerical Recipes Software 6
 
-   !*****************************************************
-   !*  Sorts an array RA of length N in ascending order *
-   !*                by the Heapsort method             *
-   !* ------------------------------------------------- *
-   !* INPUTS:                                           *
-   !*      N   size of table RA                   *
-   !*          RA    table to be sorted                 *
-   !* OUTPUT:                                           *
-   !*      RA    table sorted in ascending order    *
-   !*                                                   *
-   !* NOTE: The Heapsort method is a N Log2 N routine,  *
-   !*       and can be used for very large arrays.      *
-   !*****************************************************
-   subroutine HpSortReal(N,RA)
-       !MODifIED FOR REALS BY JOHN HICKEY
-       use iso_fortran_env
-       implicit none
-       integer(kind=int64) :: N
-       integer(kind=int32)::IR,J,L,I
-       double precision :: RRA
-       double precision,intent(inout) ::RA(N)
-       if (n.lt.2) return
-
-       L=INT((dble(N)/2)+1)
-       IR=N
-   !The index L will be decremented from its initial value during the
-   !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-   !will be decremented from its initial value down to 1 during the
-   !"retirement-and-promotion" (heap selection) phase.
-10 continue
-   if(L > 1)then
-       L=L-1
-       RRA=RA(L)
-   else
-       RRA=RA(IR)
-       RA(IR)=RA(1)
-       IR=IR-1
-       if(IR.eq.1)then
-           RA(1)=RRA
-           return
-       end if
-   end if
-   I=L
-   J=L+L
-20 if(J.le.IR)then
-       if(J < IR)then
-           if(RA(J) < RA(J+1))  J=J+1
-       end if
-       if(RRA < RA(J))then
-           RA(I)=RA(J)
-           I=J; J=J+J
-       else
-           J=IR+1
-       end if
-       goto 20
-   end if
-   RA(I)=RRA
-   goto 10
-   end subroutine HpSortReal
-
-   subroutine HpSortDS(N,RA)
-     !MODifIED FOR integer of kind DOubleSize BY Diarmaid de Burca, July 2016
-    use iso_fortran_env
-    implicit none
-    integer(kind=int64),intent(in) :: N
-    integer(kind=int32)::IR,J,L,I
-  integer :: RRA
-  integer(kind=8),intent(inout)::RA(N)
-    if (n.lt.2) return
-
-    L=INT((dble(N)/2)+1)
-    IR=N
-!The index L will be decremented from its initial value during the
-!"hiring" (heap creation) phase. Once it reaches 1, the index IR
-!will be decremented from its initial value down to 1 during the
-!"retirement-and-promotion" (heap selection) phase.
-10 continue
-   if(L > 1)then
-       L=L-1
-       RRA=RA(L)
-   else
-       RRA=RA(IR)
-       RA(IR)=RA(1)
-       IR=IR-1
-       if(IR.eq.1)then
-           RA(1)=RRA
-           return
-       end if
-   end if
-   I=L
-   J=L+L
-20 if(J.le.IR)then
-       if(J < IR)then
-           if(RA(J) < RA(J+1))  J=J+1
-       end if
-       if(RRA < RA(J))then
-           RA(I)=RA(J)
-           I=J; J=J+J
-       else
-           J=IR+1
-       end if
-       goto 20
-   end if
-   RA(I)=RRA
-   goto 10
-   end subroutine 
-
-subroutine HpSort(N,RA)
-
-    use iso_fortran_env
-    !MODifIED FOR integerS BY JOHN HICKEY
-    implicit none
-    integer(kind=int32),intent(in) :: N
-    integer (kind=int32) :: IR,J,L,I
-  integer :: RRA
-  integer(kind=int32),intent(inout) :: RA(N)
-    if (n.lt.2) return
-
-    L=INT((dble(N)/2)+1)
-    IR=N
-!The index L will be decremented from its initial value during the
-!"hiring" (heap creation) phase. Once it reaches 1, the index IR
-!will be decremented from its initial value down to 1 during the
-!"retirement-and-promotion" (heap selection) phase.
-10 continue
-   if(L > 1)then
-       L=L-1
-       RRA=RA(L)
-   else
-       RRA=RA(IR)
-       RA(IR)=RA(1)
-       IR=IR-1
-       if(IR.eq.1)then
-           RA(1)=RRA
-           return
-       end if
-   end if
-   I=L
-   J=L+L
-20 if(J.le.IR)then
-       if(J < IR)then
-           if(RA(J) < RA(J+1))  J=J+1
-       end if
-       if(RRA < RA(J))then
-           RA(I)=RA(J)
-           I=J; J=J+J
-       else
-           J=IR+1
-       end if
-       goto 20
-   end if
-   RA(I)=RRA
-   goto 10
-   end subroutine HpSort
-
-
+! seems to correspond to gamma in intelRNGMOD
    SUBROUTINE cgamma(mo, z, w)
        !-----------------------------------------------------------------------
 
