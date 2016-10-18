@@ -1,7 +1,7 @@
 #Modules
-_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 PedigreeTable.f90
+_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 PedigreeTable.f90 UtilitySubroutines.f90
 
-_PROGRAM_SOURCES=main.f90
+_PROGRAM_SOURCES=main2.f90
 
 DEPENDENCIES=
 ifeq ($(OS), WINDOWS_NT)
@@ -17,10 +17,10 @@ else
 #This gets the name of the current folder and the current commit and sets the program name to that.
 	FOLDERNAME:=$(shell basename $(shell pwd)) #Name of program goes here
 	NAME:=$(strip $(FOLDERNAME))
-	VERSION:=$(shell git rev-parse --short HEAD)
+	# VERSION:=$(shell git rev-parse --short HEAD)
 	SUBVERSION:=0
 	#MASTERVERSION:=$(shell git describe --tag | cut -d "-" -f 1)
-	PROGRAM:=$(NAME)_$(VERSION)#$(MASTERVERSION)
+	PROGRAM:=$(NAME)#_$(VERSION)#$(MASTERVERSION)
 	RM=rm -rf
 
 	MAKEDIR=mkdir -p

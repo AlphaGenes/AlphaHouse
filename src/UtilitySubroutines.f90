@@ -4,29 +4,6 @@ module UtilitySubroutines
 ! Module contains subroutines and functions that are completely independent and can be completely decoupled from other modules
 
     contains
-    subroutine CountLines(fileName,nLines)
-        !subroutine by John Hickey March 2011
-        use iso_fortran_env
-        implicit none
-
-        integer(kind=int64), intent(out) :: nLines
-        integer :: f
-        character(len=*), intent(in) :: fileName
-        character(len=300) :: dumC
-
-        nLines=0
-        open(unit=101,file=trim(fileName),status="old")
-        do
-            read(101,*,iostat=f) dumC
-            nLines=nLines+1
-            if (f/=0) then
-                nLines=nLines-1
-                exit
-            endif
-        enddo
-        close(101)
-
-    end subroutine CountLines
 
 !#######################################################################
 
@@ -214,6 +191,11 @@ module UtilitySubroutines
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+    !---------------------------------------------------------------------------
+    !> @brief   Removes whitespace from a string
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
     subroutine ParseStringWindows(str,newstr)
         implicit none
 
@@ -238,7 +220,11 @@ module UtilitySubroutines
     end subroutine ParseStringWindows
 
 
-
+    !---------------------------------------------------------------------------
+    !> @brief   Removes whitespace from a string
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
     subroutine parseLine(line,first, second)
 
      implicit none
@@ -291,6 +277,11 @@ module UtilitySubroutines
     end subroutine parseLine
 
 
+    !---------------------------------------------------------------------------
+    !> @brief   takes in a string and returns the lowercase version
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
     function TLC(str)
         character(*), intent(in) :: str
         character(len=512) :: TLC
@@ -304,6 +295,22 @@ module UtilitySubroutines
         end do
         return
     end function TLC
+
+
+    function ran1Wrapper(idum) result(Res)
+      use iso_fortran_env
+      use IntelRNGMod
+        implicit none
+        integer, intent(in) :: idum ! this is the seed
+        integer(kind=int32) :: res
+        integer(kind=int32) :: temp(1)
+            call IntitialiseIntelRNG(idum)
+            temp = SampleIntelUniformI()
+            res = temp(1)
+            call UnintitialiseIntelRNG
+        return
+    end function ran1Wrapper
+
 
     function ran1(idum)
       use iso_fortran_env
@@ -335,6 +342,10 @@ module UtilitySubroutines
         return
     end function ran1
 
+
+ !---------------------------------------------------------------------------
+    !> @brief   Subroutine takes in number n, and returns random ordering of longs based on idum seed
+    !---------------------------------------------------------------------------
     subroutine RandomOrder(order,n,idum)
         use iso_fortran_env
         implicit none
@@ -343,7 +354,7 @@ module UtilitySubroutines
 
         integer(kind=int64), INTENT(IN)  :: n
         integer(kind=int64), INTENT(OUT) :: order(n)
-        integer :: idum
+        integer, INTENT(IN)  :: idum
     !    double precision ran1
 
         !     Local variables
@@ -371,6 +382,8 @@ module UtilitySubroutines
         RETURN
 
     end subroutine RandomOrder
+
+
 
     subroutine RandomOrder4byte(order,n,idum)
         use iso_fortran_env
@@ -585,6 +598,7 @@ module UtilitySubroutines
         end function random_gamma2
 
     end function random_gamma
+
 
     function gasdev(idum)
         implicit none
