@@ -55,6 +55,7 @@ module UtilitySubroutines
 
 !##############################################################################################################
 
+! pearson correlation that looks similar to cor in alphastatmod
   subroutine Pearsn (x,y,n,r)
 
     implicit none
@@ -297,23 +298,28 @@ module UtilitySubroutines
     end function TLC
 
 
-    function ran1Wrapper(idum) result(Res)
-      use iso_fortran_env
-      use IntelRNGMod
-        implicit none
-        integer, intent(in) :: idum ! this is the seed
-        integer(kind=int32) :: res
-        integer(kind=int32) :: temp(1)
-            call IntitialiseIntelRNG(idum)
-            temp = SampleIntelUniformI()
-            res = temp(1)
-            call UnintitialiseIntelRNG
-        return
-    end function ran1Wrapper
+    ! function ran1(idum) result(Res)
+    !   use iso_fortran_env
+    !   use IntelRNGMod
+    !     implicit none
+    !     integer, intent(in), optional:: idum ! this is the seed
+    !     real(kind=real64) :: res
+    !     real(kind=real64):: temp(1)
+    !         if (present(idum)) then
+    !             call IntitialiseIntelRNG(idum)
+    !         else
+    !             call IntitialiseIntelRNG()
+    !         endif
+    !         temp = SampleIntelUniformD()
+    !         res = temp(1)
+    !         call UnintitialiseIntelRNG
+    !     return
+    ! end function ran1
 
 
+! function corresponds to SampleIntelUniformD in intelRNGMOD
     function ran1(idum)
-      use iso_fortran_env
+    use iso_fortran_env
         implicit none
         integer(kind=int32) idum,ia,im,iq,ir,ntab,ndiv
         double precision ran1,am,eps,rnmx
@@ -346,6 +352,8 @@ module UtilitySubroutines
  !---------------------------------------------------------------------------
     !> @brief   Subroutine takes in number n, and returns random ordering of longs based on idum seed
     !---------------------------------------------------------------------------
+   
+    ! function corresponds to SampleIntelUniformD in intelRNGMOD
     subroutine RandomOrder(order,n,idum)
         use iso_fortran_env
         implicit none
@@ -788,8 +796,6 @@ subroutine HpSort(N,RA)
    end subroutine HpSort
 
 
-
-! TODO is there a reason why gamma subroutines are in alphasim.f90??
    SUBROUTINE cgamma(mo, z, w)
        !-----------------------------------------------------------------------
 

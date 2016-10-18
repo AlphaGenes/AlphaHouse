@@ -31,7 +31,7 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed
+  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -82,6 +82,62 @@ module AlphaHouseMod
       return
     end function
 
+    !###########################################################################
+    !---------------------------------------------------------------------------
+    !> @brief   returns string that prececdes first whitespace (used to be parse string windows)
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
+    function parseToFirstWhitespace(str) result(newstr)
+        implicit none
+
+        integer :: k
+        character(len=*), intent(in) :: str
+        character(len=:), allocatable :: newstr
+
+        character(len=512) :: dummyStr
+
+        dummyStr = ToLower(str)
+        k=1
+        newstr=""
+        do 
+            if (dummyStr(k:k) /= " ") then
+                newstr = dummyStr(1:k)
+                k=k+1
+            else
+                exit
+            endif
+        enddo
+
+    end function parseToFirstWhitespace
+
+    !###########################################################################
+    !---------------------------------------------------------------------------
+    !> @brief   returns string without whitespace
+    !> @author  David Wilson, david.wilson@roslin.ed.ac.uk
+    !> @details http://stackoverflow.com/questions/27179549/removing-whitespace-in-string
+    !> @date    October 18, 2016
+    !---------------------------------------------------------------------------
+
+    recursive function removewhitespace(string) result(res)
+        character(len=*), intent(in) :: string
+        character, parameter:: ch = ' '
+        character(:), allocatable :: res
+
+        if (len(string)==1) then
+           if (string==ch) then 
+              res = ''
+           else
+              res = string
+           end if
+        else
+           if (string(1:1)==ch) then
+              res = removewhitespace(string(2:))
+           else
+              res = string(1:1)//removewhitespace(string(2:))
+           end if
+        end if
+    end function removewhitespace
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -391,7 +447,7 @@ module AlphaHouseMod
       deallocate(SeedList)
     end subroutine
 
-    !###########################################################################
+    !########################################################################### 
 end module
 
 !###############################################################################

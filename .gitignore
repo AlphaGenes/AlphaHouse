@@ -3,7 +3,7 @@
 *.a
 *.x
 *.i90
-*/*Mod.f90
+
 bin/*
 DoxygenDoc
 test.txt

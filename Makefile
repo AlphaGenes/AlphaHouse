@@ -110,7 +110,7 @@ testsDebug : FFLAGS:=$(FFLAGS) $(DEBUG_FLAGS)
 testsDebug : tests
 
 clean: cleanIntermediate
-	$(RM) $(TARGETDIR)$(NAME)_*
+	$(RM) $(TARGETDIR)$(NAME)*
 
 cleanIntermediate: cleanTest
 	$(RM) $(OBJECTDIR)*
