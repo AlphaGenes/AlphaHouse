@@ -4,13 +4,24 @@ _MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMo
 _PROGRAM_SOURCES=main2.f90
 
 DEPENDENCIES=
-ifeq ($(OS), WINDOWS_NT)
-	OSFLAG="OSWIN"
-
-	PROGRAM="ProgramName"
-
-	EXE=".exe"
+ifeq ($(OS),Windows_NT)
+	OSFLAG="OS_WIN"
+	EXE=.exe
 	RM=del
+
+	OBJECTDIR=objs\\
+	SRCDIR=src\\
+	TESTDIR=tests\\
+	TARGET_DIR=bin\\
+ 	MKDIR=mkdir 
+ 	OBJ := .obj
+	#For the extra programs that need to be defined
+	ABOPT := -static  -Qmkl
+	VERSION:=$(shell git rev-parse --short HEAD)
+	DEBUG_FLAGS=  -finstrument-functions /debug /Od /traceback /heap-arrays /check:bounds
+	PROGRAM:=$(NAME)
+	#TODO heap arrays because default stack size is 2gb on windows.
+	FFLAGS= -fpp /heap-arrays -D $(OSFLAG) -DVERS=""commit-$(VERSION)""
 
 else
 	OSFLAG:="OS_UNIX"
