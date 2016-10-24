@@ -1,7 +1,5 @@
 #Modules
-_MODULE_SOURCES=GenParam.f90 \
-								PedigreeTable.f90 \
-                UtilitySubroutines.f90 \
+_MODULE_SOURCES=AlphaHouseMod.f90 \
 								macs.f90
 								
 

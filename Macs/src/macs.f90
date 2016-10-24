@@ -179,11 +179,16 @@ end type
       end subroutine getMacsInput
 
 
-    subroutine runMacs()
+    subroutine runMacs(inputIn)
       implicit none
+      Type(MacsInput), intent(in), optional :: inputIn
       Type(MacsInput):: input
 
-      call getMacsInput(input)
+      if (present(inputIn)) then
+        input = inputIn
+      else
+        call getMacsInput(input)
+      endif
       call RunMacsHelper(input)
 
     end subroutine runMacs

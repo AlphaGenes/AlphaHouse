@@ -57,6 +57,32 @@ module IntelRNGMod
 
   contains
 
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Subroutine that returns an  increasing set of random numbers up until a maximum
+    !> @author  David Wilson, david.wilson@roslin.ed.ac.uk
+    !> @date    October 21, 2016
+    !> @return  array of increasing random numbers
+    !---------------------------------------------------------------------------
+    subroutine generateIncreasingRandom(amount,maxIndex,randomNumbers)
+      integer, intent(in) :: amount,maxIndex
+      integer,dimension(:),allocatable, intent(out) :: randomNumbers
+      integer :: i
+      real(kind=real64) :: delta, tmp
+      real(kind=int64) :: res(1)
+      allocate(randomNumbers(amount))
+      delta = maxIndex / real(amount);
+      call IntitialiseIntelRNG()
+      tmp = real(maxIndex)
+    do i=1, amount 
+      res = SampleIntelUniformD(b=tmp)
+        randomNumbers(i) = int(i*delta + res(1) * delta);
+    enddo
+
+    call UnintitialiseIntelRNG()
+    end subroutine generateIncreasingRandom
     !###########################################################################
 
     !---------------------------------------------------------------------------
