@@ -1,5 +1,5 @@
 
-module PedigreeTable
+module IndividualModule
     implicit none
 
     integer, parameter :: OFFSPRINGTHRESHOLD = 100
@@ -32,7 +32,7 @@ module PedigreeTable
         contains
             procedure :: getIdSireDam => getIdSireDamFromLine
             procedure :: getSireDamByIndex
-            procedure :: init => initLine
+            procedure :: init => initIndividual
             procedure :: isInitialised => isInitialisedLine
             procedure :: isGenotyped => isGenotypedLine
             procedure :: SetGenotyped => SetGenotypedLine
@@ -90,7 +90,7 @@ contains
         return
     end function getSireDamByIndex
 
-    subroutine initLine(this, originalID, OldGlobalID, id, sireID, damID, generation, path)
+    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation, path)
         class(Individual), intent(inout) :: this
         character(*), intent(in) :: originalID
         integer, intent(in) :: OldGlobalID
@@ -120,7 +120,7 @@ contains
             end if
             this%initialised = .true.
         endif
-    end subroutine initLine
+    end subroutine initIndividual
 
     function isInitialisedLine(this) result(ans)
         class(Individual), intent(in) :: this
@@ -219,4 +219,4 @@ contains
     end subroutine BuildOffspringInfortmation
 
 
-end module PedigreeTable
+end module IndividualModule

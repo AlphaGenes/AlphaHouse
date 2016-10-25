@@ -1,5 +1,5 @@
 #Modules
-_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 PedigreeTable.f90 UtilitySubroutines.f90
+_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 IndividualModule.f90 UtilitySubroutines.f90
 
 _PROGRAM_SOURCES=main2.f90
 
