@@ -5,5 +5,4 @@ ADD_TEST_SUITE(TestPedigreeTable_suite)
 ADD_TEST_SUITE(testInputFile_suite)
 ADD_TEST_SUITE(testString_suite)
 ADD_TEST_SUITE(testLine_suite)
-ADD_TEST_SUITE(testConvertInput_suite)
 

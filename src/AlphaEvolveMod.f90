@@ -600,13 +600,14 @@ module AlphaEvolveMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine EvaluateAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here
+    subroutine EvaluateAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here - I have made them optional (I want
+      !  to remove them but don't want to break stuff -DdB
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSol), intent(inout) :: This      !< @return solution
-      real(real64), intent(inout)          :: Chrom(:)  !< internal representation of the solution
-      character(len=*), intent(in)         :: CritType  !< type of criterion; not used here
+      class(AlphaEvolveSol), intent(inout)  :: This      !< @return solution
+      real(real64), intent(inout), optional :: Chrom(:)  !< internal representation of the solution
+      character(len=*), intent(in), optional:: CritType  !< type of criterion; not used here
 
       !> @todo is not Chrom now part of solution
       ! Initialize the solution

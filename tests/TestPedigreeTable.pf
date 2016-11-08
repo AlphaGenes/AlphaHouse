@@ -1,6 +1,6 @@
 module TestPedigreeTable
   use pFUnit_mod
-  use PedigreeTable
+  use IndividualModule
   use ISO_Fortran_env
 
   implicit none

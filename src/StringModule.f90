@@ -88,7 +88,6 @@ Module stringModule
 
         integer(int32):: i
         integer, dimension(:,:), allocatable::numSplit
-        character(len=1000)::temp
 
         if (present(delimitersIn)) then
           delimiters = delimitersIn

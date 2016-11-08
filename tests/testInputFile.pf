@@ -8,7 +8,7 @@ subroutine testSetInputFile
   expected ="Expected"
   call setInputFile(expected)
 
-  call getInputFile(got)
+  got =  getInputFile()
 
   @assertEqual(got, expected)
 

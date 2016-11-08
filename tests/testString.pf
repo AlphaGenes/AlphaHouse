@@ -15,7 +15,23 @@ obtainedLength = testString%GetSize()
 
 end subroutine testGetSize
 
+@test
+subroutine testConvertToLowerCase()
+use pFUnit_mod
+use StringModule
+
+type(String):: input
+type(String):: expectedOut
+
+expectedOut="abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz1234567890-!@£$%^&*()_"
+input = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-!@£$%^&*()_"
+call input%toLowerCase()
+
+@assertEqualUserDefined(input, expectedOut)
+
+end subroutine testConvertToLowerCase
 @test 
+
 subroutine testSplitDefault()
 use pFUnit_mod
 use stringModule
