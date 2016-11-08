@@ -32,7 +32,7 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
+  public :: CountLines,int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Int64
 
   !> @brief List of characters for case conversion in ToLower
@@ -50,7 +50,7 @@ module AlphaHouseMod
   end interface
 
   !> @brief Integer to character interface
-  interface Int2Char
+  interface int2Char
     module procedure Int2Char32, Int2Char64
   end interface 
   !> @brief FindLoc interface
@@ -80,7 +80,6 @@ module AlphaHouseMod
      Inquire(file = filename, exist = fileExists)
    end function checkFileExists
 
-    !###########################################################################
 
     !---------------------------------------------------------------------------
     !> @brief   Count number of lines in a file

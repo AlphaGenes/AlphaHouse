@@ -26,7 +26,7 @@
 module AlphaEvolveMod
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
-  use AlphaHouseMod, only : Int2Char, Real2Char, ToLower
+  use AlphaHouseMod, only : int2Char, Real2Char, ToLower
 
   implicit none
 

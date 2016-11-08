@@ -3,6 +3,7 @@ Module stringModule
   implicit none
 
 
+  private
 
   public:: assignment(=), operator(==)
   public:: String
@@ -10,6 +11,7 @@ Module stringModule
   type :: String
     character(len=:), allocatable:: line
     contains
+      procedure:: toLowerCase => convertToLowerCaseString
       procedure:: writeType
       procedure:: readType
       procedure:: getSize
@@ -32,6 +34,25 @@ Module stringModule
 !    module pro
   contains
 
+!---------------------------------------------------------------------------
+! DESCRIPTION:
+!> @brief      Converts the input data into lower-case
+!
+!> @details    Given a type String, this converts it from upper case to lower case"
+!
+!> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+!
+!> @date       October 25, 2016
+!
+! PARAMETERS:
+!> @param[inout] input fileInput to be converted to lowercase 
+!---------------------------------------------------------------------------
+  subroutine convertToLowerCaseString(this)
+    use AlphaHouseMod
+    class(String), intent(inout):: this
+
+    this%line = ToLower(this%line)
+  end subroutine convertToLowerCaseString
 
     function compareString(this, stringIn) result (same)
       logical:: same

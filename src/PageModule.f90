@@ -1,4 +1,5 @@
 module pageModule
+  use iso_fortran_env
   use lineModule
   use stringModule
   implicit none
@@ -191,7 +192,7 @@ module pageModule
 !> @return inputFile Allocatable character array where each element of the array corresponds to a single line from the input
 !---------------------------------------------------------------------------
   subroutine readInInputFile(this, inputFileName, commentCharacterIn)
-    use AlphaHouseMod, only: getNumberOfLinesInFile
+    use AlphaHouseMod, only: CountLines
     class(Page), intent(inout):: this
     type(String), dimension(:), allocatable:: tempArray 
     type(Line), dimension(:), allocatable:: tempLine
@@ -209,7 +210,7 @@ module pageModule
       write(commentCharacter, *)  "#"
     end if
 
-    numLines =  getNumberOfLinesInFile(inputFileName)
+    numLines =  CountLines(inputFileName)
 
     allocate(tempArray(numLines))
     allocate(tempLine(numLines))

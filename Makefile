@@ -1,7 +1,7 @@
 #Modules
-_MODULE_SOURCES=AlphaHouseMod.f90 AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 IndividualModule.f90 UtilitySubroutines.f90
+_MODULE_SOURCES=AlphaHouseMod.f90 Input.f90 StringModule.f90 LineModule.f90 PageModule.f90  AlphaEvolveMod.f90 AlphaStatMod.f90 IntelRNGMod.f90 OrderPackMod.f90 IndividualModule.f90 UtilitySubroutines.f90
 
-_PROGRAM_SOURCES=main2.f90
+_PROGRAM_SOURCES=main.f90
 
 DEPENDENCIES=
 ifeq ($(OS),Windows_NT)
