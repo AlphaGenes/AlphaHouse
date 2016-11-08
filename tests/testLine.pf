@@ -1,0 +1,41 @@
+@test
+subroutine testNumWords()
+use pfUnit_mod
+use lineModule
+
+type(Line):: LineIn
+character(len=5), dimension(5):: char
+integer:: expectedSize = 5, gotSize
+
+char(1) = "test"
+char(2) = "test"
+char(3) = "test"
+char(4) = "test"
+char(5) = "test"
+
+
+LineIn = char
+
+gotSize = LineIn%getNumWords()
+
+@assertEqual(expectedSize, gotSize)
+
+end subroutine testNumWords
+
+
+@test
+subroutine testGetWord()
+use pfUnit_mod
+use lineModule
+
+type(Line):: LineIn
+character(len=4)::expected, gotten
+
+expected = "test"
+
+LineIn = expected
+
+gotten = lineIn%getWord(1)
+
+@assertEqual(expected, gotten)
+end subroutine testGetWord

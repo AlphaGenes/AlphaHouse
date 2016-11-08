@@ -21,6 +21,7 @@
 !
 ! REVISION HISTORY:
 ! 2016-09-26 GGorjanc - Initial Version
+! 2016-10-28 DdeBurca - added FileCheck, changed Int2char/char2Int to support 64 bit integers
 !
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
@@ -32,6 +33,7 @@ module AlphaHouseMod
   private
   ! Methods
   public :: CountLines,Int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
+  public :: checkFileExists, char2Int, char2Int64
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -42,12 +44,41 @@ module AlphaHouseMod
     module procedure RealS2Char,RealD2Char
   end interface
 
+  !>@brief char2Int interface
+  interface char2Int
+    module procedure char2Int32
+  end interface
+
+  !> @brief Integer to character interface
+  interface Int2Char
+    module procedure Int2Char32, Int2Char64
+  end interface 
   !> @brief FindLoc interface
   interface FindLoc
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
   end interface
 
   contains
+   !---------------------------------------------------------------------------
+   ! DESCRIPTION:
+   !> @brief      Check if a fileName exists
+   !
+   !> @details    given a filepath, this function checks if that file exists.   If so, it returns true, otherwise, it returns false
+   !
+   !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+   !
+   !> @date       October 25, 2016
+   !
+   ! PARAMETERS:
+   !> @param[in] fileName Name of the file to be checked
+   !> @return .True. if file exists, otherwise .false.
+   !---------------------------------------------------------------------------
+   function checkFileExists(filename) result(fileExists)
+     character(len=*), intent(in):: filename
+     logical:: fileExists
+
+     Inquire(file = filename, exist = fileExists)
+   end function checkFileExists
 
     !###########################################################################
 
@@ -114,9 +145,11 @@ module AlphaHouseMod
     !###########################################################################
     !---------------------------------------------------------------------------
     !> @brief   returns string without whitespace
-    !> @author  David Wilson, david.wilson@roslin.ed.ac.uk
+    !> @author  David Wilson, david.wilson@roslin.ed.ac.uk, Diarmaid de Burca, diarmaid.deBurca@ed.ac.uk
     !> @details http://stackoverflow.com/questions/27179549/removing-whitespace-in-string
+    !           DDB: Modified it to also work for empty strings (just returns an empty string)
     !> @date    October 18, 2016
+    !           October 28m 2016
     !---------------------------------------------------------------------------
 
     recursive function removewhitespace(string) result(res)
@@ -124,7 +157,9 @@ module AlphaHouseMod
         character, parameter:: ch = ' '
         character(:), allocatable :: res
 
-        if (len(string)==1) then
+        if (len(string)==0) then
+          res = ''
+        else if (len(string)==1) then
            if (string==ch) then 
               res = ''
            else
@@ -142,11 +177,12 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Convert character to integer
-    !> @details See http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90
+    !> @details See http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90. Returns a 32 bit
+    !integer.
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function Char2Int(c) result(Res)
+    function Char2Int32(c) result(Res)
       implicit none
 
       character(*), intent(in) :: c   !< character
@@ -156,7 +192,47 @@ module AlphaHouseMod
       return
     end function
 
+    !---------------------------------------------------------------------------
+    !> @brief   Convert character to integer
+    !> @details See http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90. Returns a 64 bit
+    !integer.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    function Char2Int64(c) result(Res)
+      implicit none
+
+      character(*), intent(in) :: c   !< character
+      integer(int64)           :: Res !@result integer
+
+      read(c, *) Res
+      return
+    end function
+
     !###########################################################################
+    !---------------------------------------------------------------------------
+    !> @brief   Convert integer to character
+    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran. Converts 64 bit integer.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk 
+    !> @date    October 28, 2016
+    !---------------------------------------------------------------------------
+    function Int2Char64(i,fmt) result(Res)
+      implicit none
+
+      integer(int64),intent(in)        :: i   !< integer
+      character(*),intent(in),optional :: fmt !< format
+      character(:),allocatable         :: Res !< @return character
+
+      character(range(i)+2) :: Tmp
+
+      if (present(fmt)) then
+        write(Tmp,fmt) i
+      else
+        write(Tmp,"(i0)") i
+      end if
+      Res=trim(Tmp)
+      return
+    end function
 
     !---------------------------------------------------------------------------
     !> @brief   Convert integer to character
@@ -164,7 +240,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function Int2Char(i,fmt) result(Res)
+    function Int2Char32(i,fmt) result(Res)
       implicit none
 
       integer(int32),intent(in)        :: i   !< integer

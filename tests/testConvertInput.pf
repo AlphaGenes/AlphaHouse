@@ -1,0 +1,14 @@
+@test
+subroutine testConvertToLowerCase()
+use pFUnit_mod
+
+type(String):: input
+type(String):: expectedOut
+
+expectedOut="abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz1234567890-!@£$%^&*()_"
+input = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-!@£$%^&*()_"
+call convertToLowerCase(input)
+
+@assertEqual(input(1)%line, expectedOut)
+
+end subroutine testConvertToLowerCase

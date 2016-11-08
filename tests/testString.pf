@@ -1,0 +1,68 @@
+@test
+subroutine testGetSize()
+use pfUnit_mod
+use stringModule
+
+type(String):: testString
+integer:: expectedLength = 4, obtainedLength
+
+
+testString = "Test"
+
+obtainedLength = testString%GetSize()
+
+@assertEqual(expectedLength, obtainedLength)
+
+end subroutine testGetSize
+
+@test 
+subroutine testSplitDefault()
+use pFUnit_mod
+use stringModule
+
+type(String):: inputString
+type(String), dimension(5):: outputString, expectedOutputString
+
+inputString = "test,test2,,,test3,,,,,,,test4,test5"
+expectedOutputString(1) = "test"
+expectedOutputString(2) = "test2"
+expectedOutputString(3) = "test3"
+expectedOutputString(4) = "test4"
+expectedOutputString(5) = "test5"
+
+outputString = inputString%split()
+
+@assertEqualUserDefined(outputString(1), expectedOutputString(1))
+@assertEqualUserDefined(outputString(2), expectedOutputString(2))
+@assertEqualUserDefined(outputString(3), expectedOutputString(3))
+@assertEqualUserDefined(outputString(4), expectedOutputString(4))
+@assertEqualUserDefined(outputString(5), expectedOutputString(5))
+
+end subroutine testSplitDefault
+
+
+@test
+subroutine testWithNonDefaults()
+use pfUnit_mod
+use stringModule
+type(String):: inputString
+type(String), dimension(5):: outputString, expectedOutputString
+character(len=1), dimension(3):: delim
+
+inputString = "test,test2,    , ,test3,, , ,  , , ,test4,test5"
+expectedOutputString(1) = "test"
+expectedOutputString(2) = "test2"
+expectedOutputString(3) = "test3"
+expectedOutputString(4) = "test4"
+expectedOutputString(5) = "test5"
+
+delim(1) = ","
+delim(2) = " "
+delim(3) = "  "
+outputString = inputString%split(delim)
+@assertEqualUserDefined(outputString(1), expectedOutputString(1))
+@assertEqualUserDefined(outputString(2), expectedOutputString(2))
+@assertEqualUserDefined(outputString(3), expectedOutputString(3))
+@assertEqualUserDefined(outputString(4), expectedOutputString(4))
+@assertEqualUserDefined(outputString(5), expectedOutputString(5))
+end subroutine testWithNonDefaults

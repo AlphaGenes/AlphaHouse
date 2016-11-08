@@ -21,7 +21,6 @@ module IndividualModule
         integer :: damID
         type(Individual), pointer :: sirePointer
         type(Individual), pointer :: damPointer
-        ! integer, allocatable :: OffSprings(:)
         type(individualPointerContainer), allocatable :: OffSprings(:)
         integer :: nOffs  = 0
         logical :: Founder     = .false.
