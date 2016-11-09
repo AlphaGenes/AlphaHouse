@@ -39,10 +39,10 @@ use stringModule
 type(String):: inputString
 type(String), dimension(5):: outputString, expectedOutputString
 
-inputString = "test,test2,,,test3,,,,,,,test4,test5"
-expectedOutputString(1) = "test"
-expectedOutputString(2) = "test2"
-expectedOutputString(3) = "test3"
+inputString = "  test, test2,,, test3,,,,,,,test4,test5"
+expectedOutputString(1) = "  test"
+expectedOutputString(2) = " test2"
+expectedOutputString(3) = " test3"
 expectedOutputString(4) = "test4"
 expectedOutputString(5) = "test5"
 

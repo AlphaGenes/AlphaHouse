@@ -209,7 +209,7 @@ module pageModule
     if (present(commentCharacterIn)) then
       write(commentCharacter, "(A)")  commentCharacterIn
     else
-      write(commentCharacter, *)  "#"
+      write(commentCharacter, "(A)")  "#"
     end if
 
     numLines =  CountLines(inputFileName)
@@ -219,15 +219,17 @@ module pageModule
     open(newunit=fileId, file = inputFileName, action="read")
     do i = 1, numLines
       read(fileId, "(A)") temp
-      commentPos = index(temp, commentCharacter)-1
-      if (commentPos<=0) then
-        commentPos = len(trim(temp))
+      commentPos = index(temp, commentCharacter)
+      if (commentPos == 0 ) then
+        tempArray(i) = trim(temp)
+      else if (commentPos==1.and. len(trim(temp))>0) then
+        tempArray(i) = ""
+      else 
+        tempArray(i) = temp(:commentPos-1)
       end if
-      tempArray(i) = trim(temp(:commentPos))
       if (present(delimiters)) then
         tempLine(i) = tempArray(i)%split(delimiters)
       else
-        write(*,*) tempArray(i)%getSize()
         tempLine(i) = tempArray(i)%split()
       end if
     end do

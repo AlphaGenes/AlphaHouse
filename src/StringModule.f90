@@ -128,7 +128,7 @@ Module stringModule
       subroutine getSplitPositions(this, SplitPositions, delimiters)
 !        type(String), intent(in)::this
         character(len=*):: this
-        character(len=*), dimension(:):: delimiters
+        character(len=1), dimension(:):: delimiters
         integer(int32), dimension(:, :), allocatable:: SplitPositions
         
         integer(int32):: numSplits, currentSplit
@@ -138,6 +138,15 @@ Module stringModule
 
         numSplits=1
         characterPosition=1
+        if (len(this) .gt. 0) then
+          do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
+            characterPosition = characterPosition+1
+            if (characterPosition .ge. len(this)) then
+              exit
+            end if
+
+          end do
+        end if
         do while (characterPosition<len(this))
           !Everything in parenthesis is kept
           if (this(characterPosition:characterPosition) == "(") then
@@ -170,10 +179,10 @@ Module stringModule
         SplitPositions(1,1) = 1
         !Now get the SNP positions
         if (len(this) .gt. 0) then
-          do while (this(characterPosition:characterPosition) == " ")
+          do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
             characterPosition = characterPosition+1
             SplitPositions(1,1)=characterPosition
-            if (characterPosition+1 .ge. len(this)) then
+            if (characterPosition .ge. len(this)) then
               exit
             end if
 
@@ -208,9 +217,12 @@ Module stringModule
         characterPosition = len(this)
         do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
           characterPosition = characterPosition-1
+          if (characterPosition ==0) then
+            SplitPositions(numSplits,2) = 1
+            exit
+          end if
           SplitPositions(numSplits, 2) = characterPosition
         end do
-
       end subroutine getSplitPositions
       
       function isSplitPosition(charIn, delimiters)
