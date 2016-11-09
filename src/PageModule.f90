@@ -15,6 +15,7 @@ module pageModule
       procedure, private :: initPageWithArray
       procedure, private :: initChar
       procedure, private :: initPageWithPage
+      procedure, private :: readInInputFile
       procedure, public  :: getLine
       procedure, public  :: getWord => getPageWord
       procedure, public  :: set => readInInputFile
@@ -27,9 +28,9 @@ module pageModule
 
   end type
 
-  interface set
-    module procedure setWithStackTraceChar, setWithStackTraceArbLine
-  end interface set
+!  interface set
+!    module procedure setWithStackTraceChar, setWithStackTraceArbLine
+!  end interface set
 
   interface assignment (=)
     module procedure initChar, initPageWithArray, initPageWithPage
@@ -191,12 +192,13 @@ module pageModule
 !> @param[optional] fileNameIn Name of the file to be used as input file
 !> @return inputFile Allocatable character array where each element of the array corresponds to a single line from the input
 !---------------------------------------------------------------------------
-  subroutine readInInputFile(this, inputFileName, commentCharacterIn)
+  subroutine readInInputFile(this, inputFileName, commentCharacterIn, delimiters)
     use AlphaHouseMod, only: CountLines
     class(Page), intent(inout):: this
     type(String), dimension(:), allocatable:: tempArray 
     type(Line), dimension(:), allocatable:: tempLine
     character(len=1), intent(in), optional:: commentCharacterIn
+    character(len=1), dimension(:), intent(in), optional:: delimiters
     character(len=1)::commentCharacter
     character(len=*), intent(in):: inputFileName
 
@@ -222,7 +224,12 @@ module pageModule
         commentPos = len(trim(temp))
       end if
       tempArray(i) = trim(temp(:commentPos))
-      tempLine(i) = tempArray(i)%split()
+      if (present(delimiters)) then
+        tempLine(i) = tempArray(i)%split(delimiters)
+      else
+        write(*,*) tempArray(i)%getSize()
+        tempLine(i) = tempArray(i)%split()
+      end if
     end do
     this = tempLine
     this%pageName = inputFileName
