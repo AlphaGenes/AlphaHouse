@@ -97,6 +97,12 @@ Module stringModule
         end if
 
         line = this%line
+        if (len(line)==0) then
+          allocate(components(1))
+          components(1) = this%line
+          return
+        end if
+
         !replace all tabs with spaces
 !        do i =1 , len(line)
 !          if (line(i:i) == char(9)) then
