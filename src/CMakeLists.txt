@@ -1,6 +1,6 @@
 
-SET(ALPHAHOUSE_src ./AlphaHouseMod.f90
-				./AlphaStatMod.f90
+SET(ALPHAHOUSE_src AlphaHouseMod.f90
+				AlphaStatMod.f90
 				IndividualModule.f90
 				IntelRNGMod.f90
 				HelperSubroutines.f90
