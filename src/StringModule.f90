@@ -34,19 +34,19 @@ Module stringModule
 !    module pro
   contains
 
-!---------------------------------------------------------------------------
-! DESCRIPTION:
-!> @brief      Converts the input data into lower-case
-!
-!> @details    Given a type String, this converts it from upper case to lower case"
-!
-!> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
-!
-!> @date       October 25, 2016
-!
-! PARAMETERS:
-!> @param[inout] input fileInput to be converted to lowercase 
-!---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !> @brief      Converts the input data into lower-case
+    !
+    !> @details    Given a type String, this converts it from upper case to lower case"
+    !
+    !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    !
+    !> @date       October 25, 2016
+    !
+    ! PARAMETERS:
+    !> @param[inout] input fileInput to be converted to lowercase 
+    !---------------------------------------------------------------------------
   subroutine convertToLowerCaseString(this)
     use AlphaHouseMod
     class(String), intent(inout):: this
@@ -79,6 +79,19 @@ Module stringModule
       end function getSize
     
 
+          !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !> @brief      Splits the string into substrings based on provided delimiters
+    !
+    !
+    !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    !
+    !> @date       October 25, 2016
+    !
+    ! PARAMETERS:
+    !> @delimitersIn[in], optional : characters to split the string at
+    !> @return Array of strings that are split at any occurance of delimiters.
+    !---------------------------------------------------------------------------
       function split(this, delimitersIn) result( components)
         character(len=1), dimension(:), optional :: delimitersIn
         class(String), intent(in):: this
