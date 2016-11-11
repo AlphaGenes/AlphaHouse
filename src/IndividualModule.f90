@@ -56,13 +56,13 @@ module IndividualModule
             procedure :: getIdSireDamArrayFormat
             procedure :: getSireDamByIndex
             procedure :: init => initIndividual
-            procedure :: isInitialised => isInitialisedLine
-            procedure :: isGenotyped => isGenotypedLine
-            procedure :: SetGenotyped => SetGenotypedLine
-            procedure :: isHD => isHDLine
-            procedure :: SetHD => SetHDLine
-            procedure :: isFounder => isFounderLine
-            procedure :: SetFounder => SetFounderLine
+            procedure :: isInitialised
+            procedure :: isGenotyped
+            procedure :: SetAsGenotyped
+            procedure :: isHD
+            procedure :: SetHD
+            procedure :: isFounder
+            procedure :: SetObjectAsFounder
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
@@ -141,6 +141,12 @@ contains
         return
     end function getSireDamByIndex
 
+
+     !---------------------------------------------------------------------------
+    !> @brief Constructor for siredam class.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation, path)
         class(Individual), intent(inout) :: this
         character(*), intent(in) :: originalID
@@ -173,46 +179,92 @@ contains
         endif
     end subroutine initIndividual
 
-    function isInitialisedLine(this) result(ans)
+
+    !---------------------------------------------------------------------------
+    !> @brief boolean function returning true if object is initialised
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is initialised
+    !---------------------------------------------------------------------------
+    elemental function isInitialised(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%initialised
-    end function isInitialisedLine
+    end function isInitialised
 
-    elemental function isFounderLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief boolean function returning true if object is a founder of a generation
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is a founder of a generation
+    !---------------------------------------------------------------------------
+    elemental function isFounder(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%Founder
-    end function isFounderLine
+    end function isFounder
 
-    subroutine SetFounderLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief sets object to be a founder
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is a founder of a generation
+    !---------------------------------------------------------------------------
+    subroutine SetObjectAsFounder(this)
         class(Individual), intent(inout) :: this
         this%Founder = .true.
-    end subroutine SetFounderLine
+    end subroutine SetObjectAsFounder
 
-    elemental function isGenotypedLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief returns true if object is genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is genotyped
+    !---------------------------------------------------------------------------
+    elemental function isGenotyped(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%Genotyped
-    end function isGenotypedLine
+    end function isGenotyped
 
 
-    subroutine SetGenotypedLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine SetAsGenotyped(this)
         class(Individual), intent(inout) :: this
         this%Genotyped = .true.
-    end subroutine SetGenotypedLine
+    end subroutine SetAsGenotyped
 
-    elemental function isHDLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief returns true if the individual is genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if individual is HD
+    !---------------------------------------------------------------------------
+    elemental function isHD(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%HD
-    end function isHDLine
+    end function isHD
 
-    subroutine SetHDLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine SetHD(this)
         class(Individual), intent(inout) :: this
         this%HD = .true.
-    end subroutine SetHDLine
+    end subroutine SetHD
 
+    !---------------------------------------------------------------------------
+    !> @brief Adds an individual as offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine AddOffspring(this, offspringToAdd)
         class(Individual), intent(inout) :: this
         class(Individual),target, intent(in) :: offspringToAdd
@@ -228,6 +280,12 @@ contains
         this%OffSprings(this%nOffs)%p => offspringToAdd
     end subroutine AddOffspring
 
+    !---------------------------------------------------------------------------
+    !> @brief gets number of offspring of individual
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return integer of number of individuals
+    !---------------------------------------------------------------------------
     elemental function GetNumberOffsprings(this) result(ans)
         class(Individual), intent(in) :: this
         integer :: ans
@@ -236,7 +294,12 @@ contains
 
     end function GetNumberOffsprings
 
-
+    !---------------------------------------------------------------------------
+    !> @brief gets array of *individual* objects that are this individuals offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return array of pointers of individuals which are offspring of this parent
+    !---------------------------------------------------------------------------
     subroutine GetOffsprings(this, Offsprings)
 
         type(individualPointerContainer), allocatable :: Offsprings(:)
@@ -246,7 +309,11 @@ contains
 
     end subroutine GetOffsprings
 
-! subroutine builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !---------------------------------------------------------------------------
+    !> @brief builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine BuildOffspringInfortmation(individuals)
         class(Individual),target, dimension(:), allocatable, intent(inout) :: individuals
         integer :: i, tmpSire, tmpDam
