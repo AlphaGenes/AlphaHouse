@@ -1,4 +1,28 @@
 
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     IndividualModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module holding logic of Individual class. This represents the pedigree.
+!
+!> @details  Module holds the class to represent pedigree, and contains class subroutines.
+!
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module IndividualModule
     implicit none
 
@@ -29,7 +53,7 @@ module IndividualModule
         logical :: initialised = .false.
         character(len=:), allocatable :: path
         contains
-            procedure :: getIdSireDam => getIdSireDamFromLine
+            procedure :: getIdSireDamArrayFormat
             procedure :: getSireDamByIndex
             procedure :: init => initIndividual
             procedure :: isInitialised => isInitialisedLine
@@ -46,22 +70,36 @@ module IndividualModule
       ! TODO contains writeIndividualFUNCTION
     end type Individual
 
-
     interface operator ( == )
         module procedure compareIndividual
     end interface operator ( == )
 
 contains
 
-    pure function getIdSireDamFromLine(this) result(r)
+
+     !---------------------------------------------------------------------------
+    !> @brief   returns an array where index 1 is the individuals id,
+    !> index 2 is the sire id, and index 3 is the dam ID. 
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    pure function getIdSireDamArrayFormat(this) result(r)
         class(Individual), intent(in) :: this
         integer :: r(3)
         r(1) = this%id
         r(2) = this%sireID
         r(3) = this%damID
         return
-    end function getIdSireDamFromLine
+    end function getIdSireDamArrayFormat
 
+
+
+     !---------------------------------------------------------------------------
+    !> @brief Returns true if individuals are equal, false otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     logical function compareIndividual(l1,l2)
         class(Individual), intent(in) :: l1,l2
 
@@ -74,7 +112,19 @@ contains
         return
     end function compareIndividual
 
-    pure function getSireDamByIndex(this, index) result(v)
+     !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
         integer, intent(in) :: index
         integer :: v
@@ -85,6 +135,8 @@ contains
                 v = this%sireID
             case(3)
                 v = this%damID
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
         return
     end function getSireDamByIndex
