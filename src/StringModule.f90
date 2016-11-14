@@ -29,8 +29,6 @@ Module stringModule
     module procedure compareString, compareCharacter
   end interface 
 
-  !  interface operator (.eq.)
-  !    module pro
 contains
 
   !---------------------------------------------------------------------------
@@ -379,7 +377,7 @@ contains
     integer, intent(out) :: iostat      ! non zero on error, etc.
     character(*), intent(inout) :: iomsg  ! define if iostat non zero.
 
-    write(unit, "(A)", iostat = iostat, iomsg = iomsg, advance="no") dtv%line
+    write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%line
   end subroutine writeType
 
   subroutine setLine(this,  lineIn) 
