@@ -8,7 +8,6 @@ module LineModule
   public:: assignment(=), operator(==), Line
   type :: Line
    type(String), allocatable, dimension(:):: words
-!    character(100)::words
     contains
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
