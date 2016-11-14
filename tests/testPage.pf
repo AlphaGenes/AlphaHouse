@@ -1,0 +1,121 @@
+module testPage
+use pFUnit_mod
+use PageModule
+implicit none
+
+type(Page):: setUpPage
+integer, parameter:: col = 5, row = 10
+character(len=3), dimension(row,col):: setUpchar
+
+contains
+
+@before
+subroutine setUP()
+
+integer:: i, j
+
+do i = 1, row
+  do j = 1, col
+    write(setUpChar(i,j), "(I3)") i+j
+  end do
+end do
+
+setUpPage = setUpChar
+
+end subroutine setUp
+
+@after
+subroutine tearDown()
+end subroutine tearDown
+
+@test
+subroutine testGetWord()
+character(len=:), allocatable::  gotten
+character(len =3):: expected
+
+integer:: row1, column
+real:: temp
+
+call random_seed()
+call random_Number(temp)
+row1 = temp*row+1
+
+call random_number(temp)
+column = temp*col+1
+write(expected, "(I3)") row1+column
+
+gotten = setUpPage%getWord(row1, column)
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetWord
+!
+!!---------------
+!
+@test
+subroutine testGetNumLines()
+
+integer:: expected
+
+expected = setUpPage%getNumLines()
+
+@assertEqual(row, expected)
+end subroutine testGetNumLines
+
+
+@test
+subroutine testGetNumWords()
+
+integer:: expected
+
+expected = setUpPage%getNumWords(1)
+
+@assertEqual(col, expected)
+end subroutine testGetNumWords
+
+@test
+subroutine testGetLine()
+character(len=:), allocatable:: expected, gotten
+integer:: i, j
+real:: temp
+
+call random_seed()
+
+call random_number(temp)
+j = row*temp+1
+
+expected = ""
+do i = 1, col
+  expected = expected // setUpChar(j, i)
+end do
+
+gotten = setUpPage%getLine(j)
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetLine
+
+@test
+subroutine testGetSubset()
+
+type(Page):: expected, gotten
+
+expected = setUpChar(1:3, :)
+
+gotten = setUpPage%getSubset(1,3)
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testGetSubset
+
+@test
+subroutine testGetSubsetToEnd()
+
+type(Page):: expected, gotten
+
+expected = setUpChar(2:, :)
+
+gotten = setUpPage%getSubset(2)
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testGetSubsetToEnd
+end module testPage

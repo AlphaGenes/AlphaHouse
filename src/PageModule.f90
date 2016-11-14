@@ -5,7 +5,7 @@ module pageModule
   implicit none
 
   private
-  public:: assignment(=), Page
+  public:: assignment(=), operator(==), Page
 
   type:: Page
     private
@@ -25,17 +25,64 @@ module pageModule
       procedure, public  :: getName
       procedure, public  :: setName
       procedure, public  :: getNumWords => getPageTypeNumWords
+      procedure, public  :: getSubset
 
   end type
 
-!  interface set
-!    module procedure setWithStackTraceChar, setWithStackTraceArbLine
-!  end interface set
+  
+  interface operator (==)
+    module procedure comparePages
+  end interface 
 
   interface assignment (=)
     module procedure initChar, initPageWithArray, initPageWithPage
   end interface 
   contains
+
+    function comparePages(Page1, Page2) result (areSame)
+      type(Page), intent(in):: Page1, Page2
+      logical:: areSame
+      integer::i, j
+
+      areSame = .true.
+      if (Page1%getNumLines() == Page2%getNumLines()) then
+        do i = 1, Page1%getNumLines()
+          if (Page1%getNumWords(i) == Page2%getNumWords(i)) then
+            do j = 1, Page1%getNumWords(i)
+              if (.not. Page1%getWord(i,j) == Page2%getWord(i,j)) then
+                areSame = .false.
+                return
+              end if
+            end do
+          else
+            areSame = .false.
+            exit
+          end if
+        end do
+      else
+        areSame = .false.
+      end if
+    end function comparePages
+
+
+
+    function getSubset(this, start, finish) result (pageOut)
+      class(Page), intent(in):: this
+      integer(int32), intent(in):: start
+      integer(int32), intent(in), optional:: finish
+      type(Page):: pageOut
+
+      integer:: finishUsed
+
+      if (present(finish)) then
+        finishUsed = finish
+      else
+        finishUsed = this%getNumLines()
+      end if
+
+      pageOut = this%lines(start:finishUsed)
+    end function getSubset
+
 
     function getLine(this, numLine) result (res)
       class(Page), intent(in):: this
@@ -149,11 +196,17 @@ module pageModule
       integer:: numLines, numwords
       integer::i,j
 
-      numLines = size(charArray(1,:))
-      numWords = size(charArray(:,1))
+      numLines = size(charArray(:,1))
+      numWords = size(charArray(1,:))
 
+      if (allocated(this%lines)) then 
+        deallocate(this%lines)
+      end if
       allocate(this%lines(numLines))
       do i = 1, numLines
+        if (allocated(this%lines(i)%words)) then
+          deallocate(this%lines(i)%words)
+        end if
         allocate(this%lines(i)%words(numWords))
         do j = 1, numWords
           this%lines(i)%words(j) = charArray(i,j)
