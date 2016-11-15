@@ -43,6 +43,7 @@ module IndividualModule
         integer :: id
         integer :: sireID
         integer :: damID
+        integer(kind=1) :: gender 
         type(Individual), pointer :: sirePointer
         type(Individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
@@ -147,12 +148,13 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation, path)
+    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation,gender, path)
         class(Individual), intent(inout) :: this
         character(*), intent(in) :: originalID
         integer, intent(in) :: OldGlobalID
         integer, intent(in) :: id, sireID, damID
-        integer, intent(in) :: generation
+        integer, intent(in), Optional :: generation
+        integer(kind=1), intent(in), Optional :: gender
         character(*),intent(in), Optional :: path
         character(len=512) :: tempPath
 
@@ -164,7 +166,12 @@ contains
             this%OldGlobalID = OldGlobalID
             this%sireID = sireID
             this%damID = damID
-            this%generation = generation
+            if (present(generation)) then
+                this%generation = generation
+            endif
+            if (present(gender)) then
+                this%gender = gender
+            endif
             if (present(Path)) then
                 allocate(character(len=len(path)) ::this%path)
                 this%path = path
