@@ -33,7 +33,7 @@ module AlphaHouseMod
   private
   ! Methods
   public :: CountLines,int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
-  public :: checkFileExists, char2Int, char2Int64
+  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -282,7 +282,50 @@ module AlphaHouseMod
       Res=trim(Tmp)
       return
     end function
+    !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief   Convert character to single precision real
+    !> @details Convert character to single precision real
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    November 15, 2016
+    !---------------------------------------------------------------------------
+
+    function char2Double(charIn, format) result (realOut)
+      implicit none
+
+      real(real64):: realOut
+      character(*), intent(in), optional:: format
+      character(*), intent(in):: charIn
+
+      if (present(format)) then
+        read(charIn, format) realOut
+      else
+        read(charIn, *) realOut
+      end if
+    end function char2Double
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert character to single precision real
+    !> @details Convert character to single precision real
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    November 15, 2016
+    !---------------------------------------------------------------------------
+
+    function char2Real(charIn, format) result (realOut)
+      implicit none
+
+      real(real32):: realOut
+      character(*), intent(in), optional:: format
+      character(*), intent(in):: charIn
+
+      if (present(format)) then
+        read(charIn, format) realOut
+      else
+        read(charIn, *) realOut
+      end if
+    end function char2Real
     !###########################################################################
 
     !---------------------------------------------------------------------------
