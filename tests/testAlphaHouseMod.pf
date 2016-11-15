@@ -1,0 +1,38 @@
+module testAlphaHouseMod
+use iso_fortran_env
+use AlphaHouseMod
+use pFUnit_mod
+implicit none
+
+contains
+
+@test
+subroutine testChar2Double()
+character(len=20):: charIn
+real(real64):: expected, gotten
+
+call random_number(expected)
+
+write(charIn, "(f20.16)") expected
+
+gotten = char2Double(charIn)
+
+@assertEqual(expected, gotten)
+
+end subroutine testChar2Double
+
+@test
+subroutine testChar2Real()
+character(len=20):: charIn
+real(real32):: expected, gotten
+
+call random_number(expected)
+
+write(charIn, "(f20.16)") expected
+
+gotten = char2Real(charIn)
+
+@assertEqual(expected, gotten)
+
+end subroutine testChar2Real
+end module testAlphaHouseMod
