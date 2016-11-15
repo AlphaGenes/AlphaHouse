@@ -34,7 +34,7 @@ module HelperSubroutines
 
         read(unit, * ) res
 
-
+        close(unit)
         return
 
     end function getIntegerSeedFromFile

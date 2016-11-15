@@ -1,0 +1,35 @@
+module TestSystemMod
+  use pFUnit_mod
+  use IndividualModule
+  use ISO_Fortran_env
+  use AlphaSystemMod
+  implicit none
+
+
+  integer :: result
+  contains
+
+ @before
+    subroutine initialise
+         implicit none
+        result = 0
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+      print *,"test done"
+    end subroutine
+
+    @test
+    subroutine testcheckSystemCommand
+        implicit none
+        
+        result = checkSystemCommand("git --version")
+
+        print *,result
+
+        @assertEqual(result,0)
+    end subroutine testcheckSystemCommand
+
+end module TestSystemMod
