@@ -1,3 +1,28 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     AlphaSortMod.f90
+!
+! DESCRIPTION:
+!> @brief    Module cotaining simple sort procedures
+!
+!> @details  currently only contains integer and real heap sort procedures 
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 DWilson - Initial Version
+!
+!-------------------------------------------------------------------------------
+
 module AlphaSortMod
 
     interface HpSort

@@ -1,4 +1,28 @@
 
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     IndividualModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module holding logic of Individual class. This represents the pedigree.
+!
+!> @details  Module holds the class to represent pedigree, and contains class subroutines.
+!
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module IndividualModule
     implicit none
 
@@ -19,6 +43,7 @@ module IndividualModule
         integer :: id
         integer :: sireID
         integer :: damID
+        integer(kind=1) :: gender 
         type(Individual), pointer :: sirePointer
         type(Individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
@@ -29,16 +54,16 @@ module IndividualModule
         logical :: initialised = .false.
         character(len=:), allocatable :: path
         contains
-            procedure :: getIdSireDam => getIdSireDamFromLine
+            procedure :: getIdSireDamArrayFormat
             procedure :: getSireDamByIndex
             procedure :: init => initIndividual
-            procedure :: isInitialised => isInitialisedLine
-            procedure :: isGenotyped => isGenotypedLine
-            procedure :: SetGenotyped => SetGenotypedLine
-            procedure :: isHD => isHDLine
-            procedure :: SetHD => SetHDLine
-            procedure :: isFounder => isFounderLine
-            procedure :: SetFounder => SetFounderLine
+            procedure :: isInitialised
+            procedure :: isGenotyped
+            procedure :: SetAsGenotyped
+            procedure :: isHD
+            procedure :: SetHD
+            procedure :: isFounder
+            procedure :: SetObjectAsFounder
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
@@ -46,22 +71,36 @@ module IndividualModule
       ! TODO contains writeIndividualFUNCTION
     end type Individual
 
-
     interface operator ( == )
         module procedure compareIndividual
     end interface operator ( == )
 
 contains
 
-    pure function getIdSireDamFromLine(this) result(r)
+
+     !---------------------------------------------------------------------------
+    !> @brief   returns an array where index 1 is the individuals id,
+    !> index 2 is the sire id, and index 3 is the dam ID. 
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    pure function getIdSireDamArrayFormat(this) result(r)
         class(Individual), intent(in) :: this
         integer :: r(3)
         r(1) = this%id
         r(2) = this%sireID
         r(3) = this%damID
         return
-    end function getIdSireDamFromLine
+    end function getIdSireDamArrayFormat
 
+
+
+     !---------------------------------------------------------------------------
+    !> @brief Returns true if individuals are equal, false otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     logical function compareIndividual(l1,l2)
         class(Individual), intent(in) :: l1,l2
 
@@ -74,7 +113,19 @@ contains
         return
     end function compareIndividual
 
-    pure function getSireDamByIndex(this, index) result(v)
+     !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
         integer, intent(in) :: index
         integer :: v
@@ -85,16 +136,25 @@ contains
                 v = this%sireID
             case(3)
                 v = this%damID
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
         return
     end function getSireDamByIndex
 
-    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation, path)
+
+     !---------------------------------------------------------------------------
+    !> @brief Constructor for siredam class.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation,gender, path)
         class(Individual), intent(inout) :: this
         character(*), intent(in) :: originalID
         integer, intent(in) :: OldGlobalID
         integer, intent(in) :: id, sireID, damID
-        integer, intent(in) :: generation
+        integer, intent(in), Optional :: generation
+        integer(kind=1), intent(in), Optional :: gender
         character(*),intent(in), Optional :: path
         character(len=512) :: tempPath
 
@@ -106,7 +166,12 @@ contains
             this%OldGlobalID = OldGlobalID
             this%sireID = sireID
             this%damID = damID
-            this%generation = generation
+            if (present(generation)) then
+                this%generation = generation
+            endif
+            if (present(gender)) then
+                this%gender = gender
+            endif
             if (present(Path)) then
                 allocate(character(len=len(path)) ::this%path)
                 this%path = path
@@ -121,46 +186,92 @@ contains
         endif
     end subroutine initIndividual
 
-    function isInitialisedLine(this) result(ans)
+
+    !---------------------------------------------------------------------------
+    !> @brief boolean function returning true if object is initialised
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is initialised
+    !---------------------------------------------------------------------------
+    elemental function isInitialised(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%initialised
-    end function isInitialisedLine
+    end function isInitialised
 
-    elemental function isFounderLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief boolean function returning true if object is a founder of a generation
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is a founder of a generation
+    !---------------------------------------------------------------------------
+    elemental function isFounder(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%Founder
-    end function isFounderLine
+    end function isFounder
 
-    subroutine SetFounderLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief sets object to be a founder
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is a founder of a generation
+    !---------------------------------------------------------------------------
+    subroutine SetObjectAsFounder(this)
         class(Individual), intent(inout) :: this
         this%Founder = .true.
-    end subroutine SetFounderLine
+    end subroutine SetObjectAsFounder
 
-    elemental function isGenotypedLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief returns true if object is genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is genotyped
+    !---------------------------------------------------------------------------
+    elemental function isGenotyped(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%Genotyped
-    end function isGenotypedLine
+    end function isGenotyped
 
 
-    subroutine SetGenotypedLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine SetAsGenotyped(this)
         class(Individual), intent(inout) :: this
         this%Genotyped = .true.
-    end subroutine SetGenotypedLine
+    end subroutine SetAsGenotyped
 
-    elemental function isHDLine(this) result(ans)
+    !---------------------------------------------------------------------------
+    !> @brief returns true if the individual is genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if individual is HD
+    !---------------------------------------------------------------------------
+    elemental function isHD(this) result(ans)
         class(Individual), intent(in) :: this
         logical :: ans
         ans = this%HD
-    end function isHDLine
+    end function isHD
 
-    subroutine SetHDLine(this)
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine SetHD(this)
         class(Individual), intent(inout) :: this
         this%HD = .true.
-    end subroutine SetHDLine
+    end subroutine SetHD
 
+    !---------------------------------------------------------------------------
+    !> @brief Adds an individual as offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine AddOffspring(this, offspringToAdd)
         class(Individual), intent(inout) :: this
         class(Individual),target, intent(in) :: offspringToAdd
@@ -176,6 +287,12 @@ contains
         this%OffSprings(this%nOffs)%p => offspringToAdd
     end subroutine AddOffspring
 
+    !---------------------------------------------------------------------------
+    !> @brief gets number of offspring of individual
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return integer of number of individuals
+    !---------------------------------------------------------------------------
     elemental function GetNumberOffsprings(this) result(ans)
         class(Individual), intent(in) :: this
         integer :: ans
@@ -184,7 +301,12 @@ contains
 
     end function GetNumberOffsprings
 
-
+    !---------------------------------------------------------------------------
+    !> @brief gets array of *individual* objects that are this individuals offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return array of pointers of individuals which are offspring of this parent
+    !---------------------------------------------------------------------------
     subroutine GetOffsprings(this, Offsprings)
 
         type(individualPointerContainer), allocatable :: Offsprings(:)
@@ -194,7 +316,11 @@ contains
 
     end subroutine GetOffsprings
 
-! subroutine builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !---------------------------------------------------------------------------
+    !> @brief builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine BuildOffspringInfortmation(individuals)
         class(Individual),target, dimension(:), allocatable, intent(inout) :: individuals
         integer :: i, tmpSire, tmpDam

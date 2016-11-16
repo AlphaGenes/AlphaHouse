@@ -24,7 +24,9 @@ module LineModule
   end type
 
   interface assignment (=)
-    module procedure setArbitaryLengthLine, setArbitaryLengthLineChar, setSingleChar
+    module procedure setArbitaryLengthLine
+    module procedure setArbitaryLengthLineChar
+    module procedure setSingleChar
   end interface 
 
   interface operator (==)
