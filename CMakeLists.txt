@@ -17,7 +17,7 @@ OPTION(USE_HDF5 "Use hdf"
        OFF)
 
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
 # Define the executable name
@@ -27,7 +27,7 @@ MESSAGE("Prog name ${ALPHAHOUSEEXE}")
 
 # Define some directories
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
-SET(LIB ${CMAKE_SOURCE_DIR}/objs)
+SET(OBJ ${CMAKE_SOURCE_DIR}/objs)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
 SET(TESTS ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCALPHAHOUSE ${SRC}/)
@@ -66,7 +66,7 @@ endif(${USE_HDF5})
 INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
 
 # Have the .mod files placed in the lib folder
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
+SET(CMAKE_Fortran_MODULE_DIRECTORY ${OBJ})
 
 
 # TODO add tests to correct location
@@ -74,7 +74,7 @@ SET(CMAKE_Fortran_MODULE_DIRECTORY ${LIB})
 
 # Add a distclean target to the Makefile
 ADD_CUSTOM_TARGET(distclean
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/distclean.cmake
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
 if (${RUN_TESTS})

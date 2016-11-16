@@ -25,7 +25,7 @@
 
 module IndividualModule
     implicit none
-
+    integer, parameter :: IDLength = 16
     integer, parameter :: OFFSPRINGTHRESHOLD = 100
     public :: BuildOffspringInfortmation,Individual,individualPointerContainer,operator ( == )
     
@@ -38,7 +38,10 @@ module IndividualModule
 
     type Individual
         character(len=:), allocatable :: originalID
+        character(len=:), allocatable :: originalSireID
+        character(len=:), allocatable :: originalDamID
         integer :: generation
+
         integer :: OldGlobalID
         integer :: id
         integer :: sireID
@@ -142,13 +145,57 @@ contains
         return
     end function getSireDamByIndex
 
+      !---------------------------------------------------------------------------
+    !> @brief Constructor for siredam class.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine initIndividualCharacterId(this, originalID,originalSireID,originalDamID, OldGlobalID, id, generation,gender, path)
+        class(Individual), intent(inout) :: this
+        character(*), intent(in) :: originalID,originalSireID,originalDamID
+        integer, intent(in) :: OldGlobalID
+        integer, intent(in) :: id, sireID, damID
+        integer, intent(in), Optional :: generation
+        integer(kind=1), intent(in), Optional :: gender
+        character(*),intent(in), Optional :: path
+        character(len=512) :: tempPath
+
+        if (.not. this%initialised) then
+            allocate(character(len=len(originalID)) ::this%originalID)
+            allocate(character(len=len(originalSireID)) ::this%originalSireID)
+            allocate(character(len=len(originalSireID)) ::this%originalDamID)
+            allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
+            this%originalID = originalID
+            this%id = id
+            this%OldGlobalID = OldGlobalID
+            this%sireID = sireID
+            this%damID = damID
+            if (present(generation)) then
+                this%generation = generation
+            endif
+            if (present(gender)) then
+                this%gender = gender
+            endif
+            if (present(Path)) then
+                allocate(character(len=len(path)) ::this%path)
+                this%path = path
+            else
+                call getcwd(tempPath)
+                this%path = tempPath
+            endif
+            if (sireID==0 .and. damID==0) then
+                this%Founder = .true.
+            end if
+            this%initialised = .true.
+        endif
+    end subroutine initIndividual
 
      !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation,gender, path)
+    subroutine initIndividual(this, originalID,OldGlobalID, id, sireID, damID, generation,gender, path)
         class(Individual), intent(inout) :: this
         character(*), intent(in) :: originalID
         integer, intent(in) :: OldGlobalID
