@@ -5,6 +5,35 @@ use pFUnit_mod
 implicit none
 
 contains
+@test
+subroutine testCheckFileExistsWhenFileExists
+  use pFUnit_mod
+
+  logical:: fileExists = .true., result
+  character(len=:), allocatable:: fileNameToCheck
+
+  fileNameToCheck = "CheckTemp.txt"
+  open(unit = 100, file = fileNameToCheck, action = "write", status = "replace")
+
+  result = checkFileExists(fileNameToCheck)
+  @assertEqual(fileExists, result)
+
+  close(100, status="delete")
+end subroutine testCheckFileExistsWhenFileExists
+
+@test
+subroutine testCheckFileExistsWhenFileDoesntExist
+use pFUnit_mod
+
+  logical:: fileExists = .false., result
+  character(len=:), allocatable:: fileNameToCheck
+
+  fileNameToCheck = "CheckTemp.txt"
+
+  result = checkFileExists(fileNameToCheck)
+  @assertEqual(fileExists, result)
+
+end subroutine testCheckFileExistsWhenFileDoesntExist
 
 @test
 subroutine testChar2Double()
@@ -32,7 +61,7 @@ write(charIn, "(f20.16)") expected
 
 gotten = char2Real(charIn)
 
-@assertEqual(expected, gotten)
+@assertEqual(expected, gotten, 1e-16)
 
 end subroutine testChar2Real
 end module testAlphaHouseMod
