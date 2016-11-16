@@ -46,7 +46,9 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
-	file(GLOB testDeps "${SRC}/*.f90")
+	# file(GLOB testDeps "${SRC}/*.f90")
+	set(testDeps "${SRC}/HashModule.f90" "${SRC}/LinkedListModule.f90"
+		)
 endif (${RUN_TESTS})
 
 INCLUDE(${CMAKE_MODULE_PATH}/SetParallelizationLibrary.cmake)
@@ -77,6 +79,7 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
+set (TESTFILES ${TESTS}/TestHashTable.pf)
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})

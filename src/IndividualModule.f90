@@ -47,8 +47,7 @@ module IndividualModule
         integer :: sireID
         integer :: damID
         integer(kind=1) :: gender 
-        type(Individual), pointer :: sirePointer
-        type(Individual), pointer :: damPointer
+ 
         type(individualPointerContainer), allocatable :: OffSprings(:)
         integer :: nOffs  = 0
         logical :: Founder     = .false.
@@ -168,8 +167,6 @@ contains
             this%originalID = originalID
             this%id = id
             this%OldGlobalID = OldGlobalID
-            this%sireID = sireID
-            this%damID = damID
             if (present(generation)) then
                 this%generation = generation
             endif
@@ -390,5 +387,30 @@ contains
         enddo
     end subroutine BuildOffspringInfortmation
 
+    !---------------------------------------------------------------------------
+    !> @brief builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine BuildOffspringInfortmationAlphaNumeric(individuals)
+        class(Individual),target, dimension(:), allocatable, intent(inout) :: individuals
+        integer :: itmpSire, tmpDam
 
+        do i=size(individuals),1,-1  ! start at the end of sorted array and build backwards 
+            tmpSire = individuals(i)sirePointer
+            tmpDam = individuals(i)%damID
+
+            if (tmpSire /= 0) then
+                individuals(i)%sirePointer => individuals(tmpSire)
+                call individuals(tmpSire)%AddOffspring(individuals(i))
+
+            endif
+
+            if (tmpDam /= 0) then
+                individuals(i)%damPointer => individuals(tmpDam)
+                call individuals(tmpDam)%AddOffspring(individuals(i))
+            endif
+
+        enddo
+    end subroutine BuildOffspringInfortmationAlphaNumeric
 end module IndividualModule
