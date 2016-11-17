@@ -2,7 +2,7 @@ module HashModule
     use iso_fortran_env
     use LinkedListModule
 
-
+    integer, parameter :: DICT_NULL = -9999
 type HASH_LIST
     type(LinkedList), pointer :: list
 end type HASH_LIST
