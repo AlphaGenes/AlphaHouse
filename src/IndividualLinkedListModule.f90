@@ -26,6 +26,7 @@ module IndividualLinkedListModule
             procedure :: list_get_nth
             procedure :: list_remove
             procedure :: list_add_at_n
+            procedure :: destroyLinkedList
 
     end type IndividualLinkedList
 
@@ -37,6 +38,23 @@ module IndividualLinkedListModule
 
 contains
 
+    subroutine destroyLinkedList(this)
+        class(IndividualLinkedList),intent(inout) :: this
+        type(IndividualLinkedListNode),pointer :: node
+        type(individual),pointer :: tmp
+        if (associated(this%first)) then
+            node => this%first
+
+            do while(associated(node))
+                call this%list_pop(tmp)
+                node => this%first
+            enddo
+        endif
+        deallocate(this%first)
+        deallocate(this%last)
+        ! deallocate(tmp)
+
+    end subroutine destroyLinkedList
 
     subroutine list_add(this,item)
         class(IndividualLinkedList),intent(inout) :: this
@@ -108,7 +126,7 @@ contains
 
     subroutine list_pop(this, item)
         class(IndividualLinkedList),intent(inout) :: this
-        class(individual),pointer,intent(out) :: item
+        type(individual),pointer,intent(out) :: item
         type(IndividualLinkedListNode),pointer :: node, previous
 
         if (associated(this%last)) then

@@ -1,15 +1,15 @@
 module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
-
+ use HashModule
     character, parameter :: EMPTY_PARENT = '0'
     integer, parameter :: IDLENGTH = 32
     integer, parameter :: generationThreshold = 1000
-
+    type(DictStructure) :: dictionary 
 
 
 type PedigreeHolder
-
+    
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
@@ -43,7 +43,7 @@ contains
         character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32),optional :: numberInFile
         integer(kind=int32) :: nIndividuals, fileUnit,tmpSireNum, tmpDamNum
-        type(DictStructure) :: dictionary 
+        
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount = 0
         integer :: i
@@ -123,7 +123,7 @@ contains
             endif
         enddo
     deallocate(tmpAnimalArray)
-    call dictionary%destroy !destroy dictionary as we no longer need it
+    ! call dictionary%destroy !destroy dictionary as we no longer need it
     end function initPedigree
 
 
@@ -142,9 +142,10 @@ contains
             if (allocated(this%generations)) then
                 deallocate(this%generations)
             endif
-            ! call this%Pedigree(i)%Founders
-            ! TODO do founders need dsitruction
+
         enddo
+        call this%Founders%destroyLinkedList
+            deallocate(this%pedigree)
     end subroutine destroyPedigree
 
 
@@ -195,14 +196,16 @@ contains
             unit = output_unit
         endif
         
-        do i=1, this%maxGeneration
+        do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length-1
-                ! write(unit,*) tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
-                print *,"generation:",this%generations(i)%length,h
-                print *,tmpIndNode%item%nOffs
-                print *,tmpIndNode%item%originalID
-                tmpIndNode => tmpIndNode%next
+                if (associated(tmpIndNode)) then
+                    write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
+                    ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
+                    tmpIndNode => tmpIndNode%next
+                else
+                    exit
+                endif
             end do
         enddo
         if (present(file)) then
@@ -225,13 +228,17 @@ contains
 
         integer :: i
         
-        if (indiv%generation /= 0) then !remove from other list, as has already been set
-            call this%generations(indiv%generation)%list_remove(indiv)
-        endif
-        indiv%generation = generation
-        call this%generations(indiv%generation)%list_add(indiv)
-        if(indiv%generation > this%maxGeneration) then
-            this%maxGeneration = indiv%generation
+
+        if (generation >= indiv%generation) then
+            if (indiv%generation /= 0) then !remove from other list, as has already been set
+                call this%generations(indiv%generation)%list_remove(indiv)
+            endif
+            indiv%generation = generation
+            call this%generations(indiv%generation)%list_add(indiv)
+            if(indiv%generation > this%maxGeneration) then
+                write (*, '(a,i3)') indiv%originalID,indiv%generation
+                this%maxGeneration = indiv%generation
+            endif
         endif
         if ( indiv%nOffs /= 0) then
             do i=1,indiv%nOffs

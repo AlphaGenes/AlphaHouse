@@ -89,7 +89,7 @@ contains
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
         class(Individual) :: this
-        deallocate(this%OffSprings)
+        deallocate(this%offsprings)
         deallocate(this%originalID)
         deallocate(this%sireID)
         deallocate(this%damID)
