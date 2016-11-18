@@ -25,7 +25,7 @@
 
 module IndividualModule
     implicit none
-    integer, parameter :: OFFSPRINGTHRESHOLD = 100
+    integer, parameter :: OFFSPRINGTHRESHOLD = 150
     public :: Individual,individualPointerContainer,operator ( == )
     
     private
@@ -66,6 +66,7 @@ module IndividualModule
             procedure :: AddOffspring
             procedure :: setGender
             procedure :: destroyIndividual
+            procedure :: setGeneration
       ! TODO contains writeIndividualFUNCTION
     end type Individual
 
@@ -251,9 +252,8 @@ contains
         if (this%nOffs > OFFSPRINGTHRESHOLD) then
             allocate(tmp(this%nOffs))
             tmp(1:size(this%Offsprings)) = this%Offsprings
-            call move_alloc(this%OffSprings,tmp)
+            call move_alloc(tmp,this%OffSprings)
         endif
-
         this%OffSprings(this%nOffs)%p => offspringToAdd
     end subroutine AddOffspring
 
@@ -317,7 +317,6 @@ contains
     !> @return String of SireID
     !---------------------------------------------------------------------------
     function getSireID(this) result(v)
-        use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
         character(:),allocatable :: v
         v = this%sireID
@@ -325,11 +324,23 @@ contains
 
 
     function getDamID(this) result(v)
-        use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
         character(:),allocatable :: v
         v = this%damID
     end function getDamID
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets generation info of individual
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @param[in] generation (integer) 
+    !---------------------------------------------------------------------------
+    subroutine setGeneration(this,generation) 
+        class(individual) :: this
+        integer,intent(in) :: generation
+        this%generation = generation
+    end subroutine setGeneration
+
 
 
 end module IndividualModule

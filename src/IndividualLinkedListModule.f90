@@ -1,6 +1,6 @@
 module IndividualLinkedListModule
     use iso_fortran_env
-    use individualModule
+    use individualModule, only :individual
 
 
     abstract interface
@@ -30,11 +30,9 @@ module IndividualLinkedListModule
     end type IndividualLinkedList
 
     type :: IndividualLinkedListNode
-            class(individual), pointer :: item
+            type(individual), pointer :: item
             type(IndividualLinkedListNode),pointer :: next =>null()
     end type IndividualLinkedListNode
-
-
 
 
 contains
@@ -60,8 +58,9 @@ contains
     subroutine list_add_at_n(this, item, n)
         class(IndividualLinkedList), intent(inout) :: this
         type(individual), intent(in),target :: item
+        integer, intent(in) :: n
         type(IndividualLinkedListNode),pointer :: node, tmp
-
+        integer :: i
         allocate(tmp)
         tmp%item=>item   
         ! add at the beginning
@@ -162,36 +161,34 @@ contains
 
     subroutine list_remove(this,item)
         class(IndividualLinkedList),intent(inout) :: this
-        class(individual), intent(in) :: item
-        class(individual), pointer :: tmpItem
-        integer :: i
+        type(individual),pointer, intent(in) :: item
+        type(individual), pointer :: tmpItem
         type(IndividualLinkedListNode),pointer :: node
         if (associated(this%first)) then
             node => this%first
-            if (node%item == item) then
+            if (associated(node%item,item)) then
                 this%first => null()
                 this%first => node%next
+                this%length = this%length - 1 
             else
                 do while (associated(node%next))
                     tmpItem => node%next%item
-                    if(tmpItem == item) then
+                    ! print *,"loop"
+                    if(associated(tmpItem,item)) then
                         if(associated(node%next%next)) then
                             node%next=> node%next%next
                         else
                             this%last=>node !set last element to node if node to remove is last 
                         endif
+                        this%length = this%length - 1 
+                        return
                     endif
+                    node => node%next
                 end do
             endif
         endif
     end subroutine list_remove
 
-
-    ! real function getEffectsForAll(args) result(r)
-    !     implicit none
-    !     real :: args
-        
-    ! end function getEffectsForAll
 
 
 end Module IndividualLinkedListModule
