@@ -54,8 +54,7 @@ contains
         else
             nIndividuals = countLines(fileIn)
         endif
-        allocate(pedStructure%Pedigree(nIndividuals))
-        
+        allocate(pedStructure%Pedigree(nIndividuals))    
         dictionary = DictStructure(nIndividuals) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
@@ -73,29 +72,32 @@ contains
 
             if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
                 tmpSireNum = dictionary%getValue(tmpSire)
-                if (tmpSireNum /= DICT_NULL) then
-                    pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
-                    call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
-                    call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+                if (tmpSireNum /= DICT_NULL) then     
                     sireFound = .true.
                 endif
             endif
 
             if (tmpDam /= EMPTY_PARENT) then !check dam is defined in pedigree
                 tmpDamNum = dictionary%getValue(tmpDam)
-                if (tmpDamNum /= DICT_NULL) then !if 
-                    pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
-                    call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
-                    call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+                if (tmpDamNum /= DICT_NULL) then !if              
                     damFound = .true.
                 endif                
             endif
             if (tmpSire == EMPTY_PARENT .and. tmpDam == EMPTY_PARENT) then !if animal is a founder
                 call pedStructure%Pedigree(i)%SetObjectAsFounder()
-                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))         
-            else if (.not. sireFound .and. .not. damFound ) then
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))      
+
+            else if (sireFound == .false. .or. damFound == .false. ) then
                 tmpAnimalArrayCount = tmpAnimalArrayCount +1
-                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in
+                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in  
+            else ! if sire and dam are both found
+                pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
+                call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+
+                pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
+                call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
             endif 
         enddo
 
@@ -106,24 +108,24 @@ contains
             tmpSireNum = dictionary%getValue(tmpSire)
             tmpDam = pedStructure%Pedigree(tmpAnimalArray(i))%getDamId()
             tmpDamNum = dictionary%getValue(tmpDam)
-            if (tmpSireNum /= DICT_NULL) then
+
+            if (tmpSireNum /= DICT_NULL) then !if sire has been found in hashtable
                 pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                 call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                 call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
             endif
-            if (tmpDamNum /= DICT_NULL) then !if 
+            
+            if (tmpDamNum /= DICT_NULL) then !if dam has been found            
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                     call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                    call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
-                    damFound = .true.
-            
-            else if (tmpSireNum == DICT_NULL .and. tmpDamNum == DICT_NULL) then
+                    call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female       
+            else if (tmpSireNum == DICT_NULL .and. tmpDamNum == DICT_NULL) then !otherwise its another founder
                 call pedStructure%Pedigree(tmpAnimalArray(i))%SetObjectAsFounder()
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(tmpAnimalArray(i)))     
             endif
         enddo
     deallocate(tmpAnimalArray)
-    ! call dictionary%destroy !destroy dictionary as we no longer need it
+    call dictionary%destroy !destroy dictionary as we no longer need it
     end function initPedigree
 
 
@@ -198,14 +200,10 @@ contains
         
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
-            do h=1, this%generations(i)%length-1
-                if (associated(tmpIndNode)) then
+            do h=1, this%generations(i)%length
                     write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
-                else
-                    exit
-                endif
             end do
         enddo
         if (present(file)) then
@@ -228,15 +226,15 @@ contains
 
         integer :: i
         
-
-        if (generation >= indiv%generation) then
-            if (indiv%generation /= 0) then !remove from other list, as has already been set
+        if (generation > indiv%generation) then
+            if (indiv%generation /= 0 .and. indiv%generation > 0) then !remove from other list, as has already been set
                 call this%generations(indiv%generation)%list_remove(indiv)
             endif
+
             indiv%generation = generation
+            
             call this%generations(indiv%generation)%list_add(indiv)
             if(indiv%generation > this%maxGeneration) then
-                write (*, '(a,i3)') indiv%originalID,indiv%generation
                 this%maxGeneration = indiv%generation
             endif
         endif

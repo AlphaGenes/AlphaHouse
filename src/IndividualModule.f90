@@ -26,6 +26,7 @@
 module IndividualModule
     implicit none
     integer, parameter :: OFFSPRINGTHRESHOLD = 150
+    integer, parameter :: NOGENERATIONVALUE = -9999
     public :: Individual,individualPointerContainer,operator ( == )
     
     private
@@ -163,6 +164,8 @@ contains
         this%damId = damIDIn
         if (present(generation)) then
             this%generation = generation
+        else
+            this%generation = NOGENERATIONVALUE
         endif
         if (present(gender)) then
             this%gender = gender

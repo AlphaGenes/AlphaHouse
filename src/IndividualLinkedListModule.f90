@@ -25,7 +25,6 @@ module IndividualLinkedListModule
             procedure :: list_pop
             procedure :: list_get_nth
             procedure :: list_remove
-            procedure :: list_add_at_n
             procedure :: destroyLinkedList
 
     end type IndividualLinkedList
@@ -33,6 +32,7 @@ module IndividualLinkedListModule
     type :: IndividualLinkedListNode
             type(individual), pointer :: item
             type(IndividualLinkedListNode),pointer :: next =>null()
+            type(IndividualLinkedListNode),pointer :: previous =>null()
     end type IndividualLinkedListNode
 
 
@@ -63,51 +63,18 @@ contains
         if (.not.associated(this%last)) then
         allocate(this%first)
         this%last => this%first
+        this%first%previous => null()
         else
-        allocate(this%last%next)
-        this%last => this%last%next
+            allocate(this%last%next)
+            this%last%next%previous => this%last
+            this%last => this%last%next
         endif
         this%last%item => item
         this%length = this%length + 1
     end subroutine list_add
 
 
-    ! subroutine will add element item at position n unless n does not exist, at which point will add to the end of the list
-    subroutine list_add_at_n(this, item, n)
-        class(IndividualLinkedList), intent(inout) :: this
-        type(individual), intent(in),target :: item
-        integer, intent(in) :: n
-        type(IndividualLinkedListNode),pointer :: node, tmp
-        integer :: i
-        allocate(tmp)
-        tmp%item=>item   
-        ! add at the beginning
-        if (n== 1) then
-            tmp%next=>this%first
-            this%first=>tmp
-                    
-        else
-            i = 1
-            node => this%first
-            do
-                if (i+1 == this%length) then
-                    node%next=>tmp
-                    exit
-                else if (i+1 == n ) then
-                    tmp%item=>item
-                    tmp%next=>node%next
-                    node%next=>tmp
-                    exit
-                endif
-                i = i+1
-                node => node%next
-            end do
-        endif
-        this%length = this%length+1
-
-    end subroutine list_add_at_n
-
-
+  
     recursive logical function list_all(this,proc) result(res)
         class(IndividualLinkedList),intent(inout) :: this
         procedure(logicalAbstractFunction) :: proc
@@ -127,25 +94,17 @@ contains
     subroutine list_pop(this, item)
         class(IndividualLinkedList),intent(inout) :: this
         type(individual),pointer,intent(out) :: item
-        type(IndividualLinkedListNode),pointer :: node, previous
-
         if (associated(this%last)) then
-          item => this%last%item         
-          previous => null()
-          node => this%first
-          do while (associated(node%next))
-            previous => node
-            node => node%next
-          end do
-          if (associated(previous)) then
-            deallocate(previous%next)
-          else
-           deallocate(this%first)
-          end if
-          this%last => previous
-          this%length = this%length - 1
+            item => this%last%item         
+            this%last => this%last%previous
+            if (associated(this%last)) then
+                deallocate(this%last%next)
+            else
+                deallocate(this%first)
+            end if
+            this%length = this%length - 1
         else
-          item => null()
+            item => null()
         end if
     end subroutine list_pop
 
@@ -159,7 +118,6 @@ contains
         if (associated(this%first).and.this%length>=n) then
           node => this%first
           i = 1
-          ! TODO work backwards if closer to the end
           do
             if (i==n) then
               res => node%item
@@ -185,18 +143,25 @@ contains
         if (associated(this%first)) then
             node => this%first
             if (associated(node%item,item)) then
-                this%first => null()
-                this%first => node%next
+                this%first => this%first%next
                 this%length = this%length - 1 
+                if (.not. associated(this%first)) then
+                    print *, "LIST EMPTY:", this%length
+                else 
+                    this%first%previous => null()                    
+                endif
             else
                 do while (associated(node%next))
                     tmpItem => node%next%item
                     ! print *,"loop"
                     if(associated(tmpItem,item)) then
                         if(associated(node%next%next)) then
+                            deallocate(node%next%next%previous)
+                            node%next%next%previous => node
                             node%next=> node%next%next
                         else
                             this%last=>node !set last element to node if node to remove is last 
+                            deallocate(this%last%next)
                         endif
                         this%length = this%length - 1 
                         return
@@ -204,7 +169,10 @@ contains
                     node => node%next
                 end do
             endif
+        else
+            print *, "warning -trying to remove from an empty list"
         endif
+
     end subroutine list_remove
 
 
