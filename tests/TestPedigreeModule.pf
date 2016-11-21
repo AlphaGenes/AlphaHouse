@@ -1,0 +1,49 @@
+module TestPedigreeModule
+  use pFUnit_mod
+  use PedigreeModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(PedigreeHolder) :: pedigree  
+  contains
+
+ @before
+    subroutine initialise
+         implicit none
+        
+        pedigree = PedigreeHolder("Pedigree.txt")
+
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+      call pedigree%destroyPedigree
+    end subroutine
+
+    @test
+    subroutine testReadAndSort
+        implicit none
+         @assertEqual(pedigree%Pedigree(1)%OriginalID,"305180198")
+    end subroutine testReadAndSort
+
+
+    ! @test
+    ! subroutine testAddOffspring
+    !     type(individualPointerContainer), allocatable :: Offsprings(:)
+    !     type(Individual) :: tmp
+    !     call table(1)%addOffspring(table(2))
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     call table(1)%getOffsprings(Offsprings)
+    !     tmp = Offsprings(1)%p
+    !     @assertEqualUserDefined(tmp, table(2))
+    ! end subroutine testAddOffspring
+
+    ! @test
+    ! subroutine testBuildOffspring           
+    !     call BuildOffspringInfortmation(table)
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     @assertEqual(table(2)%GetNumberOffsprings(), 2)
+    ! end subroutine testBuildOffspring
+end module TestPedigreeModule
