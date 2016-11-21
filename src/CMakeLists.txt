@@ -10,7 +10,7 @@ SET(ALPHAHOUSE_src
 				PedigreeModule.f90				
 				IntelRNGMod.f90
 				HelperSubroutines.f90
-				# test.f90
+				test.f90
 	)
 
 

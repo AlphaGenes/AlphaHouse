@@ -51,7 +51,9 @@ module IndividualModule
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
-        
+
+        integer(kind=1), allocatable, dimension(:) :: genotype !where size is the number of snps
+        integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -68,6 +70,7 @@ module IndividualModule
             procedure :: setGender
             procedure :: destroyIndividual
             procedure :: setGeneration
+            procedure :: getSireDamObjectByIndex
       ! TODO contains writeIndividualFUNCTION
     end type Individual
 
@@ -94,6 +97,12 @@ contains
         deallocate(this%originalID)
         deallocate(this%sireID)
         deallocate(this%damID)
+        if (allocated(this%genotype)) then
+            deallocate(this%genotype)
+        endif
+        if (allocated(this%phase)) then 
+            deallocate(this%phase)
+        endif
     end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
@@ -141,6 +150,34 @@ contains
         return
     end function getSireDamByIndex
 
+!---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamObjectByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index
+        type(individual), pointer :: v
+        select case (index)
+            case(1)
+                v => this
+            case(2)
+                v => this%sirePointer
+            case(3)
+                v => this%damPointer
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamObjectByIndex
       !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -160,6 +197,7 @@ contains
         allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
         this%originalID = originalID
         this%id = id
+        this%gender = -9
         this%sireId = sireIDIn
         this%damId = damIDIn
         if (present(generation)) then

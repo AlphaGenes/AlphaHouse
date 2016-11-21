@@ -5,7 +5,6 @@ module PedigreeModule
     character, parameter :: EMPTY_PARENT = '0'
     integer, parameter :: IDLENGTH = 32
     integer, parameter :: generationThreshold = 1000
-    type(DictStructure) :: dictionary 
 
 
 type PedigreeHolder
@@ -13,12 +12,16 @@ type PedigreeHolder
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
+    type(DictStructure) :: dictionary 
+
     integer :: maxGeneration
     contains 
         procedure :: destroyPedigree
         procedure :: setPedigreeGenerationsAndBuildArrays
         procedure :: outputSortedPedigree
         procedure :: setOffspringGeneration
+        procedure :: addGenotypeInformation
+
 
 end type PedigreeHolder
 
@@ -29,20 +32,21 @@ end type PedigreeHolder
 contains
     
 
-        !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief distructor for pedigree class 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !> @param[in] file path (string)
     !---------------------------------------------------------------------------
-    function initPedigree(fileIn, numberInFile) result(pedStructure)
+    function initPedigree(fileIn, numberInFile, genderFile) result(pedStructure)
         use AlphaHouseMod, only : countLines
         use HashModule
         type(PedigreeHolder) :: pedStructure
-        character(len=*) :: fileIn
+        character(len=*),intent(in) :: fileIn
+        character(len=*), intent(in),optional :: genderFile
         character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
-        integer(kind=int32),optional :: numberInFile
-        integer(kind=int32) :: nIndividuals, fileUnit,tmpSireNum, tmpDamNum
+        integer(kind=int32),optional,intent(in) :: numberInFile
+        integer(kind=int32) :: stat, nIndividuals, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount = 0
@@ -55,7 +59,7 @@ contains
             nIndividuals = countLines(fileIn)
         endif
         allocate(pedStructure%Pedigree(nIndividuals))    
-        dictionary = DictStructure(nIndividuals) !dictionary used to map alphanumeric id's to location in pedigree holder
+        pedStructure%dictionary = DictStructure(nIndividuals) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
         open(newUnit=fileUnit, file=fileIn, status="old")
@@ -66,19 +70,19 @@ contains
             damFound = .false.
             
             read(fileUnit,*) tmpId,tmpSire,tmpDam
-            call dictionary%addKey(tmpId, i)
+            call pedStructure%dictionary%addKey(tmpId, i)
             
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
 
             if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
-                tmpSireNum = dictionary%getValue(tmpSire)
+                tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
                 if (tmpSireNum /= DICT_NULL) then     
                     sireFound = .true.
                 endif
             endif
 
             if (tmpDam /= EMPTY_PARENT) then !check dam is defined in pedigree
-                tmpDamNum = dictionary%getValue(tmpDam)
+                tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
                 if (tmpDamNum /= DICT_NULL) then !if              
                     damFound = .true.
                 endif                
@@ -101,13 +105,15 @@ contains
             endif 
         enddo
 
+        close(fileUnit)
+
         !check animals that didn't have parental information initially
         ! this is done to avoid duplication when a pedigree is sorted
         do i=1,tmpAnimalArrayCount 
             tmpSire = pedStructure%Pedigree(tmpAnimalArray(i))%getSireId()
-            tmpSireNum = dictionary%getValue(tmpSire)
+            tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
             tmpDam = pedStructure%Pedigree(tmpAnimalArray(i))%getDamId()
-            tmpDamNum = dictionary%getValue(tmpDam)
+            tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
 
             if (tmpSireNum /= DICT_NULL) then !if sire has been found in hashtable
                 pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
@@ -124,8 +130,30 @@ contains
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(tmpAnimalArray(i)))     
             endif
         enddo
+
+        ! if we want gender info read in rather than calculated on the fly, lets do it here
+        if (present(genderFile)) then !read in gender here
+            open(newUnit=fileUnit, file=genderFile, status="old")
+            do
+                read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
+                if (stat /=0) exit
+
+                tmpIdNum = pedStructure%dictionary%getValue(tmpId)
+                if (tmpIdNum /= DICT_NULL) then
+                    pedStructure%Pedigree(i)%gender = int(tmpGender)
+                else
+                    write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
+                    write(error_unit, *) "Amimal:",tmpId  
+                endif 
+            end do
+
+
+        endif
+
+
+
     deallocate(tmpAnimalArray)
-    call dictionary%destroy !destroy dictionary as we no longer need it
+    
     end function initPedigree
 
 
@@ -144,13 +172,51 @@ contains
             if (allocated(this%generations)) then
                 deallocate(this%generations)
             endif
-
         enddo
         call this%Founders%destroyLinkedList
+        call this%dictionary%destroy !destroy dictionary as we no longer need it
             deallocate(this%pedigree)
+
     end subroutine destroyPedigree
 
+    subroutine addGenotypeInformation(this, genotypeFile, nsnps, nAnnisG)
+         
+        use AlphaHouseMod, only : countLines
+        implicit none
+        class(PedigreeHolder) :: this
+        character(len=*) :: genotypeFile
+        character(len=IDLENGTH) :: tmpID
+        integer,intent(in) :: nsnps
+        integer,intent(in),optional :: nAnnisG
+        integer, allocatable, dimension(:) :: tmpSnpArray
+        integer :: i, j,fileUnit, nAnnis,tmpIdNum
 
+
+            if (present(nAnnisG)) then
+                nAnnis = nAnnisG
+            else
+                nAnnis = countLines(genotypeFile)
+            endif
+
+            allocate(tmpSnpArray(nsnps))
+            open(newUnit=fileUnit, file=genotypeFile, status="old")
+            do i=1, nAnnis
+                read (fileUnit,*) tmpId,tmpSnpArray(:)
+                do j=1,nsnps
+                  if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) tmpSnpArray(j)=9
+                enddo
+                tmpIdNum = this%dictionary%getValue(tmpId)
+                if (tmpIdNum == DICT_NULL) then
+                    write(error_unit, *) "ERROR: Genotype info for non existing animal"
+                else
+                    allocate(this%pedigree(tmpIdNum)%genotype(nsnps))
+                    this%pedigree(tmpIdNum)%genotype = tmpSnpArray
+                endif
+            enddo
+
+
+
+    end subroutine addGenotypeInformation
     !---------------------------------------------------------------------------
     !> @brief builds correct generation information by looking at founders 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
