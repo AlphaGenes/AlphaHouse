@@ -69,6 +69,7 @@ module IndividualModule
             procedure :: destroyIndividual
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
+            procedure :: getSireDamNewIDByIndex
       ! TODO contains writeIndividualFUNCTION
     end type Individual
 
@@ -149,7 +150,7 @@ contains
     end function getSireDamByIndex
 
 !---------------------------------------------------------------------------
-    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> @brief Returns either the individual object, the sires object or dams object based on
     !> which index is passed.
 
     !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
@@ -176,6 +177,37 @@ contains
         end select
         return
     end function getSireDamObjectByIndex
+
+
+         !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamNewIDByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer:: v
+        select case (index)
+            case(1)
+                v = this%id
+            case(2)
+                v = this%sirePointer%id
+            case(3)
+                v = this%damPointer%id
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamNewIDByIndex
+
       !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
