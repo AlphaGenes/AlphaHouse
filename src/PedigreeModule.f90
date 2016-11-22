@@ -88,7 +88,7 @@ contains
                 endif                
             endif
             if (tmpSire == EMPTY_PARENT .and. tmpDam == EMPTY_PARENT) then !if animal is a founder
-                call pedStructure%Pedigree(i)%SetObjectAsFounder()
+                pedStructure%Pedigree(i)%founder = .true.
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(i))      
 
             else if (sireFound == .false. .or. damFound == .false. ) then
@@ -126,7 +126,7 @@ contains
                     call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female       
             else if (tmpSireNum == DICT_NULL .and. tmpDamNum == DICT_NULL) then !otherwise its another founder
-                call pedStructure%Pedigree(tmpAnimalArray(i))%SetObjectAsFounder()
+                pedStructure%Pedigree(tmpAnimalArray(i))%Founder = .true.
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(tmpAnimalArray(i)))     
             endif
         enddo

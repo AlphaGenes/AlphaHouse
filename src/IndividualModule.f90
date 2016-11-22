@@ -60,10 +60,8 @@ module IndividualModule
             procedure :: SetAsGenotyped
             procedure :: isHD
             procedure :: SetHD
-            procedure :: isFounder
             procedure :: getSireId
             procedure :: getDamID
-            procedure :: SetObjectAsFounder
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
