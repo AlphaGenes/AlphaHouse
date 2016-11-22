@@ -13,6 +13,8 @@ type PedigreeHolder
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
     type(DictStructure) :: dictionary 
+    integer :: pedigreeSize
+    integer :: maxPedigreeSize
 
     integer :: maxGeneration
     contains 
@@ -58,7 +60,9 @@ contains
         else
             nIndividuals = countLines(fileIn)
         endif
-        allocate(pedStructure%Pedigree(nIndividuals))    
+        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals / 10)
+        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
+        pedStructure%pedigreeSize = nIndividuals 
         pedStructure%dictionary = DictStructure(nIndividuals) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
@@ -119,15 +123,36 @@ contains
                 pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                 call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                 call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+            
+            else !if sire is defined but not in the pedigree, create him
+                pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                    write(error_unit,*) "ERROR: too many undefined animals"
+                    stop
+                    ! TODO do a move alloc here to avoid this hack
+                endif
+
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.  
             endif
             
             if (tmpDamNum /= DICT_NULL) then !if dam has been found            
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                     call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female       
-            else if (tmpSireNum == DICT_NULL .and. tmpDamNum == DICT_NULL) then !otherwise its another founder
-                pedStructure%Pedigree(tmpAnimalArray(i))%Founder = .true.
-                call pedStructure%Founders%list_add(pedStructure%Pedigree(tmpAnimalArray(i)))     
+            else
+                pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                    write(error_unit,*) "ERROR: too many undefined animals"
+                    stop
+                    ! TODO do a move alloc here to avoid this hack
+                endif
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
             endif
         enddo
 
@@ -167,7 +192,7 @@ contains
         class(PedigreeHolder) :: this
         integer :: i
         
-        do i=1,size(this%Pedigree)
+        do i=1,this%pedigreeSize
             call this%Pedigree(i)%destroyIndividual
             if (allocated(this%generations)) then
                 deallocate(this%generations)
