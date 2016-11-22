@@ -23,6 +23,7 @@ type PedigreeHolder
         procedure :: outputSortedPedigree
         procedure :: setOffspringGeneration
         procedure :: addGenotypeInformation
+        procedure :: outputSortedPedigreeInAlphaImputeFormat
 
 
 end type PedigreeHolder
@@ -307,6 +308,36 @@ contains
     end subroutine outputSortedPedigree
 
 
+    subroutine outputSortedPedigreeInAlphaImputeFormat(this, file)
+        use iso_fortran_env, only : output_unit
+        class(PedigreeHolder) :: this
+        character(len=*), intent(in), optional :: file
+        integer :: unit, i,h
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays
+        endif
+        print *,"finished building generation arrays"
+
+        if (present(file)) then
+            open(newUnit=unit, file=file, status="unknown")
+        else
+            unit = output_unit
+        endif
+        
+        do i=0, this%maxGeneration
+            tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                     write (unit,'(3i20,a20)') tmpIndNode%item%id,tmpIndNode%item%sirePointer%id,tmpIndNode%item%damPointer%id, tmpIndNode%item%originalID
+                    ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
+                    tmpIndNode => tmpIndNode%next
+            end do
+        enddo
+        if (present(file)) then
+            close(unit)
+        endif
+    end subroutine outputSortedPedigreeInAlphaImputeFormat
     !---------------------------------------------------------------------------
     !> @brief Sets generation of an individual and his children recursively
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk

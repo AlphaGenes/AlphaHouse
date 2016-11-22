@@ -44,6 +44,7 @@ module IndividualModule
         integer :: generation
         integer :: id
         integer(kind=1) :: gender 
+        integer(kind=1) :: pruned
         type(individual), pointer :: sirePointer
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
