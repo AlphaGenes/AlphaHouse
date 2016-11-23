@@ -52,7 +52,7 @@ module IndividualModule
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
-        logical :: isDummy     = .false.
+        logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
 
         integer(kind=1), allocatable, dimension(:) :: genotype !where size is the number of snps
         integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
@@ -150,6 +150,25 @@ contains
         end select
         return
     end function getSireDamByIndex
+
+
+    function getIntegerVectorOfRecodedIds(this) result(res)
+        class(Individual) :: this
+        integer :: res(3)
+
+        res = 0
+        res(1) = this%id
+        if (associated(this%sirePointer)) then
+            res(2) = this%sirePointer%id
+        endif
+
+        if (associated(this%sirePointer)) then
+            res(3) = this%damPointer%id
+        endif
+
+    end function getIntegerVectorOfRecodedIds
+        
+
 
 !---------------------------------------------------------------------------
     !> @brief Returns either the individual object, the sires object or dams object based on
