@@ -47,10 +47,10 @@ contains
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn
         character(len=*), intent(in),optional :: genderFile
-        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
+        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam,tmpCounterStr
         integer(kind=int32),optional,intent(in) :: numberInFile
         integer(kind=int32) :: stat, nIndividuals, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
-        
+        integer :: tmpCounter = 0
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount = 0
         integer :: i
@@ -115,6 +115,8 @@ contains
         !check animals that didn't have parental information initially
         ! this is done to avoid duplication when a pedigree is sorted
         do i=1,tmpAnimalArrayCount 
+            sireFound = .false.
+            damFound = .false.
             tmpSire = pedStructure%Pedigree(tmpAnimalArray(i))%getSireId()
             tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
             tmpDam = pedStructure%Pedigree(tmpAnimalArray(i))%getDamId()
@@ -133,12 +135,13 @@ contains
                         stop
                         ! TODO do a move alloc here to avoid this hack
                     endif
-
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.  
                 endif
+                sireFound = .true.
             endif
 
             if (tmpDam /= EMPTY_PARENT) then
@@ -151,13 +154,37 @@ contains
                     if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
-                        ! TODO do a move alloc here to avoid this hack
                     endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                    
+                    pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
                 endif
+                damFound = .true.
+            endif
+
+
+            if (.not. damFound .XOR. .not. sireFound) then
+                tmpCounter =  tmpCounter + 1
+                write(tmpCounterStr, '(I3.3)') tmpCounter
+                pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                    if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                        write(error_unit,*) "ERROR: too many undefined animals"
+                        stop
+                    endif
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+
+                    if (.not. damFound) then
+                        pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+                    else if (.not. sireFound) then
+                        pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+                    endif
+                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                    call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
             endif
         enddo
 
@@ -326,15 +353,29 @@ contains
             unit = output_unit
         endif
         
+        block 
+            integer :: sireId, damId
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-                     write (unit,'(3i20,a20)') tmpIndNode%item%id,tmpIndNode%item%sirePointer%id,tmpIndNode%item%damPointer%id, tmpIndNode%item%originalID
+                    if (associated(tmpIndNode%item%damPointer)) then
+                        damId = tmpIndNode%item%damPointer%id
+                    else
+                        damId = 0
+                    endif
+                    if (associated(tmpIndNode%item%sirePointer)) then
+                        sireId = tmpIndNode%item%sirePointer%id
+                    else
+                        sireId = 0
+                    endif
+
+                     write (unit,'(3i20,a20)') tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
             end do
         enddo
-        if (present(file)) then
+        endblock
+        if (present(file)) then !avoids closing stdout
             close(unit)
         endif
     end subroutine outputSortedPedigreeInAlphaImputeFormat
