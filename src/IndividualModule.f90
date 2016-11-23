@@ -52,6 +52,7 @@ module IndividualModule
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
+        logical :: isDummy     = .false.
 
         integer(kind=1), allocatable, dimension(:) :: genotype !where size is the number of snps
         integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
