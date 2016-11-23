@@ -72,7 +72,7 @@ module IndividualModule
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
-      ! TODO contains writeIndividualFUNCTION
+            procedure :: getIntegerVectorOfRecodedIds
     end type Individual
 
     interface Individual
@@ -152,6 +152,17 @@ contains
     end function getSireDamByIndex
 
 
+        !---------------------------------------------------------------------------
+    !> @brief Returns an array of recoded id's where index 1 is individuals id,
+    !> index 2 is sire's recoded ID (0 if not available),
+    !> index 3 is dam's recoded ID (0 if not available)
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
     function getIntegerVectorOfRecodedIds(this) result(res)
         class(Individual) :: this
         integer :: res(3)
@@ -220,9 +231,17 @@ contains
             case(1)
                 v = this%id
             case(2)
-                v = this%sirePointer%id
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%id
+                else
+                    v = 0
+                endif
             case(3)
-                v = this%damPointer%id
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%id
+                else
+                    v = 0
+                endif
             case default
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
