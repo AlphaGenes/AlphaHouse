@@ -73,6 +73,10 @@ module IndividualModule
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
             procedure :: getIntegerVectorOfRecodedIds
+            procedure :: getPaternalGrandSireRecodedIndex
+            procedure :: getMaternalGrandSireRecodedIndex
+            procedure :: getPaternalGrandDamRecodedIndex
+            procedure :: getMaternalGrandDamRecodedIndex
     end type Individual
 
     interface Individual
