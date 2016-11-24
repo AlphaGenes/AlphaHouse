@@ -25,9 +25,9 @@
 
 module IndividualModule
     implicit none
-
-    integer, parameter :: OFFSPRINGTHRESHOLD = 100
-    public :: BuildOffspringInfortmation,Individual,individualPointerContainer,operator ( == )
+    integer, parameter :: OFFSPRINGTHRESHOLD = 150
+    integer, parameter :: NOGENERATIONVALUE = -9999
+    public :: Individual,individualPointerContainer,operator ( == )
     
     private
 
@@ -37,40 +37,52 @@ module IndividualModule
     end type IndividualPointerContainer
 
     type Individual
+
         character(len=:), allocatable :: originalID
+        character(len=:), allocatable :: sireID
+        character(len=:), allocatable :: damID
         integer :: generation
-        integer :: OldGlobalID
         integer :: id
-        integer :: sireID
-        integer :: damID
         integer(kind=1) :: gender 
-        type(Individual), pointer :: sirePointer
-        type(Individual), pointer :: damPointer
+        integer(kind=1) :: pruned
+        type(individual), pointer :: sirePointer
+        type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
         integer :: nOffs  = 0
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
-        logical :: initialised = .false.
-        character(len=:), allocatable :: path
+        logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
+
+        integer(kind=1), allocatable, dimension(:) :: genotype !where size is the number of snps
+        integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
         contains
-            procedure :: getIdSireDamArrayFormat
             procedure :: getSireDamByIndex
-            procedure :: init => initIndividual
-            procedure :: isInitialised
             procedure :: isGenotyped
             procedure :: SetAsGenotyped
             procedure :: isHD
             procedure :: SetHD
-            procedure :: isFounder
-            procedure :: SetObjectAsFounder
+            procedure :: getSireId
+            procedure :: getDamID
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
-
-      ! TODO contains writeIndividualFUNCTION
+            procedure :: setGender
+            procedure :: destroyIndividual
+            procedure :: setGeneration
+            procedure :: getSireDamObjectByIndex
+            procedure :: getSireDamNewIDByIndex
+            procedure :: getIntegerVectorOfRecodedIds
+            procedure :: getPaternalGrandSireRecodedIndex
+            procedure :: getMaternalGrandSireRecodedIndex
+            procedure :: getPaternalGrandDamRecodedIndex
+            procedure :: getMaternalGrandDamRecodedIndex
     end type Individual
 
+    interface Individual
+        module procedure initIndividual
+    end interface Individual
+    
     interface operator ( == )
         module procedure compareIndividual
     end interface operator ( == )
@@ -78,24 +90,25 @@ module IndividualModule
 contains
 
 
+
      !---------------------------------------------------------------------------
-    !> @brief   returns an array where index 1 is the individuals id,
-    !> index 2 is the sire id, and index 3 is the dam ID. 
-    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @brief Deallocates individual object
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    pure function getIdSireDamArrayFormat(this) result(r)
-        class(Individual), intent(in) :: this
-        integer :: r(3)
-        r(1) = this%id
-        r(2) = this%sireID
-        r(3) = this%damID
-        return
-    end function getIdSireDamArrayFormat
-
-
-
+    subroutine destroyIndividual(this)
+        class(Individual) :: this
+        deallocate(this%offsprings)
+        deallocate(this%originalID)
+        deallocate(this%sireID)
+        deallocate(this%damID)
+        if (allocated(this%genotype)) then
+            deallocate(this%genotype)
+        endif
+        if (allocated(this%phase)) then 
+            deallocate(this%phase)
+        endif
+    end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -128,10 +141,10 @@ contains
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
         integer, intent(in) :: index
-        integer :: v
+        character(:),allocatable :: v
         select case (index)
             case(1)
-                v = this%id
+                v = this%originalID
             case(2)
                 v = this%sireID
             case(3)
@@ -142,62 +155,206 @@ contains
         return
     end function getSireDamByIndex
 
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandSireRecodedIndex(this)
+        class(individual) :: this
 
-     !---------------------------------------------------------------------------
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%sirePointer)) then
+                getPaternalGrandSireRecodedIndex = this%sirePointer%sirePointer%id
+                return
+            endif
+        endif
+        getPaternalGrandSireRecodedIndex = 0
+    end function getPaternalGrandSireRecodedIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandSireRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%sirePointer)) then
+                getMaternalGrandSireRecodedIndex = this%damPointer%sirePointer%id
+                return
+            endif
+        endif
+        getMaternalGrandSireRecodedIndex = 0
+    end function getMaternalGrandSireRecodedIndex
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandDamRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%damPointer)) then
+                getPaternalGrandDamRecodedIndex = this%sirePointer%damPointer%id
+                return
+            endif
+        endif
+        getPaternalGrandDamRecodedIndex = 0
+    end function getPaternalGrandDamRecodedIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandDamRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%damPointer)) then
+                getMaternalGrandDamRecodedIndex = this%damPointer%damPointer%id
+                return
+            endif
+        endif
+        getMaternalGrandDamRecodedIndex = 0
+    end function getMaternalGrandDamRecodedIndex
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns an array of recoded id's where index 1 is individuals id,
+    !> index 2 is sire's recoded ID (0 if not available),
+    !> index 3 is dam's recoded ID (0 if not available)
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getIntegerVectorOfRecodedIds(this) result(res)
+        class(Individual) :: this
+        integer :: res(3)
+
+        res = 0
+        res(1) = this%id
+        if (associated(this%sirePointer)) then
+            res(2) = this%sirePointer%id
+        endif
+
+        if (associated(this%sirePointer)) then
+            res(3) = this%damPointer%id
+        endif
+
+    end function getIntegerVectorOfRecodedIds
+        
+
+
+!---------------------------------------------------------------------------
+    !> @brief Returns either the individual object, the sires object or dams object based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamObjectByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index
+        type(individual), pointer :: v
+        select case (index)
+            case(1)
+                v => this
+            case(2)
+                v => this%sirePointer
+            case(3)
+                v => this%damPointer
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamObjectByIndex
+
+
+         !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamNewIDByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer:: v
+        select case (index)
+            case(1)
+                v = this%id
+            case(2)
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%id
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%id
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamNewIDByIndex
+
+      !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine initIndividual(this, originalID, OldGlobalID, id, sireID, damID, generation,gender, path)
-        class(Individual), intent(inout) :: this
-        character(*), intent(in) :: originalID
-        integer, intent(in) :: OldGlobalID
-        integer, intent(in) :: id, sireID, damID
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
+        type(Individual) :: this
+        character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
+        integer, intent(in) :: id
         integer(kind=1), intent(in), Optional :: gender
-        character(*),intent(in), Optional :: path
-        character(len=512) :: tempPath
 
-        if (.not. this%initialised) then
-            allocate(character(len=len(originalID)) ::this%originalID)
-            allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
-            this%originalID = originalID
-            this%id = id
-            this%OldGlobalID = OldGlobalID
-            this%sireID = sireID
-            this%damID = damID
-            if (present(generation)) then
-                this%generation = generation
-            endif
-            if (present(gender)) then
-                this%gender = gender
-            endif
-            if (present(Path)) then
-                allocate(character(len=len(path)) ::this%path)
-                this%path = path
-            else
-                call getcwd(tempPath)
-                this%path = tempPath
-            endif
-            if (sireID==0 .and. damID==0) then
-                this%Founder = .true.
-            end if
-            this%initialised = .true.
+
+        allocate(character(len=len(originalID)) ::this%originalID)
+        allocate(character(len=len(sireIDIn)) ::this%sireID)
+        allocate(character(len=len(sireIDIn)) ::this%damID)
+        allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
+        this%originalID = originalID
+        this%id = id
+        this%gender = -9
+        this%sireId = sireIDIn
+        this%damId = damIDIn
+        if (present(generation)) then
+            this%generation = generation
+        else
+            this%generation = NOGENERATIONVALUE
         endif
-    end subroutine initIndividual
+        if (present(gender)) then
+            this%gender = gender
+        endif
 
-
-    !---------------------------------------------------------------------------
-    !> @brief boolean function returning true if object is initialised
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @return .True. if object is initialised
-    !---------------------------------------------------------------------------
-    elemental function isInitialised(this) result(ans)
-        class(Individual), intent(in) :: this
-        logical :: ans
-        ans = this%initialised
-    end function isInitialised
+    end function initIndividual
 
     !---------------------------------------------------------------------------
     !> @brief boolean function returning true if object is a founder of a generation
@@ -281,9 +438,8 @@ contains
         if (this%nOffs > OFFSPRINGTHRESHOLD) then
             allocate(tmp(this%nOffs))
             tmp(1:size(this%Offsprings)) = this%Offsprings
-            call move_alloc(this%OffSprings,tmp)
+            call move_alloc(tmp,this%OffSprings)
         endif
-
         this%OffSprings(this%nOffs)%p => offspringToAdd
     end subroutine AddOffspring
 
@@ -317,31 +473,60 @@ contains
     end subroutine GetOffsprings
 
     !---------------------------------------------------------------------------
-    !> @brief builds offspring information given a vector of individual objects that are sorted by generation (although this does not really matter)
+    !> @brief Sets gender info of individual. 1 signifies male, 2 female. 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
+    !> @param[in] gender (integer kind(1)) 
     !---------------------------------------------------------------------------
-    subroutine BuildOffspringInfortmation(individuals)
-        class(Individual),target, dimension(:), allocatable, intent(inout) :: individuals
-        integer :: i, tmpSire, tmpDam
+    subroutine setGender(this,gender) 
+        class(individual) :: this
+        integer(kind=1),intent(in) :: gender
+        this%gender = gender
+    end subroutine setGender
 
-        do i=size(individuals),1,-1  ! start at the end of sorted array and build backwards 
-            tmpSire = individuals(i)%sireID
-            tmpDam = individuals(i)%damID
+    !---------------------------------------------------------------------------
+    !> @brief returns gender info of individual. 1 signifies male, 2 female. 
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return gender (integer kind(1)) 
+    !---------------------------------------------------------------------------
+    function getGender(this) result(gender)
+        class(individual) :: this
+        integer(kind=1) :: gender
+        gender = this%gender
+    end function getGender
 
-            if (tmpSire /= 0) then
-                individuals(i)%sirePointer => individuals(tmpSire)
-                call individuals(tmpSire)%AddOffspring(individuals(i))
+    !---------------------------------------------------------------------------
+    !> @brief returns gender info of individual. 1 signifies male, 2 female. 
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return String of SireID
+    !---------------------------------------------------------------------------
+    function getSireID(this) result(v)
+        class(Individual), intent(in) :: this
+        character(:),allocatable :: v
+        v = this%sireID
+    end function getSireID
 
-            endif
 
-            if (tmpDam /= 0) then
-                individuals(i)%damPointer => individuals(tmpDam)
-                call individuals(tmpDam)%AddOffspring(individuals(i))
-            endif
+    function getDamID(this) result(v)
+        class(Individual), intent(in) :: this
+        character(:),allocatable :: v
+        v = this%damID
+    end function getDamID
 
-        enddo
-    end subroutine BuildOffspringInfortmation
+    !---------------------------------------------------------------------------
+    !> @brief Sets generation info of individual
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @param[in] generation (integer) 
+    !---------------------------------------------------------------------------
+    subroutine setGeneration(this,generation) 
+        class(individual) :: this
+        integer,intent(in) :: generation
+        this%generation = generation
+    end subroutine setGeneration
+
 
 
 end module IndividualModule

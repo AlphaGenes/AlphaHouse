@@ -1,2 +1,0 @@
-default:
-	$(MAKE) -C .. Pedigree

@@ -1,0 +1,50 @@
+module TestHashTable
+  use pFUnit_mod
+  use HashModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(DictStructure) :: dictionary  
+  contains
+
+ @before
+    subroutine initialise
+         implicit none
+        
+        dictionary = DictStructure(32)
+
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+      call dictionary%destroy
+    end subroutine
+
+    @test
+    subroutine testAdd
+        implicit none
+        call dictionary%addKey("hi", 5)
+        @assertEqual(dictionary%getValue("hi"), 5)
+    end subroutine testAdd
+
+
+    ! @test
+    ! subroutine testAddOffspring
+    !     type(individualPointerContainer), allocatable :: Offsprings(:)
+    !     type(Individual) :: tmp
+    !     call table(1)%addOffspring(table(2))
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     call table(1)%getOffsprings(Offsprings)
+    !     tmp = Offsprings(1)%p
+    !     @assertEqualUserDefined(tmp, table(2))
+    ! end subroutine testAddOffspring
+
+    ! @test
+    ! subroutine testBuildOffspring           
+    !     call BuildOffspringInfortmation(table)
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     @assertEqual(table(2)%GetNumberOffsprings(), 2)
+    ! end subroutine testBuildOffspring
+end module TestHashTable
