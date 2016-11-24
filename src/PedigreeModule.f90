@@ -13,8 +13,8 @@ type PedigreeHolder
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
     type(DictStructure) :: dictionary 
-    integer :: pedigreeSize
-    integer :: maxPedigreeSize
+    integer(kind=int32) :: pedigreeSize !pedigree size cannot be bigger than 2 billion animals
+    integer(kind=int32) :: maxPedigreeSize
 
     integer :: maxGeneration
     contains 
@@ -44,16 +44,19 @@ contains
     function initPedigree(fileIn, numberInFile, genderFile) result(pedStructure)
         use AlphaHouseMod, only : countLines
         use HashModule
+        use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn
         character(len=*), intent(in),optional :: genderFile
         character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam,tmpCounterStr
         integer(kind=int32),optional,intent(in) :: numberInFile
-        integer(kind=int32) :: stat, nIndividuals, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
+        integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
+        integer(kind=int64) :: nIndividuals
         integer :: tmpCounter = 0
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount = 0
         integer :: i
+        integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
         if (present(numberInFile)) then
@@ -61,10 +64,11 @@ contains
         else
             nIndividuals = countLines(fileIn)
         endif
+        sizeDict = nIndividuals
         pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals)
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
-        pedStructure%pedigreeSize = nIndividuals 
-        pedStructure%dictionary = DictStructure(nIndividuals) !dictionary used to map alphanumeric id's to location in pedigree holder
+        pedStructure%pedigreeSize = nIndividuals
+        pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
         open(newUnit=fileUnit, file=fileIn, status="old")

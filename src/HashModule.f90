@@ -36,8 +36,8 @@ private :: LinkedList
 private :: getElement
 private :: hashKey
 
-integer(kind=8), private :: hash_size  = 4993
-integer(kind=8), parameter, private :: multiplier = 31
+integer(kind=int64), private :: hash_size  = 4993
+integer(kind=int64), parameter, private :: multiplier = 31
 
 
 contains
@@ -47,8 +47,8 @@ contains
 
 function dict_create(size) result(dict)
     type(DictStructure)  :: dict
-    integer(kind=int32),intent(in), optional :: size
-    integer                      :: i
+    integer(kind=int64),intent(in), optional :: size
+    integer(kind=int64) :: i
 
     if (present(size)) then
         hash_size = size
@@ -66,12 +66,11 @@ end function dict_create
 function dict_create_val(key, value, size ) result(dict)
     type(DictStructure)  :: dict
     character(len=*), intent(in) ::  key
-    integer(kind=int32),intent(in), optional :: size
+    integer(kind=int64),intent(in), optional :: size
     integer, intent(in)  :: value
-
-    type(LIST_DATA)              :: data
-    integer                      :: i
-    integer                      :: hash
+    type(LIST_DATA) :: data
+    integer(kind=int64):: i
+    integer(kind=int64):: hash
 
     if (present(size)) then
         hash_size = size
@@ -102,7 +101,7 @@ end function dict_create_val
 subroutine destroy(this)
     class(DictStructure) :: this
 
-    integer                     :: i
+    integer(kind=int64) :: i
 
     do i = 1,size(this%table)
         if ( associated( this%table(i)%list ) ) then
@@ -133,7 +132,7 @@ subroutine addKey( this, key, value )
 
     type(LIST_DATA)              :: data
     type(LinkedList), pointer   :: elem
-    integer                      :: hash
+    integer(kind=int64) :: hash
 
     elem => getElement( this, key )
 
@@ -169,7 +168,7 @@ subroutine deleteKey( this, key )
     character(len=*), intent(in) :: key
 
     type(LinkedList), pointer   :: elem
-    integer                      :: hash
+    integer(kind=int64) :: hash
 
     elem => this%getElement(key )
 
@@ -188,7 +187,7 @@ end subroutine deleteKey
 function getValue( this, key ) result(value)
     class(DictStructure)   :: this
     character(len=*), intent(in) :: key
-    integer              :: value
+    integer :: value
 
     type(LinkedList), pointer   :: elem
 
@@ -217,7 +216,7 @@ logical function hasKey( this, key )
     class(DictStructure) :: this
     character(len=*), intent(in) :: key
 
-    type(LinkedList), pointer   :: elem
+    type(LinkedList), pointer :: elem
 
     elem => this%getElement(key )
 
@@ -240,8 +239,8 @@ end function hasKey
 function getElement( this, key ) result(elem)
     class(DictStructure) :: this
     character(len=*), intent(in) :: key
-    type(LinkedList), pointer   :: elem
-    integer                      :: hash
+    type(LinkedList), pointer :: elem
+    integer(kind=int64) :: hash
 
     hash = hashKey( trim(key) )
     elem => this%table(hash)%list
@@ -271,13 +270,13 @@ end function getElement
  function hashKey(key)
     character(len=*), intent(in) :: key
 
-    integer                      :: i
-    integer(kind=8)              :: hashKey
+    integer(kind=int64) :: i
+    integer(kind=int64) :: hashKey
     hashKey = 0
     do i = 1,len(key)
         hashKey = multiplier * hashKey + ichar(key(i:i))
     enddo
-    hashKey = 1 + modulo( hashKey-1, hash_size )
+    hashKey = 1 + KMOD( hashKey-1, hash_size )
 end function hashKey
 
 
