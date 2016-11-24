@@ -151,8 +151,79 @@ contains
         return
     end function getSireDamByIndex
 
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandSireRecodedIndex(this)
+        class(individual) :: this
 
-        !---------------------------------------------------------------------------
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%sirePointer)) then
+                getPaternalGrandSireRecodedIndex = this%sirePointer%sirePointer%id
+                return
+            endif
+        endif
+        getPaternalGrandSireRecodedIndex = 0
+    end function getPaternalGrandSireRecodedIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandSireRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%sirePointer)) then
+                getMaternalGrandSireRecodedIndex = this%damPointer%sirePointer%id
+                return
+            endif
+        endif
+        getMaternalGrandSireRecodedIndex = 0
+    end function getMaternalGrandSireRecodedIndex
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandDamRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%damPointer)) then
+                getPaternalGrandDamRecodedIndex = this%sirePointer%damPointer%id
+                return
+            endif
+        endif
+        getPaternalGrandDamRecodedIndex = 0
+    end function getPaternalGrandDamRecodedIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandDamRecodedIndex(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%damPointer)) then
+                getMaternalGrandDamRecodedIndex = this%damPointer%damPointer%id
+                return
+            endif
+        endif
+        getMaternalGrandDamRecodedIndex = 0
+    end function getMaternalGrandDamRecodedIndex
+
+
+
+    !---------------------------------------------------------------------------
     !> @brief Returns an array of recoded id's where index 1 is individuals id,
     !> index 2 is sire's recoded ID (0 if not available),
     !> index 3 is dam's recoded ID (0 if not available)
