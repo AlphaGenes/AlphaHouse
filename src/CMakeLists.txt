@@ -4,7 +4,6 @@ SET(ALPHAHOUSE_src
 				AlphaStatMod.f90
 				HashModule.f90
 				LinkedListModule.f90
-				
 				IndividualModule.f90
 				IndividualLinkedListModule.f90
 				PedigreeModule.f90				
@@ -14,6 +13,7 @@ SET(ALPHAHOUSE_src
         LineModule.f90
         PageModule.f90
         Input.f90
+        main.f90
 	)
 
 
