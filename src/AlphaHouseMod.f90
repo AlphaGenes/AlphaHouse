@@ -22,7 +22,8 @@
 ! REVISION HISTORY:
 ! 2016-09-26 GGorjanc - Initial Version
 ! 2016-10-28 DdeBurca - added FileCheck, changed Int2char/char2Int to support 64 bit integers
-!
+! 2016-11-12 DdeBurca - Added Char2Real and Char2Double
+! 2016-11-22 DdeBurca - Added isDelim
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
 
@@ -34,6 +35,7 @@ module AlphaHouseMod
   ! Methods
   public :: CountLines,int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double
+  public:: isDelim
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -59,6 +61,33 @@ module AlphaHouseMod
   end interface
 
   contains
+  !---------------------------------------------------------------------------
+  ! DESCRIPTION:
+  !> @brief      Checks to see if the character passed in is the same as the delimiters
+  !
+  !> @details     Checks to see if the character passed in is the same as the delimiters
+  !
+  !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  !
+  !> @date       October 25, 2016
+  !
+  ! PARAMETERS:
+  !> @param[in] charIn (character(len=1)) character to be checked
+  !> @param[in] delimiters(character(len=1), dimension(:)) delimiters to be checked agains
+  !> @param[out] logical - true if same as a delimiter, otherwise false
+  !---------------------------------------------------------------------------
+
+  function isDelim(charIn, delimiters)
+    character(len=*):: charIn
+    character(len = *), dimension(:):: delimiters
+    logical:: isDelim
+    integer:: i
+
+    isDelim = .false.
+    do i= 1, size(delimiters)
+      isDelim = isDelim .or. charIn==delimiters(i)
+    end do
+  end function isDelim
    !---------------------------------------------------------------------------
    ! DESCRIPTION:
    !> @brief      Check if a fileName exists

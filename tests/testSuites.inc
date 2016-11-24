@@ -6,4 +6,4 @@ ADD_TEST_SUITE(testInputFile_suite)
 ADD_TEST_SUITE(testString_suite)
 ADD_TEST_SUITE(testLine_suite)
 ADD_TEST_SUITE(testPage_suite)
-
+ADD_TEST_SUITE(testAlphaHouseMod_suite)

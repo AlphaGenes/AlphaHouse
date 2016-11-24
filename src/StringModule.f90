@@ -1,4 +1,5 @@
 Module stringModule
+  use AlphaHouseMod, only: isDelim
   use iso_fortran_env
   implicit none
 
@@ -216,7 +217,7 @@ contains
     numSplits=1
     characterPosition=1
     if (len(this) .gt. 0) then
-      do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
+      do while (isDelim(this(characterPosition:characterPosition), delimiters))
         characterPosition = characterPosition+1
         if (characterPosition .ge. len(this)) then
           exit
@@ -234,12 +235,12 @@ contains
           end if
         end do
         !if it is a deliminator increase the number of splits
-      else if (isSplitPosition(this(characterPosition:characterPosition), delimiters )) then
+      else if (isDelim(this(characterPosition:characterPosition), delimiters )) then
         numSplits = numSplits+1
         !increase once no matter how many delimitators follow each other
         do while (.true.)
           characterPosition = characterPosition+1
-          if (characterPosition .ge. len(this) .or. .not. isSplitPosition(this(characterPosition:characterPosition), delimiters )) then
+          if (characterPosition .ge. len(this) .or. .not. isDelim(this(characterPosition:characterPosition), delimiters )) then
             exit
           end if
         end do
@@ -256,7 +257,7 @@ contains
     SplitPositions(1,1) = 1
     !Now get the SNP positions
     if (len(this) .gt. 0) then
-      do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
+      do while (isDelim(this(characterPosition:characterPosition), delimiters))
         characterPosition = characterPosition+1
         SplitPositions(1,1)=characterPosition
         if (characterPosition .ge. len(this)) then
@@ -275,13 +276,13 @@ contains
             exit
           end if
         end do
-      else if (isSplitPosition(this(characterPosition:characterPosition), delimiters)) then
+      else if (isDelim(this(characterPosition:characterPosition), delimiters)) then
         SplitPositions(currentSplit,2)=characterPosition-1
 
         currentSplit = currentSplit+1
         do while (.true.)
           characterPosition = characterPosition+1
-          if (characterPosition .ge. len(this) .or. .not. isSplitPosition(this(characterPosition:characterPosition), delimiters)) then
+          if (characterPosition .ge. len(this) .or. .not. isDelim(this(characterPosition:characterPosition), delimiters)) then
             SplitPositions(currentSplit,1) = characterPosition
             exit
           end if
@@ -292,7 +293,7 @@ contains
     end do
     SplitPositions(numSplits, 2) = len(this)
     characterPosition = len(this)
-    do while (isSplitPosition(this(characterPosition:characterPosition), delimiters))
+    do while (isDelim(this(characterPosition:characterPosition), delimiters))
       characterPosition = characterPosition-1
       if (characterPosition ==0) then
         SplitPositions(numSplits,2) = 1
@@ -302,33 +303,6 @@ contains
     end do
   end subroutine getSplitPositions
 
-  !---------------------------------------------------------------------------
-  ! DESCRIPTION:
-  !> @brief      Checks to see if the character passed in is the same as the delimiters
-  !
-  !> @details     Checks to see if the character passed in is the same as the delimiters
-  !
-  !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
-  !
-  !> @date       October 25, 2016
-  !
-  ! PARAMETERS:
-  !> @param[in] charIn (character(len=1)) character to be checked
-  !> @param[in] delimiters(character(len=1), dimension(:)) delimiters to be checked agains
-  !> @param[out] logical - true if same as a delimiter, otherwise false
-  !---------------------------------------------------------------------------
-
-  function isSplitPosition(charIn, delimiters)
-    character(len=*):: charIn
-    character(len = *), dimension(:):: delimiters
-    logical:: isSplitPosition
-    integer:: i
-
-    isSplitPosition = .false.
-    do i= 1, size(delimiters)
-      isSplitPosition = isSplitPosition .or. charIn==delimiters(i)
-    end do
-  end function isSplitPosition
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
