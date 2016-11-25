@@ -69,7 +69,7 @@ contains
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
         pedStructure%pedigreeSize = nIndividuals
         pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
-        allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+        allocate(tmpAnimalArray(nIndividuals+10)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
         open(newUnit=fileUnit, file=fileIn, status="old")
        
