@@ -65,7 +65,7 @@ contains
             nIndividuals = countLines(fileIn)
         endif
         sizeDict = nIndividuals
-        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals)
+        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
         pedStructure%pedigreeSize = nIndividuals
         pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder

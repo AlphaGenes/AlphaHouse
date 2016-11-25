@@ -49,6 +49,7 @@ module IndividualModule
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
         integer :: nOffs  = 0
+        integer :: genotypePosition = 0
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
@@ -78,6 +79,8 @@ module IndividualModule
             procedure :: getPaternalGrandDamRecodedIndex
             procedure :: getMaternalGrandDamRecodedIndex
             procedure :: getParentGenderBasedOnIndex
+            procedure :: getSireDamGenotypePositionByIndex
+            procedure :: hasDummyParent
     end type Individual
 
     interface Individual
@@ -354,6 +357,72 @@ contains
         end select
         return
     end function getSireDamNewIDByIndex
+
+
+             !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamGenotypePositionByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer:: v
+        select case (index)
+            case(1)
+                v = this%genotypePosition
+            case(2)
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%genotypePosition
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%genotypePosition
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamGenotypePositionByIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief returns true if either paretns are a dummy animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    logical function hasDummyParent(this)
+        class(Individual), intent(in) :: this
+        if (associated(this%sirePointer)) then
+            if (this%sirePointer%isDummy) then
+                hasDummyParent = .true.
+                return
+            endif
+        endif
+
+        if (associated(this%damPointer)) then
+            if (this%damPointer%isDummy) then
+                hasDummyParent = .true.
+                return
+            endif
+        endif
+
+
+        hasDummyParent = .false.
+
+    end function hasDummyParent
+
 
       !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.
