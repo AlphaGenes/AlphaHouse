@@ -77,6 +77,7 @@ module IndividualModule
             procedure :: getMaternalGrandSireRecodedIndex
             procedure :: getPaternalGrandDamRecodedIndex
             procedure :: getMaternalGrandDamRecodedIndex
+            procedure :: getParentGenderBasedOnIndex
     end type Individual
 
     interface Individual
@@ -172,7 +173,38 @@ contains
         getPaternalGrandSireRecodedIndex = 0
     end function getPaternalGrandSireRecodedIndex
 
-
+    !---------------------------------------------------------------------------
+    !> @brief Returns the gender of individual if index of 1 is given.
+    !> returns the gender of sire if index of 1 is given (if available), 
+    !> returns the gender of dam if index of 2 is given (if available).
+    !> if specified parent gender is not available, 0 will be returned
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getParentGenderBasedOnIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer :: v
+        select case (index)
+            case(1)
+                v = this%gender
+            case(2)
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%gender
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%gender
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+    end function getParentGenderBasedOnIndex
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
