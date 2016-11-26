@@ -453,7 +453,7 @@ contains
 
         if (associated(this%damPointer)) then
             if (this%damPointer%isDummy) then
-                hasDummyParent = .true.
+                hasDummyParentsOrGranparents = .true.
                 return
             else
                 if (associated(this%damPointer%sirePointer)) then
@@ -468,13 +468,12 @@ contains
                 endif
             endif
 
-            endif
         endif
 
 
-        hasDummyParent = .false.
+        hasDummyParentsOrGranparents = .false.
 
-    end function hasDummyParent
+    end function hasDummyParentsOrGranparents
 
 
       !---------------------------------------------------------------------------
