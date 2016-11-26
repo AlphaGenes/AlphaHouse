@@ -81,6 +81,7 @@ module IndividualModule
             procedure :: getParentGenderBasedOnIndex
             procedure :: getSireDamGenotypePositionByIndex
             procedure :: hasDummyParent
+            procedure :: hasDummyParentsOrGranparents
     end type Individual
 
     interface Individual
@@ -415,6 +416,58 @@ contains
             if (this%damPointer%isDummy) then
                 hasDummyParent = .true.
                 return
+            endif
+        endif
+
+
+        hasDummyParent = .false.
+
+    end function hasDummyParent
+
+
+
+       !---------------------------------------------------------------------------
+    !> @brief returns true if either parents or grandparents are a dummy animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    logical function hasDummyParentsOrGranparents(this)
+        class(Individual), intent(in) :: this
+        if (associated(this%sirePointer)) then
+            if (this%sirePointer%isDummy) then
+                hasDummyParentsOrGranparents = .true.
+                return
+            else
+                if (associated(this%sirePointer%sirePointer)) then
+                   if (this%sirePointer%sirePointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                    endif
+                endif
+                if (associated(this%sirePointer%damPointer)) then
+                   if (this%sirePointer%damPointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                    endif
+                endif
+            endif
+        endif
+
+        if (associated(this%damPointer)) then
+            if (this%damPointer%isDummy) then
+                hasDummyParent = .true.
+                return
+            else
+                if (associated(this%damPointer%sirePointer)) then
+                   if (this%damPointer%sirePointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                    endif
+                endif
+                if (associated(this%damPointer%damPointer)) then
+                   if (this%damPointer%damPointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                    endif
+                endif
+            endif
+
             endif
         endif
 
