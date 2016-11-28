@@ -441,11 +441,13 @@ contains
                 if (associated(this%sirePointer%sirePointer)) then
                    if (this%sirePointer%sirePointer%isDummy) then
                         hasDummyParentsOrGranparents = .true.
+                        return
                     endif
                 endif
                 if (associated(this%sirePointer%damPointer)) then
                    if (this%sirePointer%damPointer%isDummy) then
                         hasDummyParentsOrGranparents = .true.
+                        return
                     endif
                 endif
             endif
@@ -459,11 +461,13 @@ contains
                 if (associated(this%damPointer%sirePointer)) then
                    if (this%damPointer%sirePointer%isDummy) then
                         hasDummyParentsOrGranparents = .true.
+                        return
                     endif
                 endif
                 if (associated(this%damPointer%damPointer)) then
                    if (this%damPointer%damPointer%isDummy) then
                         hasDummyParentsOrGranparents = .true.
+                        return
                     endif
                 endif
             endif
