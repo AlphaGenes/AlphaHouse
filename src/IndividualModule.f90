@@ -82,6 +82,7 @@ module IndividualModule
             procedure :: getSireDamGenotypePositionByIndex
             procedure :: hasDummyParent
             procedure :: hasDummyParentsOrGranparents
+            procedure :: isDummyBasedOnIndex
     end type Individual
 
     interface Individual
@@ -321,6 +322,39 @@ contains
         return
     end function getSireDamObjectByIndex
 
+
+!---------------------------------------------------------------------------
+    !> @brief returns true if index of corresponding parent is dummy
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    logical function isDummyBasedOnIndex(this, index)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index
+        select case (index)
+            case(1)
+                isDummyBasedOnIndex = .false.
+            case(2)
+                if (associated(this%sirePointer)) then
+                    isDummyBasedOnIndex = this%damPointer%isDummy
+                    return
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    isDummyBasedOnIndex = this%damPointer%isDummy
+                    return
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamObjectByIndex has been given an out of range value"
+        end select
+        isDummyBasedOnIndex = .false.
+        
+    end function isDummyBasedOnIndex
 
          !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
