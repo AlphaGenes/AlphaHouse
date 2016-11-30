@@ -13,6 +13,8 @@ SET(ALPHAHOUSE_src
         LineModule.f90
         PageModule.f90
         Input.f90
+	GenotypeModule.f90
+	HaplotypeModule.f90
         main.f90
 	)
 
