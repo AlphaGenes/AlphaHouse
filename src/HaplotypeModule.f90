@@ -5,7 +5,7 @@ module HaplotypeModule
   !! This should go in a constants module but for now
   integer, parameter :: MissingPhaseCode = 9
   
-  type :: HaplotypeType
+  type HaplotypeType
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Phase       Phase   Missing !
     ! 0           0       0       !
