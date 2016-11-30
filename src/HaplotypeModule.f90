@@ -1,4 +1,4 @@
-module HaplotypeModule
+module HapMod
   implicit none
 !  private
  public 
@@ -261,5 +261,5 @@ contains
     
   end function numberMissing
     
-end module HaplotypeModule
+end module HapMod
   
