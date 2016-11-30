@@ -24,7 +24,7 @@ type PedigreeHolder
         procedure :: setOffspringGeneration
         procedure :: addGenotypeInformation
         procedure :: outputSortedPedigreeInAlphaImputeFormat
-
+        procedure :: isDummy
 
 end type PedigreeHolder
 
@@ -65,7 +65,7 @@ contains
             nIndividuals = countLines(fileIn)
         endif
         sizeDict = nIndividuals
-        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals)
+        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
         pedStructure%pedigreeSize = nIndividuals
         pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
@@ -302,6 +302,28 @@ contains
 
 
     !---------------------------------------------------------------------------
+    !> @brief returns true if individual at given index is a isDummy
+    !> if 0 is given, return false
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @param[in] file path (string)
+    !---------------------------------------------------------------------------
+    logical function isDummy(this, id)
+        implicit none
+        class(PedigreeHolder) :: this
+        integer, intent(in) :: id
+
+        if (id == 0) then
+            isDummy = .false.
+        else if (this%pedigree(id)%isDummy) then
+            isDummy = .true.
+        else
+            isDummy = .false.
+        endif
+    end function isDummy
+
+
+    !---------------------------------------------------------------------------
     !> @brief writes sorted pedigree information to either a file or stdout
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
@@ -318,7 +340,6 @@ contains
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
-        print *,"finished building generation arrays"
 
         if (present(file)) then
             open(newUnit=unit, file=file, status="unknown")
