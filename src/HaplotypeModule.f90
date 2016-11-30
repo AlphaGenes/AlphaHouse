@@ -1,11 +1,11 @@
-module HapMod
+module HaplotypeModule
   implicit none
 !  private
  public 
   !! This should go in a constants module but for now
   integer, parameter :: MissingPhaseCode = 9
   
-  type HaplotypeType
+  type Haplotype
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Phase       Phase   Missing !
     ! 0           0       0       !
@@ -27,23 +27,23 @@ module HapMod
     procedure :: mergeMod
     procedure :: numberMissing
     procedure :: compareHaplotype
-  end type HaplotypeType
+  end type Haplotype
   
-!  interface Haplotype
-!    module procedure newHaplotypeInt
-!    module procedure newHaplotypeBits
-!  end interface Haplotype
+  interface Haplotype
+    module procedure newHaplotypeInt
+    module procedure newHaplotypeBits
+  end interface Haplotype
   
-!  interface operator ( == )
-!    module procedure compareHaplotype
-!  end interface operator ( == )
+  interface operator ( == )
+    module procedure compareHaplotype
+  end interface operator ( == )
   
 contains
   
-  subroutine newHaplotypeN(hap, h)
+  function newHaplotypeInt(hap) result(h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
-    type(HaplotypeType) :: h
+    type(Haplotype) :: h
     
     integer :: nSnps
     integer :: i, cursection, curpos
@@ -72,13 +72,13 @@ contains
 	cursection = cursection + 1
       end if
     end do
-  end subroutine newHaplotypeN
+  end function newHaplotypeInt
   
   function newHaplotypeBits(phase, missing, length) result(h)
     integer(kind=8), dimension(:), pointer, intent(in) :: phase, missing
     integer :: length
     
-    type(HaplotypeType) :: h
+    type(Haplotype) :: h
     
     integer :: i
     
@@ -95,7 +95,7 @@ contains
   end function newHaplotypeBits
   
   function toIntegerArray(h) result(array)
-    class(HaplotypeType), intent(in) :: h
+    class(Haplotype), intent(in) :: h
     
     integer(kind=1), dimension(:), allocatable :: array
     
@@ -125,7 +125,7 @@ contains
   end function toIntegerArray
   
   function compareHaplotype(h1, h2) result(same)
-    class(HaplotypeType), intent(in) :: h1, h2
+    class(Haplotype), intent(in) :: h1, h2
     
     logical :: same
     
@@ -142,7 +142,7 @@ contains
   end function compareHaplotype
   
   function getPhaseMod(h, pos) result (phase)
-    class(HaplotypeType), intent(in) :: h
+    class(Haplotype), intent(in) :: h
     integer, intent(in) :: pos
     
     integer :: phase
@@ -164,7 +164,7 @@ contains
   end function getPhaseMod
   
   function overlapMod(h1, h2) result (num)
-    class(HaplotypeType), intent(in) :: h1, h2
+    class(Haplotype), intent(in) :: h1, h2
         
     integer :: num
     
@@ -180,7 +180,7 @@ contains
   end function overlapMod
   
   function mismatchesMod(h1, h2) result (num)
-    class(HaplotypeType), intent(in) :: h1, h2
+    class(Haplotype), intent(in) :: h1, h2
     
     integer :: num
     
@@ -195,7 +195,7 @@ contains
   end function mismatchesMod
   
   function compatibleMod(h1, h2, allowedMismatches, minOverlap) result(c)
-    class(HaplotypeType), intent(in) :: h1, h2
+    class(Haplotype), intent(in) :: h1, h2
     integer, intent(in) :: allowedMismatches, minOverlap
     
     logical :: c
@@ -204,9 +204,9 @@ contains
   end function compatibleMod
   
   function mergeMod(h1,h2) result(h)
-    class(HaplotypeType), intent(in) :: h1, h2
+    class(Haplotype), intent(in) :: h1, h2
     
-    type(HaplotypeType) :: h
+    type(Haplotype) :: h
     
     integer :: i
     
@@ -233,7 +233,7 @@ contains
   end function mergeMod
   
   function fullyPhased(h) result(fully)
-    class(HaplotypeType) :: h
+    class(Haplotype) :: h
     
     logical :: fully
     
@@ -247,7 +247,7 @@ contains
   end function fullyPhased
   
   function numberMissing(h) result (num)
-    class(HaplotypeType), intent(in) :: h
+    class(Haplotype), intent(in) :: h
         
     integer :: num
     
@@ -261,5 +261,5 @@ contains
     
   end function numberMissing
     
-end module HapMod
+end module HaplotypeModule
   
