@@ -49,6 +49,7 @@ module IndividualModule
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:)
         integer :: nOffs  = 0
+        integer :: genotypePosition = 0
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
@@ -77,6 +78,11 @@ module IndividualModule
             procedure :: getMaternalGrandSireRecodedIndex
             procedure :: getPaternalGrandDamRecodedIndex
             procedure :: getMaternalGrandDamRecodedIndex
+            procedure :: getParentGenderBasedOnIndex
+            procedure :: getSireDamGenotypePositionByIndex
+            procedure :: hasDummyParent
+            procedure :: hasDummyParentsOrGranparents
+            procedure :: isDummyBasedOnIndex
     end type Individual
 
     interface Individual
@@ -172,7 +178,38 @@ contains
         getPaternalGrandSireRecodedIndex = 0
     end function getPaternalGrandSireRecodedIndex
 
-
+    !---------------------------------------------------------------------------
+    !> @brief Returns the gender of individual if index of 1 is given.
+    !> returns the gender of sire if index of 1 is given (if available), 
+    !> returns the gender of dam if index of 2 is given (if available).
+    !> if specified parent gender is not available, 0 will be returned
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getParentGenderBasedOnIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer :: v
+        select case (index)
+            case(1)
+                v = this%gender
+            case(2)
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%gender
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%gender
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+    end function getParentGenderBasedOnIndex
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -286,6 +323,39 @@ contains
     end function getSireDamObjectByIndex
 
 
+!---------------------------------------------------------------------------
+    !> @brief returns true if index of corresponding parent is dummy
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    logical function isDummyBasedOnIndex(this, index)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index
+        select case (index)
+            case(1)
+                isDummyBasedOnIndex = .false.
+            case(2)
+                if (associated(this%sirePointer)) then
+                    isDummyBasedOnIndex = this%damPointer%isDummy
+                    return
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    isDummyBasedOnIndex = this%damPointer%isDummy
+                    return
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamObjectByIndex has been given an out of range value"
+        end select
+        isDummyBasedOnIndex = .false.
+        
+    end function isDummyBasedOnIndex
+
          !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
     !> which index is passed.
@@ -322,6 +392,127 @@ contains
         end select
         return
     end function getSireDamNewIDByIndex
+
+
+             !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamGenotypePositionByIndex(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index
+        integer:: v
+        select case (index)
+            case(1)
+                v = this%genotypePosition
+            case(2)
+                if (associated(this%sirePointer)) then
+                    v = this%sirePointer%genotypePosition
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    v = this%damPointer%genotypePosition
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamGenotypePositionByIndex
+
+
+    !---------------------------------------------------------------------------
+    !> @brief returns true if either paretns are a dummy animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    logical function hasDummyParent(this)
+        class(Individual), intent(in) :: this
+        if (associated(this%sirePointer)) then
+            if (this%sirePointer%isDummy) then
+                hasDummyParent = .true.
+                return
+            endif
+        endif
+
+        if (associated(this%damPointer)) then
+            if (this%damPointer%isDummy) then
+                hasDummyParent = .true.
+                return
+            endif
+        endif
+
+
+        hasDummyParent = .false.
+
+    end function hasDummyParent
+
+
+
+       !---------------------------------------------------------------------------
+    !> @brief returns true if either parents or grandparents are a dummy animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    logical function hasDummyParentsOrGranparents(this)
+        class(Individual), intent(in) :: this
+        if (associated(this%sirePointer)) then
+            if (this%sirePointer%isDummy) then
+                hasDummyParentsOrGranparents = .true.
+                return
+            else
+                if (associated(this%sirePointer%sirePointer)) then
+                   if (this%sirePointer%sirePointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                        return
+                    endif
+                endif
+                if (associated(this%sirePointer%damPointer)) then
+                   if (this%sirePointer%damPointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                        return
+                    endif
+                endif
+            endif
+        endif
+
+        if (associated(this%damPointer)) then
+            if (this%damPointer%isDummy) then
+                hasDummyParentsOrGranparents = .true.
+                return
+            else
+                if (associated(this%damPointer%sirePointer)) then
+                   if (this%damPointer%sirePointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                        return
+                    endif
+                endif
+                if (associated(this%damPointer%damPointer)) then
+                   if (this%damPointer%damPointer%isDummy) then
+                        hasDummyParentsOrGranparents = .true.
+                        return
+                    endif
+                endif
+            endif
+
+        endif
+
+
+        hasDummyParentsOrGranparents = .false.
+
+    end function hasDummyParentsOrGranparents
+
 
       !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.

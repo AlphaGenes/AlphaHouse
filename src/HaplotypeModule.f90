@@ -1,11 +1,11 @@
-module HaplotypeModule
+module HapMod
   implicit none
 !  private
  public 
   !! This should go in a constants module but for now
   integer, parameter :: MissingPhaseCode = 9
   
-  type :: Haplotype
+  type HaplotypeType
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Phase       Phase   Missing !
     ! 0           0       0       !
@@ -27,30 +27,31 @@ module HaplotypeModule
     procedure :: mergeMod
     procedure :: numberMissing
     procedure :: compareHaplotype
-  end type Haplotype
+  end type HaplotypeType
   
-  interface Haplotype
-    module procedure newHaplotypeInt
-    module procedure newHaplotypeBits
-  end interface Haplotype
+!  interface Haplotype
+!    module procedure newHaplotypeInt
+!    module procedure newHaplotypeBits
+!  end interface Haplotype
   
-  interface operator ( == )
-    module procedure compareHaplotype
-  end interface operator ( == )
+!  interface operator ( == )
+!    module procedure compareHaplotype
+!  end interface operator ( == )
   
 contains
   
-  function newHaplotypeInt(hap) result(h)
+  subroutine newHaplotypeN(hap, h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
-    type(Haplotype) :: h
+    type(HaplotypeType) :: h
     
+    integer :: nSnps
     integer :: i, cursection, curpos
     
     h%length = size(hap,1)
     
-    h%sections = h%length / 64 + 1
-    h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+    h%sections = nSnps / 64 + 1
+    h%overhang = 64 - (nSnps - (h%sections - 1) * 64)
     
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
@@ -71,13 +72,13 @@ contains
 	cursection = cursection + 1
       end if
     end do
-  end function newHaplotypeInt
+  end subroutine newHaplotypeN
   
   function newHaplotypeBits(phase, missing, length) result(h)
     integer(kind=8), dimension(:), pointer, intent(in) :: phase, missing
     integer :: length
     
-    type(Haplotype) :: h
+    type(HaplotypeType) :: h
     
     integer :: i
     
@@ -94,7 +95,7 @@ contains
   end function newHaplotypeBits
   
   function toIntegerArray(h) result(array)
-    class(Haplotype), intent(in) :: h
+    class(HaplotypeType), intent(in) :: h
     
     integer(kind=1), dimension(:), allocatable :: array
     
@@ -124,7 +125,7 @@ contains
   end function toIntegerArray
   
   function compareHaplotype(h1, h2) result(same)
-    class(Haplotype), intent(in) :: h1, h2
+    class(HaplotypeType), intent(in) :: h1, h2
     
     logical :: same
     
@@ -141,7 +142,7 @@ contains
   end function compareHaplotype
   
   function getPhaseMod(h, pos) result (phase)
-    class(Haplotype), intent(in) :: h
+    class(HaplotypeType), intent(in) :: h
     integer, intent(in) :: pos
     
     integer :: phase
@@ -163,7 +164,7 @@ contains
   end function getPhaseMod
   
   function overlapMod(h1, h2) result (num)
-    class(Haplotype), intent(in) :: h1, h2
+    class(HaplotypeType), intent(in) :: h1, h2
         
     integer :: num
     
@@ -179,7 +180,7 @@ contains
   end function overlapMod
   
   function mismatchesMod(h1, h2) result (num)
-    class(Haplotype), intent(in) :: h1, h2
+    class(HaplotypeType), intent(in) :: h1, h2
     
     integer :: num
     
@@ -194,7 +195,7 @@ contains
   end function mismatchesMod
   
   function compatibleMod(h1, h2, allowedMismatches, minOverlap) result(c)
-    class(Haplotype), intent(in) :: h1, h2
+    class(HaplotypeType), intent(in) :: h1, h2
     integer, intent(in) :: allowedMismatches, minOverlap
     
     logical :: c
@@ -203,9 +204,9 @@ contains
   end function compatibleMod
   
   function mergeMod(h1,h2) result(h)
-    class(Haplotype), intent(in) :: h1, h2
+    class(HaplotypeType), intent(in) :: h1, h2
     
-    type(Haplotype) :: h
+    type(HaplotypeType) :: h
     
     integer :: i
     
@@ -232,7 +233,7 @@ contains
   end function mergeMod
   
   function fullyPhased(h) result(fully)
-    class(Haplotype) :: h
+    class(HaplotypeType) :: h
     
     logical :: fully
     
@@ -246,7 +247,7 @@ contains
   end function fullyPhased
   
   function numberMissing(h) result (num)
-    class(Haplotype), intent(in) :: h
+    class(HaplotypeType), intent(in) :: h
         
     integer :: num
     
@@ -260,5 +261,5 @@ contains
     
   end function numberMissing
     
-end module HaplotypeModule
+end module HapMod
   

@@ -37,7 +37,7 @@ private :: getElement
 private :: hashKey
 
 integer(kind=int64), private :: hash_size  = 4993
-integer(kind=int64), parameter, private :: multiplier = 31
+integer(kind=int64), parameter, private :: multiplier = 17
 
 
 contains
@@ -276,6 +276,7 @@ end function getElement
     do i = 1,len(key)
         hashKey = multiplier * hashKey + ichar(key(i:i))
     enddo
+   
     hashKey = 1 + KMOD( hashKey-1, hash_size )
 end function hashKey
 
