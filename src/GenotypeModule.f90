@@ -180,9 +180,9 @@ contains
     use HaplotypeModule
     
     class(Genotype), intent(in) :: g
-    class(Haplotype), intent(in) :: h
+    class(HaplotypeType), intent(in) :: h
     
-    type(Haplotype) :: c
+    type(HaplotypeType) :: c
     
     integer :: i
     integer(kind=8), dimension(:), pointer :: phase, missing

@@ -11,3 +11,11 @@ test.x
 main.f90
 src/main.f90
 nbproject/
+CMakeCache.txt
+MakeFile
+cmake_install.cmake
+compile_commands.json
+CMakeFiles/
+CTestTestFile.cmake
+pftest_alltests
+objs/
