@@ -48,7 +48,7 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 if (${RUN_TESTS})
 	# file(GLOB testDeps "${SRC}/*.f90")
 	set(testDeps "${SRC}/AlphaHouseMod.f90" "${SRC}/HashModule.f90" "${SRC}/LinkedListModule.f90" "${SRC}/IndividualModule.f90"
-		"${SRC}/IndividualLinkedListModule.f90" "${SRC}/PedigreeModule.f90"
+    "${SRC}/IndividualLinkedListModule.f90" "${SRC}/PedigreeModule.f90" "${SRC}/StringModule.f90" "${SRC}/LineModule.f90" "${SRC}/PageModule.f90" "${SRC}/Input.f90"
 		)
 endif (${RUN_TESTS})
 
