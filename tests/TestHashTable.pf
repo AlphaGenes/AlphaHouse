@@ -51,14 +51,4 @@ module TestHashTable
     end subroutine testDelete
 
 
-
-    @test
-    subroutine testDelete
-        implicit none
-        call dictionary%addKey("hi", 5)
-        call dictionary%deleteKey("hi")
-        @assertFalse(dictionary%hasKey("hi"))
-
-    end subroutine testDelete
-
 end module TestHashTable
