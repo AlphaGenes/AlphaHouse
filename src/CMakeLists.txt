@@ -1,6 +1,7 @@
 
 SET(ALPHAHOUSE_src
         AlphaHouseMod.f90
+        AlphaSystemMod.f90
 				AlphaStatMod.f90
 				HashModule.f90
 				LinkedListModule.f90
