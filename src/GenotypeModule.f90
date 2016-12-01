@@ -21,6 +21,8 @@ module GenotypeModule
   contains
     procedure :: toIntegerArray
     procedure :: getGenotype
+    procedure :: compatibleHaplotypes
+    procedure :: compatibleHaplotype
   end type Genotype
   
   interface Genotype
@@ -38,13 +40,12 @@ contains
     
     type(Genotype) :: g
     
-    integer :: nSnps
     integer :: i, cursection, curpos
     
     g%length = size(geno,1)
     
-    g%sections = nSnps / 64 + 1
-    g%overhang = 64 - (nSnps - (g%sections - 1) * 64)
+    g%sections = g%length / 64 + 1
+    g%overhang = 64 - (g%length - (g%sections - 1) * 64)
     
     allocate(g%homo(g%sections))
     allocate(g%additional(g%sections))
@@ -56,6 +57,8 @@ contains
       select case (geno(i))
       case (0)
 	g%homo(cursection) = ibset(g%homo(cursection), curpos)
+      case (1)
+	! Nothing to do due to defaults
       case (2)
 	g%homo(cursection) = ibset(g%homo(cursection), curpos)
 	g%additional(cursection) = ibset(g%additional(cursection), curpos)
@@ -178,7 +181,6 @@ contains
   
   function complement(g,h) result(c)
     use HaplotypeModule
-    
     class(Genotype), intent(in) :: g
     class(Haplotype), intent(in) :: h
     
@@ -199,9 +201,83 @@ contains
 			 IAND(h%phase(i),IEOR(g%homo(i),g%additional(i)))))
     end do
     
-    c = newHaplotypeBits(phase,missing,g%length)
+    c = Haplotype(phase,missing,g%length)
   end function complement
     
+  function compatibleHaplotypes(g, h1, h2, threshold) result(c)
+    use HaplotypeModule
+    class(Genotype), intent(in) :: g
+    class(Haplotype), intent(in) :: h1, h2
+    integer, intent(in) :: threshold
+    
+    logical :: c
+    
+    integer :: i, num
+    
+    num = 0
+    
+    do i = 1, g%sections
+      
+      num = num + POPCNT( &
+	IOR(IOR( &
+	! Genotype is zero !
+	IAND( &
+	  ! Genotype is 0
+	  IAND(g%homo(i), NOT(g%additional(i))), &
+	  ! One of the haplotypes is 1
+	  IOR( h1%phase(i), h2%phase(i)) ), &
+
+	! Genotype is one !
+	IAND( &
+	  ! Genotype is 1
+	  IAND(NOT(g%homo(i)), NOT(g%additional(i))), &
+	  ! Both of the haplotypes are not missing but are not opposed
+	  IAND(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), NOT(IEOR(h1%phase(i), h2%phase(i)))))), &
+
+	! Genotype is two !
+	IAND( &
+	  ! Genotype is 2
+	  IAND(g%homo(i), g%additional(i)), &
+	  ! One of the haplotypes is 0
+	  IOR(IAND(NOT(h1%phase(i)), NOT(h1%missing(i))), IAND(NOT(h2%phase(i)), NOT(h2%missing(i)))))))
+    end do
+    
+    num = num - g%overhang
+	
+    c = num <= threshold
+  end function compatibleHaplotypes
+  
+  !! THIS WILL NEED MIN OVERLAP AT SOME POINT !!
+  function compatibleHaplotype(g, h, threshold) result(c)
+    use HaplotypeModule
+    class(Genotype), intent(in) :: g
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: threshold
+    
+    logical :: c
+    
+    integer :: i, num
+    
+    num = 0
+    
+    do i = 1, g%sections
+      num = num + POPCNT( IAND( &
+	!! Genotype is zero !!
+      	IAND( &
+	  ! Genotype is 0
+	  IAND(g%homo(i), NOT(g%additional(i))), &
+	  ! The haplotypes is 1
+	  h%phase(i) ), &
+	!! Genotype is two
+	IAND( &
+	  ! Genotype is 2
+	  IAND(g%homo(i), g%additional(i)), &
+	  ! One of the haplotypes is 0
+	  IAND(NOT(h%phase(i)), NOT(h%missing(i))))))
+    end do
+    
+    c = num <= threshold
+  end function compatibleHaplotype
   
 end module GenotypeModule
   

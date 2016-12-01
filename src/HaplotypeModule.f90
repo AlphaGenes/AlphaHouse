@@ -1,11 +1,10 @@
 module HaplotypeModule
   implicit none
-!  private
- public 
   !! This should go in a constants module but for now
   integer, parameter :: MissingPhaseCode = 9
   
-  type Haplotype
+  type :: Haplotype
+    private
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Phase       Phase   Missing !
     ! 0           0       0       !
@@ -13,9 +12,9 @@ module HaplotypeModule
     ! Missing     0       1       !
     ! Not Allowed 1       1       !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(kind=8), dimension(:), pointer :: phase
-    integer(kind=8), dimension(:), pointer :: missing
-    integer :: sections
+    integer(kind=8), dimension(:), pointer, public :: phase
+    integer(kind=8), dimension(:), pointer, public :: missing
+    integer, public :: sections
     integer :: overhang
     integer :: length
   contains
@@ -27,6 +26,7 @@ module HaplotypeModule
     procedure :: mergeMod
     procedure :: numberMissing
     procedure :: compareHaplotype
+    procedure :: numberSame
   end type Haplotype
   
   interface Haplotype
@@ -45,13 +45,12 @@ contains
     
     type(Haplotype) :: h
     
-    integer :: nSnps
     integer :: i, cursection, curpos
     
     h%length = size(hap,1)
     
-    h%sections = nSnps / 64 + 1
-    h%overhang = 64 - (nSnps - (h%sections - 1) * 64)
+    h%sections = h%length / 64 + 1
+    h%overhang = 64 - (h%length - (h%sections - 1) * 64)
     
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
@@ -61,6 +60,8 @@ contains
     h%missing = 0
     do i = 1, h%length
       select case (hap(i))
+      case (0)
+	! Nothing to do due to defaults
       case (1)
 	h%phase(cursection) = ibset(h%phase(cursection), curpos)
       case default
@@ -260,6 +261,22 @@ contains
     end do
     
   end function numberMissing
+  
+  function numberSame(h1, h2) result (num)
+    class(Haplotype), intent(in) :: h1, h2
+    
+    integer :: num
+    
+    integer :: i
+    
+    num = 0
+    
+    do i = 1, h1%sections
+      num = num + POPCNT( IAND( &
+		  IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
+		  NOT(IEOR(h1%phase(i), h2%phase(i))) ))
+    end do
+  end function numberSame
     
 end module HaplotypeModule
   
