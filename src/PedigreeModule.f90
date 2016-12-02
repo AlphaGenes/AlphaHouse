@@ -440,7 +440,4 @@ contains
     end subroutine setOffspringGeneration
 
 
-
-
-
 end module PedigreeModule
