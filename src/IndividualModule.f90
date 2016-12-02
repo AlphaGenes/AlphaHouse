@@ -83,6 +83,10 @@ module IndividualModule
             procedure :: hasDummyParent
             procedure :: hasDummyParentsOrGranparents
             procedure :: isDummyBasedOnIndex
+            procedure :: getPaternalGrandSireRecodedIndexNoDummy
+            procedure :: getMaternalGrandSireRecodedIndexNoDummy
+            procedure :: getPaternalGrandDamRecodedIndexNoDummy
+            procedure :: getMaternalGrandDamRecodedIndexNoDummy
     end type Individual
 
     interface Individual
@@ -178,6 +182,26 @@ contains
         getPaternalGrandSireRecodedIndex = 0
     end function getPaternalGrandSireRecodedIndex
 
+
+      !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandSireRecodedIndexNoDummy(this)
+        class(individual) :: this
+
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%sirePointer)) then
+                if (.not. this%sirePointer%sirePointer%isDummy) then
+                    getPaternalGrandSireRecodedIndexNoDummy = this%sirePointer%sirePointer%id
+                    return
+                endif   
+            endif
+        endif
+        getPaternalGrandSireRecodedIndexNoDummy = 0
+    end function getPaternalGrandSireRecodedIndexNoDummy
+
     !---------------------------------------------------------------------------
     !> @brief Returns the gender of individual if index of 1 is given.
     !> returns the gender of sire if index of 1 is given (if available), 
@@ -227,6 +251,26 @@ contains
         getMaternalGrandSireRecodedIndex = 0
     end function getMaternalGrandSireRecodedIndex
 
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandSireRecodedIndexNoDummy(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%sirePointer)) then
+                if (.not. this%damPointer%sirePointer%isDummy) then
+                    getMaternalGrandSireRecodedIndexNoDummy = this%damPointer%sirePointer%id
+                    return
+                endif
+            endif
+        endif
+        getMaternalGrandSireRecodedIndexNoDummy = 0
+    end function getMaternalGrandSireRecodedIndexNoDummy
+
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of paternal grand dam, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -244,6 +288,24 @@ contains
         getPaternalGrandDamRecodedIndex = 0
     end function getPaternalGrandDamRecodedIndex
 
+     !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of paternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getPaternalGrandDamRecodedIndexNoDummy(this)
+        class(individual) :: this
+
+        if (associated(this%sirePointer)) then
+            if (associated(this%sirePointer%damPointer)) then
+                if (.not. this%sirePointer%damPointer%isDummy) then
+                    getPaternalGrandDamRecodedIndexNoDummy = this%sirePointer%damPointer%id
+                    return
+                endif
+            endif
+        endif
+        getPaternalGrandDamRecodedIndexNoDummy = 0
+    end function getPaternalGrandDamRecodedIndexNoDummy
 
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand dam, or 0 otherwise
@@ -261,6 +323,28 @@ contains
         endif
         getMaternalGrandDamRecodedIndex = 0
     end function getMaternalGrandDamRecodedIndex
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns the index in the pedigree of maternal grand dam, or 0 otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    integer function getMaternalGrandDamRecodedIndexNoDummy(this)
+        class(individual) :: this
+
+        if (associated(this%damPointer)) then
+            if (associated(this%damPointer%damPointer)) then
+                if (.not. this%damPointer%damPointer%isDummy) then
+                    getMaternalGrandDamRecodedIndexNoDummy = this%damPointer%damPointer%id
+                    return
+                endif
+            endif
+        endif
+        getMaternalGrandDamRecodedIndexNoDummy = 0
+    end function getMaternalGrandDamRecodedIndexNoDummy
+
 
 
 
