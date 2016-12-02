@@ -1,10 +1,11 @@
 module GenotypeModule
   implicit none
+  private
   
   !! This should go in a constants module but for now
   integer, parameter :: MissingGenotypeCode = 3
   
-  type Genotype
+  type, public :: Genotype
     private
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Genotype    Homo    Additional !
@@ -23,15 +24,16 @@ module GenotypeModule
     procedure :: getGenotype
     procedure :: compatibleHaplotypes
     procedure :: compatibleHaplotype
+    procedure :: numIncommon
+    procedure :: mismatches
+    procedure :: compareGenotype
+    procedure :: getLength
+    procedure :: complement
   end type Genotype
   
   interface Genotype
     module procedure newGenotypeInt
   end interface Genotype
-  
-  interface operator ( == )
-    module procedure compareGenotype
-  end interface operator ( == )
   
 contains
   
@@ -189,16 +191,16 @@ contains
     integer :: i
     integer(kind=8), dimension(:), pointer :: phase, missing
     
-    
     allocate(phase(g%sections))
     allocate(missing(g%sections))
     do i = 1, g%sections
-      phase = IAND (NOT(h%missing(i)), &
-		    IOR( IAND(h%phase(i),AND(g%homo(i),g%additional(i))), &
-			 NOT(IOR(h%phase(i),IOR(g%homo(i),g%additional(i))))))
-      missing = IOR (h%missing(i), &
-		    IOR( IAND(g%additional(i),NOT(h%phase(i))), &
-			 IAND(h%phase(i),IEOR(g%homo(i),g%additional(i)))))
+      !phase = IOR( IAND(h%phase(i), h%missing(i)), &
+      phase(i) = IOR( h%missing(i), &
+		   IOR( IAND(IAND(h%phase(i),NOT(h%missing(i))),g%homo(i)), &
+		        IAND(NOT(IOR(h%phase(i),h%missing(i))), NOT(IEOR(g%homo(i), g%additional(i))))))
+      missing(i) = IOR (h%missing(i), &
+		    IOR( IAND(NOT(h%phase(i)),g%additional(i)), &
+			 IAND(h%phase(i),IEOR(g%homo(i),g%additional(i))) ) )
     end do
     
     c = Haplotype(phase,missing,g%length)
@@ -278,6 +280,26 @@ contains
     
     c = num <= threshold
   end function compatibleHaplotype
+  
+  function mismatches(g1, g2) result(c)
+    class(Genotype), intent(in) :: g1, g2
+    integer :: c
+    
+    integer :: i
+
+    c = 0
+    do i = 1, g1%sections
+	c = c + POPCNT(IAND(IAND(g1%homo(i), g2%homo(i)), &
+	IEOR(g1%additional(i), g2%additional(i))))
+    end do
+  end function mismatches
+  
+  function getLength(g) result(l)
+    class(Genotype), intent(in) :: g
+    integer :: l
+    
+    l = g%length
+  end function getLength
   
 end module GenotypeModule
   

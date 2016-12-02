@@ -1,16 +1,18 @@
 module HaplotypeModule
   implicit none
+  private
   !! This should go in a constants module but for now
   integer, parameter :: MissingPhaseCode = 9
+  integer, parameter :: ErrorPhaseCode = -1
   
-  type :: Haplotype
+  type, public :: Haplotype
     private
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Phase       Phase   Missing !
     ! 0           0       0       !
     ! 1           1       0       !
     ! Missing     0       1       !
-    ! Not Allowed 1       1       !
+    ! Error       1       1       !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(kind=8), dimension(:), pointer, public :: phase
     integer(kind=8), dimension(:), pointer, public :: missing
@@ -20,23 +22,26 @@ module HaplotypeModule
   contains
     procedure :: toIntegerArray
     procedure :: getPhaseMod
+    procedure :: setPhaseMod
     procedure :: overlapMod
     procedure :: mismatchesMod
     procedure :: compatibleMod
     procedure :: mergeMod
     procedure :: numberMissing
+    procedure :: numberNotMissing
+    procedure :: numberError
     procedure :: compareHaplotype
     procedure :: numberSame
+    procedure :: fullyPhased
+    procedure :: setUnphased
+    procedure :: getLength
   end type Haplotype
   
   interface Haplotype
     module procedure newHaplotypeInt
     module procedure newHaplotypeBits
+    module procedure newHaplotypeMissing
   end interface Haplotype
-  
-  interface operator ( == )
-    module procedure compareHaplotype
-  end interface operator ( == )
   
 contains
   
@@ -64,8 +69,11 @@ contains
 	! Nothing to do due to defaults
       case (1)
 	h%phase(cursection) = ibset(h%phase(cursection), curpos)
-      case default
+      case (MissingPhaseCode)
 	h%missing(cursection) = ibset(h%missing(cursection), curpos)	
+      case default
+	h%phase(cursection) = ibset(h%phase(cursection), curpos)
+	h%missing(cursection) = ibset(h%missing(cursection), curpos)
       end select
       curpos = curpos + 1
       if (curpos == 65) then
@@ -91,9 +99,33 @@ contains
     
     do i = 64 - h%overhang + 1, 64
       h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-      h%missing(h%sections) = ibclr(h%phase(h%sections), i)
+      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
+    
   end function newHaplotypeBits
+  
+  function newHaplotypeMissing(length) result(h)
+    integer, intent(in) :: length
+    
+    type(Haplotype) :: h
+    
+    integer :: i
+    
+    h%length = length
+    h%sections = h%length / 64 + 1
+    h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+    allocate(h%phase(h%sections))
+    allocate(h%missing(h%sections))
+    h%phase = 0
+    h%missing = 0
+    h%missing = NOT(h%missing)
+
+    
+    do i = 64 - h%overhang + 1, 64
+      h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+    end do
+  end function newHaplotypeMissing
   
   function toIntegerArray(h) result(array)
     class(Haplotype), intent(in) :: h
@@ -108,7 +140,11 @@ contains
     curpos = 1
     do i = 1, h%length
       if (btest(h%missing(cursection),curpos)) then
-	array(i) = MissingPhaseCode
+	if (btest(h%phase(cursection),curpos)) then
+	  array(i) = ErrorPhaseCode
+	else
+	  array(i) = MissingPhaseCode
+	end if
       else
 	if (btest(h%phase(cursection),curpos)) then
 	  array(i) = 1
@@ -146,7 +182,7 @@ contains
     class(Haplotype), intent(in) :: h
     integer, intent(in) :: pos
     
-    integer :: phase
+    integer(kind=1) :: phase
     
     integer :: cursection, curpos
     
@@ -154,7 +190,11 @@ contains
     curpos = pos - (cursection - 1) * 64
   
     if (btest(h%missing(cursection),curpos)) then
+      if (btest(h%phase(cursection),curpos)) then
+	phase = ErrorPhaseCode
+      else
 	phase = MissingPhaseCode
+      end if
     else
       if (btest(h%phase(cursection),curpos)) then
 	phase = 1
@@ -163,6 +203,32 @@ contains
       end if
     end if
   end function getPhaseMod
+  
+  subroutine setPhaseMod(h, pos, phase)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: pos
+    integer(kind=1) :: phase
+
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64    
+    
+    select case (phase)
+      case (0)
+	h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+	h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+      case (1)
+	h%phase(cursection) = ibset(h%phase(cursection), curpos)
+	h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+      case (MissingPhaseCode)
+	h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+	h%missing(cursection) = ibset(h%missing(cursection), curpos)
+      case default
+	h%phase(cursection) = ibset(h%phase(cursection), curpos)
+	h%missing(cursection) = ibset(h%missing(cursection), curpos)
+    end select
+  end subroutine setPhaseMod
   
   function overlapMod(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
@@ -257,10 +323,33 @@ contains
     num = 0
     
     do i = 1, h%sections
-      num = num + POPCNT(h%missing(i))
+      num = num + POPCNT(IAND(h%missing(i), NOT(h%phase(i))))
     end do
     
   end function numberMissing
+  
+  function numberError(h) result (num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    integer :: i
+    
+    num = 0
+    
+    do i = 1, h%sections
+      num = num + POPCNT(IAND(h%missing(i), h%phase(i)))
+    end do
+    
+  end function numberError
+  
+  function numberNotMissing(h) result(num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    num = h%length - h%numberMissing()
+  end function numberNotMissing
   
   function numberSame(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
@@ -277,6 +366,28 @@ contains
 		  NOT(IEOR(h1%phase(i), h2%phase(i))) ))
     end do
   end function numberSame
+  
+  subroutine setUnphased(h)
+    class(Haplotype) :: h
+    
+    integer :: i
+    
+    h%phase = 0
+    h%missing = 0
+    h%missing = NOT(h%missing)
+    
+    do i = 64 - h%overhang + 1, 64
+      h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+    end do
+  end subroutine setUnphased
+  
+  function getLength(h) result(l)
+    class(Haplotype), intent(in) :: h
+    integer :: l
+    
+    l = h%length
+  end function getLength
     
 end module HaplotypeModule
   
