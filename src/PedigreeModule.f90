@@ -52,13 +52,15 @@ contains
         integer(kind=int32),optional,intent(in) :: numberInFile
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
-        integer :: tmpCounter = 0
+        integer :: tmpCounter
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
-        integer :: tmpAnimalArrayCount = 0
+        integer :: tmpAnimalArrayCount
         integer :: i
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
+        tmpAnimalArrayCount = 0
+        tmpCounter = 0
         if (present(numberInFile)) then
             nIndividuals = numberInFile
         else

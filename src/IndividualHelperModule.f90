@@ -1,22 +1,58 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     IndividualHelperModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module providing aditional functionality of IndividualModule.f90
+!> seperate module due to fortrans circular dependency issues
+!
+!> @details  Module holds functions to get full, half, and all sibs
+!
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!> @date     November 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-11-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module IndividualHelperModule
 
     use IndividualModule
 
+    ! procedures
+    public :: getFullSibs, getSibs, getOnlyHalfSibs
+
     contains
 
-    function getFullSibs(this) result(res)
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns linked list of Full sibs of animal passed in
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !> @return linked list of full sibs
+    !---------------------------------------------------------------------------
+    function getFullSibs(indiv) result(res)
         use IndividualLinkedListModule
-        class(individual) :: this
+        class(individual) :: indiv
         type(IndividualLinkedList) :: res
         integer :: i
 
-        if (associated(this%sirePointer) .and. associated(this%damPointer)) then
+        if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
             ! loop through sire offsprings
 
-            do i=1, this%sirePointer%nOffs
-                if (this%sirePointer%OffSprings(i)%p%id == this%id) cycle
-                if(this%sirePointer%OffSprings(i)%p%damId == this%damID) then
-                    call res%list_add(this%sirePointer%OffSprings(i)%p)
+            do i=1, indiv%sirePointer%nOffs
+                if (indiv%sirePointer%OffSprings(i)%p%id == indiv%id) cycle
+                if(indiv%sirePointer%OffSprings(i)%p%damId == indiv%damID) then
+                    call res%list_add(indiv%sirePointer%OffSprings(i)%p)
                 endif
             enddo
 
@@ -26,11 +62,16 @@ module IndividualHelperModule
     end function getFullSibs
 
 
-! half sibs and fullSibs
-    function getSibs(this) result(res)
+   !---------------------------------------------------------------------------
+    !> @brief Returns linked list of Full and half sibs of animal passed in
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !> @return linked list of full and half sibs
+    !---------------------------------------------------------------------------
+    function getSibs(indiv) result(res)
         use IndividualLinkedListModule
         use HashModule
-        class(individual) :: this
+        class(individual) :: indiv
         type(IndividualLinkedList) :: res
         type(DictStructure) :: dict
         integer :: i, sireNum, damNum
@@ -39,36 +80,36 @@ module IndividualHelperModule
         sireNum = 0
         damNum = 0
 
-        if (associated(this%sirePointer) .and. associated(this%damPointer)) then
+        if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
             ! loop through sire offsprings
 
-            tmpSize = this%sirePointer%nOffs + this%damPointer%nOffs
+            tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
             dict = DictStructure(tmpSize)
-            sireNum = this%sirePointer%nOffs
-            damNum = this%damPointer%nOffs
+            sireNum = indiv%sirePointer%nOffs
+            damNum = indiv%damPointer%nOffs
 
-        else if (associated(this%sirePointer)) then
-            tmpSize = this%sirePointer%nOffs
+        else if (associated(indiv%sirePointer)) then
+            tmpSize = indiv%sirePointer%nOffs
             dict = DictStructure(tmpSize)
-            sireNum = this%sirePointer%nOffs
-        else if (associated(this%damPointer)) then
-            tmpSize = this%damPointer%nOffs
+            sireNum = indiv%sirePointer%nOffs
+        else if (associated(indiv%damPointer)) then
+            tmpSize = indiv%damPointer%nOffs
             dict = DictStructure(tmpSize)
-            damNum = this%damPointer%nOffs
+            damNum = indiv%damPointer%nOffs
         else
             return !NO parents so return empty list
         endif
 
         do i=1, sireNum
-            if (this%sirePointer%OffSprings(i)%p%id == this%id) cycle
-            call res%list_add(this%sirePointer%OffSprings(i)%p)
-            call dict%addKey(this%sirePointer%OffSprings(i)%p%originalID,1)
+            if (indiv%sirePointer%OffSprings(i)%p%id == indiv%id) cycle
+            call res%list_add(indiv%sirePointer%OffSprings(i)%p)
+            call dict%addKey(indiv%sirePointer%OffSprings(i)%p%originalID,1)
         enddo
 
         do i=1, damNum
-            if (this%damPointer%OffSprings(i)%p%id == this%id) cycle 
-            if(.not. dict%hasKey(this%damPointer%OffSprings(i)%p%originalID)) then
-                call res%list_add(this%sirePointer%OffSprings(i)%p)
+            if (indiv%damPointer%OffSprings(i)%p%id == indiv%id) cycle 
+            if(.not. dict%hasKey(indiv%damPointer%OffSprings(i)%p%originalID)) then
+                call res%list_add(indiv%damPointer%OffSprings(i)%p)
             endif  
         enddo
     
@@ -76,56 +117,62 @@ module IndividualHelperModule
     end function getSibs
 
 
-        function getOnlyHalfSibs(indiv) result(res)
+    !---------------------------------------------------------------------------
+    !> @brief Returns linked list of half sibs of animal passed in
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !> @return linked list of half sibs
+    !---------------------------------------------------------------------------
+    function getOnlyHalfSibs(indiv) result(res)
 
-            use IndividualLinkedListModule
-            use HashModule
-            implicit none
-            class(individual) :: indiv
-            type(IndividualLinkedList) :: res
-            type(DictStructure) :: dict
-            integer :: i, sireNum, damNum
-            integer(kind=int64) ::tmpSize
+        use IndividualLinkedListModule
+        use HashModule
+        implicit none
+        class(individual) :: indiv
+        type(IndividualLinkedList) :: res
+        type(DictStructure) :: dict
+        integer :: i, sireNum, damNum
+        integer(kind=int64) ::tmpSize
 
-            sireNum = 0
-            damNum = 0
+        sireNum = 0
+        damNum = 0
 
-            if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
-                ! loop through sire offsprings
+        if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
+            ! loop through sire offsprings
 
-                tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
-                dict = DictStructure(tmpSize)
-                sireNum = indiv%sirePointer%nOffs
-                damNum = indiv%damPointer%nOffs
+            tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
+            dict = DictStructure(tmpSize)
+            sireNum = indiv%sirePointer%nOffs
+            damNum = indiv%damPointer%nOffs
 
-            else if (associated(indiv%sirePointer)) then
-                tmpSize = indiv%sirePointer%nOffs
-                dict = DictStructure(tmpSize)
-                sireNum = indiv%sirePointer%nOffs
-            else if (associated(indiv%damPointer)) then
-                tmpSize = indiv%damPointer%nOffs
-                dict = DictStructure(tmpSize)
-                damNum = indiv%damPointer%nOffs
-            else
-                return !NO parents so return empty list
-            endif
+        else if (associated(indiv%sirePointer)) then
+            tmpSize = indiv%sirePointer%nOffs
+            dict = DictStructure(tmpSize)
+            sireNum = indiv%sirePointer%nOffs
+        else if (associated(indiv%damPointer)) then
+            tmpSize = indiv%damPointer%nOffs
+            dict = DictStructure(tmpSize)
+            damNum = indiv%damPointer%nOffs
+        else
+            return !NO parents so return empty list
+        endif
 
-            do i=1, sireNum
-                if (indiv%sirePointer%OffSprings(i)%p%id == indiv%id) cycle
+        do i=1, sireNum
+            if (indiv%sirePointer%OffSprings(i)%p%id == indiv%id) cycle
+            call res%list_add(indiv%sirePointer%OffSprings(i)%p)
+            call dict%addKey(indiv%sirePointer%OffSprings(i)%p%originalID,1)
+        enddo
+
+        do i=1, damNum
+            if (indiv%damPointer%OffSprings(i)%p%id == indiv%id) cycle 
+            if(.not. dict%hasKey(indiv%damPointer%OffSprings(i)%p%originalID)) then
                 call res%list_add(indiv%sirePointer%OffSprings(i)%p)
-                call dict%addKey(indiv%sirePointer%OffSprings(i)%p%originalID,1)
-            enddo
+            else !as we only want half sibs, remove it
+                call res%list_remove(indiv%sirePointer%OffSprings(i)%p)
+            endif  
+        enddo
+    
 
-            do i=1, damNum
-                if (indiv%damPointer%OffSprings(i)%p%id == indiv%id) cycle 
-                if(.not. dict%hasKey(indiv%damPointer%OffSprings(i)%p%originalID)) then
-                    call res%list_add(indiv%sirePointer%OffSprings(i)%p)
-                else !as we only want half sibs, remove it
-                    call res%list_remove(indiv%sirePointer%OffSprings(i)%p)
-                endif  
-            enddo
-        
-
-        end function getOnlyHalfSibs
+    end function getOnlyHalfSibs
 end module IndividualHelperModule
 

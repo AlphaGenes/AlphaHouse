@@ -55,6 +55,7 @@ if (${RUN_TESTS})
 		${SRC}/LinkedListModule.f90
 		${SRC}/IndividualModule.f90
 		${SRC}/IndividualLinkedListModule.f90
+		${SRC}/IndividualHelperModule.f90
 		${SRC}/PedigreeModule.f90				
 		${SRC}/IntelRNGMod.f90
 		${SRC}/HelperSubroutines.f90
@@ -94,7 +95,7 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
-set (TESTFILES ${TESTS}/testLinkedList.pf) 
+set (TESTFILES ${TESTS}/testIndividualHelperModule.pf) 
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})

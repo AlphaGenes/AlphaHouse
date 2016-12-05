@@ -1,0 +1,27 @@
+! module TestIndividual
+!   use pFUnit_mod
+!   use IndividualModule
+!   use ISO_Fortran_env
+
+!   implicit none
+  
+!   type(individual), target :: testIndiv1, testIndiv2
+!   contains
+
+!  @before
+!     subroutine initialise
+        
+!         implicit none
+!         testIndiv1 = Individual("me","mum","dad",1)
+!         testIndiv2 = Individual("me2","mum2","dad2",2)
+        
+!     end subroutine
+
+!    @after
+!     subroutine Uninit
+!       call ll%destroyLinkedList
+!     end subroutine
+
+
+
+! end module TestIndividual
