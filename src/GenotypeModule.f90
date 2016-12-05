@@ -29,6 +29,7 @@ module GenotypeModule
     procedure :: compareGenotype
     procedure :: getLength
     procedure :: complement
+    procedure :: numNotMissing
   end type Genotype
   
   interface Genotype
@@ -300,6 +301,19 @@ contains
     
     l = g%length
   end function getLength
+  
+  function numNotMissing(g) result(c)
+    class(Genotype), intent(in) :: g
+    
+    integer :: c
+    
+    integer :: i
+    
+    c = 0
+    do i = 1, g%sections
+      c = c + POPCNT(NOT(IAND(NOT(g%homo(i)), g%additional(i))))
+    end do
+  end function numNotMissing
   
 end module GenotypeModule
   
