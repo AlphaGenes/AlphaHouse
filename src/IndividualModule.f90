@@ -369,7 +369,7 @@ contains
             res(2) = this%sirePointer%id
         endif
 
-        if (associated(this%sirePointer)) then
+        if (associated(this%damPointer)) then
             res(3) = this%damPointer%id
         endif
 
