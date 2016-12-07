@@ -2,13 +2,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 PROJECT(AlphaHouse)
 enable_language (Fortran)
 enable_testing()
-if (WIN32)
-	execute_process(COMMAND CMD git rev-parse --short HEAD OUTPUT_VARIABLE SUBVERSION)
-	execute_process(COMMAND CMD git describe --abbrev=0 --tags OUTPUT_VARIABLE VERSION)
-else()
-	execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE SUBVERSION)
-	execute_process(COMMAND git describe --tag OUTPUT_VARIABLE VERSION)
-endif()
+
+# Add our local modlues to the module path
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
+set(CMAKE_MACOSX_RPATH 0)
+
+INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
+
 
 
 OPTION(RUN_TESTS "Run and compile tests"
@@ -16,9 +16,6 @@ OPTION(RUN_TESTS "Run and compile tests"
 OPTION(USE_HDF5 "Use hdf"
        OFF)
 
-# Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
-set(CMAKE_MACOSX_RPATH 0)
 
 # Define the executable name
 SET(ALPHAHOUSEEXE AlphaHouse)
