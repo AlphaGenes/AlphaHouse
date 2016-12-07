@@ -11,7 +11,7 @@ type PedigreeHolder
     
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
-    type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
+    type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
     type(DictStructure) :: dictionary 
     integer(kind=int32) :: pedigreeSize !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
@@ -32,6 +32,9 @@ end type PedigreeHolder
         module procedure initPedigree
     end interface PedigreeHolder
 
+    interface Sort !Sorts into generation list
+        module procedure :: setPedigreeGenerationsAndBuildArrays
+    end interface Sort
 contains
     
 
@@ -283,6 +286,7 @@ contains
     end subroutine addGenotypeInformation
     !---------------------------------------------------------------------------
     !> @brief builds correct generation information by looking at founders 
+    !> This is effectively a sort function for the pedigree
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -372,7 +376,7 @@ contains
         
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
-        endif
+        endifm
         if (present(file)) then
             open(newUnit=unit, file=file, status="unknown")
         else

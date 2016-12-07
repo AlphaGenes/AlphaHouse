@@ -47,8 +47,8 @@ module IndividualModule
         integer(kind=1) :: pruned
         type(individual), pointer :: sirePointer
         type(individual), pointer :: damPointer
-        type(individualPointerContainer), allocatable :: OffSprings(:)
-        integer :: nOffs  = 0
+        type(individualPointerContainer), allocatable :: OffSprings(:) !holds array of given size
+        integer :: nOffs  = 0 !number of offspring
         integer :: genotypePosition = 0
         logical :: Founder     = .false.
         logical :: Genotyped   = .false.
