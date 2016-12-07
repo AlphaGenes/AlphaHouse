@@ -376,7 +376,7 @@ contains
         
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
-        endifm
+        endif
         if (present(file)) then
             open(newUnit=unit, file=file, status="unknown")
         else
