@@ -1,4 +1,34 @@
 @test
+subroutine testAddWord()
+use pFUnit_mod
+use lineModule
+use AlphaHouseMod, only: int2Char
+character(len=5), dimension(5):: char
+character(len=5):: newChar
+character(len=5), dimension(6):: expected
+type(line):: expectedLine, gottenLine
+integer::i
+
+do i = 1, 5
+  char(i) = "test"//int2Char(i)
+end do
+
+newChar = "test6"
+
+expected(1:5) = char
+expected(6) = newChar
+
+expectedLine = expected
+
+gottenLine = char
+
+call gottenLine%add(newChar)
+
+@assertEqualUserDefined(expectedLine,gottenLine)
+
+end subroutine testAddWord
+
+@test
 subroutine testNumWords()
 use pfUnit_mod
 use lineModule
