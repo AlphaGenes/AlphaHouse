@@ -87,6 +87,7 @@ module IndividualModule
             procedure :: getMaternalGrandSireRecodedIndexNoDummy
             procedure :: getPaternalGrandDamRecodedIndexNoDummy
             procedure :: getMaternalGrandDamRecodedIndexNoDummy
+            procedure :: getIntegerVectorOfRecodedIdsNoDummy
     end type Individual
 
     interface Individual
@@ -374,6 +375,42 @@ contains
         endif
 
     end function getIntegerVectorOfRecodedIds
+
+        !---------------------------------------------------------------------------
+    !> @brief Returns an array of recoded id's where index 1 is individuals id,
+    !> index 2 is sire's recoded ID (0 if not available or if animal is a dummy),
+    !> index 3 is dam's recoded ID (0 if not available or if animal is a dummy)
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getIntegerVectorOfRecodedIdsNoDummy(this) result(res)
+        class(Individual) :: this
+        integer :: res(3)
+
+        res = 0
+        res(1) = this%id
+        if (associated(this%sirePointer)) then
+            if (this%sirePointer%isDummy) then
+                res(2) = 0
+            else
+                res(2) = this%sirePointer%id
+            endif
+        endif
+
+        if (associated(this%damPointer)) then
+            if (this%damPointer%isDummy) then
+                res(3) = 0
+            else
+                res(3) = this%damPointer%id
+            endif
+        endif
+
+    end function getIntegerVectorOfRecodedIdsNoDummy
+        
         
 
 
