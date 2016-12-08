@@ -4,6 +4,7 @@ SET(ALPHAHOUSE_src
 				AlphaStatMod.f90
 				HashModule.f90
 				LinkedListModule.f90
+        DiarmaidLinkedList.f90
 				IndividualModule.f90
 				IndividualLinkedListModule.f90
 				PedigreeModule.f90				

@@ -80,7 +80,7 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
-set (TESTFILES ${TESTS}/TestPedigreeModule.pf)
+set (TESTFILES ${TESTS}/testInputFile.pf ${TESTS}/testString.pf ${TESTS}/testLine.pf ${TESTS}/testPage.pf ${TESTS}/testAlphaHouseMod.pf)
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})
