@@ -14,8 +14,8 @@ module GenotypeModule
     ! 2           1       1          !
     ! Missing     0       1          !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(kind=8), dimension(:), pointer :: homo
-    integer(kind=8), dimension(:), pointer :: additional
+    integer(kind=8), dimension(:), pointer, public :: homo
+    integer(kind=8), dimension(:), pointer, public :: additional
     integer :: sections
     integer :: overhang
     integer :: length
@@ -30,6 +30,11 @@ module GenotypeModule
     procedure :: getLength
     procedure :: complement
     procedure :: numNotMissing
+    procedure :: setHaplotype
+    procedure :: isZero
+    procedure :: isTwo
+    procedure :: isMissing
+    procedure :: isHomo
   end type Genotype
   
   interface Genotype
@@ -315,6 +320,85 @@ contains
     end do
   end function numNotMissing
   
+  
+  subroutine setHaplotype(g, h)
+    use HaplotypeModule
+    
+    class(Haplotype), intent(in) :: h
+    class(Genotype), intent(in) :: g
+    
+    integer :: i
+    
+    do i = 1, g%sections
+      h%missing(i) = NOT(g%homo(i))
+      
+      h%phase(i) = IAND(g%homo(i), g%additional(i))
+    end do
+    do i = 64 - g%overhang + 1, 64
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
+    end do
+  end subroutine setHaplotype
+  
+  function isZero(g, pos) result (zero)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: pos
+    
+    logical :: zero
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    
+    zero = BTEST(IAND(g%homo(cursection),NOT(g%additional(cursection))), curpos)
+  end function isZero
+  
+  function isTwo(g, pos) result (two)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: pos
+    
+    logical :: two
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    
+    two = BTEST(IAND(g%homo(cursection),g%additional(cursection)), curpos)
+  end function isTwo
+  
+  function isMissing(g, pos) result (two)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: pos
+    
+    logical :: two
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    
+    two = BTEST(IAND(NOT(g%homo(cursection)),g%additional(cursection)), curpos)
+  end function isMissing
+  
+  function isHomo(g, pos) result (two)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: pos
+    
+    logical :: two
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    
+    two = BTEST(g%homo(cursection), curpos)
+  end function isHomo
+    
 end module GenotypeModule
   
 

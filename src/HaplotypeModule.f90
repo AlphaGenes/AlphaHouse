@@ -35,6 +35,7 @@ module HaplotypeModule
     procedure :: fullyPhased
     procedure :: setUnphased
     procedure :: getLength
+    procedure :: isMissing
   end type Haplotype
   
   interface Haplotype
@@ -388,6 +389,21 @@ contains
     
     l = h%length
   end function getLength
+  
+   function isMissing(h, pos) result (missing)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: pos
+    
+    logical :: missing
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    
+    missing = BTEST(h%missing(cursection), curpos)
+   end function isMissing
     
 end module HaplotypeModule
   
