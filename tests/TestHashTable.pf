@@ -10,9 +10,12 @@ module TestHashTable
 
  @before
     subroutine initialise
-         implicit none
         
-        dictionary = DictStructure(32)
+         implicit none
+        integer(kind=int64) :: size
+
+        size = 32
+        dictionary = DictStructure(size)
 
         
     end subroutine
@@ -29,22 +32,23 @@ module TestHashTable
         @assertEqual(dictionary%getValue("hi"), 5)
     end subroutine testAdd
 
+    @test
+    subroutine testHasKey
+        implicit none
+        call dictionary%addKey("hi", 5)
+        @assertTrue(dictionary%hasKey("hi"))
 
-    ! @test
-    ! subroutine testAddOffspring
-    !     type(individualPointerContainer), allocatable :: Offsprings(:)
-    !     type(Individual) :: tmp
-    !     call table(1)%addOffspring(table(2))
-    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
-    !     call table(1)%getOffsprings(Offsprings)
-    !     tmp = Offsprings(1)%p
-    !     @assertEqualUserDefined(tmp, table(2))
-    ! end subroutine testAddOffspring
+    end subroutine testHasKey
 
-    ! @test
-    ! subroutine testBuildOffspring           
-    !     call BuildOffspringInfortmation(table)
-    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
-    !     @assertEqual(table(2)%GetNumberOffsprings(), 2)
-    ! end subroutine testBuildOffspring
+
+    @test
+    subroutine testDelete
+        implicit none
+        call dictionary%addKey("hi", 5)
+        call dictionary%deleteKey("hi")
+        @assertFalse(dictionary%hasKey("hi"))
+
+    end subroutine testDelete
+
+
 end module TestHashTable

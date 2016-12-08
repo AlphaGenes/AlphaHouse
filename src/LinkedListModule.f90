@@ -15,9 +15,21 @@ type LinkedList
     type(LIST_DATA)            :: data
 end type LinkedList
 
+interface operator ( == )
+        module procedure LIST_DATAEquals
+    end interface operator ( == )
 
 contains
 
+logical function LIST_DATAEquals(l, r)
+    class(LIST_DATA), intent(in) :: l,r
+    if (l%value == r%value) then
+        LIST_DATAEquals = .true.
+    else
+        LIST_DATAEquals = .false.
+    endif
+
+end function LIST_DATAEquals
 
 ! list_create --
 !     Create and initialise a list

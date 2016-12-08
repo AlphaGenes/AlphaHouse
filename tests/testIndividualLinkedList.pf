@@ -1,0 +1,79 @@
+
+
+
+
+
+module TestIndividualLinkedList
+  use pFUnit_mod
+  use IndividualLinkedListModule
+  use IndividualModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(IndividualLinkedList) :: ll  
+  type(individual), target :: testIndiv1, testIndiv2
+  contains
+
+ @before
+    subroutine initialise
+        
+        implicit none
+        testIndiv1 = Individual("me","mum","dad",1)
+        testIndiv2 = Individual("me2","mum2","dad2",2)
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+      call ll%destroyLinkedList
+    end subroutine
+
+    @test
+    subroutine testAdd
+        implicit none
+        call ll%list_add(testIndiv1)
+
+        @assertTrue(associated(ll%first%item, testIndiv1))
+        @assertTrue(associated(ll%last%item, testIndiv1))
+        ! @assertTrue(associated(ll%make d(1), testIndiv1))
+        @assertEqual(ll%length, 1)
+    end subroutine testAdd
+
+
+    @test
+    subroutine testDelete
+        implicit none
+
+        type(individual), pointer :: tmp
+
+
+        tmp => testIndiv1
+        call ll%list_add(testIndiv1)
+        call ll%list_remove(tmp)
+        @assertEqual(ll%length, 0)
+        @assertFalse(associated(ll%first))
+        @assertFalse(associated(ll%last))
+
+        call ll%list_add(testIndiv1)
+        call ll%list_add(testIndiv2)
+        tmp => testIndiv2
+        call ll%list_remove(tmp)
+        @assertEqualuserdefined(ll%first%item, testIndiv1)
+        @assertEqualuserdefined(ll%last%item, testIndiv1)
+    end subroutine testDelete
+
+
+
+    @test
+    subroutine testPop
+        implicit none
+        type(individual), pointer ::  tmp
+        call ll%list_add(testIndiv1)
+        call ll%list_add(testIndiv2)
+        call ll%list_pop(tmp)
+        @assertTrue(associated(tmp,testIndiv2))
+
+    end subroutine testPop
+
+end module TestIndividualLinkedList

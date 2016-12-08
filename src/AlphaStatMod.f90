@@ -43,6 +43,7 @@ module AlphaStatMod
   public :: DescStat
   public :: DescStatMatrix, DescStatSymMatrix, DescStatLowTriMatrix
   public :: Cov, Cor
+  public :: moment, pearsn
 
   !> @brief Mean interface
   interface Mean
@@ -980,6 +981,98 @@ module AlphaStatMod
     enddo
 
   end subroutine choldc
+!###############################################################################
+
+
+  subroutine Pearsn (x,y,n,r)
+
+    implicit none
+
+    integer n
+    double precision prob,r,z,x(n),y(n),TINY
+    parameter (tiny=1.e-20)
+    integer j
+    double precision ax,ay,df,sxx,sxy,syy,t,xt,yt
+    ! double precision betai
+
+    ax=0.0
+    ay=0.0
+    DO j=1,n
+      ax=ax+x(j)
+      ay=ay+y(j)
+    END DO
+    ax=ax/n                       ! averages
+    ay=ay/n
+
+    sxx=0.
+    syy=0.
+    sxy=0.
+    DO j=1,n
+      xt=x(j)-ax
+      yt=y(j)-ay
+      sxx=sxx+xt**2               ! var(x) and var(y)s
+      syy=syy+yt**2
+      sxy=sxy+xt*yt               ! cov(x,y)
+    END DO
+
+    r=sxy/(SQRT(sxx*syy)+TINY)              ! correl coeff
+    z=0.5*LOG(((1.+r)+TINY)/((1.-r)+TINY))
+    df=n-2
+    t=r*SQRT(df/(((1.-r)+TINY)*((1.+r)+TINY)))
+    !prob=betai(0.5*df,0.5,df/(df+t**2))
+    !prob=erfcc(ABS(z*SQRT(n-1.))/1.4142136)
+    prob=0
+    return
+
+  end subroutine Pearsn
+
+  !###############################################################################
+  SUBROUTINE moment(DATA,n,ave,adev,sdev,var,skew,curt)
+    IMPLICIT NONE
+    INTEGER n
+    DOUBLE PRECISION adev,ave,curt,sdev,skew,var,DATA(n)
+    INTEGER j
+    DOUBLE PRECISION p,s,ep
+    IF (n.le.1) STOP 110003
+    s=0
+    DO j= 1,n
+      s=s+DATA(j)
+    END DO
+
+    ave=s/n
+    adev=0
+    var=0
+    skew=0
+    curt=0
+    ep=0
+
+    DO j=1,n
+      s=DATA(j)-ave
+      ep=ep+s
+      adev=adev+ABS(s)
+      p=s*s
+      var=var+p
+      p=p*s
+      skew=skew+p
+      p=p*s
+      curt=curt+p
+    END DO
+
+    adev=adev/n
+    var=(var-ep**2/n)/(n-1)
+    sdev=SQRT(var)
+    IF(var.ne.0)then
+      skew=skew/(n*sdev**3)
+      curt=curt/(n*var**2)-3
+    ELSE
+      !PRINT*, 'no skew or kurtosis when zero variance in moment'
+      !PAUSE 'no skew or kurtosis when zero variance in moment'
+    END IF
+    RETURN
+  END SUBROUTINE moment
+  
+!###############################################################################
+
 
 end module
 
