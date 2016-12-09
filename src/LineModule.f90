@@ -9,6 +9,7 @@ module LineModule
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
+      procedure:: add => addAWord
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
@@ -33,6 +34,25 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+
+    subroutine addAWord(self, charIn)
+      class(Line), intent(inout):: self
+      character(len=*), intent(in):: charIn
+
+      integer, dimension(1):: newSize
+      type(String), dimension(1):: newString
+      type(String), dimension(:), allocatable:: testString
+
+      newString(1) = charIn
+
+
+      newSize(1) = self%getNumWords()+1
+
+
+      testString =  reshape(self%words, newSize, newString)
+      self%words = testString
+    end subroutine addAWord
+
 
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
@@ -138,7 +158,7 @@ module LineModule
       
       writeOutChar = ""
       do i = 1, dtv%getNumWords()
-        writeOutChar = writeOutChar // dtv%getWord(i)
+        writeOutChar = writeOutChar // " " // dtv%getWord(i)
     end do
       write(unit, "(A)", iostat = iostat, iomsg = iomsg) writeOutChar
     
@@ -155,7 +175,7 @@ module LineModule
       
       writeOutChar = ""
       do i = 1, dtv%getNumWords()
-        writeOutChar = writeOutChar // dtv%getWord(i)
+        writeOutChar = writeOutChar // " " //dtv%getWord(i)
     end do
         write(unit, "(A)", iostat = iostat, iomsg = iomsg) writeOutChar
         end subroutine writeUnformattedLineType
