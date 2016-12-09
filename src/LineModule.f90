@@ -43,16 +43,17 @@ module LineModule
       type(String), dimension(1):: newString
       type(String), dimension(:), allocatable:: testString
 
-      newString(1) = charIn
+      if (allocated(self%words)) then
+        newString(1) = charIn
+        newSize(1) = self%getNumWords()+1
+        testString =  reshape(self%words, newSize, newString)
+        self%words = testString
+      else
+        allocate(self%words(1))
+        self%words(1) = charIn
+      end if
 
-
-      newSize(1) = self%getNumWords()+1
-
-
-      testString =  reshape(self%words, newSize, newString)
-      self%words = testString
     end subroutine addAWord
-
 
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
@@ -87,7 +88,11 @@ module LineModule
       class(Line), intent(in):: this
       integer(int32)::numWords
 
-      numWords = size(this%words)
+      if (allocated(this%words)) then
+        numWords = size(this%words)
+      else
+        numWords = 0
+      end if
     end function 
 
     subroutine setSingleChar(this, lineIn)
