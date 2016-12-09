@@ -462,7 +462,7 @@ contains
                 isDummyBasedOnIndex = .false.
             case(2)
                 if (associated(this%sirePointer)) then
-                    isDummyBasedOnIndex = this%damPointer%isDummy
+                    isDummyBasedOnIndex = this%sirePointer%isDummy
                     return
                 endif
             case(3)
