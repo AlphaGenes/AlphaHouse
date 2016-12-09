@@ -10,6 +10,7 @@ module LineModule
    type(String), allocatable, dimension(:):: words
     contains
       procedure:: add => addAWord
+      procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
@@ -61,7 +62,15 @@ module LineModule
       character(len=:), allocatable:: wordOut
 
       wordOut = this%words(i)%line
-      end function getWord
+    end function getWord
+
+    function getWordAsString(this, i) result (stringOut)
+      class(Line), intent(in):: this
+      integer, intent(in):: i
+      type(String):: stringOut
+
+      stringOut = this%getWord(i)
+    end function getWordAsString
 
 
     function compareLine(this, lineIn) result (same)

@@ -52,6 +52,26 @@ gotSize = LineIn%getNumWords()
 
 end subroutine testNumWords
 
+@test
+subroutine testGetWordAsString()
+use pfUnit_mod
+use lineModule
+use StringModule
+
+type(Line):: LineIn
+character(len=4)::expected
+type(String):: expectedString, gotten
+
+expected = "test"
+expectedString = expected
+
+LineIn = expected
+
+
+gotten = lineIn%getWordAsString(1)
+
+@assertEqualUserDefined(expectedString, gotten)
+end subroutine testGetWordAsString
 
 @test
 subroutine testGetWord()
