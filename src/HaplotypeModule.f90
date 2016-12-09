@@ -36,6 +36,7 @@ module HaplotypeModule
     procedure :: setUnphased
     procedure :: getLength
     procedure :: isMissing
+    procedure :: numberBothNotMissing
   end type Haplotype
   
   interface Haplotype
@@ -390,20 +391,36 @@ contains
     l = h%length
   end function getLength
   
-   function isMissing(h, pos) result (missing)
-    class(Haplotype), intent(in) :: h
-    integer, intent(in) :: pos
+  function isMissing(h, pos) result (missing)
+   class(Haplotype), intent(in) :: h
+   integer, intent(in) :: pos
+
+   logical :: missing
+
+   integer :: cursection, curpos
+
+   cursection = (pos-1) / 64 + 1
+   curpos = pos - (cursection - 1) * 64
+
+
+   missing = BTEST(h%missing(cursection), curpos)
+  end function isMissing
+  
+  function numberBothNotMissing(h1, h2) result (num)
+    class(Haplotype), intent(in) :: h1, h2
+        
+    integer :: num
     
-    logical :: missing
+    integer :: i
     
-    integer :: cursection, curpos
+    num = 0
     
-    cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    do i = 1, h1%sections
+      num = num + POPCNT(NOT(IOR(h1%missing(i), h2%missing(i))))
+    end do
     
-    
-    missing = BTEST(h%missing(cursection), curpos)
-   end function isMissing
+    num = num - h1%overhang
+  end function numberBothNotMissing
     
 end module HaplotypeModule
   

@@ -35,6 +35,7 @@ module GenotypeModule
     procedure :: isTwo
     procedure :: isMissing
     procedure :: isHomo
+    procedure :: numberErrors
   end type Genotype
   
   interface Genotype
@@ -398,6 +399,35 @@ contains
     
     two = BTEST(g%homo(cursection), curpos)
   end function isHomo
+  
+  function numberErrors(g,h1,h2) result(c)
+    !!!!!!! BROKEN !!!!!!!!
+    use HaplotypeModule
+    
+    class(Genotype) :: g
+    class(Haplotype) :: h1, h2
+    
+    integer :: c
+    
+    integer :: i
+    
+    integer(kind=8) :: gnotmissing, h1notmissing, h2notmissing, allnotmissing
+    integer(kind=8) :: zeroerror, oneerror, twoerror
+    
+    c = 0
+    do i = 1, g%sections
+      allnotmissing = IAND(IOR(g%homo(i), NOT(g%additional(i))), IAND(NOT(h1%missing(i)), NOT(h2%missing(i))))
+      
+      zeroerror = IAND(IAND(g%homo(i), NOT(g%additional(i))), IOR(h1%phase(i), h2%phase(i)))      
+      twoerror = IAND(IAND(g%homo(i), g%additional(i)), IOR(NOT(h1%phase(i)), NOT(h2%phase(i))))      
+      oneerror = IAND(IAND(NOT(g%homo(i)), NOT(g%additional(i))), NOT(IEOR(h1%phase(i), h2%phase(i))))
+      
+      c = c + POPCNT( IAND(allnotmissing, IOR(  IOR(zeroerror, twoerror), oneerror)))
+    end do
+    
+    c = c - g%overhang
+    
+  end function numberErrors
     
 end module GenotypeModule
   
