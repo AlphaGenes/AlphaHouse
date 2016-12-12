@@ -37,6 +37,7 @@ module GenotypeModule
   procedure :: isMissing
   procedure :: isHomo
   procedure :: numberErrors
+  procedure :: getErrors
   end type Genotype
   
   interface Genotype
