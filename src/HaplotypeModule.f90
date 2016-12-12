@@ -1,25 +1,26 @@
 module HaplotypeModule
-  implicit none
-  private
-  !! This should go in a constants module but for now
-  integer, parameter :: MissingPhaseCode = 9
-  integer, parameter :: ErrorPhaseCode = -1
   
-  type, public :: Haplotype
+    use constantModule, only: MissingPhaseCode,ErrorPhaseCode
+    implicit none
     private
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Phase       Phase   Missing !
-    ! 0           0       0       !
-    ! 1           1       0       !
-    ! Missing     0       1       !
-    ! Error       1       1       !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(kind=8), dimension(:), pointer, public :: phase
-    integer(kind=8), dimension(:), pointer, public :: missing
-    integer, public :: sections
-    integer :: overhang
-    integer :: length
-  contains
+    !! This should go in a constants module but for now
+    
+    
+    type, public :: Haplotype
+      private
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Phase       Phase   Missing !
+      ! 0           0       0       !
+      ! 1           1       0       !
+      ! Missing     0       1       !
+      ! Error       1       1       !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      integer(kind=8), dimension(:), pointer, public :: phase
+      integer(kind=8), dimension(:), pointer, public :: missing
+      integer, public :: sections
+      integer :: overhang
+      integer :: length
+    contains
     procedure :: toIntegerArray
     procedure :: getPhaseMod
     procedure :: setPhaseMod
@@ -66,22 +67,22 @@ contains
     h%phase = 0
     h%missing = 0
     do i = 1, h%length
-      select case (hap(i))
-      case (0)
-	! Nothing to do due to defaults
-      case (1)
-	h%phase(cursection) = ibset(h%phase(cursection), curpos)
-      case (MissingPhaseCode)
-	h%missing(cursection) = ibset(h%missing(cursection), curpos)	
-      case default
-	h%phase(cursection) = ibset(h%phase(cursection), curpos)
-	h%missing(cursection) = ibset(h%missing(cursection), curpos)
-      end select
-      curpos = curpos + 1
-      if (curpos == 65) then
-	curpos = 1
-	cursection = cursection + 1
-      end if
+        select case (hap(i))
+        case (0)
+        ! Nothing to do due to defaults
+        case (1)
+            h%phase(cursection) = ibset(h%phase(cursection), curpos)
+        case (MissingPhaseCode)
+            h%missing(cursection) = ibset(h%missing(cursection), curpos)    
+        case default
+            h%phase(cursection) = ibset(h%phase(cursection), curpos)
+            h%missing(cursection) = ibset(h%missing(cursection), curpos)
+        end select
+        curpos = curpos + 1
+        if (curpos == 65) then
+            curpos = 1
+            cursection = cursection + 1
+        end if
     end do
   end function newHaplotypeInt
   
@@ -100,8 +101,8 @@ contains
     h%overhang = 64 - (h%length - (h%sections - 1) * 64)
     
     do i = 64 - h%overhang + 1, 64
-      h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
     
   end function newHaplotypeBits
@@ -124,8 +125,8 @@ contains
 
     
     do i = 64 - h%overhang + 1, 64
-      h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
   end function newHaplotypeMissing
   
@@ -141,24 +142,24 @@ contains
     cursection = 1
     curpos = 1
     do i = 1, h%length
-      if (btest(h%missing(cursection),curpos)) then
-	if (btest(h%phase(cursection),curpos)) then
-	  array(i) = ErrorPhaseCode
-	else
-	  array(i) = MissingPhaseCode
-	end if
-      else
-	if (btest(h%phase(cursection),curpos)) then
-	  array(i) = 1
-	else
-	  array(i) = 0
-	end if
-      end if
+        if (btest(h%missing(cursection),curpos)) then
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = ErrorPhaseCode
+            else
+                array(i) = MissingPhaseCode
+            end if
+        else
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = 1
+            else
+                array(i) = 0
+            end if
+        end if
       
       curpos = curpos + 1
       if (curpos == 65) then
-	curpos = 1
-	cursection = cursection + 1
+        curpos = 1
+        cursection = cursection + 1
       end if
     end do
   end function toIntegerArray
@@ -171,12 +172,12 @@ contains
     integer :: i
     
     if (h1%length /= h2%length) then
-      same = .false.
+        same = .false.
     else
-      same = .true.
-      do i = 1, h1%sections
-	same = same .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
-      end do
+        same = .true.
+        do i = 1, h1%sections
+            same = same .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
+        end do
     end if
   end function compareHaplotype
   
@@ -192,17 +193,17 @@ contains
     curpos = pos - (cursection - 1) * 64
   
     if (btest(h%missing(cursection),curpos)) then
-      if (btest(h%phase(cursection),curpos)) then
-	phase = ErrorPhaseCode
-      else
-	phase = MissingPhaseCode
-      end if
+        if (btest(h%phase(cursection),curpos)) then
+            phase = ErrorPhaseCode
+        else
+            phase = MissingPhaseCode
+        end if
     else
-      if (btest(h%phase(cursection),curpos)) then
-	phase = 1
-      else
-	phase = 0
-      end if
+        if (btest(h%phase(cursection),curpos)) then
+            phase = 1
+        else
+            phase = 0
+        end if
     end if
   end function getPhaseMod
   
@@ -218,17 +219,17 @@ contains
     
     select case (phase)
       case (0)
-	h%phase(cursection) = ibclr(h%phase(cursection), curpos)
-	h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+    h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+    h%missing(cursection) = ibclr(h%missing(cursection), curpos)
       case (1)
-	h%phase(cursection) = ibset(h%phase(cursection), curpos)
-	h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+    h%phase(cursection) = ibset(h%phase(cursection), curpos)
+    h%missing(cursection) = ibclr(h%missing(cursection), curpos)
       case (MissingPhaseCode)
-	h%phase(cursection) = ibclr(h%phase(cursection), curpos)
-	h%missing(cursection) = ibset(h%missing(cursection), curpos)
+    h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+    h%missing(cursection) = ibset(h%missing(cursection), curpos)
       case default
-	h%phase(cursection) = ibset(h%phase(cursection), curpos)
-	h%missing(cursection) = ibset(h%missing(cursection), curpos)
+    h%phase(cursection) = ibset(h%phase(cursection), curpos)
+    h%missing(cursection) = ibset(h%missing(cursection), curpos)
     end select
   end subroutine setPhaseMod
   
@@ -259,7 +260,7 @@ contains
     
     do i = 1, h1%sections
       num = num + POPCNT(IAND( IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
-	    IXOR(h1%phase(i), h2%phase(i)) ))
+        IXOR(h1%phase(i), h2%phase(i)) ))
     end do
   end function mismatchesMod
   
@@ -286,18 +287,18 @@ contains
     
     do i = 1, h1%sections
       h%missing(i) = IOR( &
-	!Both not missing but opposed
-	IAND(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
-	IXOR(h1%phase(i), h2%phase(i))), &
-	!Both missing
-	IAND(h1%missing(i),h2%missing(i)) &
-	)
+    !Both not missing but opposed
+    IAND(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
+    IXOR(h1%phase(i), h2%phase(i))), &
+    !Both missing
+    IAND(h1%missing(i),h2%missing(i)) &
+    )
       h%phase(i) = IAND( &
         ! Not missing (phase should always be zero if missing)
-	NOT(h%missing(i)), &
-	! One of the phases is 1 (no need to test for missing as phase is only one if not missing)
-	IOR(h1%phase(i), h2%phase(i)) &
-	)
+    NOT(h%missing(i)), &
+    ! One of the phases is 1 (no need to test for missing as phase is only one if not missing)
+    IOR(h1%phase(i), h2%phase(i)) &
+    )
     end do
   end function mergeMod
   
@@ -311,7 +312,7 @@ contains
     fully = .true.
     
     do i = 1, h%sections
-      fully = fully .and. (h%missing(i) == 0)
+        fully = fully .and. (h%missing(i) == 0)
     end do
   end function fullyPhased
   
@@ -325,7 +326,7 @@ contains
     num = 0
     
     do i = 1, h%sections
-      num = num + POPCNT(IAND(h%missing(i), NOT(h%phase(i))))
+        num = num + POPCNT(IAND(h%missing(i), NOT(h%phase(i))))
     end do
     
   end function numberMissing
@@ -340,7 +341,7 @@ contains
     num = 0
     
     do i = 1, h%sections
-      num = num + POPCNT(IAND(h%missing(i), h%phase(i)))
+        num = num + POPCNT(IAND(h%missing(i), h%phase(i)))
     end do
     
   end function numberError
@@ -364,8 +365,8 @@ contains
     
     do i = 1, h1%sections
       num = num + POPCNT( IAND( &
-		  IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
-		  NOT(IEOR(h1%phase(i), h2%phase(i))) ))
+          IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
+          NOT(IEOR(h1%phase(i), h2%phase(i))) ))
     end do
   end function numberSame
   
@@ -379,8 +380,8 @@ contains
     h%missing = NOT(h%missing)
     
     do i = 64 - h%overhang + 1, 64
-      h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-      h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
   end subroutine setUnphased
   
@@ -416,7 +417,7 @@ contains
     num = 0
     
     do i = 1, h1%sections
-      num = num + POPCNT(NOT(IOR(h1%missing(i), h2%missing(i))))
+        num = num + POPCNT(NOT(IOR(h1%missing(i), h2%missing(i))))
     end do
     
     num = num - h1%overhang

@@ -1,5 +1,6 @@
 
 SET(ALPHAHOUSE_src
+		ConstantModule.f90
         AlphaHouseMod.f90
 				AlphaStatMod.f90
 				HashModule.f90
@@ -9,6 +10,7 @@ SET(ALPHAHOUSE_src
 				PedigreeModule.f90				
 				IntelRNGMod.f90
 				HelperSubroutines.f90
+
         StringModule.f90
         LineModule.f90
         PageModule.f90
