@@ -40,7 +40,7 @@ subroutine initialise(filePathIn)
     commandArgument = getFileCommandArgumentNumber()
     call get_command_argument(commandArgument,currentWorkingDirectory)
     if (commandArgument==0) then
-      write(currentWorkingDirectory,*) trim(currentWorkingDirectory(3:len(currentWorkingDirectory))),"Spec.txt"
+    write(currentWorkingDirectory,*) trim(currentWorkingDirectory(1:len(currentWorkingDirectory))),"Spec.txt"
     end if
     call checkInputFileExists(currentWorkingDirectory)
   end if

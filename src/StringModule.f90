@@ -12,18 +12,22 @@ Module stringModule
   type :: String
     character(len=:), allocatable:: line
   contains
+    procedure, private:: getSubStringStartAndEnd
+    procedure, private:: getSubstringEnd
+    procedure:: getPosition
     procedure:: toLowerCase => convertToLowerCaseString
     procedure:: writeType
     procedure:: readType
     procedure:: getSize
     procedure:: split
+    generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted) => writeType
     generic:: read(formatted) => readType
   end type 
 
 
   interface assignment (=)
-    procedure setLine
+    procedure setString
   end interface 
 
   interface operator (==)
@@ -121,6 +125,67 @@ contains
     sizeOut = len( this%line)
   end function getSize
 
+  !---------------------------------------------------------------------------
+  ! DESCRIPTION:
+  !> @brief     Gives a substring on the initial string,
+  !
+  !> @details    given a start position and an end position, this will return the substring between the start and end positions.
+  !
+  !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  !
+  !> @date       December 1st, 2016
+  !
+  ! PARAMETERS:
+  !---------------------------------------------------------------------------
+
+  function getSubStringStartAndEnd(self, SubStringStart, subStringEnd) result (subString)
+    class(String), intent(in):: self
+    integer, intent(in):: SubstringStart, subStringEnd
+    type(String):: subString
+
+    subString = self%line(subStringStart:subStringEnd)
+  end function getSubStringStartAndEnd
+
+  !---------------------------------------------------------------------------
+  ! DESCRIPTION:
+  !> @brief     Gives a substring on the initial string,
+  !
+  !> @details    given an end position, this will return the substring between the start of the string and end positions given.
+  !
+  !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  !
+  !> @date       December 1st, 2016
+  !
+  ! PARAMETERS:
+  !---------------------------------------------------------------------------
+  function getSubstringEnd(self, subStringPosition) result (subString)
+    class(String), intent(in):: self
+    integer, intent(in):: subStringPosition
+    type(String):: subString
+
+    subString = self%line(:subStringPosition)
+  end function getSubStringEnd
+
+  !---------------------------------------------------------------------------
+  ! DESCRIPTION:
+  !> @brief      Gives position of a character in the string
+  !
+  !> @details    Given a character (of arbitary length) as input, this function will give you the first occurance of that character in the string.
+  !Should the character not exist in the string, it will return a zero instead.
+  !
+  !> @author     Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  !
+  !> @date       December 1st, 2016
+  !
+  !---------------------------------------------------------------------------
+  function getPosition(self, charIn) result (position)
+    class(String), intent(in):: self
+    character(len=*):: charIn
+    integer(int32):: position
+    position = index(self%line, charIn)
+  end function getPosition
+
+
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
@@ -140,7 +205,6 @@ contains
   !> @param[in] optional : delimitersIn array of characters of length one.   Gives the delimiters which should be used to split the
   !string up.
   !---------------------------------------------------------------------------
-
   function split(this, delimitersIn) result( components)
     character(len=1), dimension(:), optional :: delimitersIn
     class(String), intent(in):: this
@@ -354,12 +418,12 @@ contains
     write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%line
   end subroutine writeType
 
-  subroutine setLine(this,  lineIn) 
-    class(String), intent(inout) :: this
+  subroutine setString(this,  lineIn) 
+    type(String), intent(inout) :: this
     character(len=*), intent(in):: lineIn
 
     this%line = lineIn
-  end subroutine setLine
+  end subroutine setString
 
 
 end Module stringModule

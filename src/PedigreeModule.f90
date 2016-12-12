@@ -11,7 +11,7 @@ type PedigreeHolder
     
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
-    type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding all founders
+    type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
     type(DictStructure) :: dictionary 
     integer(kind=int32) :: pedigreeSize !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
@@ -32,6 +32,9 @@ end type PedigreeHolder
         module procedure initPedigree
     end interface PedigreeHolder
 
+    interface Sort !Sorts into generation list
+        module procedure :: setPedigreeGenerationsAndBuildArrays
+    end interface Sort
 contains
     
 
@@ -52,13 +55,15 @@ contains
         integer(kind=int32),optional,intent(in) :: numberInFile
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
-        integer :: tmpCounter = 0
+        integer :: tmpCounter
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
-        integer :: tmpAnimalArrayCount = 0
+        integer :: tmpAnimalArrayCount
         integer :: i
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
+        tmpAnimalArrayCount = 0
+        tmpCounter = 0
         if (present(numberInFile)) then
             nIndividuals = numberInFile
         else
@@ -281,6 +286,7 @@ contains
     end subroutine addGenotypeInformation
     !---------------------------------------------------------------------------
     !> @brief builds correct generation information by looking at founders 
+    !> This is effectively a sort function for the pedigree
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -371,8 +377,6 @@ contains
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
-        print *,"finished building generation arrays"
-
         if (present(file)) then
             open(newUnit=unit, file=file, status="unknown")
         else
@@ -438,9 +442,6 @@ contains
             enddo
         endif
     end subroutine setOffspringGeneration
-
-
-
 
 
 end module PedigreeModule

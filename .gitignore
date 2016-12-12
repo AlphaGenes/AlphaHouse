@@ -1,9 +1,15 @@
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+pftest_alltests
+objs/
 *.o
 *.mod
 *.a
 *.x
 *.i90
-
+CMakeCache.txt
+CMakeFiles/
 bin/*
 DoxygenDoc
 test.txt

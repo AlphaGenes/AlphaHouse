@@ -1,0 +1,66 @@
+module TestLinkedList
+  use pFUnit_mod
+  use LinkedListModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(LinkedList),pointer :: ll
+  contains
+
+    @test
+    subroutine testCreate
+        type(LIST_DATA) :: tmp
+        tmp%value = 2
+        call list_create(ll, tmp)
+
+        @assertFalse(associated(ll%next))
+        @assertEqual(ll%data%value,2)
+
+
+    end subroutine testCreate
+
+    @test
+    subroutine testDestroy
+        type(LIST_DATA) :: tmp
+        tmp%value = 2
+        call list_create(ll, tmp)
+
+        call list_destroy(ll)
+
+        @assertFalse(associated(ll%next)) 
+
+    end subroutine testDestroy
+
+    @test
+    subroutine testCount
+        type(LIST_DATA) :: tmp,tmp1, tmp2
+        tmp%value = 2
+        tmp1%value = 5
+        tmp2%value = 10
+        call list_create(ll, tmp)
+        call list_insert_head(ll, tmp1)
+        call list_insert_head(ll, tmp2)
+        call list_insert_head(ll, tmp1)
+        call list_insert_head(ll, tmp2)
+    end subroutine testCount
+
+    @test
+    subroutine testAdd
+        type(LIST_DATA) :: tmp,tmp1, tmp2
+        tmp%value = 2
+        tmp1%value = 5
+        tmp2%value = 10
+        call list_create(ll, tmp)
+        call list_insert_head(ll, tmp1)
+        @assertEqual(list_count(ll), 2)
+        @assertEqualUserDefined(ll%data, tmp1)
+        call list_insert_head(ll, tmp2)
+        @assertEqual(list_count(ll), 3)
+        @assertEqualUserDefined(ll%data, tmp2)
+        @assertEqualUserDefined(ll%next%data, tmp1)
+        @assertEqualUserDefined(ll%next%next%data%value, 2)
+    end subroutine testAdd
+
+
+end module TestLinkedList

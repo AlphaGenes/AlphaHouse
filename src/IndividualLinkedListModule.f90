@@ -25,6 +25,7 @@ module IndividualLinkedListModule
             procedure :: list_pop
             procedure :: list_get_nth
             procedure :: list_remove
+            procedure :: contains
             procedure :: destroyLinkedList
 
     end type IndividualLinkedList
@@ -135,6 +136,31 @@ contains
         end if
     end function list_get_nth
 
+    logical function contains(this, in)
+        class(IndividualLinkedList),intent(in) :: this
+        type(individual),target, intent(in) :: in
+        type(IndividualLinkedListNode),pointer :: node
+
+
+        if (associated(this%first)) then
+          node => this%first
+
+          do
+            if (associated(node%item,in)) then
+                contains = .true.
+                return
+            else if (.not.associated(node%next)) then
+                contains = .false.
+                return
+            else
+                node => node%next
+            end if
+          end do
+        else
+          contains = .false.
+        end if
+    end function contains
+
     subroutine list_remove(this,item)
         class(IndividualLinkedList),intent(inout) :: this
         type(individual),pointer, intent(in) :: item
@@ -146,6 +172,7 @@ contains
                 this%first => this%first%next
                 this%length = this%length - 1 
                 if (.not. associated(this%first)) then
+                    deallocate(this%last)
                     print *, "LIST EMPTY:", this%length
                 else 
                     this%first%previous => null()                    
