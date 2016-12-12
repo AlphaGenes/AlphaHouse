@@ -93,11 +93,14 @@ contains
     
     integer :: i
     
-    h%phase => phase
-    h%missing => missing
     h%length = length
     h%sections = size(phase,1)
     h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+    
+    allocate(h%phase(h%sections))
+    allocate(h%missing(h%sections))
+    h%phase = phase
+    h%missing = missing
     
     do i = 64 - h%overhang + 1, 64
       h%phase(h%sections) = ibclr(h%phase(h%sections), i)

@@ -15,6 +15,7 @@ SET(ALPHAHOUSE_src
         Input.f90
 	GenotypeModule.f90
 	HaplotypeModule.f90
+	BitUtilities.f90
         main.f90
 	)
 
