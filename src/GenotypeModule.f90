@@ -38,6 +38,7 @@ module GenotypeModule
   procedure :: isHomo
   procedure :: numberErrors
   procedure :: getErrors
+  procedure :: setHaplotypeIfError
   end type Genotype
   
   interface Genotype
