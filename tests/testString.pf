@@ -1,4 +1,98 @@
 @test
+subroutine testGetSubStringWithoutStart()
+use pFUnit_mod
+use StringModule
+use iso_fortran_env
+
+Type(String):: stringOut, stringExpected, stringIn
+integer(int32):: expected,gotten
+character(len=:), allocatable:: StringUsed
+real(real32):: temp
+integer(int32):: startPos, endPos
+
+StringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:''|\/?><,.~`+="
+stringIn = StringUsed
+
+call random_seed()
+
+call random_number(temp)
+
+endPos = (len(StringUsed)-1)*temp+1
+
+stringExpected = StringUsed(1:endPos)
+
+stringOut = stringIn%getSubString(endPos)
+
+@assertEqualUserDefined(stringExpected, stringOut)
+
+end subroutine testGetSubStringWithoutStart
+
+@test
+subroutine testGetSubStringWithStart()
+use pFUnit_mod
+use StringModule
+use iso_fortran_env
+
+Type(String):: stringOut, stringExpected, stringIn
+integer(int32):: expected,gotten
+character(len=:), allocatable:: StringUsed
+real(real32):: temp
+integer(int32):: startPos, endPos
+
+StringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:''|\/?><,.~`+="
+stringIn = StringUsed
+
+call random_seed()
+
+call random_number(temp)
+
+startPos = (len(StringUsed)-1)*temp+1
+
+call random_number(temp)
+
+endPos = (len(StringUsed)-1)*temp+1
+
+if (startPos>endPos) then
+  temp = startPos
+  startPos = endPos
+  endPos = temp
+end if
+
+stringExpected = StringUsed(startPos:endPos)
+
+stringOut = stringIn%getSubString(startPos, endPos)
+
+@assertEqualUserDefined(stringExpected, stringOut)
+
+end subroutine testGetSubStringWithStart
+
+
+
+@test
+subroutine testGetPosition()
+use pFUnit_mod
+use StringModule
+use iso_fortran_env
+
+Type(String):: stringIn
+integer(int32):: expected,gotten
+character(len=:), allocatable:: StringUsed
+real(real32):: temp
+
+StringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:''|\/?><,.~`+="
+StringIn = StringUsed
+call random_seed()
+call random_number(temp)
+expected = len(StringUsed)*temp
+
+
+
+gotten = stringIn%getPosition(StringUsed(expected:expected))
+
+@assertEqual(expected, gotten)
+end subroutine testGetPosition
+
+@test
 subroutine testGetSize()
 use pfUnit_mod
 use stringModule

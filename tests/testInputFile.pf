@@ -10,7 +10,7 @@ subroutine testSetInputFile
 
   got =  getInputFile()
 
-  @assertEqual(got, expected)
+  @assertEqual(expected, got)
 
 end subroutine testSetInputFile
 

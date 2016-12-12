@@ -35,7 +35,7 @@ module pageModule
   end interface 
 
   interface assignment (=)
-    module procedure initChar, initPageWithArray, initPageWithPage
+    module procedure initChar, initPageWithArray, initPageWithPage, initPageWithStringArray
   end interface 
   contains
 
@@ -220,6 +220,7 @@ module pageModule
 
         this%lines = pageIn%lines
       end subroutine initPageWithPage
+
     subroutine initPageWithArray(this, array)
       class(Page), intent(inout):: this
       type(Line), dimension(:):: array
@@ -227,6 +228,23 @@ module pageModule
       this%lines = array
 
       end subroutine initPageWithArray
+
+    subroutine initPageWithStringArray(self, arrayIn)
+      type(String),dimension(:,:), intent(in):: arrayIn
+      class(Page), intent(inout):: self
+
+      type(line), allocatable, dimension(:):: lines
+      integer:: totalSize, i
+
+      totalSize = size(arrayIn(:,1))
+      allocate(lines(totalSize))
+      
+      do i =1, totalSize
+        lines(i) = arrayIn(i, :)
+      end do
+
+      call self%initPageWithArray(lines)
+    end subroutine initPageWithStringArray
       
 !---------------------------------------------------------------------------
 ! DESCRIPTION:

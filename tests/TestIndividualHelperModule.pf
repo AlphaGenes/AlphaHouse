@@ -1,0 +1,78 @@
+module TestIndividualHelperModule
+  use pFUnit_mod
+  use PedigreeModule
+  use IndividualHelperModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(PedigreeHolder) :: pedigree  
+  contains
+
+ @before
+    subroutine initialise
+         implicit none
+        
+        pedigree = PedigreeHolder("testPed.txt")
+
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+      call pedigree%destroyPedigree
+    end subroutine
+
+    @test
+    subroutine testGetFullSibs
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: tmp, tmp2
+        type(individualLinkedList) :: ret        
+
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
+        ret = getFullSibs(tmp)
+        @assertEqual(ret%length,1)
+        tmp => ret%list_get_nth(1)
+        @assertTrue(associated(tmp, tmp2))
+    end subroutine testGetFullSibs
+
+
+        @test
+    subroutine testGetHalfSibs
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: tmp, tmp2
+        type(individualLinkedList) :: ret        
+
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
+        ret = getOnlyHalfSibs(tmp)
+        @assertEqual(ret%length,1)
+        tmp => ret%list_get_nth(1)
+        @assertTrue(associated(tmp, tmp2))
+    end subroutine testGetHalfSibs
+
+
+     @test
+    subroutine testGetAllSibs
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
+        type(individualLinkedList) :: ret        
+        call pedigree%outputSortedPedigree("out.txt")
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
+        tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+        tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
+        ret = getSibs(tmp)
+        @assertEqual(ret%length,3)
+        @assertTrue(ret%contains(tmp2))
+        @assertTrue(ret%contains(tmp3))
+        @assertTrue(ret%contains(tmp4))
+
+    end subroutine testGetAllSibs
+
+
+end module TestIndividualHelperModule

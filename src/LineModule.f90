@@ -9,6 +9,8 @@ module LineModule
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
+      procedure:: add => addAWord
+      procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
@@ -34,13 +36,41 @@ module LineModule
   end interface 
   contains
 
+    subroutine addAWord(self, charIn)
+      class(Line), intent(inout):: self
+      character(len=*), intent(in):: charIn
+
+      integer, dimension(1):: newSize
+      type(String), dimension(1):: newString
+      type(String), dimension(:), allocatable:: testString
+
+      if (allocated(self%words)) then
+        newString(1) = charIn
+        newSize(1) = self%getNumWords()+1
+        testString =  reshape(self%words, newSize, newString)
+        self%words = testString
+      else
+        allocate(self%words(1))
+        self%words(1) = charIn
+      end if
+
+    end subroutine addAWord
+
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
       character(len=:), allocatable:: wordOut
 
       wordOut = this%words(i)%line
-      end function getWord
+    end function getWord
+
+    function getWordAsString(this, i) result (stringOut)
+      class(Line), intent(in):: this
+      integer, intent(in):: i
+      type(String):: stringOut
+
+      stringOut = this%getWord(i)
+    end function getWordAsString
 
 
     function compareLine(this, lineIn) result (same)
@@ -67,7 +97,11 @@ module LineModule
       class(Line), intent(in):: this
       integer(int32)::numWords
 
-      numWords = size(this%words)
+      if (allocated(this%words)) then
+        numWords = size(this%words)
+      else
+        numWords = 0
+      end if
     end function 
 
     subroutine setSingleChar(this, lineIn)
@@ -138,7 +172,7 @@ module LineModule
       
       writeOutChar = ""
       do i = 1, dtv%getNumWords()
-        writeOutChar = writeOutChar // dtv%getWord(i)
+        writeOutChar = writeOutChar // " " // dtv%getWord(i)
     end do
       write(unit, "(A)", iostat = iostat, iomsg = iomsg) writeOutChar
     
@@ -155,7 +189,7 @@ module LineModule
       
       writeOutChar = ""
       do i = 1, dtv%getNumWords()
-        writeOutChar = writeOutChar // dtv%getWord(i)
+        writeOutChar = writeOutChar // " " //dtv%getWord(i)
     end do
         write(unit, "(A)", iostat = iostat, iomsg = iomsg) writeOutChar
         end subroutine writeUnformattedLineType
