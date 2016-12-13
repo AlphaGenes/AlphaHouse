@@ -4,8 +4,6 @@ module GenotypeModule
   implicit none
   private
   
-  !! This should go in a constants module but for now
-  
   type, public :: Genotype
   private
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -39,6 +37,9 @@ module GenotypeModule
   procedure :: numberErrors
   procedure :: getErrors
   procedure :: setHaplotypeIfError
+  procedure :: setHaplotypeIfMissing
+  procedure :: numberErrorsSingle
+  procedure :: getErrorsSingle
   end type Genotype
   
   interface Genotype
@@ -211,9 +212,9 @@ function complement(g,h) result(c)
       missing(i) = IOR (h%missing(i), &
         IOR( IAND(NOT(h%phase(i)),g%additional(i)), &
            IAND(h%phase(i),IEOR(g%homo(i),g%additional(i))) ) )
-  end do
+    end do
 
-  c = Haplotype(phase,missing,g%length)
+    c = Haplotype(phase,missing,g%length)
 end function complement
 
 function compatibleHaplotypes(g, h1, h2, threshold) result(c)
@@ -362,6 +363,24 @@ subroutine setHaplotype(g, h)
     end do
   end subroutine setHaplotypeIfError
   
+  subroutine setHaplotypeIfMissing(g, h)
+    use HaplotypeModule
+    
+    type(Haplotype), intent(in), pointer :: h
+    class(Genotype), intent(in) :: g
+    
+    integer :: i
+    
+    do i = 1, g%sections
+      h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
+      
+      h%phase(i) = IOR(IAND(NOT(h%missing(i)), h%phase(i)), IAND(h%missing(i), IAND(g%homo(i), g%additional(i))))
+    end do
+    do i = 64 - g%overhang + 1, 64
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
+    end do
+  end subroutine setHaplotypeIfMissing
+  
   function isZero(g, pos) result (zero)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos
@@ -421,6 +440,48 @@ function isHomo(g, pos) result (two)
     
     two = BTEST(g%homo(cursection), curpos)
   end function isHomo
+  
+  function getErrorsSingle(g,h) result(errors)
+    use HaplotypeModule
+    
+    class(Genotype) :: g
+    class(Haplotype) :: h
+    
+    integer(kind=8), dimension(:), pointer :: errors
+    
+    integer :: i
+    
+    integer(kind=8) :: allnotmissing, zeroerror, twoerror
+    
+    allocate(errors(g%sections))
+    
+    do i = 1, g%sections
+      allnotmissing = IAND(IOR(g%homo(i), NOT(g%additional(i))), NOT(h%missing(i)))
+      
+      zeroerror = IAND(IAND(g%homo(i), NOT(g%additional(i))), h%phase(i))      
+      twoerror = IAND(IAND(g%homo(i), g%additional(i)), NOT(h%phase(i)))      
+      
+      errors(i) = IAND(allnotmissing, IOR(zeroerror, twoerror))
+    end do
+    
+    do i = 64 - g%overhang + 1, 64
+      errors(g%sections) = ibclr(errors(g%sections), i)
+    end do
+  end function getErrorsSingle
+  
+  function numberErrorsSingle(g,h) result(c)
+    use HaplotypeModule
+    use BitUtilities
+    
+    class(Genotype) :: g
+    class(Haplotype) :: h
+    
+    integer :: c
+    
+    c = bitCount(g%getErrorsSingle(h))
+    
+  end function numberErrorsSingle
+    
   
   function getErrors(g,h1,h2) result(errors)
     use HaplotypeModule
