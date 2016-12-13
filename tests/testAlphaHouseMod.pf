@@ -1,67 +1,67 @@
-module testAlphaHouseMod
-use iso_fortran_env
-use AlphaHouseMod
-use pFUnit_mod
-implicit none
+! module testAlphaHouseMod
+! use iso_fortran_env
+! use AlphaHouseMod
+! use pFUnit_mod
+! implicit none
 
-contains
-@test
-subroutine testCheckFileExistsWhenFileExists
-  use pFUnit_mod
+! contains
+! @test
+! subroutine testCheckFileExistsWhenFileExists
+!   use pFUnit_mod
 
-  logical:: fileExists = .true., result
-  character(len=:), allocatable:: fileNameToCheck
+!   logical:: fileExists = .true., result
+!   character(len=:), allocatable:: fileNameToCheck
 
-  fileNameToCheck = "CheckTemp.txt"
-  open(unit = 100, file = fileNameToCheck, action = "write", status = "replace")
+!   fileNameToCheck = "CheckTemp.txt"
+!   open(unit = 100, file = fileNameToCheck, action = "write", status = "replace")
 
-  result = checkFileExists(fileNameToCheck)
-  @assertEqual(fileExists, result)
+!   result = checkFileExists(fileNameToCheck)
+!   @assertEqual(fileExists, result)
 
-  close(100, status="delete")
-end subroutine testCheckFileExistsWhenFileExists
+!   close(100, status="delete")
+! end subroutine testCheckFileExistsWhenFileExists
 
-@test
-subroutine testCheckFileExistsWhenFileDoesntExist
-use pFUnit_mod
+! @test
+! subroutine testCheckFileExistsWhenFileDoesntExist
+! use pFUnit_mod
 
-  logical:: fileExists = .false., result
-  character(len=:), allocatable:: fileNameToCheck
+!   logical:: fileExists = .false., result
+!   character(len=:), allocatable:: fileNameToCheck
 
-  fileNameToCheck = "CheckTemp.txt"
+!   fileNameToCheck = "CheckTemp.txt"
 
-  result = checkFileExists(fileNameToCheck)
-  @assertEqual(fileExists, result)
+!   result = checkFileExists(fileNameToCheck)
+!   @assertEqual(fileExists, result)
 
-end subroutine testCheckFileExistsWhenFileDoesntExist
+! end subroutine testCheckFileExistsWhenFileDoesntExist
 
-@test
-subroutine testChar2Double()
-character(len=20):: charIn
-real(real64):: expected, gotten
+! @test
+! subroutine testChar2Double()
+! character(len=20):: charIn
+! real(real64):: expected, gotten
 
-call random_number(expected)
+! call random_number(expected)
 
-write(charIn, "(f20.16)") expected
+! write(charIn, "(f20.16)") expected
 
-gotten = char2Double(charIn)
+! gotten = char2Double(charIn)
 
-@assertEqual(expected, gotten)
+! @assertEqual(expected, gotten)
 
-end subroutine testChar2Double
+! end subroutine testChar2Double
 
-@test
-subroutine testChar2Real()
-character(len=20):: charIn
-real(real32):: expected, gotten
+! @test
+! subroutine testChar2Real()
+! character(len=20):: charIn
+! real(real32):: expected, gotten
 
-call random_number(expected)
+! call random_number(expected)
 
-write(charIn, "(f20.16)") expected
+! write(charIn, "(f20.16)") expected
 
-gotten = char2Real(charIn)
+! gotten = char2Real(charIn)
 
-@assertEqual(expected, gotten, 1e-16)
+! @assertEqual(expected, gotten, 1e-16)
 
-end subroutine testChar2Real
-end module testAlphaHouseMod
+! end subroutine testChar2Real
+! end module testAlphaHouseMod
