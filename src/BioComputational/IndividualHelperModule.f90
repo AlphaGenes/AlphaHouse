@@ -182,7 +182,7 @@ module IndividualHelperModule
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016
     !> @param[in] type(individual) parent1, parent2
-    !> @return linked list of shared parents
+    !> @return linked list of shared children between input parents
     !---------------------------------------------------------------------------
     function getSharedKids(individualOne, IndividualTwo) result(res)
         use IndividualModule
@@ -205,5 +205,40 @@ module IndividualHelperModule
 
 
     end function getSharedKids
+
+
+      !---------------------------------------------------------------------------
+    !> @brief Returns linked list of mates that an individual has had 
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !> @param[in] type(individual) parent1
+    !> @return linked list of mates of parent
+    !---------------------------------------------------------------------------
+    function getMates(individualOne) result(res)
+        use IndividualModule
+        use IndividualLinkedListModule
+        type(Individual),target, intent(in) :: individualOne
+        type(IndividualLinkedList) :: res
+        integer ::  i
+        do i=1, individualOne%nOffs
+
+            if (associated(individualOne%offsprings(i)%p%sirePointer, IndividualOne)) then
+                if (associated(individualOne%offsprings(i)%p%damPointer)) then
+                    if (.not. res%contains(individualOne%offsprings(i)%p%damPointer)) then
+                        call res%list_add(individualOne%offsprings(i)%p%damPointer)
+                    endif
+                endif
+            else if (associated(individualOne%offsprings(i)%p%damPointer, IndividualOne)) then
+                if (associated(individualOne%offsprings(i)%p%sirePointer)) then
+                    if (.not. res%contains(individualOne%offsprings(i)%p%sirePointer)) then
+                        call res%list_add(individualOne%offsprings(i)%p%sirePointer)
+                    endif
+                endif
+            endif  
+        enddo
+
+
+    end function getMates
+
 end module IndividualHelperModule
 
