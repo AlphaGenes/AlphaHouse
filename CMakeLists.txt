@@ -45,21 +45,25 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 if (${RUN_TESTS})
 	# file(GLOB testDeps "${SRC}/*.f90")
 	SET(testDeps
-        ${SRC}/AlphaHouseMod.f90
-        ${SRC}/AlphaSystemMod.f90
-		${SRC}/AlphaStatMod.f90
-		${SRC}/HashModule.f90
-		${SRC}/LinkedListModule.f90
-		${SRC}/IndividualModule.f90
-		${SRC}/IndividualLinkedListModule.f90
-		${SRC}/IndividualHelperModule.f90
-		${SRC}/PedigreeModule.f90				
-		${SRC}/IntelRNGMod.f90
-		${SRC}/HelperSubroutines.f90
-        ${SRC}/StringModule.f90
-        ${SRC}/LineModule.f90
-        ${SRC}/PageModule.f90
-        ${SRC}/Input.f90
+        ${SRC}/Utilities/ConstantModule.f90
+        ${SRC}/Utilities/AlphaHouseMod.f90
+        ${SRC}/Utilities/AlphaSystemMod.f90
+		${SRC}/BioComputational/AlphaStatMod.f90
+		${SRC}/Utilities/HashModule.f90
+		${SRC}/Utilities/LinkedListModule.f90
+		${SRC}/BioComputational/IndividualModule.f90
+		${SRC}/BioComputational/IndividualLinkedListModule.f90
+		${SRC}/BioComputational/IndividualHelperModule.f90
+		${SRC}/BioComputational/PedigreeModule.f90				
+		${SRC}/BioComputational/IntelRNGMod.f90
+		${SRC}/Utilities/HelperSubroutines.f90
+        ${SRC}/Utilities/StringModule.f90
+        ${SRC}/Utilities/LineModule.f90
+        ${SRC}/Utilities/PageModule.f90
+        ${SRC}/Utilities/Input.f90
+		${SRC}/BioComputational/GenotypeModule.f90
+		${SRC}/BioComputational/HaplotypeModule.f90
+		${SRC}/BioComputational/BitUtilities.f90
 	)
 
 endif (${RUN_TESTS})
@@ -92,7 +96,7 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
-set (TESTFILES ${TESTS}/testInputFile.pf ${TESTS}/testString.pf ${TESTS}/testLine.pf ${TESTS}/testPage.pf ${TESTS}/testAlphaHouseMod.pf ${TESTS}/testIndividualHelperModule.pf)
+set (TESTFILES ${TESTS}/testInputFile.pf ${TESTS}/testIndividualHelperModule.pf)
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})

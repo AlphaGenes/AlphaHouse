@@ -1,25 +1,24 @@
 
 SET(ALPHAHOUSE_src
-		ConstantModule.f90
-        AlphaHouseMod.f90
-        AlphaSystemMod.f90
-				AlphaStatMod.f90
-				HashModule.f90
-				LinkedListModule.f90
-				IndividualModule.f90
-				IndividualLinkedListModule.f90
-				IndividualHelperModule.f90
-				PedigreeModule.f90				
-				IntelRNGMod.f90
-				HelperSubroutines.f90
-
-        StringModule.f90
-        LineModule.f90
-        PageModule.f90
-        Input.f90
-	GenotypeModule.f90
-	HaplotypeModule.f90
-	BitUtilities.f90
+		Utilities/ConstantModule.f90
+        Utilities/AlphaHouseMod.f90
+        Utilities/AlphaSystemMod.f90
+		BioComputational/AlphaStatMod.f90
+		Utilities/HashModule.f90
+		Utilities/LinkedListModule.f90
+		BioComputational/IndividualModule.f90
+		BioComputational/IndividualLinkedListModule.f90
+		BioComputational/IndividualHelperModule.f90
+		BioComputational/PedigreeModule.f90				
+		BioComputational/IntelRNGMod.f90
+		Utilities/HelperSubroutines.f90
+        Utilities/StringModule.f90
+        Utilities/LineModule.f90
+        Utilities/PageModule.f90
+        Utilities/Input.f90
+	BioComputational/GenotypeModule.f90
+	BioComputational/HaplotypeModule.f90
+	BioComputational/BitUtilities.f90
         main.f90
 	)
 

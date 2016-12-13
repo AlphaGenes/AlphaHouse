@@ -74,5 +74,41 @@ module TestIndividualHelperModule
 
     end subroutine testGetAllSibs
 
+ 
+    @test 
+    subroutine testGetSharedKids
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
+        type(individualLinkedList) :: ret        
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
+        tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
+        tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+        ret = getSharedKids(tmp,tmp2)
+        @assertEqual(ret%length,2)
+        @assertTrue(ret%contains(tmp3))
+        @assertTrue(ret%contains(tmp4))
+
+    end subroutine testGetSharedKids    
+
+
+        @test 
+    subroutine testGetMates
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
+        type(individualLinkedList) :: ret        
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
+        tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("aaa"))
+        ret = getMates(tmp2)
+
+        @assertEqual(ret%length,2)
+        @assertTrue(ret%contains(tmp))
+        @assertTrue(ret%contains(tmp3))
+
+    end subroutine testGetMates   
+
 
 end module TestIndividualHelperModule
