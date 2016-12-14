@@ -38,6 +38,10 @@ module HaplotypeModule
     procedure :: getLength
     procedure :: isMissing
     procedure :: numberBothNotMissing
+    procedure :: setFromOther
+    procedure :: setFromOtherIfMissing
+    procedure :: setZeroBits
+    procedure :: setOneBits
   end type Haplotype
   
   interface Haplotype
@@ -425,6 +429,54 @@ contains
     
     num = num - h1%overhang
   end function numberBothNotMissing
+  
+  subroutine setFromOther(h, oh)
+    class(Haplotype) :: h
+    type(Haplotype) :: oh
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%missing(i) = IAND(h%missing(i), oh%missing(i))
+      h%phase(i) = IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))
+    end do
+  end subroutine setFromOther
+  
+  subroutine setFromOtherIfMissing(h, oh)
+    class(Haplotype) :: h
+    type(Haplotype) :: oh
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%missing(i) = IAND(h%missing(i), oh%missing(i))
+      h%phase(i) = IOR(IAND(NOT(h%missing(i)),h%phase(i)), IAND(h%missing(i), oh%phase(i)))
+    end do
+  end subroutine setFromOtherIfMissing
+  
+  subroutine setOneBits(h, array)
+    class(Haplotype) :: h
+    integer(kind=8), dimension(:), intent(in) :: array
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%missing(i) = IAND(NOT(array(i)), h%missing(i))
+      h%phase(i) = IOR(array(i), h%phase(i))
+    end do
+  end subroutine setOneBits
+  
+  subroutine setZeroBits(h, array)
+    class(Haplotype) :: h
+    integer(kind=8), dimension(:), intent(in) :: array
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%missing(i) = IAND(NOT(array(i)), h%missing(i))
+      h%phase(i) = IAND(NOT(array(i)), h%phase(i))
+    end do
+  end subroutine setZeroBits
     
 end module HaplotypeModule
   
