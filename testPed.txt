@@ -4,3 +4,5 @@ ccc aaa bbb
 ddd aaa 0
 eee ddd bbb
 fff ddd bbb
+ggg 0 d1
+hhh 0 d1

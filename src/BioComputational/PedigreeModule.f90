@@ -13,6 +13,7 @@ type PedigreeHolder
     type(DictStructure) :: dictionary 
     integer(kind=int32) :: pedigreeSize !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
+    integer(kind=int32), dimension(:) ,allocatable :: sortedIndexList
 
     integer :: maxGeneration
     contains 
@@ -23,6 +24,7 @@ type PedigreeHolder
         procedure :: addGenotypeInformation
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
+        procedure :: sortPedigreeAndOverwrite
 
 end type PedigreeHolder
 
@@ -44,7 +46,6 @@ contains
     !---------------------------------------------------------------------------
     function initPedigree(fileIn, numberInFile, genderFile) result(pedStructure)
         use AlphaHouseMod, only : countLines
-        use HashModule
         use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn
@@ -358,9 +359,14 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h
+        integer :: unit, i,h,sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         
+        sortCounter = 0
+         if (.not. allocated(this%sortedIndexList)) then
+            allocate(this%sortedIndexList(this%pedigreeSize))
+        endif
+
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
@@ -374,6 +380,8 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
+                sortCounter = sortCounter + 1
+                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                     write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -384,14 +392,18 @@ contains
         endif
     end subroutine outputSortedPedigree
 
-
     subroutine outputSortedPedigreeInAlphaImputeFormat(this, file)
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h
+        integer :: unit, i,h, sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         
+
+        if (.not. allocated(this%sortedIndexList)) then
+            allocate(this%sortedIndexList(this%pedigreeSize))
+        endif
+        sortCounter = 0
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
@@ -416,7 +428,8 @@ contains
                     else
                         sireId = 0
                     endif
-
+                    sortCounter = sortCounter +1
+                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                      write (unit,'(3i20,a20)') tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -427,6 +440,52 @@ contains
             close(unit)
         endif
     end subroutine outputSortedPedigreeInAlphaImputeFormat
+
+
+
+    subroutine sortPedigreeAndOverwrite(this)
+        use iso_fortran_env, only : output_unit, int64
+        class(PedigreeHolder) :: this
+        integer :: unit, i,h, pedCounter, tmpId
+        integer(kind=int64) :: sizeDict
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        type(Individual), pointer, dimension(:) :: newPed
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays
+        endif
+        pedCounter = 0
+        call this%dictionary%destroy()
+        sizeDict  =this%pedigreeSize
+        allocate(newPed(this%maxPedigreeSize))
+        this%dictionary = DictStructure(sizeDict)
+        do i=0, this%maxGeneration
+            tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+
+                 pedCounter = pedCounter +1
+                 call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
+                 newPed(pedCounter) = tmpIndNode%item
+                 newPed(pedCounter)%nOffs = 0 ! reset offsprings
+                 if (associated(newPed(pedCounter)%sirePointer)) then
+                    tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
+                    call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                    newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                endif
+                if (associated(newPed(pedCounter)%damPointer)) then
+                    tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
+                    call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                    newPed(pedCounter)%damPointer=> newPed(tmpId)
+                endif
+                tmpIndNode => tmpIndNode%next
+            end do
+        enddo
+        ! call move_alloc(newPed, this%pedigree)
+        ! print *, "size:", size(this%pedigree),":",size(newPed)
+        this%pedigree = newPed
+    end subroutine sortPedigreeAndOverwrite
+
+
+
     !---------------------------------------------------------------------------
     !> @brief Sets generation of an individual and his children recursively
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk

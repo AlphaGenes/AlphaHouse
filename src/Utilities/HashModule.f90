@@ -20,6 +20,7 @@ type DictStructure
     procedure :: getValue
     procedure :: hasKey
     procedure :: getElement
+    procedure :: getSize
 end type DictStructure
 
 interface DictStructure
@@ -36,7 +37,7 @@ private :: LinkedList
 private :: getElement
 private :: hashKey
 
-integer(kind=int64), private :: hash_size  = 4993
+integer(kind=int64) :: hash_size  = 4993
 integer(kind=int64), parameter, private :: multiplier = 17
 
 
@@ -44,6 +45,13 @@ contains
 !
 ! Routines and functions specific to dictionaries
 !
+
+
+integer function getSize(this)
+class(DictStructure) :: this
+  getSize = size(this%table)
+
+end function getSize
 
 function dict_create(size) result(dict)
     type(DictStructure)  :: dict

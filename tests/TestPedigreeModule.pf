@@ -12,7 +12,7 @@ module TestPedigreeModule
     subroutine initialise
          implicit none
         
-        pedigree = PedigreeHolder("ped.txt")
+        pedigree = PedigreeHolder("testPed.txt")
 
         
     end subroutine
@@ -25,22 +25,33 @@ module TestPedigreeModule
     @test
     subroutine testReadAndSort
         implicit none
-         @assertEqual(pedigree%Pedigree(1)%OriginalID,"1")
+         @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
     end subroutine testReadAndSort
 
      @test
     subroutine testDummys
         implicit none
         integer :: tmp,i
-
-
-        do i=1,pedigree%pedigreeSize
-          print *,trim(pedigree%pedigree(i)%originalID)," ",pedigree%pedigree(i)%getIntegerVectorOfRecodedIds()
-        enddo
-        tmp = pedigree%dictionary%getValue("dum3530")
+        tmp = pedigree%dictionary%getValue("dumd1")
          @assertFalse(tmp == DICT_NULL)
-         print *, "nOffs:", pedigree%pedigree(tmp)%nOffs
+         @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
+
+
+
+    @test
+    subroutine testSorting
+      integer :: tmp,tmp2, i 
+      call pedigree%sortPedigreeAndOverwrite
+       tmp = pedigree%dictionary%getValue("ccc")
+       tmp2 = pedigree%dictionary%getValue("aaa")
+      @assertEqualUserDefined(pedigree%pedigree(tmp)%sirePointer,pedigree%pedigree(tmp2))
+      do i=1, pedigree%pedigree(tmp2)%nOffs
+        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
+      enddo
+      @assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
+
+    end subroutine testSorting
     ! @test
     ! subroutine testAddOffspring
     !     type(individualPointerContainer), allocatable :: Offsprings(:)
