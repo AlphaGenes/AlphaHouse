@@ -12,7 +12,7 @@ module TestPedigreeModule
     subroutine initialise
          implicit none
         
-        pedigree = PedigreeHolder("Pedigree.txt")
+        pedigree = PedigreeHolder("ped.txt")
 
         
     end subroutine
@@ -25,10 +25,22 @@ module TestPedigreeModule
     @test
     subroutine testReadAndSort
         implicit none
-         @assertEqual(pedigree%Pedigree(1)%OriginalID,"70057984")
+         @assertEqual(pedigree%Pedigree(1)%OriginalID,"1")
     end subroutine testReadAndSort
 
+     @test
+    subroutine testDummys
+        implicit none
+        integer :: tmp,i
 
+
+        do i=1,pedigree%pedigreeSize
+          print *,trim(pedigree%pedigree(i)%originalID)," ",pedigree%pedigree(i)%getIntegerVectorOfRecodedIds()
+        enddo
+        tmp = pedigree%dictionary%getValue("dum3530")
+         @assertFalse(tmp == DICT_NULL)
+         print *, "nOffs:", pedigree%pedigree(tmp)%nOffs
+    end subroutine testDummys
     ! @test
     ! subroutine testAddOffspring
     !     type(individualPointerContainer), allocatable :: Offsprings(:)

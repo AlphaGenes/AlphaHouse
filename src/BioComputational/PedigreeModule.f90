@@ -2,9 +2,7 @@ module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
  use HashModule
-    character, parameter :: EMPTY_PARENT = '0'
-    integer, parameter :: IDLENGTH = 32
-    integer, parameter :: generationThreshold = 1000
+ use constantModule, only :EMPTY_PARENT,IDLENGTH, generationThreshold
 
 
 type PedigreeHolder
@@ -148,6 +146,7 @@ contains
                             ! TODO do a move alloc here to avoid this hack
                         endif
                         pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                        call pedStructure%dictionary%addKey("dum"//trim(tmpSire), pedStructure%pedigreeSize)
                         pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                         pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                         call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))

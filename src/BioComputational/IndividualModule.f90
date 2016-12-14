@@ -24,9 +24,9 @@
 !-------------------------------------------------------------------------------
 
 module IndividualModule
+    use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     implicit none
-    integer, parameter :: OFFSPRINGTHRESHOLD = 150
-    integer, parameter :: NOGENERATIONVALUE = -9999
+
     public :: Individual,individualPointerContainer,operator ( == )
     
     private
@@ -74,6 +74,7 @@ module IndividualModule
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
             procedure :: getIntegerVectorOfRecodedIds
+            procedure :: getCharacterVectorOfRecodedIds
             procedure :: getPaternalGrandSireRecodedIndex
             procedure :: getMaternalGrandSireRecodedIndex
             procedure :: getPaternalGrandDamRecodedIndex
@@ -375,6 +376,36 @@ contains
         endif
 
     end function getIntegerVectorOfRecodedIds
+
+
+
+        !---------------------------------------------------------------------------
+    !> @brief Returns an array of recoded id's where index 1 is individuals id,
+    !> index 2 is sire's recoded ID (0 if not available),
+    !> index 3 is dam's recoded ID (0 if not available)
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getCharacterVectorOfRecodedIds(this) result(res)
+        use constantModule, only : IDLENGTH
+        class(Individual) :: this
+        character(IDLENGTH) :: res(3)
+
+        res = '0'
+        res(1) = this%originalID
+        if (associated(this%sirePointer)) then
+            res(2) = this%sirePointer%originalID
+        endif
+
+        if (associated(this%damPointer)) then
+            res(3) = this%damPointer%originalID
+        endif
+
+    end function getCharacterVectorOfRecodedIds
 
         !---------------------------------------------------------------------------
     !> @brief Returns an array of recoded id's where index 1 is individuals id,
