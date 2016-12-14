@@ -6,6 +6,60 @@ implicit none
 
 contains
 @test
+subroutine testint642CharArray()
+integer(int64), dimension(5):: intIn
+character(2), dimension(5):: expected, gotten
+
+intIn(1) = 1
+intIn(2) = 2
+intIn(3) = 3
+intIn(4) = 4
+intIn(5) = 5
+
+expected(1) = " 1"
+expected(2) = " 2"
+expected(3) = " 3"
+expected(4) = " 4"
+expected(5) = " 5"
+
+gotten = intToChar(intIn, 2_int64)
+
+@assertEqual(expected(1), gotten(1))
+@assertEqual(expected(2), gotten(2))
+@assertEqual(expected(3), gotten(3))
+@assertEqual(expected(4), gotten(4))
+@assertEqual(expected(5), gotten(5))
+
+end subroutine testInt642CharArray
+
+@test
+subroutine testint2CharArray()
+integer, dimension(5):: intIn
+character(2), dimension(5):: expected, gotten
+
+intIn(1) = 1
+intIn(2) = 2
+intIn(3) = 3
+intIn(4) = 4
+intIn(5) = 5
+
+expected(1) = " 1"
+expected(2) = " 2"
+expected(3) = " 3"
+expected(4) = " 4"
+expected(5) = " 5"
+
+gotten = intToChar(intIn, 2)
+
+@assertEqual(expected(1), gotten(1))
+@assertEqual(expected(2), gotten(2))
+@assertEqual(expected(3), gotten(3))
+@assertEqual(expected(4), gotten(4))
+@assertEqual(expected(5), gotten(5))
+
+end subroutine testInt2CharArray
+
+@test
 subroutine testCheckFileExistsWhenFileExists
   use pFUnit_mod
 
