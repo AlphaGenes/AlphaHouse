@@ -138,18 +138,26 @@ contains
                     call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                 
                 else !if sire is defined but not in the pedigree, create him
-                    pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-                    if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-                        write(error_unit,*) "ERROR: too many undefined animals"
-                        stop
-                        ! TODO do a move alloc here to avoid this hack
+                    ! check if the tmp animal has already been created
+                    tmpSireNum = pedStructure%dictionary%getValue("dum"//trim(tmpSire))
+                    if (tmpSireNum == DICT_NULL) then
+                        pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                        if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                            write(error_unit,*) "ERROR: too many undefined animals"
+                            stop
+                            ! TODO do a move alloc here to avoid this hack
+                        endif
+                        pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                        pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+                        pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+                        call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                        call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                        pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+                    else
+                        pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
+                        call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                        call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                     endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
-                    pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-                    pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                    call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.  
                 endif
                 sireFound = .true.
             endif
@@ -160,18 +168,29 @@ contains
                         call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                         call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female       
                 else
-                    pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-                    if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-                        write(error_unit,*) "ERROR: too many undefined animals"
-                        stop
-                    endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
-                    pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-                    pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                    ! Check for defined animals that have nit been set in pedigree
+                    tmpDamNum = pedStructure%dictionary%getValue("dum"//trim(tmpDam))
+                    if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
 
-                    call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
+                        pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                        if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                            write(error_unit,*) "ERROR: too many undefined animals"
+                            stop
+                        endif
+                        pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                        call pedStructure%dictionary%addKey("dum"//trim(tmpDam), pedStructure%pedigreeSize)
+                        pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+                        pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+                        call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+
+                        call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                        pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
+                    else
+                        pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
+                        call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                        call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a sire, it should be male, dam female
+                    endif
+
                 endif
                 damFound = .true.
             endif

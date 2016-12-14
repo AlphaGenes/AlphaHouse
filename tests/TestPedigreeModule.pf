@@ -25,7 +25,7 @@ module TestPedigreeModule
     @test
     subroutine testReadAndSort
         implicit none
-         @assertEqual(pedigree%Pedigree(1)%OriginalID,"305180198")
+         @assertEqual(pedigree%Pedigree(1)%OriginalID,"70057984")
     end subroutine testReadAndSort
 
 
