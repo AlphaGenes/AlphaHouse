@@ -42,6 +42,8 @@ module HaplotypeModule
     procedure :: setFromOtherIfMissing
     procedure :: setZeroBits
     procedure :: setOneBits
+    procedure :: setZero
+    procedure :: setOne
   end type Haplotype
   
   interface Haplotype
@@ -477,6 +479,32 @@ contains
       h%phase(i) = IAND(NOT(array(i)), h%phase(i))
     end do
   end subroutine setZeroBits
+  
+  subroutine setZero(h, pos)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: pos
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+    h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+  end subroutine setZero
+  
+  subroutine setOne(h, pos)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: pos
+    
+    integer :: cursection, curpos
+    
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64
+    
+    h%phase(cursection) = ibset(h%phase(cursection), curpos)
+    h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+  end subroutine setOne
     
 end module HaplotypeModule
   
