@@ -450,18 +450,21 @@ contains
         integer(kind=int64) :: sizeDict
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         type(Individual), pointer, dimension(:) :: newPed
+        type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
         pedCounter = 0
         call this%dictionary%destroy()
+        call this%founders%destroyLinkedList()
         sizeDict  =this%pedigreeSize
         allocate(newPed(this%maxPedigreeSize))
         this%dictionary = DictStructure(sizeDict)
+        allocate(newGenerationList(0:maxGeneration))
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-
+                 
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
                  newPed(pedCounter) = tmpIndNode%item
@@ -476,12 +479,18 @@ contains
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
                     newPed(pedCounter)%damPointer=> newPed(tmpId)
                 endif
+                if (i ==0 ) then !if object is afounder add to founder array
+                   call  this%founders%list_add(newPed(pedCounter))
+                endif
+
+                call newGenerationList(i)%list_add(newPed(pedCounter))
                 tmpIndNode => tmpIndNode%next
             end do
         enddo
         ! call move_alloc(newPed, this%pedigree)
         ! print *, "size:", size(this%pedigree),":",size(newPed)
         this%pedigree = newPed
+        this%generations = newGenerationList
     end subroutine sortPedigreeAndOverwrite
 
 
@@ -499,7 +508,7 @@ contains
         class(pedigreeHolder):: this
 
         integer :: i
-        
+
         if (generation > indiv%generation) then
             if (indiv%generation /= 0 .and. indiv%generation > 0) then !remove from other list, as has already been set
                 call this%generations(indiv%generation)%list_remove(indiv)
