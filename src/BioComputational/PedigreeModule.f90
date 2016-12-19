@@ -460,7 +460,7 @@ contains
         sizeDict  =this%pedigreeSize
         allocate(newPed(this%maxPedigreeSize))
         this%dictionary = DictStructure(sizeDict)
-        allocate(newGenerationList(0:maxGeneration))
+        allocate(newGenerationList(0:this%maxGeneration))
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
