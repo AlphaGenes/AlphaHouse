@@ -89,6 +89,7 @@ module IndividualModule
             procedure :: getPaternalGrandDamRecodedIndexNoDummy
             procedure :: getMaternalGrandDamRecodedIndexNoDummy
             procedure :: getIntegerVectorOfRecodedIdsNoDummy
+            procedure :: resetOffspringInformation
     end type Individual
 
     interface Individual
@@ -665,6 +666,16 @@ contains
 
     end function hasDummyParentsOrGranparents
 
+    subroutine resetOffspringInformation(this)
+        class(Individual) :: this
+    
+        deallocate(this%offsprings)
+        allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
+    
+        this%noffs = 0
+    
+    
+    end subroutine resetOffspringInformation 
 
       !---------------------------------------------------------------------------
     !> @brief Constructor for siredam class.

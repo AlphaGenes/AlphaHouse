@@ -11,7 +11,7 @@ type PedigreeHolder
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
     type(DictStructure) :: dictionary 
-    integer(kind=int32) :: pedigreeSize !pedigree size cannot be bigger than 2 billion animals
+    integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
     integer(kind=int32), dimension(:) ,allocatable :: sortedIndexList
 
@@ -60,7 +60,8 @@ contains
         integer :: i
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
-
+        
+        pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
         tmpCounter = 0
         if (present(numberInFile)) then
@@ -141,6 +142,7 @@ contains
                     tmpSireNum = pedStructure%dictionary%getValue("dum"//trim(tmpSire))
                     if (tmpSireNum == DICT_NULL) then
                         pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                        pedStructure%nDummys = pedStructure%nDummys + 1
                         if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                             write(error_unit,*) "ERROR: too many undefined animals"
                             stop
@@ -171,7 +173,7 @@ contains
                     ! Check for defined animals that have nit been set in pedigree
                     tmpDamNum = pedStructure%dictionary%getValue("dum"//trim(tmpDam))
                     if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
-
+                        pedStructure%nDummys = pedStructure%nDummys + 1
                         pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                         if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                             write(error_unit,*) "ERROR: too many undefined animals"
@@ -200,6 +202,7 @@ contains
                 tmpCounter =  tmpCounter + 1
                 write(tmpCounterStr, '(I3.3)') tmpCounter
                 pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                pedStructure%nDummys = pedStructure%nDummys + 1
                     if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
@@ -239,7 +242,7 @@ contains
 
 
     deallocate(tmpAnimalArray)
-    
+    write (*,*) "Number of Dummy Animals: ",pedStructure%nDummys
     end function initPedigree
 
 
@@ -468,7 +471,7 @@ contains
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
                  newPed(pedCounter) = tmpIndNode%item
-                 newPed(pedCounter)%nOffs = 0 ! reset offsprings
+                 call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
                  if (associated(newPed(pedCounter)%sirePointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
