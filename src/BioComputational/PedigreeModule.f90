@@ -479,13 +479,17 @@ contains
                  call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
                  if (associated(newPed(pedCounter)%sirePointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
-                    call newPed(tmpId)%addOffspring(newPed(pedCounter))
-                    newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                    if (tmpID /= DICT_NULL) then
+                        call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                        newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                    endif
                 endif
                 if (associated(newPed(pedCounter)%damPointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
-                    call newPed(tmpId)%addOffspring(newPed(pedCounter))
-                    newPed(pedCounter)%damPointer=> newPed(tmpId)
+                    if (tmpID /= DICT_NULL) then
+                        call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                        newPed(pedCounter)%damPointer=> newPed(tmpId)
+                    endif
                 endif
                 if (i ==0 ) then !if object is afounder add to founder array
                    call  this%founders%list_add(newPed(pedCounter))
@@ -499,27 +503,28 @@ contains
         ! print *, "size:", size(this%pedigree),":",size(newPed)
 
         tmpIndNode => dummyList%first
+
         ! add dummys to end of pedigree
         do i=1, dummyList%length
             pedCounter = pedCounter +1
             call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
             newPed(pedCounter) = tmpIndNode%item
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
-            if (associated(newPed(pedCounter)%sirePointer)) then
-            tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
-            call newPed(tmpId)%addOffspring(newPed(pedCounter))
-            newPed(pedCounter)%sirePointer=> newPed(tmpId)
-            endif
-            if (associated(newPed(pedCounter)%damPointer)) then
-            tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
-            call newPed(tmpId)%addOffspring(newPed(pedCounter))
-            newPed(pedCounter)%damPointer=> newPed(tmpId)
-            endif
 
+            do h=1, tmpIndNode%item%nOffs
+                tmpId =  this%dictionary%getValue(tmpIndNode%item%offsprings(h)%p%originalID)
+                call newPed(pedCounter)%addOffspring(newPed(tmpID))
+                if(trim(tmpIndNode%item%offsprings(h)%p%sireId) == trim(newPed(pedCounter)%originalID)) then
+                    newPed(tmpId)%sirePointer => newPed(pedCounter)
+                else 
+                    newPed(tmpId)%damPointer => newPed(pedCounter)
+                endif
+            enddo
             call  this%founders%list_add(newPed(pedCounter))
 
             call newGenerationList(0)%list_add(newPed(pedCounter))
             tmpIndNode => tmpIndNode%next
+
         enddo
 
 
