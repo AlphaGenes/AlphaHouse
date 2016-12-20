@@ -25,6 +25,7 @@ type PedigreeHolder
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
         procedure :: sortPedigreeAndOverwrite
+        procedure :: sortAndRecode
 
 end type PedigreeHolder
 
@@ -416,7 +417,7 @@ contains
             unit = output_unit
         endif
         
-        block 
+        block
             integer :: sireId, damId
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
@@ -449,11 +450,12 @@ contains
     subroutine sortPedigreeAndOverwrite(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
-        integer :: unit, i,h, pedCounter, tmpId
+        integer :: i,h, pedCounter, tmpId
         integer(kind=int64) :: sizeDict
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         type(Individual), pointer, dimension(:) :: newPed
         type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+        type(IndividualLinkedList) :: dummyList
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
@@ -467,7 +469,10 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-                 
+                 if (tmpIndNode%item%isDummy) then
+                    call dummyList%list_add(tmpIndNode%item)
+                    cycle
+                 endif
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
                  newPed(pedCounter) = tmpIndNode%item
@@ -492,6 +497,32 @@ contains
         enddo
         ! call move_alloc(newPed, this%pedigree)
         ! print *, "size:", size(this%pedigree),":",size(newPed)
+
+        tmpIndNode => dummyList%first
+        ! add dummys to end of pedigree
+        do i=1, dummyList%length
+            pedCounter = pedCounter +1
+            call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
+            newPed(pedCounter) = tmpIndNode%item
+            call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
+            if (associated(newPed(pedCounter)%sirePointer)) then
+            tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
+            call newPed(tmpId)%addOffspring(newPed(pedCounter))
+            newPed(pedCounter)%sirePointer=> newPed(tmpId)
+            endif
+            if (associated(newPed(pedCounter)%damPointer)) then
+            tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
+            call newPed(tmpId)%addOffspring(newPed(pedCounter))
+            newPed(pedCounter)%damPointer=> newPed(tmpId)
+            endif
+
+            call  this%founders%list_add(newPed(pedCounter))
+
+            call newGenerationList(0)%list_add(newPed(pedCounter))
+            tmpIndNode => tmpIndNode%next
+        enddo
+
+
         this%pedigree = newPed
         this%generations = newGenerationList
     end subroutine sortPedigreeAndOverwrite
@@ -509,6 +540,7 @@ contains
         type(Individual),pointer, intent(inout) :: indiv
         integer, intent(in) :: generation
         class(pedigreeHolder):: this
+        
 
         integer :: i
 
@@ -532,5 +564,26 @@ contains
         endif
     end subroutine setOffspringGeneration
 
+
+    function sortAndRecode(this) result(array)
+        class(pedigreeHolder) :: this !> object to operate on
+        integer :: array(this%pedigreeSize,3) !> array of 3 vectors per animal to operate on
+        integer :: counter,i,h
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays
+        endif
+        
+        do i=0, this%maxGeneration
+            tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                counter = counter +1
+                array(counter,:) = tmpIndNode%item%getIntegerVectorOfRecodedIds()
+                tmpIndNode => tmpIndNode%next
+            end do
+        enddo
+
+    end function sortAndRecode
 
 end module PedigreeModule
