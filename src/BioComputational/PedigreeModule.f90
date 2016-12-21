@@ -516,7 +516,6 @@ contains
 
         this%pedigree = newPed
         this%generations = newGenerationList
-        deallocate(newPed)
     call dummyList%destroyLinkedList()
 
     end subroutine sortPedigreeAndOverwrite
