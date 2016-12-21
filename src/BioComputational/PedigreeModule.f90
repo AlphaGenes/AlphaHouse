@@ -13,7 +13,6 @@ type PedigreeHolder
     type(DictStructure) :: dictionary
     integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
-    integer(kind=int32), dimension(:) ,allocatable :: sortedIndexList
 
     integer :: maxGeneration
     contains
@@ -371,13 +370,8 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h,sortCounter
+        integer :: unit, i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
-
-        sortCounter = 0
-         if (.not. allocated(this%sortedIndexList)) then
-            allocate(this%sortedIndexList(this%pedigreeSize))
-        endif
 
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
@@ -392,8 +386,6 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-                sortCounter = sortCounter + 1
-                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                     write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -408,14 +400,10 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h, sortCounter
+        integer :: unit, i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
 
-        if (.not. allocated(this%sortedIndexList)) then
-            allocate(this%sortedIndexList(this%pedigreeSize))
-        endif
-        sortCounter = 0
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
@@ -440,8 +428,6 @@ contains
                     else
                         sireId = 0
                     endif
-                    sortCounter = sortCounter +1
-                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                      write (unit,'(3i20,a20)') tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -537,9 +523,10 @@ contains
 
         enddo
 
-
         this%pedigree = newPed
         this%generations = newGenerationList
+    call dummyList%destroyLinkedList()
+
     end subroutine sortPedigreeAndOverwrite
 
 
