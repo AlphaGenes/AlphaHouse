@@ -6,17 +6,17 @@ module PedigreeModule
 
 
 type PedigreeHolder
-    
+
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
-    type(DictStructure) :: dictionary 
+    type(DictStructure) :: dictionary
     integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
     integer(kind=int32), dimension(:) ,allocatable :: sortedIndexList
 
     integer :: maxGeneration
-    contains 
+    contains
         procedure :: destroyPedigree
         procedure :: setPedigreeGenerationsAndBuildArrays
         procedure :: outputSortedPedigree
@@ -25,9 +25,17 @@ type PedigreeHolder
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
         procedure :: sortPedigreeAndOverwrite
+        procedure :: sortPedigreeWithDummyAtTheTop
         procedure :: sortAndRecode
+        procedure :: printPedigree
 
 end type PedigreeHolder
+
+type RecodedPedigreeArray
+  character(len=IDLENGTH), allocatable :: originalId(:)
+  integer(kind=int32), allocatable :: generation(:)
+  integer(kind=int32), allocatable :: id(:,:)
+end type
 
     interface PedigreeHolder
         module procedure initPedigree
@@ -37,10 +45,10 @@ end type PedigreeHolder
         module procedure :: setPedigreeGenerationsAndBuildArrays
     end interface Sort
 contains
-    
+
 
     !---------------------------------------------------------------------------
-    !> @brief distructor for pedigree class 
+    !> @brief distructor for pedigree class
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !> @param[in] file path (string)
@@ -61,7 +69,7 @@ contains
         integer :: i
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
-        
+
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
         tmpCounter = 0
@@ -72,43 +80,43 @@ contains
         endif
         sizeDict = nIndividuals
         pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
-        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))   
+        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
         pedStructure%pedigreeSize = nIndividuals
         pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
         pedStructure%maxGeneration = 0
         open(newUnit=fileUnit, file=fileIn, status="old")
-       
+
         do i=1,nIndividuals
-            
+
             sireFound = .false.
             damFound = .false.
-            
+
             read(fileUnit,*) tmpId,tmpSire,tmpDam
             call pedStructure%dictionary%addKey(tmpId, i)
-            
+
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
 
             if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
                 tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
-                if (tmpSireNum /= DICT_NULL) then     
+                if (tmpSireNum /= DICT_NULL) then
                     sireFound = .true.
                 endif
             endif
 
-            if (tmpDam /= EMPTY_PARENT) then 
+            if (tmpDam /= EMPTY_PARENT) then
                 tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
-                if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree            
+                if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree
                     damFound = .true.
-                endif                
+                endif
             endif
             if (tmpSire == EMPTY_PARENT .and. tmpDam == EMPTY_PARENT) then !if animal is a founder
                 pedStructure%Pedigree(i)%founder = .true.
-                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))      
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))
 
             else if (sireFound == .false. .or. damFound == .false. ) then
                 tmpAnimalArrayCount = tmpAnimalArrayCount +1
-                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in  
+                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in
             else ! if sire and dam are both found
                 pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                 call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
@@ -117,14 +125,14 @@ contains
                 pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                 call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
                 call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
-            endif 
+            endif
         enddo
 
         close(fileUnit)
 
         !check animals that didn't have parental information initially
         ! this is done to avoid duplication when a pedigree is sorted
-        do i=1,tmpAnimalArrayCount 
+        do i=1,tmpAnimalArrayCount
             sireFound = .false.
             damFound = .false.
             tmpSire = pedStructure%Pedigree(tmpAnimalArray(i))%getSireId()
@@ -137,7 +145,7 @@ contains
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                     call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
-                
+
                 else !if sire is defined but not in the pedigree, create him
                     ! check if the tmp animal has already been created
                     tmpSireNum = pedStructure%dictionary%getValue("dum"//trim(tmpSire))
@@ -166,10 +174,10 @@ contains
             endif
 
             if (tmpDam /= EMPTY_PARENT) then
-                if (tmpDamNum /= DICT_NULL) then !if dam has been found            
+                if (tmpDamNum /= DICT_NULL) then !if dam has been found
                         pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                         call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                        call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female       
+                        call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
                 else
                     ! Check for defined animals that have nit been set in pedigree
                     tmpDamNum = pedStructure%dictionary%getValue("dum"//trim(tmpDam))
@@ -187,7 +195,7 @@ contains
                         call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
 
                         call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-                        pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
+                        pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
                     else
                         pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                         call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
@@ -217,7 +225,7 @@ contains
                     endif
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true. 
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
             endif
         enddo
 
@@ -233,8 +241,8 @@ contains
                     pedStructure%Pedigree(i)%gender = int(tmpGender)
                 else
                     write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
-                    write(error_unit, *) "Amimal:",tmpId  
-                endif 
+                    write(error_unit, *) "Amimal:",tmpId
+                endif
             end do
 
 
@@ -248,7 +256,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief distructor for pedigree class 
+    !> @brief distructor for pedigree class
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !> @param[in] file path (string)
@@ -256,7 +264,7 @@ contains
     subroutine destroyPedigree(this)
         class(PedigreeHolder) :: this
         integer :: i
-        
+
         do i=1,this%pedigreeSize
             call this%Pedigree(i)%destroyIndividual
             if (allocated(this%generations)) then
@@ -270,7 +278,7 @@ contains
     end subroutine destroyPedigree
 
     subroutine addGenotypeInformation(this, genotypeFile, nsnps, nAnnisG)
-         
+
         use AlphaHouseMod, only : countLines
         implicit none
         class(PedigreeHolder) :: this
@@ -308,13 +316,13 @@ contains
 
     end subroutine addGenotypeInformation
     !---------------------------------------------------------------------------
-    !> @brief builds correct generation information by looking at founders 
+    !> @brief builds correct generation information by looking at founders
     !> This is effectively a sort function for the pedigree
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine setPedigreeGenerationsAndBuildArrays(this)
-        
+
         implicit none
         class(PedigreeHolder) :: this
         integer :: i
@@ -365,7 +373,7 @@ contains
         character(len=*), intent(in), optional :: file
         integer :: unit, i,h,sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
-        
+
         sortCounter = 0
          if (.not. allocated(this%sortedIndexList)) then
             allocate(this%sortedIndexList(this%pedigreeSize))
@@ -380,7 +388,7 @@ contains
         else
             unit = output_unit
         endif
-        
+
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
@@ -402,7 +410,7 @@ contains
         character(len=*), intent(in), optional :: file
         integer :: unit, i,h, sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
-        
+
 
         if (.not. allocated(this%sortedIndexList)) then
             allocate(this%sortedIndexList(this%pedigreeSize))
@@ -416,7 +424,7 @@ contains
         else
             unit = output_unit
         endif
-        
+
         block
             integer :: sireId, damId
         do i=0, this%maxGeneration
@@ -476,6 +484,7 @@ contains
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
                  newPed(pedCounter) = tmpIndNode%item
+                 newPed(pedCounter)%id = pedCounter
                  call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
                  if (associated(newPed(pedCounter)%sirePointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
@@ -509,6 +518,7 @@ contains
             pedCounter = pedCounter +1
             call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
             newPed(pedCounter) = tmpIndNode%item
+            newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
 
             do h=1, tmpIndNode%item%nOffs
@@ -516,7 +526,7 @@ contains
                 call newPed(pedCounter)%addOffspring(newPed(tmpID))
                 if(trim(tmpIndNode%item%offsprings(h)%p%sireId) == trim(newPed(pedCounter)%originalID)) then
                     newPed(tmpId)%sirePointer => newPed(pedCounter)
-                else 
+                else
                     newPed(tmpId)%damPointer => newPed(pedCounter)
                 endif
             enddo
@@ -534,18 +544,80 @@ contains
 
 
 
+    subroutine sortPedigreeWithDummyAtTheTop(this)
+        use iso_fortran_env, only : output_unit, int64
+        class(PedigreeHolder) :: this
+        integer :: i,h, pedCounter, tmpId
+        integer(kind=int64) :: sizeDict
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        type(Individual), pointer, dimension(:) :: newPed
+        type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays
+        endif
+        pedCounter = 0
+        call this%dictionary%destroy()
+        call this%founders%destroyLinkedList()
+        sizeDict  =this%pedigreeSize
+        allocate(newPed(this%maxPedigreeSize))
+        this%dictionary = DictStructure(sizeDict)
+        allocate(newGenerationList(0:this%maxGeneration))
+        do i=0, this%maxGeneration
+            tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                 pedCounter = pedCounter +1
+                 call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
+                 newPed(pedCounter) = tmpIndNode%item
+                 newPed(pedCounter)%id = pedCounter
+                 call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
+                 if (associated(newPed(pedCounter)%sirePointer)) then
+                    tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
+                    if (tmpID /= DICT_NULL) then
+                        call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                        newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                    endif
+                endif
+                if (associated(newPed(pedCounter)%damPointer)) then
+                    tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
+                    if (tmpID /= DICT_NULL) then
+                        call newPed(tmpId)%addOffspring(newPed(pedCounter))
+                        newPed(pedCounter)%damPointer=> newPed(tmpId)
+                    endif
+                endif
+                if (i ==0 ) then !if object is afounder add to founder array
+                   call  this%founders%list_add(newPed(pedCounter))
+                endif
+
+                call newGenerationList(i)%list_add(newPed(pedCounter))
+                tmpIndNode => tmpIndNode%next
+            end do
+        enddo
+
+
+        this%pedigree = newPed
+        this%generations = newGenerationList
+    end subroutine sortPedigreeWithDummyAtTheTop
+
+    subroutine printPedigree(this)
+      class(PedigreeHolder) :: this
+      integer ::i
+      do i= 1, this%pedigreeSize
+        print *, this%pedigree(i)%id, this%pedigree(i)%getIntegerVectorOfRecodedIds()
+      enddo
+    end subroutine printPedigree
+
     !---------------------------------------------------------------------------
     !> @brief Sets generation of an individual and his children recursively
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
-    !> @param[in] generation (integer) 
+    !> @param[in] generation (integer)
     !> @param[in] pointer to an individual
     !---------------------------------------------------------------------------
     recursive subroutine setOffspringGeneration(this,generation, indiv)
         type(Individual),pointer, intent(inout) :: indiv
         integer, intent(in) :: generation
         class(pedigreeHolder):: this
-        
+
 
         integer :: i
 
@@ -555,7 +627,7 @@ contains
             endif
 
             indiv%generation = generation
-            
+
             call this%generations(indiv%generation)%list_add(indiv)
             if(indiv%generation > this%maxGeneration) then
                 this%maxGeneration = indiv%generation
@@ -563,32 +635,48 @@ contains
         endif
         if ( indiv%nOffs /= 0) then
             do i=1,indiv%nOffs
-                
+
                 call this%setOffspringGeneration(indiv%generation+1,indiv%OffSprings(i)%p)
             enddo
         endif
     end subroutine setOffspringGeneration
 
-
-    function sortAndRecode(this) result(array)
-        class(pedigreeHolder) :: this !> object to operate on
-        integer :: array(this%pedigreeSize,3) !> array of 3 vectors per animal to operate on
+    !---------------------------------------------------------------------------
+    !> @brief Sorts and recodes pedigree
+    !> @details Sorts pedigree such that parents preceede children and recodes ID to 1:n
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    December 20, 2016
+    !> @return recodedPedigreeArray
+    !---------------------------------------------------------------------------
+    function sortAndRecode(this) result(recPed)
+        class(pedigreeHolder) :: this         !< object to operate on
+        type(recodedPedigreeArray) :: recPed  !< an recordedPedigreeArray object (components start at index 0; id has dimensions (1:3,0:n))
         integer :: counter,i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
+        allocate(recPed%originalId(0:this%pedigreeSize))
+        allocate(recPed%generation(0:this%pedigreeSize))
+        allocate(recPed%id(3,0:this%pedigreeSize))
+
+        recPed%originalId(0) = "0"
+        recPed%generation(0) = 0
+        recPed%id(1:3,0) = 0
+
         if (.not. allocated(this%generations)) then
-            call this%setPedigreeGenerationsAndBuildArrays
+            call this%sortPedigreeWithDummyAtTheTop
         endif
-        
+
+        counter = 0
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-                counter = counter +1
-                array(counter,:) = tmpIndNode%item%getIntegerVectorOfRecodedIds()
+                counter = counter + 1
+                recPed%originalId(counter) = tmpIndNode%item%originalId
+                recPed%generation(counter) = tmpIndNode%item%generation
+                recPed%id(1:3,counter) = tmpIndNode%item%getIntegerVectorOfRecodedIds()
                 tmpIndNode => tmpIndNode%next
             end do
         enddo
-
     end function sortAndRecode
 
 end module PedigreeModule
