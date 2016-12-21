@@ -514,11 +514,10 @@ contains
 
         enddo
 
-        deallocate(this%pedigree)
         this%pedigree = newPed
         this%generations = newGenerationList
-
-        call dummyList%destroyLinkedList()
+        deallocate(newPed)
+    call dummyList%destroyLinkedList()
 
     end subroutine sortPedigreeAndOverwrite
 
