@@ -13,6 +13,7 @@ type PedigreeHolder
     type(DictStructure) :: dictionary
     integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize
+    integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
     integer :: maxGeneration
     contains
@@ -24,8 +25,8 @@ type PedigreeHolder
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
         procedure :: sortPedigreeAndOverwrite
-        procedure :: sortPedigreeWithDummyAtTheTop
-        procedure :: sortAndRecode
+        procedure :: sortPedigreeAndOverwriteWithDummyAtTheTop
+        procedure :: makeRecodedPedigreeArray
         procedure :: printPedigree
 
 end type PedigreeHolder
@@ -370,8 +371,13 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h
+        integer :: unit, i,h,sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
+
+        sortCounter = 0
+         if (.not. allocated(this%sortedIndexList)) then
+            allocate(this%sortedIndexList(this%pedigreeSize))
+        endif
 
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
@@ -386,6 +392,8 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
+                sortCounter = sortCounter + 1
+                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                     write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -400,10 +408,14 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file
-        integer :: unit, i,h
+        integer :: unit, i,h, sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
 
+        if (.not. allocated(this%sortedIndexList)) then
+            allocate(this%sortedIndexList(this%pedigreeSize))
+        endif
+        sortCounter = 0
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
         endif
@@ -428,6 +440,8 @@ contains
                     else
                         sireId = 0
                     endif
+                    sortCounter = sortCounter +1
+                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                      write (unit,'(3i20,a20)') tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -523,15 +537,14 @@ contains
 
         enddo
 
+
         this%pedigree = newPed
         this%generations = newGenerationList
-    call dummyList%destroyLinkedList()
-
     end subroutine sortPedigreeAndOverwrite
 
 
 
-    subroutine sortPedigreeWithDummyAtTheTop(this)
+    subroutine sortPedigreeAndOverwriteWithDummyAtTheTop(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
         integer :: i,h, pedCounter, tmpId
@@ -583,7 +596,7 @@ contains
 
         this%pedigree = newPed
         this%generations = newGenerationList
-    end subroutine sortPedigreeWithDummyAtTheTop
+    end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
     subroutine printPedigree(this)
       class(PedigreeHolder) :: this
@@ -631,11 +644,11 @@ contains
     !---------------------------------------------------------------------------
     !> @brief Sorts and recodes pedigree
     !> @details Sorts pedigree such that parents preceede children and recodes ID to 1:n
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk & Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
     !> @date    December 20, 2016
     !> @return recodedPedigreeArray
     !---------------------------------------------------------------------------
-    function sortAndRecode(this) result(recPed)
+    function makeRecodedPedigreeArray(this) result(recPed)
         class(pedigreeHolder) :: this         !< object to operate on
         type(recodedPedigreeArray) :: recPed  !< an recordedPedigreeArray object (components start at index 0; id has dimensions (1:3,0:n))
         integer :: counter,i,h
@@ -650,7 +663,7 @@ contains
         recPed%id(1:3,0) = 0
 
         if (.not. allocated(this%generations)) then
-            call this%sortPedigreeWithDummyAtTheTop
+            call this%sortPedigreeAndOverwriteWithDummyAtTheTop
         endif
 
         counter = 0
@@ -664,6 +677,6 @@ contains
                 tmpIndNode => tmpIndNode%next
             end do
         enddo
-    end function sortAndRecode
+    end function makeRecodedPedigreeArray
 
 end module PedigreeModule
