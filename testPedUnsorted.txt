@@ -1,7 +1,0 @@
-ccc aaa bbb
-ggg 0 d1
-eee ddd bbb
-bbb 0 0
-fff ddd bbb
-ddd aaa 0
-hhh 0 d1

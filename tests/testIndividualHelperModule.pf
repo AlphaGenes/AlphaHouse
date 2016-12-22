@@ -6,21 +6,37 @@ module TestIndividualHelperModule
 
   implicit none
 
-  type(PedigreeHolder) :: pedigree  
+  type(PedigreeHolder) :: pedigree
   contains
 
- @before
+  @before
     subroutine initialise
-         implicit none
-        
+        implicit none
+
+        integer(int32) :: pedUnit
+
+        ! A sorted pedigree with one parent (d1) not given as individual
+        open(newunit=pedUnit, file="testPed.txt", status="unknown")
+        write(pedUnit, "(a)") "aaa 0   0"
+        write(pedUnit, "(a)") "bbb 0   0"
+        write(pedUnit, "(a)") "ccc aaa bbb"
+        write(pedUnit, "(a)") "ddd aaa 0"
+        write(pedUnit, "(a)") "eee ddd bbb"
+        write(pedUnit, "(a)") "fff ddd bbb"
+        write(pedUnit, "(a)") "ggg 0   d1"
+        write(pedUnit, "(a)") "hhh 0   d1"
+        close(pedUnit)
+
         pedigree = PedigreeHolder("testPed.txt")
 
-        
     end subroutine
 
    @after
     subroutine Uninit
+      integer(int32) :: pedUnit
       call pedigree%destroyPedigree
+      open(newunit=pedUnit, file="testPed.txt", status="old")
+      close(pedUnit, status="delete")
     end subroutine
 
     @test
@@ -28,7 +44,7 @@ module TestIndividualHelperModule
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2
-        type(individualLinkedList) :: ret        
+        type(individualLinkedList) :: ret
 
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
@@ -44,7 +60,7 @@ module TestIndividualHelperModule
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2
-        type(individualLinkedList) :: ret        
+        type(individualLinkedList) :: ret
 
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
@@ -60,7 +76,7 @@ module TestIndividualHelperModule
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
-        type(individualLinkedList) :: ret        
+        type(individualLinkedList) :: ret
         call pedigree%outputSortedPedigree("out.txt")
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
@@ -74,13 +90,13 @@ module TestIndividualHelperModule
 
     end subroutine testGetAllSibs
 
- 
-    @test 
+
+    @test
     subroutine testGetSharedKids
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
-        type(individualLinkedList) :: ret        
+        type(individualLinkedList) :: ret
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
         tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
@@ -90,15 +106,15 @@ module TestIndividualHelperModule
         @assertTrue(ret%contains(tmp3))
         @assertTrue(ret%contains(tmp4))
 
-    end subroutine testGetSharedKids    
+    end subroutine testGetSharedKids
 
 
-        @test 
+        @test
     subroutine testGetMates
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
-        type(individualLinkedList) :: ret        
+        type(individualLinkedList) :: ret
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
         tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("aaa"))
@@ -108,7 +124,7 @@ module TestIndividualHelperModule
         @assertTrue(ret%contains(tmp))
         @assertTrue(ret%contains(tmp3))
 
-    end subroutine testGetMates   
+    end subroutine testGetMates
 
 
 end module TestIndividualHelperModule
