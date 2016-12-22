@@ -5,19 +5,17 @@ module TestPedigreeModule
 
   implicit none
 
-  type(PedigreeHolder) :: pedigree  
+  type(PedigreeHolder) :: pedigree, pedigreeUnsorted
   contains
 
- @before
+    @before
     subroutine initialise
-         implicit none
-        
-        pedigree = PedigreeHolder("testPed.txt")
-
-        
+        implicit none
+        pedigree         = PedigreeHolder("testPed.txt")
+        pedigreeUnsorted = PedigreeHolder("testPedUnsorted.txt")
     end subroutine
 
-   @after
+    @after
     subroutine Uninit
       call pedigree%destroyPedigree
     end subroutine
@@ -28,7 +26,7 @@ module TestPedigreeModule
          @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
     end subroutine testReadAndSort
 
-     @test
+    @test
     subroutine testDummys
         implicit none
         integer :: tmp,i
@@ -52,6 +50,17 @@ module TestPedigreeModule
       @assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
 
     end subroutine testSorting
+
+    @test
+    subroutine testMakeRecodedPedigreeArray
+      implicit none
+      type(recodedPedigreeArray) :: recPed, recPedUnsorted
+      recPed         = pedigree%makeRecodedPedigreeArray()
+      recPedUnsorted = pedigreeUnsorted%makeRecodedPedigreeArray()
+      @assertEqual()
+
+    end subroutine
+
     ! @test
     ! subroutine testAddOffspring
     !     type(individualPointerContainer), allocatable :: Offsprings(:)
