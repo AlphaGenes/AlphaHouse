@@ -8,7 +8,7 @@ module ConstantModule
     integer, parameter :: generationThreshold = 1000
     integer, parameter :: OFFSPRINGTHRESHOLD = 150
     integer, parameter :: NOGENERATIONVALUE = -9999
-    integer, parameter :: FILELENGTH = 1000
-    integer, parameter :: SPECOPTIONLENGTH = 200
+    integer, parameter :: FILELENGTH = 256
+    integer, parameter :: SPECOPTIONLENGTH = 300
 
 end Module ConstantModule
