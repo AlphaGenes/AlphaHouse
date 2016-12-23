@@ -32,9 +32,9 @@ type PedigreeHolder
 end type PedigreeHolder
 
 type RecodedPedigreeArray
-  character(len=IDLENGTH), allocatable :: originalId(:)
-  integer(kind=int32), allocatable :: generation(:)
-  integer(kind=int32), allocatable :: id(:,:)
+  character(len=IDLENGTH), allocatable, dimension(:) :: originalId
+  integer(kind=int32), allocatable, dimension(:) :: generation
+  integer(kind=int32), allocatable, dimension(:,:) :: id
   contains
       procedure :: destroy => destroyRecodedPedigreeArray
 end type
