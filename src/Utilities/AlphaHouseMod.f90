@@ -35,7 +35,7 @@ module AlphaHouseMod
   ! Methods
   public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
-  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double
+  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
   public :: isDelim, PrintElapsedTime
 
   !> @brief List of characters for case conversion in ToLower
@@ -313,6 +313,28 @@ module AlphaHouseMod
       Res=trim(Tmp)
       return
     end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Convert logical to character (0/1)
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   December 23, 2016
+    !---------------------------------------------------------------------------
+    function Log2Char(l) result(Res)
+      implicit none
+
+      logical, intent(in) :: l   !< logical
+      character(len=1)    :: Res !< @return character
+
+      if (l) then
+        Res = "1"
+      else
+        Res = "0"
+      end if
+      return
+    end function
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
