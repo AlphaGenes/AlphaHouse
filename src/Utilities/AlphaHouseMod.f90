@@ -27,15 +27,16 @@
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
 
-  use ISO_Fortran_Env
+  use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
 
   implicit none
 
   private
   ! Methods
-  public :: CountLines,int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
+  public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
+  public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double
-  public:: isDelim
+  public :: isDelim, PrintElapsedTime
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -54,7 +55,8 @@ module AlphaHouseMod
   !> @brief Integer to character interface
   interface int2Char
     module procedure Int2Char32, Int2Char64
-  end interface 
+  end interface
+
   !> @brief FindLoc interface
   interface FindLoc
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
@@ -159,7 +161,7 @@ module AlphaHouseMod
         dummyStr = ToLower(str)
         k=1
         newstr=""
-        do 
+        do
             if (dummyStr(k:k) /= " ") then
                 newstr = dummyStr(1:k)
                 k=k+1
@@ -188,7 +190,7 @@ module AlphaHouseMod
         if (len(string)==0) then
           res = ''
         else if (len(string)==1) then
-           if (string==ch) then 
+           if (string==ch) then
               res = ''
            else
               res = string
@@ -241,7 +243,7 @@ module AlphaHouseMod
     !---------------------------------------------------------------------------
     !> @brief   Convert integer to character
     !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran. Converts 64 bit integer.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk 
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    October 28, 2016
     !---------------------------------------------------------------------------
     function Int2Char64(i,fmt) result(Res)
@@ -561,7 +563,7 @@ module AlphaHouseMod
     character(len=300) :: first
     character (len=300),dimension(:), allocatable,intent(out) :: second
     character (len=300), dimension(:), allocatable :: tmp
-    logical :: useSecond    
+    logical :: useSecond
     first = " "
     useSecond = .false.
     sCount1 = 0
@@ -570,7 +572,7 @@ module AlphaHouseMod
     if (allocated(second)) deallocate(second)
     allocate(second(numberAfterComma)) ! Allocate the second array
     lenin=len(line)
-    lenin=len_trim(line(1:lenin))  ! Trim string as no point dealing with trailing whitespace   
+    lenin=len_trim(line(1:lenin))  ! Trim string as no point dealing with trailing whitespace
     do i=1,lenin
         c=line(i:i)
         if(.not. (ichar(c) == 9 .or. c == " " .or. c=="")) then  !if c is not tab or whitespace
@@ -650,7 +652,42 @@ module AlphaHouseMod
       deallocate(SeedList)
     end subroutine
 
-    !########################################################################### 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Print elapsed time in a nice way
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    December 22, 2016
+    !> @return  AlphaRelateSpec object
+    !---------------------------------------------------------------------------
+    subroutine PrintElapsedTime(Start, End)
+      implicit none
+      real(real32) :: Start  !< Start time from cpu_time()
+      real(real32) :: End    !< End time from cpu_time()
+      real(real32) :: Total
+      integer(int32) :: Hours, Minutes, Seconds
+
+      Total = 0.0
+      Hours = 0
+      Minutes = 0
+      Seconds = 0
+
+      Total = End - Start
+      Minutes = int(Total / 60)
+      Seconds = int(Total - (Minutes * 60))
+      Hours = int(Minutes / 60)
+      Minutes = Minutes - (Hours * 60)
+
+      write(STDOUT, "(a)") ""
+      write(STDOUT, "(a)") " Process ended"
+      write(STDOUT, "(a,f20.2,a,3(i4,a))") " Time elapsed: ", Total, " seconds => ",&
+                                           Hours,   " hours ",&
+                                           Minutes, " minutes ",&
+                                           Seconds, " seconds"
+      write(STDOUT, "(a)") ""
+    end subroutine
+
+    !###########################################################################
 end module
 
 !###############################################################################
