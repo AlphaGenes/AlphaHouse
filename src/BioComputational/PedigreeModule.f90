@@ -32,6 +32,7 @@ type PedigreeHolder
 end type PedigreeHolder
 
 type RecodedPedigreeArray
+  integer(kind=int32) :: nInd
   character(len=IDLENGTH), allocatable, dimension(:) :: originalId
   integer(kind=int32), allocatable, dimension(:) :: generation
   integer(kind=int32), allocatable, dimension(:,:) :: id
@@ -651,15 +652,15 @@ contains
     !> @brief Constructor for recodedPedigreeArray
     !> @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
     !> @date   December 22, 2016
-    !> @return recodedPedigreeArray
     !---------------------------------------------------------------------------
-    function initRecodedPedigreeArray(n) result(recPed)
+    pure function initRecodedPedigreeArray(n) result(recPed)
         implicit none
-        integer(int32) :: n                  !< number of individuals in pedigree
-        type(recodedPedigreeArray) :: recPed !< an recordedPedigreeArray object (components start at index 0; id has dimensions (1:3,0:n))
+        integer(int32), intent(in) :: n      !< number of individuals in pedigree
+        type(recodedPedigreeArray) :: recPed !< @return initialized recoded pedigree array
         allocate(recPed%originalId(0:n))
         allocate(recPed%generation(0:n))
         allocate(recPed%id(3,0:n))
+        recPed%nInd = n
         recPed%originalId(0) = "0"
         recPed%generation(0) = 0
         recPed%id(1:3,0) = 0
@@ -670,9 +671,9 @@ contains
     !> @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
     !> @date   December 22, 2016
     !---------------------------------------------------------------------------
-    subroutine destroyRecodedPedigreeArray(this)
+    pure subroutine destroyRecodedPedigreeArray(this)
         implicit none
-        class(recodedPedigreeArray) :: this !< an recordedPedigreeArray object
+        class(recodedPedigreeArray), intent(inout) :: this !< an recordedPedigreeArray object
         deallocate(this%originalId)
         deallocate(this%generation)
         deallocate(this%id)
@@ -683,12 +684,11 @@ contains
     !> @details Sorts pedigree such that parents preceede children and recodes ID to 1:n
     !> @author David Wilson david.wilson@roslin.ed.ac.uk & Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
     !> @date   December 20, 2016
-    !> @return recodedPedigreeArray
     !---------------------------------------------------------------------------
-    function makeRecodedPedigreeArray(this) result(recPed)
+    subroutine makeRecodedPedigreeArray(this, recPed)
         implicit none
-        class(pedigreeHolder) :: this        !< object to operate on
-        type(recodedPedigreeArray) :: recPed !< an recordedPedigreeArray object (components start at index 0; id has dimensions (1:3,0:n))
+        class(pedigreeHolder), intent(inout) :: this      !< object to operate on
+        type(recodedPedigreeArray), intent(out) :: recPed !< @return recoded pedigree array
         integer :: counter,i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
@@ -696,7 +696,7 @@ contains
 
         if (.not. allocated(this%generations)) then
             call this%sortPedigreeAndOverwriteWithDummyAtTheTop
-        endif
+        end if
 
         counter = 0
         do i=0, this%maxGeneration
@@ -708,7 +708,7 @@ contains
                 recPed%id(1:3,counter) = tmpIndNode%item%getIntegerVectorOfRecodedIds()
                 tmpIndNode => tmpIndNode%next
             end do
-        enddo
-    end function makeRecodedPedigreeArray
+        end do
+    end subroutine makeRecodedPedigreeArray
 
 end module PedigreeModule
