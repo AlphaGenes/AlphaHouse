@@ -30,6 +30,7 @@ SET(TESTS ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCALPHAHOUSE ${SRC}/)
 
 # Defined libary source
+INCLUDE(${CMAKE_MODULE_PATH}/findDoxygen.cmake)
 
 # Uncomment if it is required that Fortran 90 is supported
 IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
