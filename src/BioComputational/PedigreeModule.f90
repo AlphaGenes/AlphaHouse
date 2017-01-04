@@ -55,19 +55,19 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief distructor for pedigree class
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @param[in] file path (string)
+    !< @brief Constructor for pedigree class
+    !< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     function initPedigree(fileIn, numberInFile, genderFile) result(pedStructure)
         use AlphaHouseMod, only : countLines
         use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
-        character(len=*),intent(in) :: fileIn
-        character(len=*), intent(in),optional :: genderFile
+        character(len=*),intent(in) :: fileIn !< path of pedigree file
+        character(len=*), intent(in),optional :: genderFile !< path to gender file
         character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam,tmpCounterStr
-        integer(kind=int32),optional,intent(in) :: numberInFile
+        integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
         integer :: tmpCounter
@@ -263,10 +263,9 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief distructor for pedigree class
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @param[in] file path (string)
+    !< @brief distructor for pedigree class
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyPedigree(this)
         class(PedigreeHolder) :: this
@@ -323,10 +322,10 @@ contains
 
     end subroutine addGenotypeInformation
     !---------------------------------------------------------------------------
-    !> @brief builds correct generation information by looking at founders
-    !> This is effectively a sort function for the pedigree
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
+    !< @brief builds correct generation information by looking at founders
+    !< This is effectively a sort function for the pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine setPedigreeGenerationsAndBuildArrays(this)
 
@@ -346,16 +345,16 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief returns true if individual at given index is a isDummy
-    !> if 0 is given, return false
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @param[in] file path (string)
+    !< @brief returns true if individual at given index is a isDummy
+    !< if 0 is given, return false
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !< @param[in] file path (string)
     !---------------------------------------------------------------------------
     logical function isDummy(this, id)
         implicit none
         class(PedigreeHolder) :: this
-        integer, intent(in) :: id
+        integer, intent(in) :: id !< ID to check if animal is dummy
 
         if (id == 0) then
             isDummy = .false.
@@ -368,16 +367,16 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief writes sorted pedigree information to either a file or stdout
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @param[in] file path (string)
+    !< @brief writes sorted pedigree information to either a file or stdout
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !< @param[in] file path (string)
     !---------------------------------------------------------------------------
     subroutine outputSortedPedigree(this,file)
 
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
-        character(len=*), intent(in), optional :: file
+        character(len=*), intent(in), optional :: file !< output path for sorted pedigree
         integer :: unit, i,h,sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
@@ -414,7 +413,7 @@ contains
     subroutine outputSortedPedigreeInAlphaImputeFormat(this, file)
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
-        character(len=*), intent(in), optional :: file
+        character(len=*), intent(in), optional :: file !< output path for sorted pedigree
         integer :: unit, i,h, sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
@@ -550,7 +549,11 @@ contains
     end subroutine sortPedigreeAndOverwrite
 
 
-
+        !---------------------------------------------------------------------------
+    !< @brief Output pedigree to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine sortPedigreeAndOverwriteWithDummyAtTheTop(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
@@ -605,20 +608,25 @@ contains
         this%generations = newGenerationList
     end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
+    !---------------------------------------------------------------------------
+    !< @brief Output pedigree to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine printPedigree(this)
-      class(PedigreeHolder) :: this
-      integer ::i
-      do i= 1, this%pedigreeSize
-        print *, this%pedigree(i)%id, this%pedigree(i)%getIntegerVectorOfRecodedIds()
-      enddo
+          class(PedigreeHolder) :: this
+          integer ::i
+          do i= 1, this%pedigreeSize
+            print *, this%pedigree(i)%id, this%pedigree(i)%getIntegerVectorOfRecodedIds()
+          enddo
     end subroutine printPedigree
 
     !---------------------------------------------------------------------------
-    !> @brief Sets generation of an individual and his children recursively
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !> @param[in] generation (integer)
-    !> @param[in] pointer to an individual
+    !< @brief Sets generation of an individual and his children recursively
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !< @param[in] generation (integer)
+    !< @param[in] pointer to an individual
     !---------------------------------------------------------------------------
     recursive subroutine setOffspringGeneration(this,generation, indiv)
         type(Individual),pointer, intent(inout) :: indiv
@@ -649,9 +657,9 @@ contains
     end subroutine setOffspringGeneration
 
     !---------------------------------------------------------------------------
-    !> @brief Constructor for recodedPedigreeArray
-    !> @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
-    !> @date   December 22, 2016
+    !< @brief Constructor for recodedPedigreeArray
+    !< @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
+    !< @date   December 22, 2016
     !---------------------------------------------------------------------------
     pure function initRecodedPedigreeArray(n) result(recPed)
         implicit none
@@ -667,9 +675,9 @@ contains
     end function
 
     !---------------------------------------------------------------------------
-    !> @brief Destructor for recodedPedigreeArray
-    !> @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
-    !> @date   December 22, 2016
+    !< @brief Destructor for recodedPedigreeArray
+    !< @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
+    !< @date   December 22, 2016
     !---------------------------------------------------------------------------
     pure subroutine destroyRecodedPedigreeArray(this)
         implicit none
@@ -680,10 +688,10 @@ contains
     end subroutine
 
     !---------------------------------------------------------------------------
-    !> @brief Sorts and recodes pedigree
-    !> @details Sorts pedigree such that parents preceede children and recodes ID to 1:n
-    !> @author David Wilson david.wilson@roslin.ed.ac.uk & Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
-    !> @date   December 20, 2016
+    !< @brief Sorts and recodes pedigree
+    !< @details Sorts pedigree such that parents preceede children and recodes ID to 1:n
+    !< @author David Wilson david.wilson@roslin.ed.ac.uk & Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
+    !< @date   December 20, 2016
     !---------------------------------------------------------------------------
     subroutine makeRecodedPedigreeArray(this, recPed)
         implicit none

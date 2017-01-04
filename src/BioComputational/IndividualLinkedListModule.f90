@@ -1,3 +1,28 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     IndividualLinkedListModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing definition of linked List for objects (currently Individuals.
+!
+!> @details  Fully doubly linked list with useful procedures for operations on the linked list
+!
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module IndividualLinkedListModule
     use iso_fortran_env
     use individualModule, only :individual
@@ -39,6 +64,11 @@ module IndividualLinkedListModule
 
 contains
 
+    !---------------------------------------------------------------------------
+    !> @brief Destructor for linked list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
         class(IndividualLinkedList),intent(inout) :: this
         type(IndividualLinkedListNode),pointer :: node
@@ -57,9 +87,14 @@ contains
 
     end subroutine destroyLinkedList
 
+    !---------------------------------------------------------------------------
+    !> @brief Add item to end of the list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine list_add(this,item)
         class(IndividualLinkedList),intent(inout) :: this
-        type(individual),intent(in), target :: item
+        type(individual),intent(in), target :: item !< item to add
 
         if (.not.associated(this%last)) then
         allocate(this%first)
@@ -75,7 +110,7 @@ contains
     end subroutine list_add
 
 
-  
+      
     recursive logical function list_all(this,proc) result(res)
         class(IndividualLinkedList),intent(inout) :: this
         procedure(logicalAbstractFunction) :: proc
@@ -91,10 +126,14 @@ contains
 
     end function list_all
 
-
+       !---------------------------------------------------------------------------
+    !> @brief returns and then removes the item at the end of the list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine list_pop(this, item)
         class(IndividualLinkedList),intent(inout) :: this
-        type(individual),pointer,intent(out) :: item
+        type(individual),pointer,intent(out) :: item !< item at the end of the list
         if (associated(this%last)) then
             item => this%last%item         
             this%last => this%last%previous
@@ -109,10 +148,16 @@ contains
         end if
     end subroutine list_pop
 
+
+    !---------------------------------------------------------------------------
+    !> @brief Gets value at position N in list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     function list_get_nth(this,n) result(res)
-        class(individual),pointer :: res
+        class(individual),pointer :: res !< item returned
         class(IndividualLinkedList),intent(in) :: this
-        integer, intent(in) :: n
+        integer, intent(in) :: n !< position of item to return 
         integer :: i
         type(IndividualLinkedListNode),pointer :: node
 
@@ -136,9 +181,15 @@ contains
         end if
     end function list_get_nth
 
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns .true. if item is in list, false otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     logical function contains(this, in)
         class(IndividualLinkedList),intent(in) :: this
-        type(individual),target, intent(in) :: in
+        type(individual),target, intent(in) :: in !< item to check
         type(IndividualLinkedListNode),pointer :: node
 
 
@@ -161,9 +212,16 @@ contains
         end if
     end function contains
 
+
+
+     !---------------------------------------------------------------------------
+    !> @brief Removes item from list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine list_remove(this,item)
         class(IndividualLinkedList),intent(inout) :: this
-        type(individual),pointer, intent(in) :: item
+        type(individual),pointer, intent(in) :: item !< item to remove
         type(individual), pointer :: tmpItem
         type(IndividualLinkedListNode),pointer :: node
         if (associated(this%first)) then
