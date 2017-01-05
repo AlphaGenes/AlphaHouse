@@ -18,7 +18,7 @@ module TestSystemMod
 
    @after
     subroutine Uninit
-      print *,"test done"
+!      print *,"test done"
     end subroutine
 
     @test
@@ -27,7 +27,7 @@ module TestSystemMod
         
         result = checkSystemCommand("git --version")
 
-        print *,result
+ !       print *,result
 
         @assertEqual(result,0)
     end subroutine testcheckSystemCommand

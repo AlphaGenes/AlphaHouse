@@ -255,7 +255,7 @@ contains
 
 
     deallocate(tmpAnimalArray)
-    write (*,*) "Number of Dummy Animals: ",pedStructure%nDummys
+    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
     end function initPedigree
 
 

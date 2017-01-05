@@ -36,7 +36,8 @@ module AlphaHouseMod
   public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
-  public :: isDelim, PrintElapsedTime
+  public :: isDelim, PrintElapsedTime, intToChar
+
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -55,6 +56,10 @@ module AlphaHouseMod
   !> @brief Integer to character interface
   interface int2Char
     module procedure Int2Char32, Int2Char64
+  end interface 
+
+  interface intToChar
+    module procedure int2CharArray, int642CharArray
   end interface
 
   !> @brief FindLoc interface
@@ -263,6 +268,51 @@ module AlphaHouseMod
       Res=trim(Tmp)
       return
     end function
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert integer to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int642CharArray(i, sizeIn, fmt) result (res)
+      integer(int64), intent(in), dimension(:):: i
+      integer(int64), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+      do j = 1, size(i)
+      if (present(fmt)) then
+        write(res(j), fmt) i(j)
+      else
+        write(res(j), "(i0)") i(j)
+      end if
+    end do
+    end function int642CharArray
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert integer to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int2CharArray(i, sizeIn, fmt) result (res)
+      integer(int32), intent(in), dimension(:):: i
+      integer(int32), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+!      allocate(character(len=sizeIn) :: res) 
+     do j =1, size(i)
+      if (present(fmt)) then
+        write(res(j), fmt) i(j)
+      else
+        write(res(j), "(i0)") i(j)
+      end if
+    end do
+    end function int2CharArray
 
     !---------------------------------------------------------------------------
     !> @brief   Convert integer to character

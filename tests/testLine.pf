@@ -21,9 +21,7 @@ expected(6) = newChar
 expectedLine = expected
 
 gottenLine = char
-
 call gottenLine%add(newChar)
-
 @assertEqualUserDefined(expectedLine,gottenLine)
 
 end subroutine testAddWord

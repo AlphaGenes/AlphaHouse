@@ -1,67 +1,122 @@
-! module testAlphaHouseMod
-! use iso_fortran_env
-! use AlphaHouseMod
-! use pFUnit_mod
-! implicit none
+ module testAlphaHouseMod
+ use iso_fortran_env
+ use AlphaHouseMod
+ use pFUnit_mod
+ implicit none
 
-! contains
-! @test
-! subroutine testCheckFileExistsWhenFileExists
-!   use pFUnit_mod
+contains
+@test
+subroutine testint642CharArray()
+integer(int64), dimension(5):: intIn
+character(2), dimension(5):: expected, gotten
 
-!   logical:: fileExists = .true., result
-!   character(len=:), allocatable:: fileNameToCheck
+intIn(1) = 1
+intIn(2) = 2
+intIn(3) = 3
+intIn(4) = 4
+intIn(5) = 5
 
-!   fileNameToCheck = "CheckTemp.txt"
-!   open(unit = 100, file = fileNameToCheck, action = "write", status = "replace")
+expected(1) = " 1"
+expected(2) = " 2"
+expected(3) = " 3"
+expected(4) = " 4"
+expected(5) = " 5"
 
-!   result = checkFileExists(fileNameToCheck)
-!   @assertEqual(fileExists, result)
+gotten = intToChar(intIn, 2_int64)
 
-!   close(100, status="delete")
-! end subroutine testCheckFileExistsWhenFileExists
+@assertEqual(expected(1), gotten(1))
+@assertEqual(expected(2), gotten(2))
+@assertEqual(expected(3), gotten(3))
+@assertEqual(expected(4), gotten(4))
+@assertEqual(expected(5), gotten(5))
 
-! @test
-! subroutine testCheckFileExistsWhenFileDoesntExist
-! use pFUnit_mod
+end subroutine testInt642CharArray
 
-!   logical:: fileExists = .false., result
-!   character(len=:), allocatable:: fileNameToCheck
+@test
+subroutine testint2CharArray()
+integer, dimension(5):: intIn
+character(2), dimension(5):: expected, gotten
 
-!   fileNameToCheck = "CheckTemp.txt"
+intIn(1) = 1
+intIn(2) = 2
+intIn(3) = 3
+intIn(4) = 4
+intIn(5) = 5
 
-!   result = checkFileExists(fileNameToCheck)
-!   @assertEqual(fileExists, result)
+expected(1) = " 1"
+expected(2) = " 2"
+expected(3) = " 3"
+expected(4) = " 4"
+expected(5) = " 5"
 
-! end subroutine testCheckFileExistsWhenFileDoesntExist
+gotten = intToChar(intIn, 2)
 
-! @test
-! subroutine testChar2Double()
-! character(len=20):: charIn
-! real(real64):: expected, gotten
+write(*,*) gotten
+@assertEqual(expected(1), gotten(1))
+@assertEqual(expected(2), gotten(2))
+@assertEqual(expected(3), gotten(3))
+@assertEqual(expected(4), gotten(4))
+@assertEqual(expected(5), gotten(5))
 
-! call random_number(expected)
+end subroutine testInt2CharArray
 
-! write(charIn, "(f20.16)") expected
+@test
+subroutine testCheckFileExistsWhenFileExists
+  use pFUnit_mod
 
-! gotten = char2Double(charIn)
+   logical:: fileExists = .true., result
+   character(len=:), allocatable:: fileNameToCheck
 
-! @assertEqual(expected, gotten)
+   fileNameToCheck = "CheckTemp.txt"
+   open(unit = 100, file = fileNameToCheck, action = "write", status = "replace")
 
-! end subroutine testChar2Double
+   result = checkFileExists(fileNameToCheck)
+   @assertEqual(fileExists, result)
 
-! @test
-! subroutine testChar2Real()
-! character(len=20):: charIn
-! real(real32):: expected, gotten
+   close(100, status="delete")
+ end subroutine testCheckFileExistsWhenFileExists
 
-! call random_number(expected)
+ @test
+ subroutine testCheckFileExistsWhenFileDoesntExist
+ use pFUnit_mod
 
-! write(charIn, "(f20.16)") expected
+   logical:: fileExists = .false., result
+   character(len=:), allocatable:: fileNameToCheck
 
-! gotten = char2Real(charIn)
+   fileNameToCheck = "CheckTemp.txt"
 
-! @assertEqual(expected, gotten, 1e-16)
+   result = checkFileExists(fileNameToCheck)
+   @assertEqual(fileExists, result)
 
-! end subroutine testChar2Real
-! end module testAlphaHouseMod
+ end subroutine testCheckFileExistsWhenFileDoesntExist
+
+ @test
+ subroutine testChar2Double()
+ character(len=20):: charIn
+ real(real64):: expected, gotten
+
+ call random_number(expected)
+
+ write(charIn, "(f20.16)") expected
+
+ gotten = char2Double(charIn)
+
+ @assertEqual(expected, gotten)
+
+ end subroutine testChar2Double
+
+ @test
+ subroutine testChar2Real()
+ character(len=20):: charIn
+ real(real32):: expected, gotten
+
+ call random_number(expected)
+
+ write(charIn, "(f20.16)") expected
+
+ gotten = char2Real(charIn)
+
+ @assertEqual(expected, gotten, 1e-16)
+
+ end subroutine testChar2Real
+ end module testAlphaHouseMod
