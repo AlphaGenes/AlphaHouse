@@ -76,9 +76,9 @@ module TestPedigreeModule
        tmp = pedigree%dictionary%getValue("ccc")
        tmp2 = pedigree%dictionary%getValue("aaa")
       @assertEqualUserDefined(pedigree%pedigree(tmp)%sirePointer,pedigree%pedigree(tmp2))
-      do i=1, pedigree%pedigree(tmp2)%nOffs
-        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
-      enddo
+!      do i=1, pedigree%pedigree(tmp2)%nOffs
+!        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
+!      enddo
       @assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
 
     end subroutine testSorting
