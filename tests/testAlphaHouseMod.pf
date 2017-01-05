@@ -51,6 +51,7 @@ expected(5) = " 5"
 
 gotten = intToChar(intIn, 2)
 
+write(*,*) gotten
 @assertEqual(expected(1), gotten(1))
 @assertEqual(expected(2), gotten(2))
 @assertEqual(expected(3), gotten(3))

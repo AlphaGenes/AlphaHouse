@@ -276,17 +276,19 @@ module AlphaHouseMod
     !> @date    December 13th, 2016
     !---------------------------------------------------------------------------
     function int642CharArray(i, sizeIn, fmt) result (res)
-      integer(int64), intent(in):: i
+      integer(int64), intent(in), dimension(:):: i
       integer(int64), intent(in):: sizeIn
       character(len=*), intent(in), optional:: fmt
-      character(len=:), allocatable:: res
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
 
-      allocate(character(len=sizeIn) :: res) 
+      do j = 1, size(i)
       if (present(fmt)) then
-        write(res, fmt) i
+        write(res(j), fmt) i(j)
       else
-        write(res, "(i0)") i
+        write(res(j), "(i0)") i(j)
       end if
+    end do
     end function int642CharArray
 
     !---------------------------------------------------------------------------
@@ -296,17 +298,20 @@ module AlphaHouseMod
     !> @date    December 13th, 2016
     !---------------------------------------------------------------------------
     function int2CharArray(i, sizeIn, fmt) result (res)
-      integer(int32), intent(in):: i
+      integer(int32), intent(in), dimension(:):: i
       integer(int32), intent(in):: sizeIn
       character(len=*), intent(in), optional:: fmt
-      character(len=:), allocatable:: res
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
 
-      allocate(character(len=sizeIn) :: res) 
+!      allocate(character(len=sizeIn) :: res) 
+     do j =1, size(i)
       if (present(fmt)) then
-        write(res, fmt) i
+        write(res(j), fmt) i(j)
       else
-        write(res, "(i0)") i
+        write(res(j), "(i0)") i(j)
       end if
+    end do
     end function int2CharArray
 
     !---------------------------------------------------------------------------
