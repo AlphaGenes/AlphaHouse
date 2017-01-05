@@ -275,12 +275,13 @@ module AlphaHouseMod
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    December 13th, 2016
     !---------------------------------------------------------------------------
-    elemental function int642CharArray(i, sizeIn, fmt) result (res)
+    function int642CharArray(i, sizeIn, fmt) result (res)
       integer(int64), intent(in):: i
       integer(int64), intent(in):: sizeIn
       character(len=*), intent(in), optional:: fmt
-      character(len=sizeIn):: res
+      character(len=:), allocatable:: res
 
+      allocate(character(len=sizeIn) :: res) 
       if (present(fmt)) then
         write(res, fmt) i
       else
@@ -294,12 +295,13 @@ module AlphaHouseMod
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    December 13th, 2016
     !---------------------------------------------------------------------------
-    elemental function int2CharArray(i, sizeIn, fmt) result (res)
+    function int2CharArray(i, sizeIn, fmt) result (res)
       integer(int32), intent(in):: i
       integer(int32), intent(in):: sizeIn
       character(len=*), intent(in), optional:: fmt
-      character(len=sizeIn):: res
+      character(len=:), allocatable:: res
 
+      allocate(character(len=sizeIn) :: res) 
       if (present(fmt)) then
         write(res, fmt) i
       else
