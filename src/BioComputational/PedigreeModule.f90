@@ -2,8 +2,8 @@ module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
  use HashModule
- use constantModule, only :EMPTY_PARENT,IDLENGTH, generationThreshold
-
+ use constantModule, only :EMPTY_PARENT,IDLENGTH, IDINTLENGTH, generationThreshold
+ use AlphaHouseMod, only : Int2Char
 
 type PedigreeHolder
 
@@ -39,6 +39,7 @@ type RecodedPedigreeArray
   contains
       procedure :: init    => initRecodedPedigreeArray
       procedure :: destroy => destroyRecodedPedigreeArray
+      procedure :: write   => writeRecodedPedigreeArray
 end type
 
     interface PedigreeHolder
@@ -376,6 +377,7 @@ contains
         character(len=*), intent(in), optional :: file !< output path for sorted pedigree
         integer :: unit, i,h,sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
+        character(len=:), allocatable :: fmt
 
         sortCounter = 0
          if (.not. allocated(this%sortedIndexList)) then
@@ -392,13 +394,14 @@ contains
             unit = output_unit
         endif
 
+        fmt = "(3a"//Int2Char(IDLENGTH)//", i"//Int2Char(IDINTLENGTH)//")"
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
                 sortCounter = sortCounter + 1
                     this%sortedIndexList(sortCounter) = tmpIndNode%item%id
-                    write(unit,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
-                    ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
+                    write(unit, fmt) tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
+                    ! write(*, fmt) tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
             end do
         enddo
@@ -430,6 +433,8 @@ contains
 
         block
             integer :: sireId, damId
+            character(len=:), allocatable :: fmt
+            fmt = "(3i"//Int2Char(IDINTLENGTH)//", a"//Int2Char(IDLENGTH)//")"
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
@@ -445,7 +450,7 @@ contains
                     endif
                     sortCounter = sortCounter +1
                     this%sortedIndexList(sortCounter) = tmpIndNode%item%id
-                     write (unit,'(3i20,a20)') tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
+                     write (unit, fmt) tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
             end do
@@ -664,6 +669,7 @@ contains
         integer(int32), intent(in) :: n                    !< number of individuals in pedigree
 
         this%nInd = n
+
         if (allocated(this%originalId)) then
             deallocate(this%originalId)
         end if
@@ -702,6 +708,34 @@ contains
 
         if (allocated(this%id)) then
             deallocate(this%id)
+        end if
+    end subroutine
+
+    !---------------------------------------------------------------------------
+    !< @brief Write recodedPedigreeArray to a file or stdout
+    !< @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
+    !< @date   December 22, 2016
+    !---------------------------------------------------------------------------
+    subroutine writeRecodedPedigreeArray(this, file)
+        use iso_fortran_env, only : output_unit, int32
+        implicit none
+        class(recodedPedigreeArray), intent(in) :: this !< recodedPedigreeArray that will be written
+        character(len=*), intent(in), optional :: file  !< If present File name, else stdout
+
+        integer(int32) :: unit, ind
+        character(len=:), allocatable :: fmt
+
+        fmt = "(4i"//Int2Char(IDINTLENGTH)//", a1, 3a"//Int2Char(IDLENGTH)//")"
+        if (present(File)) then
+          open(newunit=unit, file=trim(file), status="unknown")
+        else
+          unit = output_unit
+        end if
+        do ind = 1, this%nInd
+          write(unit, fmt) this%id(1:3, ind), this%generation(ind), "", this%originalId(this%id(1:3, ind))
+        end do
+        if (present(File)) then
+          close(unit)
         end if
     end subroutine
 
