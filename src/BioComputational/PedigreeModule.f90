@@ -37,12 +37,9 @@ type RecodedPedigreeArray
   integer(kind=int32), allocatable, dimension(:) :: generation
   integer(kind=int32), allocatable, dimension(:,:) :: id
   contains
+      procedure :: init    => initRecodedPedigreeArray
       procedure :: destroy => destroyRecodedPedigreeArray
 end type
-
-    interface RecodedPedigreeArray
-        module procedure initRecodedPedigreeArray
-    end interface RecodedPedigreeArray
 
     interface PedigreeHolder
         module procedure initPedigree
@@ -661,18 +658,30 @@ contains
     !< @author Gregor Gorjanc gregor.gorjanc@roslin.ed.ac.uk
     !< @date   December 22, 2016
     !---------------------------------------------------------------------------
-    pure function initRecodedPedigreeArray(n) result(recPed)
+    pure subroutine initRecodedPedigreeArray(this, n)
         implicit none
-        integer(int32), intent(in) :: n      !< number of individuals in pedigree
-        type(recodedPedigreeArray) :: recPed !< @return initialized recoded pedigree array
-        allocate(recPed%originalId(0:n))
-        allocate(recPed%generation(0:n))
-        allocate(recPed%id(3,0:n))
-        recPed%nInd = n
-        recPed%originalId(0) = "0"
-        recPed%generation(0) = 0
-        recPed%id(1:3,0) = 0
-    end function
+        class(recodedPedigreeArray), intent(inout) :: This !< @return initialized recoded pedigree array
+        integer(int32), intent(in) :: n                    !< number of individuals in pedigree
+
+        this%nInd = n
+        if (allocated(this%originalId)) then
+            deallocate(this%originalId)
+        end if
+        allocate(this%originalId(0:n))
+        this%originalId = "0"
+
+        if (allocated(this%generation)) then
+            deallocate(this%generation)
+        end if
+        allocate(this%generation(0:n))
+        this%generation = 0
+
+        if (allocated(this%id)) then
+            deallocate(this%id)
+        end if
+        allocate(this%id(3, 0:n))
+        this%id = 0
+    end subroutine
 
     !---------------------------------------------------------------------------
     !< @brief Destructor for recodedPedigreeArray
@@ -681,10 +690,19 @@ contains
     !---------------------------------------------------------------------------
     pure subroutine destroyRecodedPedigreeArray(this)
         implicit none
-        class(recodedPedigreeArray), intent(inout) :: this !< an recordedPedigreeArray object
-        deallocate(this%originalId)
-        deallocate(this%generation)
-        deallocate(this%id)
+        class(recodedPedigreeArray), intent(inout) :: this !< @return recodedPedigreeArray that will be destructed
+
+        if (allocated(this%originalId)) then
+            deallocate(this%originalId)
+        end if
+
+        if (allocated(this%generation)) then
+            deallocate(this%generation)
+        end if
+
+        if (allocated(this%id)) then
+            deallocate(this%id)
+        end if
     end subroutine
 
     !---------------------------------------------------------------------------
@@ -700,7 +718,7 @@ contains
         integer :: counter,i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
 
-        recPed = recodedPedigreeArray(n=this%pedigreeSize)
+        call RecPed%init(n=this%pedigreeSize)
 
         if (.not. allocated(this%generations)) then
             call this%sortPedigreeAndOverwriteWithDummyAtTheTop

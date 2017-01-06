@@ -19,6 +19,7 @@ SET(ALPHAHOUSE_src
 	BioComputational/GenotypeModule.f90
 	BioComputational/HaplotypeModule.f90
 	BioComputational/BitUtilities.f90
+	BioComputational/FilterModule.f90
         main.f90
 	)
 

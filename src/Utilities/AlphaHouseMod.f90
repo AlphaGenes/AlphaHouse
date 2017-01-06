@@ -56,7 +56,7 @@ module AlphaHouseMod
   !> @brief Integer to character interface
   interface int2Char
     module procedure Int2Char32, Int2Char64
-  end interface 
+  end interface
 
   interface intToChar
     module procedure int2CharArray, int642CharArray
@@ -127,7 +127,7 @@ module AlphaHouseMod
 
       ! Arguments
       character(len=*),intent(in) :: FileName !< file
-      integer(int32)              :: nLines   !@result number of lines in a file
+      integer(int32)              :: nLines   !< @return number of lines in a file
 
       ! Other
       integer(int32) :: f,Unit
@@ -221,7 +221,7 @@ module AlphaHouseMod
       implicit none
 
       character(*), intent(in) :: c   !< character
-      integer(int32)           :: Res !@result integer
+      integer(int32)           :: Res !< @return integer
 
       read(c, *) Res
       return
@@ -238,7 +238,7 @@ module AlphaHouseMod
       implicit none
 
       character(*), intent(in) :: c   !< character
-      integer(int64)           :: Res !@result integer
+      integer(int64)           :: Res !< @return integer
 
       read(c, *) Res
       return
@@ -304,7 +304,7 @@ module AlphaHouseMod
       character(len=sizeIn), dimension(size(i)):: res
       integer::j
 
-!      allocate(character(len=sizeIn) :: res) 
+!      allocate(character(len=sizeIn) :: res)
      do j =1, size(i)
       if (present(fmt)) then
         write(res(j), fmt) i(j)
@@ -389,7 +389,6 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Convert character to single precision real
-    !> @details Convert character to single precision real
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    November 15, 2016
     !---------------------------------------------------------------------------
@@ -411,7 +410,6 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Convert character to single precision real
-    !> @details Convert character to single precision real
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    November 15, 2016
     !---------------------------------------------------------------------------
@@ -459,7 +457,6 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Generate a random ordering of the integers 1, 2, ..., n
-    !> @details TODO
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
@@ -527,11 +524,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocI(Val,Vec) result(i)
+    pure function FindLocI(Val,Vec) result(i)
       implicit none
       integer(int32),intent(in) :: Val    !< value
       integer(int32),intent(in) :: Vec(:) !< vector
-      integer(int32)            :: i      !< @return position
+      integer(int32)            :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -551,16 +548,16 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocC(Val,Vec) result(i)
+    pure function FindLocC(Val,Vec) result(i)
       implicit none
       character(len=*),intent(in) :: Val    !< value
       character(len=*),intent(in) :: Vec(:) !< vector
-      integer(int32)              :: i      !< @return position
+      integer(int32)              :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        if (Val == Vec(j)) then
+        if (trim(Val) == trim(Vec(j))) then
           i=j
           exit
         end if
@@ -575,11 +572,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocS(Val,Vec) result(i)
+    pure function FindLocS(Val,Vec) result(i)
       implicit none
       real(real32),intent(in) :: Val    !< value
       real(real32),intent(in) :: Vec(:) !< vector
-      integer(int32)          :: i      !< @return position
+      integer(int32)          :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -600,11 +597,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocD(Val,Vec) result(i)
+    pure function FindLocD(Val,Vec) result(i)
       implicit none
       real(real64),intent(in) :: Val    !< value
       real(real64),intent(in) :: Vec(:) !< vector
-      integer(int32)          :: i      !< @return position
+      integer(int32)          :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -730,12 +727,13 @@ module AlphaHouseMod
     !> @brief   Print elapsed time in a nice way
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    December 22, 2016
-    !> @return  AlphaRelateSpec object
+    !> @return  Print on standard output
     !---------------------------------------------------------------------------
     subroutine PrintElapsedTime(Start, End)
       implicit none
-      real(real32) :: Start  !< Start time from cpu_time()
-      real(real32) :: End    !< End time from cpu_time()
+      real(real32) :: Start !< Start time from cpu_time()
+      real(real32) :: End   !< End time from cpu_time()
+
       real(real32) :: Total
       integer(int32) :: Hours, Minutes, Seconds
 
