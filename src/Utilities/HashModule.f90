@@ -37,7 +37,6 @@ type DictStructure
     
     type(HASH_LIST), pointer, dimension(:),private :: table
 
-
     contains
 
     procedure :: destroy
