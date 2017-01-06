@@ -245,24 +245,24 @@ module IndividualHelperModule
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016
     !---------------------------------------------------------------------------
-    recursive subroutine getAncestors(individual, resIn)
+    recursive subroutine getAncestors(ind, resIn)
     ! TODO write tests
         use IndividualModule
         use IndividualLinkedListModule
-        type(Individual), intent(in) :: individual !< individual to get ancestors of
-        type(IndividualLinkedList), optional :: resIn !< linked list of individual's mates
-        type(IndividualLinkedList) :: res
+        type(Individual), intent(in) :: ind !< individual to get ancestors of
+        type(IndividualLinkedList),target, optional :: resIn !< linked list of individual's mates
+        type(IndividualLinkedList), pointer :: res
 
         if (present(resIn)) then
-            res = resIn
+            res => resIn
         endif
-        if (associated(individual%sirePointer)) then
-            res%list_add(individual%sirePointer)
-            getAncestors(individual%sirePointer, res)
+        if (associated(ind%sirePointer)) then
+            call res%list_add(ind%sirePointer)
+            call getAncestors(ind%sirePointer, res)
         endif
-        if (associated(damPointer)) then
-            res%list_add(individual%damPointer)
-            getAncestors(individual%damPointer,res)
+        if (associated(ind%damPointer)) then
+            call res%list_add(ind%damPointer)
+            call getAncestors(ind%damPointer,res)
         endif
 end subroutine getAncestors
 end module IndividualHelperModule

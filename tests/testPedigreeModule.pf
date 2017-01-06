@@ -91,7 +91,7 @@ module TestPedigreeModule
       type(recodedPedigreeArray) :: expRecPed
 
       call pedigree%makeRecodedPedigreeArray(recPed)
-      expRecPed = recodedPedigreeArray(n=pedigree%pedigreeSize)
+      expRecPed = recodedPedigreeArray(pedigree%pedigreeSize)
       expRecPed%originalId(:) = (/"0", "aaa", "bbb", "dum001", "dumd1", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"/)
       expRecPed%generation(:) = (/  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2/)
       expRecPed%id(1,:)       = (/  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12/)
@@ -108,7 +108,7 @@ module TestPedigreeModule
       call expRecPed%destroy()
 
       call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
-      expRecPed = recodedPedigreeArray(n=pedigreeUnsorted%pedigreeSize)
+      expRecPed = recodedPedigreeArray(pedigreeUnsorted%pedigreeSize)
       expRecPed%originalId(:) = (/"0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"/)
       expRecPed%generation(:) = (/  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2/)
       expRecPed%id(1,:)       = (/  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12/)
