@@ -107,7 +107,12 @@ contains
 
         do while (associated(node))
 
-            write(unit, "(A)", iostat = iostat, iomsg = iomsg) node%item%id
+            if (associated(node%next)) then
+                write(unit, *, iostat = iostat, iomsg = iomsg) node%item , char(10)
+            else 
+                write(unit, *, iostat = iostat, iomsg = iomsg) node%item
+            endif
+            ! flush(unit)
             node => node%next
         enddo
     end subroutine writeLinkedList

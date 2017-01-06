@@ -114,7 +114,7 @@ module TestIndividualHelperModule
     subroutine testGetMates
         use IndividualModule
         implicit none
-        type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
+        type(Individual), pointer :: tmp, tmp2,tmp3
         type(individualLinkedList) :: ret
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
@@ -143,7 +143,8 @@ module TestIndividualHelperModule
         tmp6 => pedigree%pedigree(pedigree%dictionary%getValue("hhh"))
         call getAncestors(check,ret)
 
-        @assertEqual(ret%length,5)
+        write(*,*) ret
+        @assertEqual(ret%length,6)
         @assertTrue(ret%contains(tmp))
         @assertTrue(ret%contains(tmp2))
         @assertTrue(ret%contains(tmp3))
