@@ -27,7 +27,7 @@ module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
  use HashModule
- use constantModule, only :EMPTY_PARENT,IDLENGTH, IDINTLENGTH, generationThreshold
+ use constantModule
  use AlphaHouseMod, only : Int2Char
 
  private addOffspringsAfterReadIn
@@ -72,6 +72,7 @@ end type
     interface PedigreeHolder
         module procedure initPedigree
         module procedure initPedigreeArrays
+        module procedure initEmptyPedigree
     end interface PedigreeHolder
 
     interface Sort !Sorts into generation list
@@ -79,6 +80,16 @@ end type
     end interface Sort
 contains
 
+
+    function initEmptyPedigree() result(pedStructure)
+        use iso_fortran_env
+        type(PedigreeHolder) :: pedStructure
+
+        pedStructure%dictionary = DictStructure()
+        pedStructure%pedigreeSize = 0
+        pedStructure%nDummys = 0
+        pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+    end function initEmptyPedigree
 
     !---------------------------------------------------------------------------
     !< @brief Constructor for pedigree class
@@ -199,7 +210,6 @@ contains
     !---------------------------------------------------------------------------
     function initPedigreeArrays(pedArray, genderArray) result(pedStructure)
         use iso_fortran_env
-        use ConstantModule, only : MISSINGGENDERCODE
         type(PedigreeHolder) :: pedStructure
 
         character(len=IDLENGTH), dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped(i) =[id, sireId, damId]
