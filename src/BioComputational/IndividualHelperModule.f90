@@ -29,7 +29,7 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getAncestors
 
     contains
 
@@ -207,7 +207,7 @@ module IndividualHelperModule
     end function getSharedKids
 
 
-      !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief Returns linked list of mates that an individual has had 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016
@@ -240,5 +240,30 @@ module IndividualHelperModule
 
     end function getMates
 
+    !---------------------------------------------------------------------------
+    !> @brief creates list of ancestors of given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !---------------------------------------------------------------------------
+    recursive subroutine getAncestors(individual, resIn)
+    ! TODO write tests
+        use IndividualModule
+        use IndividualLinkedListModule
+        type(Individual), intent(in) :: individual !< individual to get ancestors of
+        type(IndividualLinkedList), optional :: resIn !< linked list of individual's mates
+        type(IndividualLinkedList) :: res
+
+        if (present(resIn)) then
+            res = resIn
+        endif
+        if (associated(individual%sirePointer)) then
+            res%list_add(individual%sirePointer)
+            getAncestors(individual%sirePointer, res)
+        endif
+        if (associated(damPointer)) then
+            res%list_add(individual%damPointer)
+            getAncestors(individual%damPointer,res)
+        endif
+end subroutine getAncestors
 end module IndividualHelperModule
 
