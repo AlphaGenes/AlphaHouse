@@ -108,7 +108,7 @@ contains
         do while (associated(node))
 
             if (associated(node%next)) then
-                write(unit, *, iostat = iostat, iomsg = iomsg) node%item , char(10)
+                write(unit, *, iostat = iostat, iomsg = iomsg) node%item , char(10) !char(10) is line feed for new line
             else 
                 write(unit, *, iostat = iostat, iomsg = iomsg) node%item
             endif
