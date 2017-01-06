@@ -1,9 +1,35 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     PedigreeModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing logic of Pedigree
+!> @details  Module contains functions to read in and set up pedgiree data structure
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     January 4, 2017
+!
+!> @version  1.0.0
+!
+!
+!-------------------------------------------------------------------------------
+
+
+
+
 module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
  use HashModule
  use constantModule, only :EMPTY_PARENT,IDLENGTH, generationThreshold
 
+ private addOffspringsAfterReadIn
 
 type PedigreeHolder
 
@@ -43,6 +69,7 @@ end type
 
     interface PedigreeHolder
         module procedure initPedigree
+        module procedure initPedigreeArrays
     end interface PedigreeHolder
 
     interface Sort !Sorts into generation list
@@ -63,11 +90,10 @@ contains
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn !< path of pedigree file
         character(len=*), intent(in),optional :: genderFile !< path to gender file
-        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam,tmpCounterStr
+        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
-        integer :: tmpCounter
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount
         integer :: i
@@ -76,7 +102,7 @@ contains
 
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
-        tmpCounter = 0
+        
         if (present(numberInFile)) then
             nIndividuals = numberInFile
         else
@@ -134,7 +160,139 @@ contains
 
         close(fileUnit)
 
-        !check animals that didn't have parental information initially
+
+
+        ! if we want gender info read in rather than calculated on the fly, lets do it here
+        if (present(genderFile)) then !read in gender here
+            open(newUnit=fileUnit, file=genderFile, status="old")
+            do
+                read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
+                if (stat /=0) exit
+
+                tmpIdNum = pedStructure%dictionary%getValue(tmpId)
+                if (tmpIdNum /= DICT_NULL) then
+                    pedStructure%Pedigree(i)%gender = int(tmpGender)
+                else
+                    write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
+                    write(error_unit, *) "Amimal:",tmpId
+                endif
+            end do
+
+
+        endif
+
+
+    call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
+
+    deallocate(tmpAnimalArray)
+    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
+    end function initPedigree
+
+    !---------------------------------------------------------------------------
+    !< @brief Constructor for pedigree class
+    !< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals.
+    !< Takes Two arrays as inputs rather than files
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function initPedigreeArrays(pedArray, genderArray) result(pedStructure)
+        use iso_fortran_env
+        use ConstantModule, only : MISSINGGENDERCODE
+        type(PedigreeHolder) :: pedStructure
+
+        character(len=IDLENGTH), dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped(i) =[id, sireId, damId]
+        integer, dimension(:) ,optional , intent(in):: genderArray !< gender array corresponding to index in pedArray
+        integer(kind=int32) :: tmpSireNum, tmpDamNum
+        integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
+        integer :: tmpAnimalArrayCount
+        integer :: i
+        integer(kind=int64) :: sizeDict
+        logical :: sireFound, damFound
+
+        pedStructure%nDummys = 0
+        tmpAnimalArrayCount = 0
+
+        sizeDict = size(pedArray)
+        pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
+        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+        pedStructure%pedigreeSize = size(pedArray)
+        pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+        allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+        pedStructure%maxGeneration = 0
+
+        do i=1,size(pedArray)
+
+            sireFound = .false.
+            damFound = .false.
+
+            call pedStructure%dictionary%addKey(pedArray(i,1), i)
+
+            pedStructure%Pedigree(i) =  Individual(pedArray(i,1),pedArray(i,2),pedArray(i,3), i) !Make a new individual based on info from ped
+
+            if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
+                tmpSireNum = pedStructure%dictionary%getValue(pedArray(i,2))
+                if (tmpSireNum /= DICT_NULL) then
+                    sireFound = .true.
+                endif
+            endif
+
+            if (pedArray(i,3) /= EMPTY_PARENT) then
+                tmpDamNum = pedStructure%dictionary%getValue(pedArray(i,3))
+                if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree
+                    damFound = .true.
+                endif
+            endif
+            if (pedArray(i,2) == EMPTY_PARENT .and. pedArray(i,3) == EMPTY_PARENT) then !if animal is a founder
+                pedStructure%Pedigree(i)%founder = .true.
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))
+
+            else if (sireFound == .false. .or. damFound == .false. ) then
+                tmpAnimalArrayCount = tmpAnimalArrayCount +1
+                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in
+            else ! if sire and dam are both found
+                pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
+                call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+
+                pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
+                call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+            endif
+        enddo
+
+
+        if (present(genderArray)) then
+
+            do i=1, size(genderArray)
+
+                if (genderArray(i) /=MISSINGGENDERCODE) then
+                    pedStructure%pedigree(i)%gender = genderArray(i)
+                endif
+            enddo
+        endif
+
+    call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
+
+    deallocate(tmpAnimalArray)
+    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
+    end function initPedigreeArrays
+
+
+
+    subroutine addOffspringsAfterReadIn(pedStructure, tmpAnimalArray, tmpAnimalArrayCount)
+        use ConstantModule, only : IDLENGTH
+        class(PedigreeHolder) :: pedStructure
+        integer, dimension(:), intent(in) :: tmpAnimalArray !< array containing indexes of tmp animals
+        integer, intent(in) :: tmpAnimalArrayCount !< number of animals actually in tmpAnimalArray
+        logical :: sireFound, damFound
+
+
+        integer(kind=int32) :: tmpSireNum, tmpDamNum
+        integer(kind=int32) :: i, tmpCounter
+        character(len=IDLENGTH) :: tmpSire,tmpDam,tmpCounterStr
+        
+        tmpCounter = 0
+                !check animals that didn't have parental information initially
         ! this is done to avoid duplication when a pedigree is sorted
         do i=1,tmpAnimalArrayCount
             sireFound = .false.
@@ -233,30 +391,8 @@ contains
             endif
         enddo
 
-        ! if we want gender info read in rather than calculated on the fly, lets do it here
-        if (present(genderFile)) then !read in gender here
-            open(newUnit=fileUnit, file=genderFile, status="old")
-            do
-                read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
-                if (stat /=0) exit
+    end subroutine addOffspringsAfterReadIn
 
-                tmpIdNum = pedStructure%dictionary%getValue(tmpId)
-                if (tmpIdNum /= DICT_NULL) then
-                    pedStructure%Pedigree(i)%gender = int(tmpGender)
-                else
-                    write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
-                    write(error_unit, *) "Amimal:",tmpId
-                endif
-            end do
-
-
-        endif
-
-
-
-    deallocate(tmpAnimalArray)
-    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-    end function initPedigree
 
 
     !---------------------------------------------------------------------------
