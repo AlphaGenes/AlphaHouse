@@ -4,6 +4,7 @@ module ConstantModule
     integer, parameter :: ErrorPhaseCode = -1
     integer, parameter :: MissingGenotypeCode = 3
     character, parameter :: EMPTY_PARENT = '0'
+    character, parameter :: EMPTYID = '0'
     integer, parameter :: IDLENGTH = 32
     integer, parameter :: IDINTLENGTH = 8
     integer, parameter :: generationThreshold = 1000
