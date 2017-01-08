@@ -51,7 +51,9 @@ module IndividualLinkedListModule
             procedure :: list_get_nth
             procedure :: list_remove
             procedure :: contains
+            procedure :: writeLinkedList
             procedure :: destroyLinkedList
+            generic:: write(formatted) => writeLinkedList
 
     end type IndividualLinkedList
 
@@ -86,6 +88,35 @@ contains
         ! deallocate(tmp)
 
     end subroutine destroyLinkedList
+
+             !---------------------------------------------------------------------------
+    !> @brief output for Linked List
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine writeLinkedList(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(IndividualLinkedList), intent(in) :: dtv         !< Object to write.
+        integer, intent(in) :: unit         !< Internal unit to write to.
+        character(*), intent(in) :: iotype  !< LISTDIRECTED or DTxxx
+        integer, intent(in) :: v_list(:)    !< parameters from fmt spec.
+        integer, intent(out) :: iostat      !< non zero on error, etc.
+        character(*), intent(inout) :: iomsg  !< define if iostat non zero.
+
+        type(IndividualLinkedListNode),pointer :: node
+        node => dtv%first
+
+        do while (associated(node))
+
+            if (associated(node%next)) then
+                write(unit, *, iostat = iostat, iomsg = iomsg) node%item , char(10) !char(10) is line feed for new line
+            else 
+                write(unit, *, iostat = iostat, iomsg = iomsg) node%item
+            endif
+            ! flush(unit)
+            node => node%next
+        enddo
+    end subroutine writeLinkedList
+
 
     !---------------------------------------------------------------------------
     !> @brief Add item to end of the list

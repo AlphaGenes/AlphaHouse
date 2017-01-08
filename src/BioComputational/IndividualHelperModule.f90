@@ -29,7 +29,7 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs, getAncestors
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors
 
     contains
 
@@ -257,11 +257,15 @@ module IndividualHelperModule
             res => resIn
         endif
         if (associated(ind%sirePointer)) then
-            call res%list_add(ind%sirePointer)
+            if (.not. res%contains(ind%sirePointer)) then
+                call res%list_add(ind%sirePointer)
+            endif
             call getAncestors(ind%sirePointer, res)
         endif
         if (associated(ind%damPointer)) then
-            call res%list_add(ind%damPointer)
+            if (.not. res%contains(ind%damPointer)) then
+                call res%list_add(ind%damPointer)
+            endif
             call getAncestors(ind%damPointer,res)
         endif
 end subroutine getAncestors

@@ -25,6 +25,7 @@ module TestIndividualHelperModule
         write(pedUnit, "(a)") "fff ddd bbb"
         write(pedUnit, "(a)") "ggg 0   d1"
         write(pedUnit, "(a)") "hhh 0   d1"
+        write(pedUnit, "(a)") "iii fff ccc"
         close(pedUnit)
 
         pedigree = PedigreeHolder("testPed.txt")
@@ -113,7 +114,7 @@ module TestIndividualHelperModule
     subroutine testGetMates
         use IndividualModule
         implicit none
-        type(Individual), pointer :: tmp, tmp2,tmp3,tmp4
+        type(Individual), pointer :: tmp, tmp2,tmp3
         type(individualLinkedList) :: ret
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
@@ -125,6 +126,33 @@ module TestIndividualHelperModule
         @assertTrue(ret%contains(tmp3))
 
     end subroutine testGetMates
+
+
+          @test
+    subroutine TestgetAncestors
+        use IndividualModule
+        implicit none
+        type(Individual), pointer :: check,tmp, tmp2,tmp3,tmp4,tmp5,tmp6
+        type(individualLinkedList) :: ret
+        check => pedigree%pedigree(pedigree%dictionary%getValue("iii"))
+        tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
+        tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
+        tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
+        tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+        tmp5 => pedigree%pedigree(pedigree%dictionary%getValue("aaa"))
+        tmp6 => pedigree%pedigree(pedigree%dictionary%getValue("hhh"))
+        call getAncestors(check,ret)
+
+        write(*,*) ret
+        @assertEqual(ret%length,6)
+        @assertTrue(ret%contains(tmp))
+        @assertTrue(ret%contains(tmp2))
+        @assertTrue(ret%contains(tmp3))
+        @assertTrue(ret%contains(tmp4))
+        @assertTrue(ret%contains(tmp5))
+        @assertFalse(ret%contains(tmp6))
+
+    end subroutine TestgetAncestors
 
 
 end module TestIndividualHelperModule

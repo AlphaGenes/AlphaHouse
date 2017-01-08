@@ -12,5 +12,6 @@ module ConstantModule
     integer, parameter :: NOGENERATIONVALUE = -9999
     integer, parameter :: FILELENGTH = 256
     integer, parameter :: SPECOPTIONLENGTH = 300
-
+    integer, parameter :: MISSINGGENDERCODE = -9
+    integer , parameter ::  DEFAULTDICTSIZE = 4993
 end Module ConstantModule

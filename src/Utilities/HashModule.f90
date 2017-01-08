@@ -26,6 +26,7 @@
 module HashModule
     use iso_fortran_env
     use LinkedListModule
+    use constantModule
 
     integer, parameter :: DICT_NULL = -9999
 type HASH_LIST
@@ -35,7 +36,6 @@ end type HASH_LIST
 type DictStructure
     
     type(HASH_LIST), pointer, dimension(:),private :: table
-
 
     contains
 
@@ -62,7 +62,7 @@ private :: LinkedList
 private :: getElement
 private :: hashKey
 
-integer(kind=int64) :: hash_size  = 4993
+integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
 integer(kind=int64), parameter, private :: multiplier = 17
 
 

@@ -184,7 +184,8 @@ contains
         integer, intent(out) :: iostat      !< non zero on error, etc.
         character(*), intent(inout) :: iomsg  !< define if iostat non zero.
 
-        write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%id, dtv%sireId, dtv%damID
+        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID
+
     end subroutine writeIndividual
 
 
