@@ -2,7 +2,7 @@ module PedigreeModule
     use IndividualModule
     use IndividualLinkedListModule
  use HashModule
- use constantModule, only :EMPTY_PARENT,IDLENGTH, IDINTLENGTH, generationThreshold
+ use constantModule, only :EMPTY_PARENT, EMPTYID, IDLENGTH, IDINTLENGTH, generationThreshold
  use AlphaHouseMod, only : Int2Char
 
 type PedigreeHolder
@@ -674,7 +674,7 @@ contains
             deallocate(this%originalId)
         end if
         allocate(this%originalId(0:n))
-        this%originalId = "0"
+        this%originalId = EMPTYID
 
         if (allocated(this%generation)) then
             deallocate(this%generation)
