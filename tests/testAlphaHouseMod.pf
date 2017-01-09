@@ -92,16 +92,17 @@ subroutine testCheckFileExistsWhenFileExists
 
  @test
  subroutine testChar2Double()
- character(len=20):: charIn
- real(real64):: expected, gotten
+ character(len=20):: charIn,fmt
+ real(real64):: expected, gotten, thresh
 
  call random_number(expected)
 
- write(charIn, "(f20.16)") expected
+ fmt = "(f20.16)"
+ write(charIn, fmt) expected
 
- gotten = char2Double(charIn)
-
- @assertEqual(expected, gotten)
+ gotten = char2Double(charIn, fmt)
+thresh = 1e-16
+ @assertEqual(expected, gotten, thresh)
 
  end subroutine testChar2Double
 
