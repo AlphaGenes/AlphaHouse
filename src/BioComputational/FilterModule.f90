@@ -1,3 +1,27 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     FilterModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing functions to filter out genotypes
+!
+!> @details TODO
+!> @author  Daniel Money daniel.money@roslin.ed.ac.uk
+!
+!> @date     January 4, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module FilterModule
   use constantModule, only : MissingGenotypeCode
   
