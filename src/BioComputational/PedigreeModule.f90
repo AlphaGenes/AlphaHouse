@@ -212,7 +212,7 @@ contains
         use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
 
-        character(len=IDLENGTH), dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped(i) =[id, sireId, damId]
+        character(len=IDLENGTH), dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped([id, sireId, damId], index)
         integer, dimension(:) ,optional , intent(in):: genderArray !< gender array corresponding to index in pedArray
         integer(kind=int32) :: tmpSireNum, tmpDamNum
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
@@ -237,24 +237,24 @@ contains
             sireFound = .false.
             damFound = .false.
 
-            call pedStructure%dictionary%addKey(pedArray(i,1), i)
+            call pedStructure%dictionary%addKey(pedArray(1,i), i)
 
-            pedStructure%Pedigree(i) =  Individual(pedArray(i,1),pedArray(i,2),pedArray(i,3), i) !Make a new individual based on info from ped
+            pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i) !Make a new individual based on info from ped
 
             if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
-                tmpSireNum = pedStructure%dictionary%getValue(pedArray(i,2))
+                tmpSireNum = pedStructure%dictionary%getValue(pedArray(2,i))
                 if (tmpSireNum /= DICT_NULL) then
                     sireFound = .true.
                 endif
             endif
 
             if (pedArray(i,3) /= EMPTY_PARENT) then
-                tmpDamNum = pedStructure%dictionary%getValue(pedArray(i,3))
+                tmpDamNum = pedStructure%dictionary%getValue(pedArray(3,i))
                 if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree
                     damFound = .true.
                 endif
             endif
-            if (pedArray(i,2) == EMPTY_PARENT .and. pedArray(i,3) == EMPTY_PARENT) then !if animal is a founder
+            if (pedArray(2,i) == EMPTY_PARENT .and. pedArray(3,i) == EMPTY_PARENT) then !if animal is a founder
                 pedStructure%Pedigree(i)%founder = .true.
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(i))
 
