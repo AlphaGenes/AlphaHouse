@@ -39,13 +39,13 @@ function readToPedigreeFormat(pedFile) result(ped)
 
     lines=  countLines(pedFile)
    
-    allocate(pedArray(lines,3))
+    allocate(pedArray(3,lines))
     allocate(genderArray(lines))
     allocate(phenotypeArray(lines))                
     
     open(newUnit=fileUnit, file=pedFile, status="old")
     do i=1, lines
-        read(fileUnit,*) familyID,pedArray(i,1),pedArray(i,2),pedArray(i,3),gender,phenotype
+        read(fileUnit,*) familyID,pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype
 
         read(gender,*,iostat=stat)  genderArray(i)
         read(phenotype,*,iostat=stat)  phenotypeArray(i)
