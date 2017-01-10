@@ -53,6 +53,8 @@ module IndividualLinkedListModule
             procedure :: contains
             procedure :: writeLinkedList
             procedure :: destroyLinkedList
+            procedure :: convertToArray
+            procedure :: convertToArrayIDs
             generic:: write(formatted) => writeLinkedList
 
     end type IndividualLinkedList
@@ -116,7 +118,6 @@ contains
             node => node%next
         enddo
     end subroutine writeLinkedList
-
 
     !---------------------------------------------------------------------------
     !> @brief Add item to end of the list
@@ -291,6 +292,55 @@ contains
 
     end subroutine list_remove
 
+    !---------------------------------------------------------------------------
+    !> @brief Converts linked list to 1 dimensional array (vector) of individual objects
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function convertToArray(this) result(res)
+        class(IndividualLinkedList) :: this !< linked list
+        type(individual),pointer, dimension(:) :: res !< one dimensional array of animal pointers to return
+        integer :: counter
+        type(IndividualLinkedListNode),pointer :: node
+        
 
+        counter = 1
+        allocate(res(this%length))
+        node => this%first
+
+        do while (associated(node))
+            res(counter) = node%item
+
+            counter = counter+1
+            node => node%next
+
+        enddo
+    end function convertToArray              
+
+
+        !---------------------------------------------------------------------------
+    !> @brief Converts linked list to 1 dimensional array (vector) of integer recoded id's
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function convertToArrayIDs(this) result(res)
+        class(IndividualLinkedList) :: this !< linked list
+        integer, dimension(:), allocatable :: res !< one dimensional array of recoded id's to return
+        integer :: counter
+        type(IndividualLinkedListNode),pointer :: node
+        
+
+        counter = 1
+        allocate(res(this%length))
+        node => this%first
+
+        do while (associated(node))
+            res(counter) = node%item%id
+
+            counter = counter+1
+            node => node%next
+
+        enddo
+    end function convertToArrayIDs              
 
 end Module IndividualLinkedListModule
