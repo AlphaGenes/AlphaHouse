@@ -205,8 +205,8 @@ function complement(g,h) result(c)
     allocate(phase(g%sections))
     allocate(missing(g%sections))
     do i = 1, g%sections
-      !phase = IOR( IAND(h%phase(i), h%missing(i)), &
-      phase(i) = IOR( h%missing(i), &
+      phase(i) = IOR( IAND(h%phase(i), h%missing(i)), &
+!      phase(i) = IOR( h%missing(i), &
          IOR( IAND(IAND(h%phase(i),NOT(h%missing(i))),g%homo(i)), &
             IAND(NOT(IOR(h%phase(i),h%missing(i))), NOT(IEOR(g%homo(i), g%additional(i))))))
       missing(i) = IOR (h%missing(i), &
