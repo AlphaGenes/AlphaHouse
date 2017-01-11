@@ -429,7 +429,7 @@ contains
     end subroutine destroyPedigree
 
     subroutine addGenotypeInformation(this, genotypeFile, nsnps, nAnnisG)
-
+        use genotypeModule
         use AlphaHouseMod, only : countLines
         implicit none
         class(PedigreeHolder) :: this
@@ -437,7 +437,7 @@ contains
         character(len=IDLENGTH) :: tmpID
         integer,intent(in) :: nsnps
         integer,intent(in),optional :: nAnnisG
-        integer, allocatable, dimension(:) :: tmpSnpArray
+        integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
         integer :: i, j,fileUnit, nAnnis,tmpIdNum
 
 
@@ -458,8 +458,7 @@ contains
                 if (tmpIdNum == DICT_NULL) then
                     write(error_unit, *) "ERROR: Genotype info for non existing animal"
                 else
-                    allocate(this%pedigree(tmpIdNum)%genotype(nsnps))
-                    this%pedigree(tmpIdNum)%genotype = tmpSnpArray
+                    this%pedigree(tmpIdNum)%individualGenotype = Genotype(tmpSnpArray)
                 endif
             enddo
 
