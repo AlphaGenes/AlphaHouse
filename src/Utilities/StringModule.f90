@@ -217,6 +217,10 @@ contains
 
     if (present(delimitersIn)) then
       delimiters = delimitersIn
+      allocate(delimiters(size(delimitersIn)))
+      do i = 1, size(delimitersIn)
+         delimiters(i) = delimitersIn(i)
+      end do
     else
       allocate(delimiters(1))
       delimiters(1) = ","
@@ -229,12 +233,6 @@ contains
       return
     end if
 
-    !replace all tabs with spaces
-    !        do i =1 , len(line)
-    !          if (line(i:i) == char(9)) then
-    !            line(i:i) = " "
-    !          end if
-    !        end do
 
     !First find out how many times we want to split it up
     call getSplitPositions(line, numSplit, delimiters)

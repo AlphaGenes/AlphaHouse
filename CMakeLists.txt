@@ -108,10 +108,10 @@ set (TESTFILES
 	${TESTS}/testIndividualHelperModule.pf
 	${TESTS}/testIndividualLinkedList.pf
 	${TESTS}/testInputFile.pf
-	# ${TESTS}/testLine.pf
-	# ${TESTS}/testPage.pf
+	 ${TESTS}/testLine.pf
+	 ${TESTS}/testPage.pf
 	${TESTS}/testPedigreeModule.pf
-	# ${TESTS}/testString.pf
+	 ${TESTS}/testString.pf
 	${TESTS}/testSystemMod.pf
 	)
 # file(GLOB TESTFILES ${TESTS}/*.pf)

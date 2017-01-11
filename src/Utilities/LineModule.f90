@@ -47,8 +47,13 @@ module LineModule
       if (allocated(self%words)) then
         newString(1) = charIn
         newSize(1) = self%getNumWords()+1
-        testString =  reshape(self%words, newSize, newString)
-        self%words = testString
+        allocate(testString(newSize(1)))
+        testString(1:self%getNumWords()) = self%words
+        testString(newSize(1)) = newString(1)
+!        testString =  reshape(self%words, newSize, newString)
+        deallocate(self%words)
+        allocate(self%words(newSize(1)))
+        self%words(:) = testString(:)
       else
         allocate(self%words(1))
         self%words(1) = charIn
