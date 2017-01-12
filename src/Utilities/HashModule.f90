@@ -288,7 +288,7 @@ function getElement( this, key ) result(elem)
     type(LinkedList), pointer :: elem
     integer(kind=int64) :: hash
 
-    hash = hashKey( trim(key) )
+    hash = hashKey( trim(key) ) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
         if ( elem%data%key .eq. key ) then
