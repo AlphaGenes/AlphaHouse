@@ -1,4 +1,52 @@
 @test
+subroutine testRemoveWordByIndex()
+use pFUnit_mod
+use lineModule
+use AlphaHouseMod, only: int2Char
+type(Line):: expected, gotten
+integer:: i
+
+allocate(gotten%words(5))
+allocate(expected%words(4))
+
+do i = 1, 4
+  gotten%words(i) = "test" // int2Char(i)
+  expected%words(i) = "test" // int2Char(i)
+end do
+
+gotten%words(5) = "ANOTHER"
+
+call gotten%remove(5)
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testRemoveWordByIndex
+
+@test
+subroutine testRemoveWordByName()
+use pFUnit_mod
+use lineModule
+use AlphaHouseMod, only: int2Char
+type(Line):: expected, gotten
+integer:: i
+
+allocate(gotten%words(5))
+allocate(expected%words(4))
+
+do i = 1, 4
+  gotten%words(i) = "test" // int2Char(i)
+  expected%words(i) =  "test" // int2Char(i)
+end do
+
+gotten%words(5) = "ANOTHER"
+
+call gotten%remove("ANOTHER")
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testRemoveWordByName
+
+@test
 subroutine testAddWord()
 use pFUnit_mod
 use lineModule

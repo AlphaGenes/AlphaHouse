@@ -10,6 +10,9 @@ module LineModule
    type(String), allocatable, dimension(:):: words
     contains
       procedure:: add => addAWord
+      procedure, private:: removeByIndex
+      procedure, private:: removeFirstName
+      generic:: remove => removeFirstName, removeByIndex
       procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
@@ -35,6 +38,43 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+
+    !>@brief Removes the first occurance of a word in a line
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine removeFirstName(self, charIn)
+      class(Line), intent(inout):: self
+      character(len=*)::charIn !< word that you want to remove from the Line
+
+      integer:: i
+
+      do i = 1, self%getNumWords()
+        if (self%words(i) == charIn) then
+          call self%remove(i)
+          return
+        end if
+      end do
+    end subroutine removeFirstName
+
+    !>@brief Removes a word based on the index position
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine removeByIndex(self, intIn)
+      class(Line), intent(inout):: self 
+      integer(int32), intent(in):: intIn !< position you want to remove
+
+      type(String), allocatable, dimension(:):: temp
+
+      allocate(temp(self%getNumWords()-1))
+      temp(1:intIn-1) = self%words(1:intIn-1)
+      write(*,*) size(temp), intIn
+      if (intIn< size(temp)) then
+        temp(intIn:) = self%words(intIn+1:)
+      end if
+      deallocate(self%words)
+      allocate(self%words(size(temp)))
+
+      self%words(:) = temp(:)
+
+    end subroutine removeByIndex
 
     subroutine addAWord(self, charIn)
       class(Line), intent(inout):: self
