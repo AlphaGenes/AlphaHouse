@@ -128,7 +128,6 @@ module LineModule
       if (this%getNumWords() == lineIn%getNumWords()) then
         do i = 1, this%getNumWords()
           sameStrings = sameStrings .and. this%getWord(i)==lineIn%getWord(i)
-          write(*,*) sameStrings
         end do
         same = sameStrings
       else
