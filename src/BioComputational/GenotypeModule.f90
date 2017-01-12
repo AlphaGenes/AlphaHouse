@@ -365,16 +365,15 @@ subroutine setHaplotype(g, h)
   
   subroutine setHaplotypeIfMissing(g, h)
     use HaplotypeModule
-    
-    type(Haplotype), intent(in), pointer :: h
+
+    type(Haplotype), intent(in) :: h
     class(Genotype), intent(in) :: g
     
     integer :: i
     
     do i = 1, g%sections
-      h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
-      
       h%phase(i) = IOR(IAND(NOT(h%missing(i)), h%phase(i)), IAND(h%missing(i), IAND(g%homo(i), g%additional(i))))
+      h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
     end do
     do i = 64 - g%overhang + 1, 64
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)

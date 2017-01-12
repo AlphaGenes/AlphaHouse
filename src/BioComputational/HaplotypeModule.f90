@@ -451,8 +451,8 @@ contains
     integer :: i
     
     do i = 1, h%sections
-      h%missing(i) = IAND(h%missing(i), oh%missing(i))
       h%phase(i) = IOR(IAND(NOT(h%missing(i)),h%phase(i)), IAND(h%missing(i), oh%phase(i)))
+      h%missing(i) = IAND(h%missing(i), oh%missing(i))      
     end do
   end subroutine setFromOtherIfMissing
   
