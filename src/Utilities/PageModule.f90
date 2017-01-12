@@ -86,7 +86,7 @@ module pageModule
       allocate(pageOut%lines(numLines))
 
       do i = 1, numLines
-         numWords = this%lines(i)%getNumWords()
+         numWords = this%lines(start+i-1)%getNumWords()
          allocate(pageOut%lines(i)%words(numWords))
          do j = 1, numWords
            pageOut%lines(i)%words(j) = this%lines(start+i-1)%words(j)
