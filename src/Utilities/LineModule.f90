@@ -65,7 +65,6 @@ module LineModule
 
       allocate(temp(self%getNumWords()-1))
       temp(1:intIn-1) = self%words(1:intIn-1)
-      write(*,*) size(temp), intIn
       if (intIn< size(temp)) then
         temp(intIn:) = self%words(intIn+1:)
       end if
@@ -129,6 +128,7 @@ module LineModule
       if (this%getNumWords() == lineIn%getNumWords()) then
         do i = 1, this%getNumWords()
           sameStrings = sameStrings .and. this%getWord(i)==lineIn%getWord(i)
+          write(*,*) sameStrings
         end do
         same = sameStrings
       else
