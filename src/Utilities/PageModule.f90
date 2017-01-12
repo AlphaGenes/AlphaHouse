@@ -81,7 +81,7 @@ module pageModule
         finishUsed = this%getNumLines()
       end if
 
-      numLines = finishUsed-start
+      numLines = finishUsed-start+1
 
       allocate(pageOut%lines(numLines))
 
@@ -89,7 +89,7 @@ module pageModule
          numWords = this%lines(i)%getNumWords()
          allocate(pageOut%lines(i)%words(numWords))
          do j = 1, numWords
-           pageOut%lines(i)%words(j) = this%lines(start+i)%words(j)
+           pageOut%lines(i)%words(j) = this%lines(start+i-1)%words(j)
          end do
       end do 
      
@@ -232,6 +232,10 @@ module pageModule
         class(Page), intent(inout):: this
         type(Page), intent(in):: pageIn
 
+        if (allocated(this%lines)) then
+          deallocate(this%lines)
+        end if
+        allocate(this%lines(size(pageIn%lines)))
         this%lines = pageIn%lines
       end subroutine initPageWithPage
 
@@ -239,6 +243,10 @@ module pageModule
       class(Page), intent(inout):: this
       type(Line), dimension(:):: array
 
+      if (allocated(this%lines)) then
+        deallocate(this%lines)
+      end if
+      allocate(this%lines(size(array)))
       this%lines = array
 
       end subroutine initPageWithArray

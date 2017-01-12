@@ -104,11 +104,6 @@ expected = setUpChar(1:3, :)
 
 gotten = setUpPage%getSubset(1,3)
 
-write(*,*) size(gotten%lines)
-write(*,*) "GOT", gotten%lines(1)
-write(*,*) "GOT2", gotten%lines(2)
-write(*,*) "GOT3", gotten%lines(3)
-write(*,*) "EXP", expected%lines(1)
 @assertEqualUserDefined(expected, gotten)
 end subroutine testGetSubset
 

@@ -216,7 +216,7 @@ contains
     integer, dimension(:,:), allocatable::numSplit
 
     if (present(delimitersIn)) then
-      delimiters = delimitersIn
+      !delimiters = delimitersIn
       allocate(delimiters(size(delimitersIn)))
       do i = 1, size(delimitersIn)
          delimiters(i) = delimitersIn(i)
