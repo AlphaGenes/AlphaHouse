@@ -65,7 +65,7 @@ module LineModule
 
       allocate(temp(self%getNumWords()-1))
       temp(1:intIn-1) = self%words(1:intIn-1)
-      if (intIn< size(temp)) then
+      if (intIn<= size(temp)) then
         temp(intIn:) = self%words(intIn+1:)
       end if
       deallocate(self%words)
