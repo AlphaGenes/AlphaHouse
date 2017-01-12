@@ -28,7 +28,6 @@ module HashModule
     use LinkedListModule
     use constantModule
 
-    integer, parameter :: DICT_NULL = -9999
 type HASH_LIST
     type(LinkedList), pointer :: list
 end type HASH_LIST
@@ -51,7 +50,7 @@ end type DictStructure
 interface DictStructure
     module procedure dict_create
     module procedure dict_create_val
-  end interface DictStructure
+end interface DictStructure
 !
 ! We do not want everything to be public
 !
