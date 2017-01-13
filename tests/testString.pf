@@ -159,6 +159,8 @@ type(String):: inputString
 type(String), dimension(5):: outputString, expectedOutputString
 character(len=1), dimension(3):: delim
 
+integer:: i
+
 inputString = "test,test2,    , ,test3,, , ,  , , ,test4,test5"
 expectedOutputString(1) = "test"
 expectedOutputString(2) = "test2"
@@ -168,8 +170,10 @@ expectedOutputString(5) = "test5"
 
 delim(1) = ","
 delim(2) = " "
-delim(3) = "  "
+delim(3) = char(9)
+
 outputString = inputString%split(delim)
+
 @assertEqualUserDefined(outputString(1), expectedOutputString(1))
 @assertEqualUserDefined(outputString(2), expectedOutputString(2))
 @assertEqualUserDefined(outputString(3), expectedOutputString(3))
