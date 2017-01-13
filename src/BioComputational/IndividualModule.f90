@@ -44,7 +44,6 @@ module IndividualModule
         integer :: generation
         integer :: id
         integer(kind=1) :: gender 
-        integer(kind=1) :: pruned
         type(individual), pointer :: sirePointer
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:) !holds array of given size
@@ -89,6 +88,9 @@ module IndividualModule
             procedure :: getPaternalGrandDamRecodedIndexNoDummy
             procedure :: getMaternalGrandDamRecodedIndexNoDummy
             procedure :: getIntegerVectorOfRecodedIdsNoDummy
+            procedure :: resetOffspringInformation
+            procedure :: writeIndividual
+            generic:: write(formatted) => writeIndividual
     end type Individual
 
     interface Individual
@@ -101,7 +103,38 @@ module IndividualModule
 
 contains
 
+        !---------------------------------------------------------------------------
+    !> @brief Constructor for individual class.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
+        type(Individual) :: this
+        character(*), intent(in) :: originalID,sireIDIn,damIDIn
+        integer, intent(in), Optional :: generation
+        integer, intent(in) :: id
+        integer(kind=1), intent(in), Optional :: gender
 
+
+        allocate(character(len=len(originalID)) ::this%originalID)
+        allocate(character(len=len(sireIDIn)) ::this%sireID)
+        allocate(character(len=len(sireIDIn)) ::this%damID)
+        allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
+        this%originalID = originalID
+        this%id = id
+        this%gender = -9
+        this%sireId = sireIDIn
+        this%damId = damIDIn
+        if (present(generation)) then
+            this%generation = generation
+        else
+            this%generation = NOGENERATIONVALUE
+        endif
+        if (present(gender)) then
+            this%gender = gender
+        endif
+
+    end function initIndividual
 
      !---------------------------------------------------------------------------
     !> @brief Deallocates individual object
@@ -127,7 +160,7 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     logical function compareIndividual(l1,l2)
-        class(Individual), intent(in) :: l1,l2
+        class(Individual), intent(in) :: l1,l2 !< individuals to compare
 
         if (l1%id == l2%id .and. l1%sireID == l2%sireID .and. l1%damID == l2%damID) then
             compareIndividual=.true.
@@ -137,6 +170,24 @@ contains
 
         return
     end function compareIndividual
+
+         !---------------------------------------------------------------------------
+    !> @brief output for individual
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine writeIndividual(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(Individual), intent(in) :: dtv         !< Object to write.
+        integer, intent(in) :: unit         !< Internal unit to write to.
+        character(*), intent(in) :: iotype  !< LISTDIRECTED or DTxxx
+        integer, intent(in) :: v_list(:)    !< parameters from fmt spec.
+        integer, intent(out) :: iostat      !< non zero on error, etc.
+        character(*), intent(inout) :: iomsg  !< define if iostat non zero.
+
+        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID
+
+    end subroutine writeIndividual
+
 
      !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
@@ -152,7 +203,7 @@ contains
     function getSireDamByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of value to return (1 for thisID, 2 for sireID, 3 for damID)
         character(:),allocatable :: v
         select case (index)
             case(1)
@@ -215,7 +266,7 @@ contains
     function getParentGenderBasedOnIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of animal to get gender of (1 for this, 2 for sireGender, 3 for damGender)
         integer :: v
         select case (index)
             case(1)
@@ -362,7 +413,7 @@ contains
     !> @return .True. if file exists, otherwise .false.
     !---------------------------------------------------------------------------
     function getIntegerVectorOfRecodedIds(this) result(res)
-        class(Individual) :: this
+        class(Individual) :: this!< 
         integer :: res(3)
 
         res = 0
@@ -459,7 +510,7 @@ contains
     function getSireDamObjectByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual),target, intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         type(individual), pointer :: v
         select case (index)
             case(1)
@@ -487,7 +538,7 @@ contains
     logical function isDummyBasedOnIndex(this, index)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual),target, intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         select case (index)
             case(1)
                 isDummyBasedOnIndex = .false.
@@ -522,7 +573,7 @@ contains
     function getSireDamNewIDByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         integer:: v
         select case (index)
             case(1)
@@ -560,7 +611,7 @@ contains
     function getSireDamGenotypePositionByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
         class(Individual), intent(in) :: this
-        integer, intent(in) :: index
+        integer, intent(in) :: index !< index of genotype position to return (1 for this, 2 for sire, 3 for dam)
         integer:: v
         select case (index)
             case(1)
@@ -665,39 +716,18 @@ contains
 
     end function hasDummyParentsOrGranparents
 
-
-      !---------------------------------------------------------------------------
-    !> @brief Constructor for siredam class.
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
-        type(Individual) :: this
-        character(*), intent(in) :: originalID,sireIDIn,damIDIn
-        integer, intent(in), Optional :: generation
-        integer, intent(in) :: id
-        integer(kind=1), intent(in), Optional :: gender
-
-
-        allocate(character(len=len(originalID)) ::this%originalID)
-        allocate(character(len=len(sireIDIn)) ::this%sireID)
-        allocate(character(len=len(sireIDIn)) ::this%damID)
+    subroutine resetOffspringInformation(this)
+        class(Individual) :: this
+    
+        deallocate(this%offsprings)
         allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
-        this%originalID = originalID
-        this%id = id
-        this%gender = -9
-        this%sireId = sireIDIn
-        this%damId = damIDIn
-        if (present(generation)) then
-            this%generation = generation
-        else
-            this%generation = NOGENERATIONVALUE
-        endif
-        if (present(gender)) then
-            this%gender = gender
-        endif
+    
+        this%noffs = 0
+    
+    
+    end subroutine resetOffspringInformation 
 
-    end function initIndividual
+  
 
     !---------------------------------------------------------------------------
     !> @brief boolean function returning true if object is a founder of a generation
@@ -819,11 +849,10 @@ contains
     !> @brief Sets gender info of individual. 1 signifies male, 2 female. 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
-    !> @param[in] gender (integer kind(1)) 
     !---------------------------------------------------------------------------
     subroutine setGender(this,gender) 
         class(individual) :: this
-        integer(kind=1),intent(in) :: gender
+        integer(kind=1),intent(in) :: gender !< gender (1 or 2) to set animal
         this%gender = gender
     end subroutine setGender
 

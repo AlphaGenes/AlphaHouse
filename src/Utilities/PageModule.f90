@@ -8,7 +8,7 @@ module pageModule
   public:: assignment(=), operator(==), Page
 
   type:: Page
-    private
+!    private
     type(Line), dimension(:), allocatable:: lines
     character(len=:), allocatable:: pageName
     contains
@@ -73,6 +73,7 @@ module pageModule
       type(Page):: pageOut
 
       integer:: finishUsed
+      integer:: numLines, i, j, numWords
 
       if (present(finish)) then
         finishUsed = finish
@@ -80,7 +81,20 @@ module pageModule
         finishUsed = this%getNumLines()
       end if
 
-      pageOut = this%lines(start:finishUsed)
+      numLines = finishUsed-start+1
+
+      allocate(pageOut%lines(numLines))
+
+      do i = 1, numLines
+         numWords = this%lines(start+i-1)%getNumWords()
+         allocate(pageOut%lines(i)%words(numWords))
+         do j = 1, numWords
+           pageOut%lines(i)%words(j) = this%lines(start+i-1)%words(j)
+         end do
+      end do 
+     
+
+      !pageOut = this%lines(start:finishUsed)
     end function getSubset
 
 
@@ -218,6 +232,10 @@ module pageModule
         class(Page), intent(inout):: this
         type(Page), intent(in):: pageIn
 
+        if (allocated(this%lines)) then
+          deallocate(this%lines)
+        end if
+        allocate(this%lines(size(pageIn%lines)))
         this%lines = pageIn%lines
       end subroutine initPageWithPage
 
@@ -225,6 +243,10 @@ module pageModule
       class(Page), intent(inout):: this
       type(Line), dimension(:):: array
 
+      if (allocated(this%lines)) then
+        deallocate(this%lines)
+      end if
+      allocate(this%lines(size(array)))
       this%lines = array
 
       end subroutine initPageWithArray

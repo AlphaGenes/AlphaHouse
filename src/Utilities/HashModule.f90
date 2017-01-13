@@ -1,8 +1,33 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     HashModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing definition for Dictionary
+!
+!> @details  Fully doubly linked list with useful procedures for operations on the dictionary
+!
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module HashModule
     use iso_fortran_env
     use LinkedListModule
+    use constantModule
 
-    integer, parameter :: DICT_NULL = -9999
 type HASH_LIST
     type(LinkedList), pointer :: list
 end type HASH_LIST
@@ -10,7 +35,6 @@ end type HASH_LIST
 type DictStructure
     
     type(HASH_LIST), pointer, dimension(:),private :: table
-
 
     contains
 
@@ -26,7 +50,7 @@ end type DictStructure
 interface DictStructure
     module procedure dict_create
     module procedure dict_create_val
-  end interface DictStructure
+end interface DictStructure
 !
 ! We do not want everything to be public
 !
@@ -37,7 +61,7 @@ private :: LinkedList
 private :: getElement
 private :: hashKey
 
-integer(kind=int64) :: hash_size  = 4993
+integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
 integer(kind=int64), parameter, private :: multiplier = 17
 
 
@@ -46,16 +70,26 @@ contains
 ! Routines and functions specific to dictionaries
 !
 
-
+   !---------------------------------------------------------------------------
+  !> @brief Returns size of underlying table of dictionary
+  !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !> @date    October 26, 2016
+  !---------------------------------------------------------------------------
 integer function getSize(this)
 class(DictStructure) :: this
   getSize = size(this%table)
 
 end function getSize
 
+
+   !---------------------------------------------------------------------------
+  !> @brief Constructor for dictionary
+  !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !> @date    October 26, 2016
+  !---------------------------------------------------------------------------
 function dict_create(size) result(dict)
-    type(DictStructure)  :: dict
-    integer(kind=int64),intent(in), optional :: size
+    type(DictStructure)  :: dict !< Dictionary Object
+    integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
     integer(kind=int64) :: i
 
     if (present(size)) then
@@ -70,12 +104,16 @@ function dict_create(size) result(dict)
 
 end function dict_create
 
-
+  !---------------------------------------------------------------------------
+  !> @brief Constructor for dictionary withkey and value parameters 
+  !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !> @date    October 26, 2016
+  !---------------------------------------------------------------------------
 function dict_create_val(key, value, size ) result(dict)
-    type(DictStructure)  :: dict
-    character(len=*), intent(in) ::  key
-    integer(kind=int64),intent(in), optional :: size
-    integer, intent(in)  :: value
+    type(DictStructure)  :: dict !< Dictionary Object
+    character(len=*), intent(in) ::  key !< key for value in dictionary
+    integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
+    integer, intent(in)  :: value !< value to be stored in dictionary
     type(LIST_DATA) :: data
     integer(kind=int64):: i
     integer(kind=int64):: hash
@@ -250,7 +288,7 @@ function getElement( this, key ) result(elem)
     type(LinkedList), pointer :: elem
     integer(kind=int64) :: hash
 
-    hash = hashKey( trim(key) )
+    hash = hashKey( trim(key) ) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
         if ( elem%data%key .eq. key ) then

@@ -27,15 +27,17 @@
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
 
-  use ISO_Fortran_Env
+  use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
 
   implicit none
 
   private
   ! Methods
-  public :: CountLines,int2Char,Real2Char,RandomOrder,ToLower,FindLoc,SetSeed,removeWhitespace,parseToFirstWhitespace,splitLineIntoTwoParts
-  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double
-  public:: isDelim
+  public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
+  public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
+  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
+  public :: isDelim, PrintElapsedTime, intToChar
+
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -54,7 +56,12 @@ module AlphaHouseMod
   !> @brief Integer to character interface
   interface int2Char
     module procedure Int2Char32, Int2Char64
-  end interface 
+  end interface
+
+  interface intToChar
+    module procedure int2CharArray, int642CharArray
+  end interface
+
   !> @brief FindLoc interface
   interface FindLoc
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
@@ -120,7 +127,7 @@ module AlphaHouseMod
 
       ! Arguments
       character(len=*),intent(in) :: FileName !< file
-      integer(int32)              :: nLines   !@result number of lines in a file
+      integer(int32)              :: nLines   !< @return number of lines in a file
 
       ! Other
       integer(int32) :: f,Unit
@@ -159,7 +166,7 @@ module AlphaHouseMod
         dummyStr = ToLower(str)
         k=1
         newstr=""
-        do 
+        do
             if (dummyStr(k:k) /= " ") then
                 newstr = dummyStr(1:k)
                 k=k+1
@@ -188,7 +195,7 @@ module AlphaHouseMod
         if (len(string)==0) then
           res = ''
         else if (len(string)==1) then
-           if (string==ch) then 
+           if (string==ch) then
               res = ''
            else
               res = string
@@ -214,7 +221,7 @@ module AlphaHouseMod
       implicit none
 
       character(*), intent(in) :: c   !< character
-      integer(int32)           :: Res !@result integer
+      integer(int32)           :: Res !< @return integer
 
       read(c, *) Res
       return
@@ -231,7 +238,7 @@ module AlphaHouseMod
       implicit none
 
       character(*), intent(in) :: c   !< character
-      integer(int64)           :: Res !@result integer
+      integer(int64)           :: Res !< @return integer
 
       read(c, *) Res
       return
@@ -241,7 +248,7 @@ module AlphaHouseMod
     !---------------------------------------------------------------------------
     !> @brief   Convert integer to character
     !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran. Converts 64 bit integer.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk 
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    October 28, 2016
     !---------------------------------------------------------------------------
     function Int2Char64(i,fmt) result(Res)
@@ -261,6 +268,51 @@ module AlphaHouseMod
       Res=trim(Tmp)
       return
     end function
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert integer to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int642CharArray(i, sizeIn, fmt) result (res)
+      integer(int64), intent(in), dimension(:):: i
+      integer(int64), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+      do j = 1, size(i)
+      if (present(fmt)) then
+        write(res(j), fmt) i(j)
+      else
+        write(res(j), "(i0)") i(j)
+      end if
+    end do
+    end function int642CharArray
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert integer to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int2CharArray(i, sizeIn, fmt) result (res)
+      integer(int32), intent(in), dimension(:):: i
+      integer(int32), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+!      allocate(character(len=sizeIn) :: res)
+     do j =1, size(i)
+      if (present(fmt)) then
+        write(res(j), fmt) i(j)
+      else
+        write(res(j), "(i0)") i(j)
+      end if
+    end do
+    end function int2CharArray
 
     !---------------------------------------------------------------------------
     !> @brief   Convert integer to character
@@ -311,11 +363,32 @@ module AlphaHouseMod
       Res=trim(Tmp)
       return
     end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Convert logical to character (0/1)
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   December 23, 2016
+    !---------------------------------------------------------------------------
+    function Log2Char(l) result(Res)
+      implicit none
+
+      logical, intent(in) :: l   !< logical
+      character(len=1)    :: Res !< @return character
+
+      if (l) then
+        Res = "1"
+      else
+        Res = "0"
+      end if
+      return
+    end function
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
     !> @brief   Convert character to single precision real
-    !> @details Convert character to single precision real
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    November 15, 2016
     !---------------------------------------------------------------------------
@@ -337,7 +410,6 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Convert character to single precision real
-    !> @details Convert character to single precision real
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    November 15, 2016
     !---------------------------------------------------------------------------
@@ -385,7 +457,6 @@ module AlphaHouseMod
 
     !---------------------------------------------------------------------------
     !> @brief   Generate a random ordering of the integers 1, 2, ..., n
-    !> @details TODO
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
@@ -453,11 +524,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocI(Val,Vec) result(i)
+    pure function FindLocI(Val,Vec) result(i)
       implicit none
       integer(int32),intent(in) :: Val    !< value
       integer(int32),intent(in) :: Vec(:) !< vector
-      integer(int32)            :: i      !< @return position
+      integer(int32)            :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -477,16 +548,16 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocC(Val,Vec) result(i)
+    pure function FindLocC(Val,Vec) result(i)
       implicit none
       character(len=*),intent(in) :: Val    !< value
       character(len=*),intent(in) :: Vec(:) !< vector
-      integer(int32)              :: i      !< @return position
+      integer(int32)              :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        if (Val == Vec(j)) then
+        if (trim(Val) == trim(Vec(j))) then
           i=j
           exit
         end if
@@ -501,11 +572,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocS(Val,Vec) result(i)
+    pure function FindLocS(Val,Vec) result(i)
       implicit none
       real(real32),intent(in) :: Val    !< value
       real(real32),intent(in) :: Vec(:) !< vector
-      integer(int32)          :: i      !< @return position
+      integer(int32)          :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -526,11 +597,11 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function FindLocD(Val,Vec) result(i)
+    pure function FindLocD(Val,Vec) result(i)
       implicit none
       real(real64),intent(in) :: Val    !< value
       real(real64),intent(in) :: Vec(:) !< vector
-      integer(int32)          :: i      !< @return position
+      integer(int32)          :: i      !< @return position, 0 for no match
 
       integer(int32) :: j
       i=0
@@ -561,7 +632,7 @@ module AlphaHouseMod
     character(len=300) :: first
     character (len=300),dimension(:), allocatable,intent(out) :: second
     character (len=300), dimension(:), allocatable :: tmp
-    logical :: useSecond    
+    logical :: useSecond
     first = " "
     useSecond = .false.
     sCount1 = 0
@@ -570,7 +641,7 @@ module AlphaHouseMod
     if (allocated(second)) deallocate(second)
     allocate(second(numberAfterComma)) ! Allocate the second array
     lenin=len(line)
-    lenin=len_trim(line(1:lenin))  ! Trim string as no point dealing with trailing whitespace   
+    lenin=len_trim(line(1:lenin))  ! Trim string as no point dealing with trailing whitespace
     do i=1,lenin
         c=line(i:i)
         if(.not. (ichar(c) == 9 .or. c == " " .or. c=="")) then  !if c is not tab or whitespace
@@ -650,7 +721,43 @@ module AlphaHouseMod
       deallocate(SeedList)
     end subroutine
 
-    !########################################################################### 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Print elapsed time in a nice way
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    December 22, 2016
+    !> @return  Print on standard output
+    !---------------------------------------------------------------------------
+    subroutine PrintElapsedTime(Start, End)
+      implicit none
+      real(real32) :: Start !< Start time from cpu_time()
+      real(real32) :: End   !< End time from cpu_time()
+
+      real(real32) :: Total
+      integer(int32) :: Hours, Minutes, Seconds
+
+      Total = 0.0
+      Hours = 0
+      Minutes = 0
+      Seconds = 0
+
+      Total = End - Start
+      Minutes = int(Total / 60)
+      Seconds = int(Total - (Minutes * 60))
+      Hours = int(Minutes / 60)
+      Minutes = Minutes - (Hours * 60)
+
+      write(STDOUT, "(a)") ""
+      write(STDOUT, "(a)") " Process ended"
+      write(STDOUT, "(a,f20.2,a,3(i4,a))") " Time elapsed: ", Total, " seconds => ",&
+                                           Hours,   " hours ",&
+                                           Minutes, " minutes ",&
+                                           Seconds, " seconds"
+      write(STDOUT, "(a)") ""
+    end subroutine
+
+    !###########################################################################
 end module
 
 !###############################################################################

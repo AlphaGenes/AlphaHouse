@@ -29,7 +29,7 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors
 
     contains
 
@@ -42,8 +42,8 @@ module IndividualHelperModule
     !---------------------------------------------------------------------------
     function getFullSibs(indiv) result(res)
         use IndividualLinkedListModule
-        class(individual) :: indiv
-        type(IndividualLinkedList) :: res
+        class(individual) :: indiv !< individual to get full sibs of
+        type(IndividualLinkedList) :: res !< list of full sibs
         integer :: i
 
         if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
@@ -71,8 +71,8 @@ module IndividualHelperModule
     function getSibs(indiv) result(res)
         use IndividualLinkedListModule
         use HashModule
-        class(individual) :: indiv
-        type(IndividualLinkedList) :: res
+        class(individual) :: indiv !< individual to get full and half sibs on
+        type(IndividualLinkedList) :: res !< linked list of full and half sibs
         type(DictStructure) :: dict
         integer :: i, sireNum, damNum
         integer(kind=int64) ::tmpSize
@@ -128,8 +128,8 @@ module IndividualHelperModule
         use IndividualLinkedListModule
         use HashModule
         implicit none
-        class(individual) :: indiv
-        type(IndividualLinkedList) :: res
+        class(individual) :: indiv !< individual to get half sibs of
+        type(IndividualLinkedList) :: res !< linked list of half sibs
         type(DictStructure) :: dict
         integer :: i, sireNum, damNum
         integer(kind=int64) ::tmpSize
@@ -187,8 +187,8 @@ module IndividualHelperModule
     function getSharedKids(individualOne, IndividualTwo) result(res)
         use IndividualModule
         use IndividualLinkedListModule
-        type(Individual),target, intent(in) :: individualOne, IndividualTwo
-        type(IndividualLinkedList) :: res
+        type(Individual),target, intent(in) :: individualOne, IndividualTwo !< individuals to compare kids
+        type(IndividualLinkedList) :: res !< linked list of shared kids between both parents
         integer ::  i
         do i=1, individualOne%nOffs
 
@@ -207,7 +207,7 @@ module IndividualHelperModule
     end function getSharedKids
 
 
-      !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief Returns linked list of mates that an individual has had 
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016
@@ -217,8 +217,8 @@ module IndividualHelperModule
     function getMates(individualOne) result(res)
         use IndividualModule
         use IndividualLinkedListModule
-        type(Individual),target, intent(in) :: individualOne
-        type(IndividualLinkedList) :: res
+        type(Individual),target, intent(in) :: individualOne !< individual to get mates of
+        type(IndividualLinkedList) :: res !< linked list of individual's mates
         integer ::  i
         do i=1, individualOne%nOffs
 
@@ -240,5 +240,34 @@ module IndividualHelperModule
 
     end function getMates
 
+    !---------------------------------------------------------------------------
+    !> @brief creates list of ancestors of given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !---------------------------------------------------------------------------
+    recursive subroutine getAncestors(ind, resIn)
+    ! TODO write tests
+        use IndividualModule
+        use IndividualLinkedListModule
+        type(Individual), intent(in) :: ind !< individual to get ancestors of
+        type(IndividualLinkedList),target, optional :: resIn !< linked list of individual's mates
+        type(IndividualLinkedList), pointer :: res
+
+        if (present(resIn)) then
+            res => resIn
+        endif
+        if (associated(ind%sirePointer)) then
+            if (.not. res%contains(ind%sirePointer)) then
+                call res%list_add(ind%sirePointer)
+            endif
+            call getAncestors(ind%sirePointer, res)
+        endif
+        if (associated(ind%damPointer)) then
+            if (.not. res%contains(ind%damPointer)) then
+                call res%list_add(ind%damPointer)
+            endif
+            call getAncestors(ind%damPointer,res)
+        endif
+end subroutine getAncestors
 end module IndividualHelperModule
 

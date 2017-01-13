@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 PROJECT(AlphaHouse)
 enable_language (Fortran)
 enable_testing()
-
+find_package(Doxygen)
 # Add our local modlues to the module path
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
@@ -28,6 +28,8 @@ SET(OBJ ${CMAKE_SOURCE_DIR}/objs)
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
 SET(TESTS ${CMAKE_SOURCE_DIR}/tests)
 SET(SRCALPHAHOUSE ${SRC}/)
+
+INCLUDE(${CMAKE_MODULE_PATH}/findDoxygen.cmake)
 
 # Defined libary source
 
@@ -96,7 +98,23 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
-set (TESTFILES ${TESTS}/testInputFile.pf ${TESTS}/testPedigreeModule.pf ${TESTS}/testIndividualHelperModule.pf)
+set (TESTFILES 
+	${TESTS}/TestAlphaStatMod.pf
+	${TESTS}/TestHashTable.pf
+	${TESTS}/TestIndividual.pf
+	${TESTS}/TestIntelRNGMod.pf
+	${TESTS}/TestLinkedList.pf
+	${TESTS}/testAlphaHouseMod.pf
+	${TESTS}/testIndividualHelperModule.pf
+	${TESTS}/testIndividualLinkedList.pf
+	${TESTS}/testInputFile.pf
+	 ${TESTS}/testLine.pf
+	 ${TESTS}/testPage.pf
+	${TESTS}/testPedigreeModule.pf
+	 ${TESTS}/testString.pf
+	${TESTS}/testSystemMod.pf
+	)
+# file(GLOB TESTFILES ${TESTS}/*.pf)
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})

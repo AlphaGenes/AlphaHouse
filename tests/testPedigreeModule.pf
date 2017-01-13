@@ -1,0 +1,143 @@
+module TestPedigreeModule
+  use pFUnit_mod
+  use PedigreeModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(PedigreeHolder) :: pedigree, pedigreeUnsorted
+  contains
+
+    @before
+    subroutine initialise
+        implicit none
+        integer(int32) :: pedUnit
+
+        ! A sorted pedigree with one parent (d1) not given as individual
+        open(newunit=pedUnit, file="testPed.txt", status="unknown")
+        write(pedUnit, "(a)") "aaa 0   0"
+        write(pedUnit, "(a)") "bbb 0   0"
+        write(pedUnit, "(a)") "ccc aaa bbb"
+        write(pedUnit, "(a)") "ddd aaa 0"
+        write(pedUnit, "(a)") "eee ddd bbb"
+        write(pedUnit, "(a)") "fff ddd bbb"
+        write(pedUnit, "(a)") "ggg 0   d1"
+        write(pedUnit, "(a)") "hhh 0   d1"
+        close(pedUnit)
+        pedigree = PedigreeHolder("testPed.txt")
+
+        ! An unsorted pedigree with two parents (aaa and d1) not given as individuals
+        open(newunit=pedUnit, file="testPedUnsorted.txt", status="unknown")
+        write(pedUnit, "(a)") "ccc aaa bbb"
+        write(pedUnit, "(a)") "ggg 0   d1"
+        write(pedUnit, "(a)") "eee ddd bbb"
+        write(pedUnit, "(a)") "bbb 0   0"
+        write(pedUnit, "(a)") "fff ddd bbb"
+        write(pedUnit, "(a)") "ddd aaa 0"
+        write(pedUnit, "(a)") "hhh 0   d1"
+        close(pedUnit)
+        pedigreeUnsorted = PedigreeHolder("testPedUnsorted.txt")
+    end subroutine
+
+    @after
+    subroutine Uninit
+      integer(int32) :: pedUnit
+
+      call pedigree%destroyPedigree
+      call pedigreeUnsorted%destroyPedigree
+
+      open(newunit=pedUnit, file="testPed.txt", status="old")
+      close(pedUnit, status="delete")
+      open(newunit=pedUnit, file="testPedUnsorted.txt", status="old")
+      close(pedUnit, status="delete")
+    end subroutine
+
+    @test
+    subroutine testReadAndSort
+        implicit none
+         @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
+    end subroutine testReadAndSort
+
+    @test
+    subroutine testDummys
+        implicit none
+        integer :: tmp,i
+        tmp = pedigree%dictionary%getValue("dumd1")
+         @assertFalse(tmp == DICT_NULL)
+         @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
+    end subroutine testDummys
+
+
+
+    @test
+    subroutine testSorting
+      integer :: tmp,tmp2, i
+      call pedigree%sortPedigreeAndOverwrite
+       tmp = pedigree%dictionary%getValue("ccc")
+       tmp2 = pedigree%dictionary%getValue("aaa")
+      @assertEqualUserDefined(pedigree%pedigree(tmp)%sirePointer,pedigree%pedigree(tmp2))
+!      do i=1, pedigree%pedigree(tmp2)%nOffs
+!        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
+!      enddo
+      @assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
+
+    end subroutine testSorting
+
+    @test
+    subroutine testMakeRecodedPedigreeArray
+      implicit none
+      integer(int32) :: i
+      type(recodedPedigreeArray) :: recPed
+      type(recodedPedigreeArray) :: expRecPed
+
+      call pedigree%makeRecodedPedigreeArray(recPed)
+      call expRecPed%init(n=pedigree%pedigreeSize)
+      expRecPed%originalId(0:) = ["0", "aaa", "bbb", "dum001", "dumd1", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
+      expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
+      expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
+      expRecPed%id(3,0:)       = [  0,     0,     0,        0,      0,         0,        0,     2,     3,     4,     4,     2,     2]
+      do i = 0, pedigree%pedigreeSize
+        ! print*, recPed%originalId(i), recPed%generation(i), recPed%id(1:3,i)
+        ! print*, expRecPed%originalId(i), expRecPed%generation(i), expRecPed%id(1:3,i)
+        @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
+        @assertEqual(expRecPed%generation(i), recPed%generation(i))
+        @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+      end do
+      call recPed%destroy()
+      call expRecPed%destroy()
+
+      call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
+      call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
+      expRecPed%originalId(0:) = ["0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
+      expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
+      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     2,     4,     6,     8,     8]
+      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     5,     3,     3,     1,     1]
+      do i = 0, pedigree%pedigreeSize
+         ! print*, recPed%originalId(i), recPed%generation(i), recPed%id(1:3,i)
+         ! print*, expRecPed%originalId(i), expRecPed%generation(i), expRecPed%id(1:3,i)
+         @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
+         @assertEqual(expRecPed%generation(i), recPed%generation(i))
+         @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+      end do
+    end subroutine
+
+    ! @test
+    ! subroutine testAddOffspring
+    !     type(individualPointerContainer), allocatable :: Offsprings(:)
+    !     type(Individual) :: tmp
+    !     call table(1)%addOffspring(table(2))
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     call table(1)%getOffsprings(Offsprings)
+    !     tmp = Offsprings(1)%p
+    !     @assertEqualUserDefined(tmp, table(2))
+    ! end subroutine testAddOffspring
+
+    ! @test
+    ! subroutine testBuildOffspring
+    !     call BuildOffspringInfortmation(table)
+    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+    !     @assertEqual(table(2)%GetNumberOffsprings(), 2)
+    ! end subroutine testBuildOffspring
+end module TestPedigreeModule
