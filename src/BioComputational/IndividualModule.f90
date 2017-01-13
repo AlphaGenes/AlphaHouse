@@ -25,6 +25,7 @@
 
 module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
+    use genotypeModule
     implicit none
 
     public :: Individual,individualPointerContainer,operator ( == )
@@ -54,7 +55,7 @@ module IndividualModule
         logical :: HD          = .false.
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
 
-        integer(kind=1), allocatable, dimension(:) :: genotype !where size is the number of snps
+        type(genotype) :: individualGenotype
         integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
         contains
             procedure :: getSireDamByIndex
@@ -147,12 +148,6 @@ contains
         deallocate(this%originalID)
         deallocate(this%sireID)
         deallocate(this%damID)
-        if (allocated(this%genotype)) then
-            deallocate(this%genotype)
-        endif
-        if (allocated(this%phase)) then 
-            deallocate(this%phase)
-        endif
     end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
