@@ -41,12 +41,13 @@ module OrderPackModule
       !> @brief   Ranks array XVALT into index array IRNGT, using merge-sort
       !> @details For performance reasons, the first 2 passes are taken out of the
       !!          standard loop, and use dedicated coding
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !-------------------------------------------------------------------------
       pure function D_MrgRnk (XDONT) result(IRNGT)
           implicit none
-          Real(real64), Dimension(:), Intent (In)   :: XDONT
-          Integer(int32), Dimension(:), allocatable :: IRNGT
+          Real(real64), Dimension(:), Intent (In)   :: XDONT !< Vector to rank
+          Integer(int32), allocatable, Dimension(:) :: IRNGT !< @return Result
 
           Real(real64) :: XVALA, XVALB
 
@@ -54,6 +55,7 @@ module OrderPackModule
           Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
           Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
 
+          ! NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
           NVAL = SIZE(XDONT)
           allocate(IRNGT(NVAL))
 
@@ -246,12 +248,13 @@ module OrderPackModule
       !> @brief   Ranks array XVALT into index array IRNGT, using merge-sort
       !> @details For performance reasons, the first 2 passes are taken out of the
       !!          standard loop, and use dedicated coding
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !-------------------------------------------------------------------------
       pure function R_MrgRnk (XDONT) result(IRNGT)
           implicit none
-          Real(real32), Dimension(:), Intent (In)   :: XDONT
-          Integer(int32), Dimension(:), allocatable :: IRNGT
+          Real(real32), Dimension(:), Intent (In)   :: XDONT !< Vector to rank
+          Integer(int32), allocatable, Dimension(:) :: IRNGT !< @return Result
 
           Real(real32) :: XVALA, XVALB
 
@@ -259,6 +262,7 @@ module OrderPackModule
           Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
           Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
 
+          ! NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
           NVAL = SIZE(XDONT)
           allocate(IRNGT(NVAL))
 
@@ -451,19 +455,21 @@ module OrderPackModule
       !> @brief   Ranks array XVALT into index array IRNGT, using merge-sort
       !> @details For performance reasons, the first 2 passes are taken out of the
       !!          standard loop, and use dedicated coding
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !-------------------------------------------------------------------------
       pure function I_MrgRnk (XDONT) result(IRNGT)
           implicit none
-          Integer(int32), Dimension(:), Intent (In) :: XDONT
-          Integer(int32), Dimension(:), allocatable :: IRNGT
+          Integer(int32), Dimension(:), Intent (In) :: XDONT !< Vector to rank
+          Integer(int32), allocatable, Dimension(:) :: IRNGT !< @return Result
 
           Integer(int32) :: XVALA, XVALB
-        !
+
           Integer(int32), Dimension (SIZE(XDONT)) :: JWRKT
           Integer(int32) :: LMTNA, LMTNC, IRNG1, IRNG2
           Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
-        !
+
+          ! NVAL = Min (SIZE(XDONT), SIZE(IRNGT))
           NVAL = SIZE(XDONT)
           allocate(IRNGT(NVAL))
 
@@ -662,30 +668,35 @@ module OrderPackModule
       !> @brief   UniSta - Stable Unique
       !> @details Removes duplicates from an array, leaving unique entries in the
       !!          order of their first appearance in the initial set.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    February, 2000
       !-------------------------------------------------------------------------
-      pure subroutine D_unista (XDONT, NUNI)
+      pure function D_unista (XDONT) result(OUT)
             implicit none
-            Real(real64), Dimension (:), Intent (InOut) :: XDONT
-            Integer(int32), Intent (Out) :: NUNI
+            Real(real64), Dimension (:), Intent (In) :: XDONT !< Input Array
+            Real(real64), allocatable, Dimension(:) :: OUT    !< @return Unique values in the array
 
+            Real(real64), Dimension (Size(XDONT)) :: XDONTCOPY
             Integer(int32), Dimension (Size(XDONT)) :: IWRKT
             Logical, Dimension (Size(XDONT)) :: IFMPTYT
-            Integer(int32) :: ICRS
+            Integer(int32) :: ICRS, NUNI
 
-            CALL UNIINV(XDONT, IWRKT)
+            IWRKT = UNIINV(XDONT)
             IFMPTYT = .True.
             NUNI = 0
+            XDONTCOPY = XDONT
             Do ICRS = 1, Size(XDONT)
                If (IFMPTYT(IWRKT(ICRS))) Then
                   IFMPTYT(IWRKT(ICRS)) = .False.
                   NUNI = NUNI + 1
-                  XDONT (NUNI) = XDONT (ICRS)
+                  XDONTCOPY (NUNI) = XDONTCOPY (ICRS)
                End If
             End Do
+            allocate(OUT(NUNI))
+            OUT = XDONTCOPY(1:NUNI)
             Return
-      End Subroutine D_unista
+      End function D_unista
 
       !#########################################################################
 
@@ -693,30 +704,35 @@ module OrderPackModule
       !> @brief   UniSta - Stable Unique
       !> @details Removes duplicates from an array, leaving unique entries in the
       !!          order of their first appearance in the initial set.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    February, 2000
       !-------------------------------------------------------------------------
-      pure subroutine R_unista (XDONT, NUNI)
+      pure function R_unista (XDONT) result(OUT)
             implicit none
-            Real(real32), Dimension (:), Intent (InOut) :: XDONT
-            Integer(int32), Intent (Out) :: NUNI
+            Real(real32), Dimension (:), Intent (In) :: XDONT !< Input Array
+            Real(real32), allocatable, Dimension (:) :: OUT   !< @return Unique values in the array
 
+            Real(real32), Dimension (Size(XDONT)) :: XDONTCOPY
             Integer(int32), Dimension (Size(XDONT)) :: IWRKT
             Logical, Dimension (Size(XDONT)) :: IFMPTYT
-            Integer(int32) :: ICRS
+            Integer(int32) :: ICRS, NUNI
 
-            CALL UNIINV(XDONT, IWRKT)
+            IWRKT = UNIINV(XDONT)
             IFMPTYT = .True.
             NUNI = 0
+            XDONTCOPY = XDONT
             Do ICRS = 1, Size(XDONT)
                If (IFMPTYT(IWRKT(ICRS))) Then
                   IFMPTYT(IWRKT(ICRS)) = .False.
                   NUNI = NUNI + 1
-                  XDONT (NUNI) = XDONT (ICRS)
+                  XDONTCOPY (NUNI) = XDONTCOPY (ICRS)
                End If
             End Do
+            allocate(OUT(NUNI))
+            OUT = XDONTCOPY(1:NUNI)
             Return
-      End Subroutine R_unista
+      End function R_unista
 
       !#########################################################################
 
@@ -724,36 +740,41 @@ module OrderPackModule
       !> @brief   UniSta - Stable Unique
       !> @details Removes duplicates from an array, leaving unique entries in the
       !!          order of their first appearance in the initial set.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    February, 2000
       !-------------------------------------------------------------------------
-      pure subroutine I_unista (XDONT, NUNI)
+      pure function I_unista (XDONT) result(OUT)
             implicit none
-            Integer(int32), Dimension (:), Intent (InOut)  :: XDONT
-            Integer(int32), Intent (Out) :: NUNI
+            Integer(int32), Dimension (:), Intent (In)  :: XDONT !< Input Array
+            Integer(int32), allocatable, Dimension(:) :: OUT     !< @return Unique values in the array
 
+            Integer(int32), Dimension (Size(XDONT)) :: XDONTCOPY
             Integer(int32), Dimension (Size(XDONT)) :: IWRKT
             Logical, Dimension (Size(XDONT)) :: IFMPTYT
-            Integer(int32) :: ICRS
+            Integer(int32) :: ICRS, NUNI
 
-            CALL UNIINV(XDONT, IWRKT)
+            IWRKT = UNIINV(XDONT)
             IFMPTYT = .True.
             NUNI = 0
+            XDONTCOPY = XDONT
             Do ICRS = 1, Size(XDONT)
                If (IFMPTYT(IWRKT(ICRS))) Then
                   IFMPTYT(IWRKT(ICRS)) = .False.
                   NUNI = NUNI + 1
-                  XDONT (NUNI) = XDONT (ICRS)
+                  XDONTCOPY (NUNI) = XDONTCOPY (ICRS)
                End If
             End Do
+            allocate(OUT(NUNI))
+            OUT = XDONTCOPY(1:NUNI)
             Return
-      End Subroutine I_unista
+      End function I_unista
 
       !#########################################################################
 
     !###########################################################################
 
-    ! UniInv - inverse rank and unique
+    ! UniInv - unique (inverse?) rank
 
       !#########################################################################
 
@@ -765,20 +786,26 @@ module OrderPackModule
       !!          in the ordered set with duplicates removed. For performance reasons,
       !!          the first 2 passes are taken out of the standard loop, and use
       !!          dedicated coding.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    2010
       !-------------------------------------------------------------------------
-      pure subroutine D_uniinv (XDONT, IGOEST)
-            Real(real64), Dimension (:), Intent (In) :: XDONT
-            Integer(int32), Dimension (:), Intent (Out) :: IGOEST
+      pure function D_uniinv (XDONT) result(IGOEST)
+            Real(real64), Dimension (:), Intent (In) :: XDONT    !< Vector to rank
+            Integer(int32), allocatable, Dimension (:) :: IGOEST !< @return Result
 
             Real(real64) :: XTST, XDONA, XDONB
 
-            Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            ! Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            Integer(int32), allocatable, Dimension (:) :: JWRKT, IRNGT
             Integer(int32) :: LMTNA, LMTNC, IRNG, IRNG1, IRNG2, NUNI
             Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
 
-            NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            ! NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            NVAL = SIZE(XDONT)
+            allocate(IGOEST(NVAL))
+            allocate(JWRKT(NVAL))
+            allocate(IRNGT(NVAL))
 
             Select Case (NVAL)
             Case (:0)
@@ -1002,7 +1029,7 @@ module OrderPackModule
       !
             Return
       !
-      end subroutine
+      end function
 
       !-------------------------------------------------------------------------
       !> @brief   UniInv - Merge-sort inverse ranking of an array, with removal of
@@ -1012,20 +1039,26 @@ module OrderPackModule
       !!          in the ordered set with duplicates removed. For performance reasons,
       !!          the first 2 passes are taken out of the standard loop, and use
       !!          dedicated coding.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    2010
       !-------------------------------------------------------------------------
-      pure subroutine R_uniinv (XDONT, IGOEST)
-            Real(real32), Dimension (:), Intent (In) :: XDONT
-            Integer(int32), Dimension (:), Intent (Out) :: IGOEST
+      pure function R_uniinv (XDONT) result(IGOEST)
+            Real(real32), Dimension (:), Intent (In) :: XDONT    !< Vector to rank
+            Integer(int32), allocatable, Dimension (:) :: IGOEST !< @return Result
 
             Real(real32) :: XTST, XDONA, XDONB
 
-            Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            ! Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            Integer(int32), allocatable, Dimension (:) :: JWRKT, IRNGT
             Integer(int32) :: LMTNA, LMTNC, IRNG, IRNG1, IRNG2, NUNI
             Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
 
-            NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            ! NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            NVAL = SIZE(XDONT)
+            allocate(IGOEST(NVAL))
+            allocate(JWRKT(NVAL))
+            allocate(IRNGT(NVAL))
 
             Select Case (NVAL)
             Case (:0)
@@ -1249,7 +1282,7 @@ module OrderPackModule
       !
             Return
       !
-      end subroutine
+      end function
 
       !-------------------------------------------------------------------------
       !> @brief   UniInv - Merge-sort inverse ranking of an array, with removal of
@@ -1259,20 +1292,26 @@ module OrderPackModule
       !!          in the ordered set with duplicates removed. For performance reasons,
       !!          the first 2 passes are taken out of the standard loop, and use
       !!          dedicated coding.
-      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
       !> @date    2010
       !-------------------------------------------------------------------------
-      pure subroutine I_uniinv (XDONT, IGOEST)
-            Integer(int32), Dimension (:), Intent (In)  :: XDONT
-            Integer(int32), Dimension (:), Intent (Out) :: IGOEST
+      pure function I_uniinv (XDONT) result(IGOEST)
+            Integer(int32), Dimension (:), Intent (In)  :: XDONT !< Vector to rank
+            Integer(int32), allocatable, Dimension (:) :: IGOEST !< @return Result
 
             Integer(int32) :: XTST, XDONA, XDONB
 
-            Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            ! Integer(int32), Dimension (SIZE(IGOEST)) :: JWRKT, IRNGT
+            Integer(int32), allocatable, Dimension (:) :: JWRKT, IRNGT
             Integer(int32) :: LMTNA, LMTNC, IRNG, IRNG1, IRNG2, NUNI
             Integer(int32) :: NVAL, IIND, IWRKD, IWRK, IWRKF, JINDA, IINDA, IINDB
 
-            NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            ! NVAL = Min (SIZE(XDONT), SIZE(IGOEST))
+            NVAL = SIZE(XDONT)
+            allocate(IGOEST(NVAL))
+            allocate(JWRKT(NVAL))
+            allocate(IRNGT(NVAL))
 
             Select Case (NVAL)
             Case (:0)
@@ -1496,7 +1535,7 @@ module OrderPackModule
       !
             Return
       !
-      end subroutine
+      end function
 
       !-------------------------------------------------------------------------
       !> @brief   Nearest value less than given value
