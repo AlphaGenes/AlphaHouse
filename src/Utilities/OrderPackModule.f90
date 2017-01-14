@@ -1,8 +1,8 @@
 
 !###############################################################################
 
-module OrderPackMod
-  ! From http://www.fortran-2000.com/rank/MrgRnk.f90 (2016-02-15)
+module OrderPackModule
+  ! From http://www.fortran-2000.com/rank (2016-02-15)
   ! Modified to work with ISO_Fortran_Env types and converted to
   ! functions where possible
 
