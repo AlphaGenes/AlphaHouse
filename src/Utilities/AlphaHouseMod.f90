@@ -33,11 +33,10 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
+  public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
-  public :: isDelim, PrintElapsedTime, intToChar
-
+  public :: isDelim, PrintElapsedTime, intToChar, SetSeed
 
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
@@ -65,6 +64,11 @@ module AlphaHouseMod
   !> @brief FindLoc interface
   interface FindLoc
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
+  end interface
+
+  !> @brief Match interface
+  interface Match
+    module procedure MatchC, MatchI, MatchS, MatchD
   end interface
 
   contains
@@ -581,8 +585,7 @@ module AlphaHouseMod
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        !> @todo handle floating point representation
-        if (Val == Vec(j)) then
+        if (.not. (Val .lt. Vec(j) .or. Val .gt. Vec(j))) then
           i=j
           exit
         end if
@@ -606,8 +609,7 @@ module AlphaHouseMod
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        !> @todo handle floating point representation
-        if (Val == Vec(j)) then
+        if (.not. (Val .lt. Vec(j) .or. Val .gt. Vec(j))) then
           i=j
           exit
         end if
@@ -615,6 +617,107 @@ module AlphaHouseMod
       return
     end function
 
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - character
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchC(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      character(len=*), intent(in) :: Set(:)              !< A set
+      character(len=*), intent(in) :: TargetSet(:)        !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - integer
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchI(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      integer(int32), intent(in) :: Set(:)                !< A set
+      integer(int32), intent(in) :: TargetSet(:)          !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - single real
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchS(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      real(real32), intent(in) :: Set(:)                  !< A set
+      real(real32), intent(in) :: TargetSet(:)            !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - double real
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchD(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      real(real64), intent(in) :: Set(:)                  !< A set
+      real(real64), intent(in) :: TargetSet(:)            !< Target set
+      integer(int64), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
     !---------------------------------------------------------------------------
     !> @brief   splits string into initial and second part, where second part is another array
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
