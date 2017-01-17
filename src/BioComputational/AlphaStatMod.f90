@@ -39,11 +39,22 @@ module AlphaStatMod
   public :: DescStatMatrixS, DescStatMatrixD
   public :: CorrelationS, CorrelationD
   ! Methods
+  public :: IsMissing, RemoveMissing
   public :: Mean, Var, StdDev
   public :: DescStat
   public :: DescStatMatrix, DescStatSymMatrix, DescStatLowTriMatrix
   public :: Cov, Cor
   public :: moment, pearsn
+
+  !> @brief IsMissing interface
+  interface IsMissing
+    module procedure IsMissingInt32, IsMissingReal32, IsMissingReal64
+  end interface
+
+  !> @brief NotMissing interface
+  interface RemoveMissing
+    module procedure RemoveMissingInt32, RemoveMissingReal32, RemoveMissingReal64
+  end interface
 
   !> @brief Mean interface
   interface Mean
@@ -150,6 +161,150 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
+    !> @brief  Test for missingness - integer int32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function IsMissingint32(x, MissingValue) result(Res)
+      implicit none
+      integer(int32), intent(in) :: x(:)         !< values
+      integer(int32), intent(in) :: MissingValue !< missing value representation
+      logical             :: Res(size(x)) !< @return test for missingness
+      integer :: i
+      Res = .false.
+      do i = 1, size(x)
+        if (x(i) .eq. MissingValue) then
+          Res(i) = .true.
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Test for missingness - real real32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function IsMissingReal32(x, MissingValue) result(Res)
+      implicit none
+      real(real32), intent(in) :: x(:)         !< values
+      real(real32), intent(in) :: MissingValue !< missing value representation
+      logical                  :: Res(size(x)) !< @return test for missingness
+      integer :: i
+      Res = .false.
+      do i = 1, size(x)
+        if (.not. (x(i) .lt. MissingValue .or. x(i) .gt. MissingValue)) then
+          Res(i) = .true.
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Test for missingness - real real64
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function IsMissingReal64(x, MissingValue) result(Res)
+      implicit none
+      real(real64), intent(in) :: x(:)         !< values
+      real(real64), intent(in) :: MissingValue !< missing value representation
+      logical                  :: Res(size(x)) !< @return test for missingness
+      integer :: i
+      Res = .false.
+      do i = 1, size(x)
+        if (.not. (x(i) .lt. MissingValue .or. x(i) .gt. MissingValue)) then
+          Res(i) = .true.
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain a vector without "missing" values - integer int32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveMissingInt32(x, MissingValue) result(Res)
+      implicit none
+      integer(int32), intent(in)                :: x(:)         !< values
+      integer(int32), intent(in)                :: MissingValue !< missing value representation
+      integer(int32), allocatable, dimension(:) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsMissingInt32(x, MissingValue)
+      nNotMissing = count(NotMissing)
+      allocate(Res(nNotMissing))
+      j = 0
+      do i = 1, size(x)
+        if (NotMissing(i)) then
+          j = j + 1
+          Res(j) = x(i)
+        end if
+      enddo
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain a vector without "missing" values - real32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveMissingReal32(x, MissingValue) result(Res)
+      implicit none
+      real(real32), intent(in)                :: x(:)         !< values
+      real(real32), intent(in)                :: MissingValue !< missing value representation
+      real(real32), allocatable, dimension(:) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsMissingReal32(x, MissingValue)
+      nNotMissing = count(NotMissing)
+      allocate(Res(nNotMissing))
+      j = 0
+      do i = 1, size(x)
+        if (NotMissing(i)) then
+          j = j + 1
+          Res(j) = x(i)
+        end if
+      enddo
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain a vector without "missing" values - real64
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveMissingReal64(x, MissingValue) result(Res)
+      implicit none
+      real(real64), intent(in)                :: x(:)         !< values
+      real(real64), intent(in)                :: MissingValue !< missing value representation
+      real(real64), allocatable, dimension(:) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsMissingReal64(x, MissingValue)
+      nNotMissing = count(NotMissing)
+      allocate(Res(nNotMissing))
+      j = 0
+      do i = 1, size(x)
+        if (NotMissing(i)) then
+          j = j + 1
+          Res(j) = x(i)
+        end if
+      enddo
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
     !> @brief   Mean (single precision real)
     !> @details Compute mean, possibly weighted
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
@@ -167,7 +322,7 @@ module AlphaStatMod
       real(real32) :: SumW
 
       if (.not.present(w)) then
-        Res = sum(x(:)) / size(x)
+        Res = sum(x) / size(x)
       else
         if (any(w < 0.0)) then
           write(STDERR, "(a)") "ERROR: Weights must not be negative"
@@ -181,7 +336,7 @@ module AlphaStatMod
           stop 1
         end if
         ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        Res = sum(x(:) * w(:)) / SumW
+        Res = sum(x * w) / SumW
       end if
       return
     end function
@@ -206,7 +361,7 @@ module AlphaStatMod
       real(real64) :: SumW
 
       if (.not.present(w)) then
-        Res = sum(x(:)) / size(x)
+        Res = sum(x) / size(x)
       else
         if (any(w < 0.0)) then
           write(STDERR, "(a)") "ERROR: Weights must not be negative"
@@ -220,7 +375,7 @@ module AlphaStatMod
           stop 1
         end if
         ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        Res = sum(x(:) * w(:)) / SumW
+        Res = sum(x * w) / SumW
       end if
       return
     end function
@@ -463,8 +618,8 @@ module AlphaStatMod
       Res%Mean = Mean(x, w)
       Res%Var  = Var(x, Res%Mean, w, wType)
       Res%SD   = sqrt(Res%Var)
-      Res%Min  = minval(x(:))
-      Res%Max  = maxval(x(:))
+      Res%Min  = minval(x)
+      Res%Max  = maxval(x)
       return
     end function
 
@@ -499,8 +654,8 @@ module AlphaStatMod
       Res%Mean = Mean(x, w)
       Res%Var  = Var(x, Res%Mean, w, wType)
       Res%SD   = sqrt(Res%Var)
-      Res%Min  = minval(x(:))
-      Res%Max  = maxval(x(:))
+      Res%Min  = minval(x)
+      Res%Max  = maxval(x)
       return
     end function
 
@@ -1070,7 +1225,7 @@ module AlphaStatMod
     END IF
     RETURN
   END SUBROUTINE moment
-  
+
 !###############################################################################
 
 

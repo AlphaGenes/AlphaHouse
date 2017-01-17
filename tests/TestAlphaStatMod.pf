@@ -16,37 +16,131 @@ module TestAlphaStatMod
     !###########################################################################
 
     @test
+    subroutine TestIsMissing
+      implicit none
+      integer(int32) :: xI(3)
+      real(real32) :: xS(3)
+      real(real64) :: xD(3)
+      logical :: rExp(3), r(3)
+
+      xI = [1,     2,     3]
+      xS = [1.0,   2.0,   3.0]
+      xD = [1.0d0, 2.0d0, 3.0d0]
+
+      r = IsMissing(xI, 1)
+      rExp = [.true., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for integer - 1st case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for integer - 1st case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for integer - 1st case, 3rd element")
+
+      r = IsMissing(xI, 0)
+      rExp = [.false., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for integer - 2nd case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for integer - 2nd case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for integer - 2nd case, 3rd element")
+
+      r = IsMissing(xS, 1.0)
+      rExp = [.true., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real - 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real - 3rd element")
+
+      r = IsMissing(xD, 1.0d0)
+      rExp = [.true., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real double - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real double - 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real double - 3rd element")
+    end subroutine
+
+
+    !###########################################################################
+
+    @test
+    subroutine TestRemoveMissing
+      implicit none
+      integer(int32) :: xI(3)
+      real(real32) :: xS(3)
+      real(real64) :: xD(3)
+
+      integer(int32), allocatable, dimension(:) :: rI, rIExp
+      real(real32), allocatable, dimension(:) :: rS, rSExp
+      real(real64), allocatable, dimension(:) :: rD, rDExp
+
+      xI = [1,     2,     3]
+      xS = [1.0,   2.0,   3.0]
+      xD = [1.0d0, 2.0d0, 3.0d0]
+
+      rI = RemoveMissing(xI, 1)
+      rIExp = [2, 3]
+      @assertEqual(rIExp(1), rI(1), "RemoveMissing failed for int32 - 1st case, 1st element")
+      @assertEqual(rIExp(2), rI(2), "RemoveMissing failed for int32 - 1st case, 2nd element")
+
+      deallocate(rI)
+      rI = RemoveMissing(xI, 0)
+      rIExp = [1, 2, 3]
+      @assertEqual(rIExp(1), rI(1), "RemoveMissing failed for int32 - 2nd case, 1st element")
+      @assertEqual(rIExp(2), rI(2), "RemoveMissing failed for int32 - 2nd case, 2nd element")
+      @assertEqual(rIExp(3), rI(3), "RemoveMissing failed for int32 - 2nd case, 2nd element")
+
+      rS = RemoveMissing(xS, 1.0)
+      rSExp = [2.0, 3.0]
+      @assertEqual(rSExp(1), rS(1), "IsMissing failed for real32 - 1st element")
+      @assertEqual(rSExp(2), rS(2), "IsMissing failed for real32 - 2nd element")
+
+      deallocate(rS)
+      rS = RemoveMissing(xS, 0.0)
+      rSExp = [1, 2, 3]
+      @assertEqual(rSExp(1), rS(1), "RemoveMissing failed for real32 - 2nd case, 1st element")
+      @assertEqual(rSExp(2), rS(2), "RemoveMissing failed for real32 - 2nd case, 2nd element")
+      @assertEqual(rSExp(3), rS(3), "RemoveMissing failed for real32 - 2nd case, 2nd element")
+
+      rD = RemoveMissing(xD, 1.0d0)
+      rDExp = [2.0d0, 3.0d0]
+      @assertEqual(rDExp(1), rD(1), "IsMissing failed for real64 - 1st element")
+      @assertEqual(rDExp(2), rD(2), "IsMissing failed for real64 - 2nd element")
+
+      deallocate(rD)
+      rD = RemoveMissing(xD, 0.0d0)
+      rDExp = [1, 2, 3]
+      @assertEqual(rDExp(1), rD(1), "RemoveMissing failed for real64 - 2nd case, 1st element")
+      @assertEqual(rDExp(2), rD(2), "RemoveMissing failed for real64 - 2nd case, 2nd element")
+      @assertEqual(rDExp(3), rD(3), "RemoveMissing failed for real64 - 2nd case, 2nd element")
+    end subroutine
+
+    !###########################################################################
+
+    @test
     subroutine TestMean
       implicit none
       real(real32) :: xS(6), wS(6)
       real(real64) :: xD(6), wD(6)
 
-      xS = (/1.0,   2.0,   3.0,   4.0,   5.0,   6.0/)
-      xD = (/1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0/)
+      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
       @assertEqual(Mean(xS), 3.5,   "Mean is wrong (single precision)")
       @assertEqual(Mean(xD), 3.5d0, "Mean is wrong (double precision)")
 
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   1.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0/)
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
       @assertEqual(Mean(xS, wS), 3.5,   "Mean with count-weights is wrong (single precision)")
       @assertEqual(Mean(xD, wD), 3.5d0, "Mean with count-weights is wrong (double precision)")
 
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   0.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0/)
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
       @assertEqual(Mean(xS, wS), 3.0,   "Mean with count-weights of zero is wrong (single precision)")
       @assertEqual(Mean(xD, wD), 3.0d0, "Mean with count-weights of zero is wrong (double precision)")
 
-      wS = (/2.0,   2.0,   2.0,   3.0,   3.0,   3.0/)
-      wD = (/2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0/)
+      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
 
       @assertEqual(Mean(xS, wS), 3.8,   "Mean with variable count-weights is wrong (single precision)")
       @assertEqual(Mean(xD, wD), 3.8d0, "Mean with variable count-weights is wrong (double precision)")
 
-      wS = (/2.0  /15, 2.0  /15, 2.0  /15, 1.0  /5, 1.0  /5, 1.0  /5/)
-      wD = (/2.0d0/15, 2.0d0/15, 2.0d0/15, 1.0d0/5, 1.0d0/5, 1.0d0/5/)
+      wS = [2.0  /15, 2.0  /15, 2.0  /15, 1.0  /5, 1.0  /5, 1.0  /5]
+      wD = [2.0d0/15, 2.0d0/15, 2.0d0/15, 1.0d0/5, 1.0d0/5, 1.0d0/5]
 
       @assertEqual(Mean(xS, wS), 3.8,   TolS, "Mean with variable frequency-weights is wrong (single precision)")
       @assertEqual(Mean(xD, wD), 3.8d0, TolD, "Mean with variable frequency-weights is wrong (double precision)")
@@ -60,28 +154,28 @@ module TestAlphaStatMod
       real(real32) :: xS(6), vS, wS(6), xS2(15)
       real(real64) :: xD(6), vD, wD(6), xD2(15)
 
-      xS = (/1.0,   2.0,   3.0,   4.0,   5.0,   6.0/)
-      xD = (/1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0/)
+      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
       @assertEqual(Var(xS),           3.5,   "Variance is wrong (single precision)")
       @assertEqual(Var(xD),           3.5d0, "Variance is wrong (double precision)")
       @assertEqual(Var(xS, Mu=3.5),   3.5,   "Variance with precomputed mean is wrong (single precision)")
       @assertEqual(Var(xD, Mu=3.5d0), 3.5d0, "Variance with precomputed mean is wrong (double precision)")
 
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   1.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0/)
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
       @assertEqual(Var(xS, w=wS, wType="count"), 3.5,   "Variance with count-weights is wrong (single precision)")
       @assertEqual(Var(xD, w=wD, wType="count"), 3.5d0, "Variance with count-weights is wrong (double precision)")
 
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   0.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0/)
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
       @assertEqual(Var(xS, w=wS, wType="count"), 2.5,   "Variance with count-weights of zero is wrong (single precision)")
       @assertEqual(Var(xD, w=wD, wType="count"), 2.5d0, "Variance with count-weights of zero is wrong (double precision)")
 
-      wS = (/2.0,   2.0,   2.0,   3.0,   3.0,   3.0/)
-      wD = (/2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0/)
+      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
       xS2( 1: 3) = xS(1:3)
       xS2( 4: 6) = xS(1:3)
       xS2( 7: 9) = xS(4:6)
@@ -96,8 +190,8 @@ module TestAlphaStatMod
       @assertEqual(Var(xS, w=wS, wType="count"), Var(xS2), TolS, "Variance with variable count-weights is wrong (single precision)")
       @assertEqual(Var(xD, w=wD, wType="count"), Var(xD2), TolD, "Variance with variable count-weights is wrong (double precision)")
 
-      wS = (/2.0,   2.0,   2.0,   3.0,   3.0,   3.0/)
-      wD = (/2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0/)
+      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
       wS = wS / sum(wS)
       wD = wD / sum(wD)
 
@@ -114,8 +208,8 @@ module TestAlphaStatMod
       real(real32) :: xS(6)
       real(real64) :: xD(6)
 
-      xS = (/1.0,   2.0,   3.0,   4.0,   5.0,   6.0/)
-      xD = (/1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0/)
+      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
       @assertEqual(StdDev(xS), sqrt(Var(xS)), "Standard deviation is wrong (single precision)")
       @assertEqual(StdDev(xD), sqrt(Var(xD)), "Standard deviation is wrong (double precision)")
@@ -131,8 +225,8 @@ module TestAlphaStatMod
       type(DescStatS) :: rS
       type(DescStatD) :: rD
 
-      xS = (/1.0,   2.0,   3.0,   4.0,   5.0,   6.0/)
-      xD = (/1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0/)
+      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
       rS = DescStat(xS)
       rD = DescStat(xD)
@@ -160,12 +254,12 @@ module TestAlphaStatMod
       type(DescStatMatrixS) :: rS
       type(DescStatMatrixD) :: rD
 
-      xS(:,1) = (/1.0,   2.0,   3.0/)
-      xS(:,2) = (/2.0,   2.0,   2.0/)
-      xS(:,3) = (/3.0,   2.0,   3.0/)
-      xD(:,1) = (/1.0d0, 2.0d0, 3.0d0/)
-      xD(:,2) = (/2.0d0, 2.0d0, 2.0d0/)
-      xD(:,3) = (/3.0d0, 2.0d0, 3.0d0/)
+      xS(:,1) = [1.0,   2.0,   3.0]
+      xS(:,2) = [2.0,   2.0,   2.0]
+      xS(:,3) = [3.0,   2.0,   3.0]
+      xD(:,1) = [1.0d0, 2.0d0, 3.0d0]
+      xD(:,2) = [2.0d0, 2.0d0, 2.0d0]
+      xD(:,3) = [3.0d0, 2.0d0, 3.0d0]
 
       rS = DescStatSymMatrix(xS)
       rD = DescStatSymMatrix(xD)
@@ -214,12 +308,12 @@ module TestAlphaStatMod
       type(DescStatMatrixS) :: rS
       type(DescStatMatrixD) :: rD
 
-      xS(:,1) = (/1.0,   2.0,   4.0/)
-      xS(:,2) = (/2.0,   2.0,   2.0/)
-      xS(:,3) = (/3.0,   2.0,   4.0/)
-      xD(:,1) = (/1.0d0, 2.0d0, 4.0d0/)
-      xD(:,2) = (/2.0d0, 2.0d0, 2.0d0/)
-      xD(:,3) = (/3.0d0, 2.0d0, 4.0d0/)
+      xS(:,1) = [1.0,   2.0,   4.0]
+      xS(:,2) = [2.0,   2.0,   2.0]
+      xS(:,3) = [3.0,   2.0,   4.0]
+      xD(:,1) = [1.0d0, 2.0d0, 4.0d0]
+      xD(:,2) = [2.0d0, 2.0d0, 2.0d0]
+      xD(:,3) = [3.0d0, 2.0d0, 4.0d0]
 
       rS = DescStatMatrix(xS)
       rD = DescStatMatrix(xD)
@@ -266,38 +360,38 @@ module TestAlphaStatMod
       real(real32) :: xS(3), yS(3), zS(6), wS(6)
       real(real64) :: xD(3), yD(3), zD(6), wD(6)
 
-      xS(:) = (/1.0,   2.0,   4.0/)
-      yS(:) = (/4.0,   2.0,   1.0/)
-      xD(:) = (/1.0d0, 2.0d0, 4.0d0/)
-      yD(:) = (/4.0d0, 2.0d0, 1.0d0/)
+      xS(:) = [1.0,   2.0,   4.0]
+      yS(:) = [4.0,   2.0,   1.0]
+      xD(:) = [1.0d0, 2.0d0, 4.0d0]
+      yD(:) = [4.0d0, 2.0d0, 1.0d0]
 
       @assertEqual(Cov(xS, xS),   7.0  /3, TolS, "Covariance is wrong (single precision)")
       @assertEqual(Cov(xD, xD),   7.0d0/3, TolD, "Covariance is wrong (double precision)")
       @assertEqual(Cov(xS, yS), -13.0  /6, TolS, "Covariance is wrong (single precision)")
       @assertEqual(Cov(xD, yD), -13.0d0/6, TolD, "Covariance is wrong (double precision)")
 
-      zS = (/1.0,   2.0,   3.0,   4.0,   5.0,   6.0/)
-      zD = (/1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0/)
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   1.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0/)
+      zS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      zD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
       @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), "Covariance with count-weights is wrong (single precision)")
       @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), "Covariance with count-weights is wrong (double precision)")
 
-      wS = (/1.0,   1.0,   1.0,   1.0,   1.0,   0.0/)
-      wD = (/1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0/)
+      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
       @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), "Covariance with count-weights of zero is wrong (single precision)")
       @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), "Covariance with count-weights of zero is wrong (double precision)")
 
-      wS = (/2.0,   2.0,   2.0,   3.0,   3.0,   3.0/)
-      wD = (/2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0/)
+      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
 
       @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), TolS, "Covariance with variable count-weights is wrong (single precision)")
       @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), TolD, "Covariance with variable count-weights is wrong (double precision)")
 
-      wS = (/2.0,   2.0,   2.0,   3.0,   3.0,   3.0/)
-      wD = (/2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0/)
+      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
       wS = wS / sum(wS)
       wD = wD / sum(wD)
 
@@ -315,10 +409,10 @@ module TestAlphaStatMod
       type(CorrelationS) :: rS
       type(CorrelationD) :: rD
 
-      xS(:) = (/1.0,   2.0,   4.0/)
-      yS(:) = (/4.0,   2.0,   1.0/)
-      xD(:) = (/1.0d0, 2.0d0, 4.0d0/)
-      yD(:) = (/4.0d0, 2.0d0, 1.0d0/)
+      xS(:) = [1.0,   2.0,   4.0]
+      yS(:) = [4.0,   2.0,   1.0]
+      xD(:) = [1.0d0, 2.0d0, 4.0d0]
+      yD(:) = [4.0d0, 2.0d0, 1.0d0]
 
       rS = Cor(xS,  xS)
       rD = Cor(xD,  xD)
