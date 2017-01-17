@@ -62,7 +62,7 @@ private :: getElement
 private :: hashKey
 
 integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
-integer(kind=int64), parameter, private :: multiplier = 17
+integer(kind=int64), parameter, private :: multiplier = 8
 
 
 contains
@@ -288,7 +288,7 @@ function getElement( this, key ) result(elem)
     type(LinkedList), pointer :: elem
     integer(kind=int64) :: hash
 
-    hash = hashKey( trim(key) ) !< if key is empty string, this will return 0 and cause segfault error
+    hash = hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
         if ( elem%data%key .eq. key ) then
@@ -310,14 +310,13 @@ end function getElement
   !> @date       October 25, 2016
   !
   ! PARAMETERS:
-  !> @param[out] hashKey. Integer( int32).  
   !> @param[in] sizeOut. String.  
   !---------------------------------------------------------------------------
  function hashKey(key)
     character(len=*), intent(in) :: key
 
     integer(kind=int64) :: i
-    integer(kind=int64) :: hashKey
+    integer(kind=int64) :: hashKey !<hashkey out
     hashKey = 0
     do i = 1,len(key)
         hashKey = multiplier * hashKey + ichar(key(i:i))
