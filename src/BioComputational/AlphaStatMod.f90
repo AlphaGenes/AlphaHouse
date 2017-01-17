@@ -51,7 +51,7 @@ module AlphaStatMod
     module procedure IsMissingInt32, IsMissingReal32, IsMissingReal64
   end interface
 
-  !> @brief NotMissing interface
+  !> @brief RemoveMissing interface
   interface RemoveMissing
     module procedure RemoveMissingInt32, RemoveMissingReal32, RemoveMissingReal64
   end interface
