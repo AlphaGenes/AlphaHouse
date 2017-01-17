@@ -40,11 +40,12 @@ module GenotypeModule
   procedure :: setHaplotypeIfMissing
   procedure :: numberErrorsSingle
   procedure :: getErrorsSingle
+  procedure :: subset
   end type Genotype
 
   interface Genotype
-  module procedure newGenotypeInt
-      end interface Genotype
+    module procedure newGenotypeInt
+  end interface Genotype
 
       contains
 
@@ -524,6 +525,51 @@ function isHomo(g, pos) result (two)
     c = bitCount(g%getErrors(h1,h2))
 
   end function numberErrors
+  
+  function subset(g,start,finish) result (sub)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: start, finish
+    
+    type(Genotype) :: sub
+    
+    integer(kind=1) :: offset, starti, i
+    
+    sub%length = finish - start + 1
+
+    sub%sections = sub%length / 64 + 1
+    sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
+    
+    allocate(sub%homo(sub%sections))
+    allocate(sub%additional(sub%sections))
+    
+    starti = (start - 1) / 64  + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections
+	sub%homo(i) = g%homo(i + starti - 1)
+	sub%additional(i) = g%additional(i + starti - 1)
+      end do
+    else
+      do i = 1, sub%sections - 1
+	sub%homo(i) = IOR(ISHFT(g%homo(i + starti - 1),-offset), ISHFT(g%homo(i + starti), 64 - offset))
+	sub%additional(i) = IOR(ISHFT(g%additional(i + starti - 1),-offset), ISHFT(g%additional(i + starti), 64 - offset))
+      end do
+      
+      if (sub%sections + starti - 1 == g%sections) then
+	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),offset)
+	sub%additional(sub%sections) = ISHFT(g%additional(g%sections + starti - 1),offset)
+      else
+	sub%homo(sub%sections) = IOR(ISHFT(g%homo(sub%sections + starti - 1),-offset), ISHFT(g%homo(sub%sections + starti), 64 - offset))
+	sub%additional(sub%sections) = IOR(ISHFT(g%additional(sub%sections + starti - 1),-offset), ISHFT(g%additional(sub%sections + starti), 64 - offset))
+      end if
+    end if    
+          
+    do i = 64 - sub%overhang + 1, 64
+      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i)
+      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i)
+    end do
+  end function subset
 
 end module GenotypeModule
 
