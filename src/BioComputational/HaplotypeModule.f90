@@ -69,7 +69,7 @@ contains
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
     cursection = 1
-    curpos = 1
+    curpos = 0
     h%phase = 0
     h%missing = 0
     do i = 1, h%length
@@ -85,8 +85,8 @@ contains
             h%missing(cursection) = ibset(h%missing(cursection), curpos)
         end select
         curpos = curpos + 1
-        if (curpos == 65) then
-            curpos = 1
+        if (curpos == 64) then
+            curpos = 0
             cursection = cursection + 1
         end if
     end do
@@ -110,8 +110,8 @@ contains
     h%missing = missing
     
     do i = 64 - h%overhang + 1, 64
-        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
     end do
     
   end function newHaplotypeBits
@@ -134,8 +134,8 @@ contains
 
     
     do i = 64 - h%overhang + 1, 64
-        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
-        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
     end do
   end function newHaplotypeMissing
   
@@ -149,7 +149,7 @@ contains
     allocate(array(h%length))
     
     cursection = 1
-    curpos = 1
+    curpos = 0
     do i = 1, h%length
         if (btest(h%missing(cursection),curpos)) then
             if (btest(h%phase(cursection),curpos)) then
@@ -166,8 +166,8 @@ contains
         end if
       
       curpos = curpos + 1
-      if (curpos == 65) then
-        curpos = 1
+      if (curpos == 64) then
+        curpos = 0
         cursection = cursection + 1
       end if
     end do
@@ -199,7 +199,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
   
     if (btest(h%missing(cursection),curpos)) then
         if (btest(h%phase(cursection),curpos)) then
@@ -224,7 +224,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64    
+    curpos = pos - (cursection - 1) * 64 - 1 
     
     select case (phase)
       case (0)
@@ -410,7 +410,7 @@ contains
    integer :: cursection, curpos
 
    cursection = (pos-1) / 64 + 1
-   curpos = pos - (cursection - 1) * 64
+   curpos = pos - (cursection - 1) * 64 - 1
 
 
    missing = BTEST(h%missing(cursection), curpos)
@@ -487,7 +487,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
     
     h%phase(cursection) = ibclr(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
@@ -500,7 +500,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
     
     h%phase(cursection) = ibset(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)

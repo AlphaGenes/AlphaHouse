@@ -64,7 +64,7 @@ module GenotypeModule
         allocate(g%homo(g%sections))
         allocate(g%additional(g%sections))
         cursection = 1
-        curpos = 1
+        curpos = 0
         g%homo = 0
         g%additional = 0
         do i = 1, g%length
@@ -80,8 +80,8 @@ module GenotypeModule
                 g%additional(cursection) = ibset(g%additional(cursection), curpos)
             end select
             curpos = curpos + 1
-            if (curpos == 65) then
-                curpos = 1
+            if (curpos == 64) then
+                curpos = 0
                 cursection = cursection + 1
             end if
         end do
@@ -93,32 +93,32 @@ module GenotypeModule
         integer(kind=1), dimension(:), allocatable :: array
 
         integer :: i, cursection, curpos
-
+	
         allocate(array(g%length))
 
         cursection = 1
-        curpos = 1
+        curpos = 0
         do i = 1, g%length
             if (btest(g%homo(cursection),curpos)) then
               if (btest(g%additional(cursection),curpos)) then
                 array(i) = 2
-            else
-                array(i) = 0
-            end if
-        else
-          if (btest(g%additional(cursection),curpos)) then
-            array(i) = MissingGenotypeCode
-        else
-            array(i) = 1
-        end if
-    end if
-
-    curpos = curpos + 1
-    if (curpos == 65) then
-        curpos = 1
-        cursection = cursection + 1
-    end if
-end do
+	      else
+		  array(i) = 0
+	      end if
+	      else
+		if (btest(g%additional(cursection),curpos)) then
+		  array(i) = MissingGenotypeCode
+	      else
+		  array(i) = 1
+	      end if
+	    end if
+	
+	  curpos = curpos + 1
+	  if (curpos == 64) then
+	      curpos = 0
+	      cursection = cursection + 1
+	  end if
+	end do
 end function toIntegerArray
 
 function compareGenotype(g1, g2) result(same)
@@ -147,7 +147,7 @@ function getGenotype(g, pos) result (genotype)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
     if (btest(g%homo(cursection),curpos)) then
         if (btest(g%additional(cursection),curpos)) then
@@ -341,7 +341,7 @@ subroutine setHaplotype(g, h)
       h%phase(i) = IAND(g%homo(i), g%additional(i))
   end do
   do i = 64 - g%overhang + 1, 64
-      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
   end subroutine setHaplotype
 
@@ -360,7 +360,7 @@ subroutine setHaplotype(g, h)
       h%phase(i) = IOR(IAND(NOT(errors(i)), h%phase(i)), IAND(errors(i), IAND(g%homo(i), g%additional(i))))
     end do
     do i = 64 - g%overhang + 1, 64
-      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
   end subroutine setHaplotypeIfError
 
@@ -390,7 +390,7 @@ subroutine setHaplotype(g, h)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     zero = BTEST(IAND(g%homo(cursection),NOT(g%additional(cursection))), curpos)
@@ -405,7 +405,7 @@ function isTwo(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(IAND(g%homo(cursection),g%additional(cursection)), curpos)
@@ -420,7 +420,7 @@ function isMissing(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(IAND(NOT(g%homo(cursection)),g%additional(cursection)), curpos)
@@ -435,7 +435,7 @@ function isHomo(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(g%homo(cursection), curpos)
@@ -465,7 +465,7 @@ function isHomo(g, pos) result (two)
     end do
 
     do i = 64 - g%overhang + 1, 64
-      errors(g%sections) = ibclr(errors(g%sections), i)
+      errors(g%sections) = ibclr(errors(g%sections), i - 1)
     end do
   end function getErrorsSingle
 
@@ -508,7 +508,7 @@ function isHomo(g, pos) result (two)
     end do
 
     do i = 64 - g%overhang + 1, 64
-      errors(g%sections) = ibclr(errors(g%sections), i)
+      errors(g%sections) = ibclr(errors(g%sections), i - 1)
     end do
 
   end function getErrors
@@ -532,7 +532,7 @@ function isHomo(g, pos) result (two)
     
     type(Genotype) :: sub
     
-    integer(kind=1) :: offset, starti, i
+    integer :: offset, starti, i
     
     sub%length = finish - start + 1
 
@@ -558,7 +558,7 @@ function isHomo(g, pos) result (two)
       
       if (sub%sections + starti - 1 == g%sections) then
 	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),offset)
-	sub%additional(sub%sections) = ISHFT(g%additional(g%sections + starti - 1),offset)
+	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),offset)
       else
 	sub%homo(sub%sections) = IOR(ISHFT(g%homo(sub%sections + starti - 1),-offset), ISHFT(g%homo(sub%sections + starti), 64 - offset))
 	sub%additional(sub%sections) = IOR(ISHFT(g%additional(sub%sections + starti - 1),-offset), ISHFT(g%additional(sub%sections + starti), 64 - offset))
