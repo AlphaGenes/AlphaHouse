@@ -566,8 +566,8 @@ function isHomo(g, pos) result (two)
     end if    
           
     do i = 64 - sub%overhang + 1, 64
-      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i)
-      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i)
+      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i - 1)
+      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i - 1)
     end do
   end function subset
 
