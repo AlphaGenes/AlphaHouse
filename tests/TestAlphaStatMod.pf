@@ -304,7 +304,6 @@ module TestAlphaStatMod
       @assertEqual(eR64(2, 1), rR64(2, 1), "RemoveAnyMissingMatrix (cols) failed for real64 - 2, 1 element")
       @assertEqual(eR64(3, 1), rR64(3, 1), "RemoveAnyMissingMatrix (cols) failed for real64 - 3, 1 element")
       deallocate(rR64)
-
     end subroutine
 
     !###########################################################################
