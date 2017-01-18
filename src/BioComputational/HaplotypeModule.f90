@@ -44,6 +44,7 @@ module HaplotypeModule
     procedure :: setOneBits
     procedure :: setZero
     procedure :: setOne
+    procedure :: subset
   end type Haplotype
   
   interface Haplotype
@@ -505,6 +506,51 @@ contains
     h%phase(cursection) = ibset(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
   end subroutine setOne
+  
+  function subset(h,start,finish) result (sub)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: start, finish
+    
+    type(Haplotype) :: sub
+    
+    integer :: offset, starti, i
+    
+    sub%length = finish - start + 1
+
+    sub%sections = sub%length / 64 + 1
+    sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
+    
+    allocate(sub%phase(sub%sections))
+    allocate(sub%missing(sub%sections))
+    
+    starti = (start - 1) / 64  + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections
+	sub%phase(i) = h%phase(i + starti - 1)
+	sub%missing(i) = h%missing(i + starti - 1)
+      end do
+    else
+      do i = 1, sub%sections - 1
+	sub%phase(i) = IOR(ISHFT(h%phase(i + starti - 1),-offset), ISHFT(h%phase(i + starti), 64 - offset))
+	sub%missing(i) = IOR(ISHFT(h%missing(i + starti - 1),-offset), ISHFT(h%missing(i + starti), 64 - offset))
+      end do
+      
+      if (sub%sections + starti - 1 == h%sections) then
+	sub%phase(sub%sections) = ISHFT(h%phase(sub%sections + starti - 1),offset)
+	sub%missing(sub%sections) = ISHFT(h%missing(sub%sections + starti - 1),offset)
+      else
+	sub%phase(sub%sections) = IOR(ISHFT(h%phase(sub%sections + starti - 1),-offset), ISHFT(h%phase(sub%sections + starti), 64 - offset))
+	sub%missing(sub%sections) = IOR(ISHFT(h%missing(sub%sections + starti - 1),-offset), ISHFT(h%missing(sub%sections + starti), 64 - offset))
+      end if
+    end if    
+          
+    do i = 64 - sub%overhang + 1, 64
+      sub%phase(sub%sections) = ibclr(sub%phase(sub%sections), i - 1)
+      sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i - 1)
+    end do
+  end function subset
     
 end module HaplotypeModule
   
