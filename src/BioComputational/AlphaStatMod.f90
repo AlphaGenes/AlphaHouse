@@ -20,10 +20,10 @@
 !> @version  0.0.2 (alpha)
 !
 ! REVISION HISTORY:
-! 2016-09-22 GGorjanc - IsMissing and RemoveMissing Added
-!                       Added support for Int8 and Int32 arrays
+! 2016-09-22 GGorjanc - IsMissing, IsAnyMissingMatrix, RemoveMissing, and RemoveAnyMissingMatrix added
+!                       Added support for Int8 and Int32 arrays to all functions
 !                       Renamed types to Type{Int8,Int32,Real32,Real64}
-!                       Renamed method to Method{I8,I32,R32,R64} - otherwise there is a type/method name clash
+!                       Renamed methods to Method{I8,I32,R32,R64} - otherwise there is a type/method name clash
 ! 2016-09-22 GGorjanc - Added weights for mean and variance.
 !                       Removed skewness and curtosis from DescStat because I
 !                       do not know the weighted formulas and we do not use them.
@@ -43,7 +43,7 @@ module AlphaStatMod
   public :: DescStatMatrixReal32, DescStatMatrixReal64
   public :: CorrelationReal32, CorrelationReal64
   ! Methods
-  public :: IsMissing, RemoveMissing
+  public :: IsMissing, IsAnyMissingMatrix, RemoveMissing, RemoveAnyMissingMatrix
   public :: Mean, Var, StdDev
   public :: DescStat
   public :: DescStatMatrix, DescStatSymMatrix, DescStatLowTriMatrix
@@ -55,9 +55,19 @@ module AlphaStatMod
     module procedure IsMissingI8, IsMissingI32, IsMissingR32, IsMissingR64
   end interface
 
+  !> @brief IsAnyMissingMatrix interface
+  interface IsAnyMissingMatrix
+    module procedure IsAnyMissingMatrixI8, IsAnyMissingMatrixI32, IsAnyMissingMatrixR32, IsAnyMissingMatrixR64
+  end interface
+
   !> @brief RemoveMissing interface
   interface RemoveMissing
     module procedure RemoveMissingI8, RemoveMissingI32, RemoveMissingR32, RemoveMissingR64
+  end interface
+
+  !> @brief RemoveAnyMissingMatrix interface
+  interface RemoveAnyMissingMatrix
+    module procedure RemoveAnyMissingMatrixI8, RemoveAnyMissingMatrixI32, RemoveAnyMissingMatrixR32, RemoveAnyMissingMatrixR64
   end interface
 
   !> @brief Mean interface
@@ -225,6 +235,102 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
+    !> @brief  Test for across row/column missingness in a matrix - int8,
+    !> @author Andrew Whalen, awhalen@roslin.ed.ac.uk & Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 18, 2017
+    !---------------------------------------------------------------------------
+    pure function IsAnyMissingMatrixI8(x, MissingValue, Dim) result(Res)
+      implicit none
+      integer(int8), intent(in) :: x(:, :)          !< values
+      integer(int8), intent(in) :: MissingValue     !< missing value representation
+      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
+      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
+      integer :: i
+      do i = 1, size(x, Dim)
+        if (Dim .eq. 1) then
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end if
+        if (Dim .eq. 2) then
+          Res(i) = any(x(:, i) .eq. MissingValue)
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Test for across row/column missingness in a matrix - int32,
+    !> @author Andrew Whalen, awhalen@roslin.ed.ac.uk & Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 18, 2017
+    !---------------------------------------------------------------------------
+    pure function IsAnyMissingMatrixI32(x, MissingValue, Dim) result(Res)
+      implicit none
+      integer(int32), intent(in) :: x(:, :)         !< values
+      integer(int32), intent(in) :: MissingValue    !< missing value representation
+      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
+      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
+      integer :: i
+      do i = 1, size(x, Dim)
+        if (Dim .eq. 1) then
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end if
+        if (Dim .eq. 2) then
+          Res(i) = any(x(:, i) .eq. MissingValue)
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Test for across row/column missingness in a matrix - real32,
+    !> @author Andrew Whalen, awhalen@roslin.ed.ac.uk & Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 18, 2017
+    !---------------------------------------------------------------------------
+    pure function IsAnyMissingMatrixR32(x, MissingValue, Dim) result(Res)
+      implicit none
+      real(real32), intent(in) :: x(:, :)           !< values
+      real(real32), intent(in) :: MissingValue      !< missing value representation
+      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
+      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
+      integer :: i
+      do i = 1, size(x, Dim)
+        if (Dim .eq. 1) then
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end if
+        if (Dim .eq. 2) then
+          Res(i) = any(x(:, i) .eq. MissingValue)
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Test for across row/column missingness in a matrix - real64,
+    !> @author Andrew Whalen, awhalen@roslin.ed.ac.uk & Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 18, 2017
+    !---------------------------------------------------------------------------
+    pure function IsAnyMissingMatrixR64(x, MissingValue, Dim) result(Res)
+      implicit none
+      real(real64), intent(in) :: x(:, :)           !< values
+      real(real64), intent(in) :: MissingValue      !< missing value representation
+      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
+      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
+      integer :: i
+      do i = 1, size(x, Dim)
+        if (Dim .eq. 1) then
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end if
+        if (Dim .eq. 2) then
+          Res(i) = any(x(:, i) .eq. MissingValue)
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
     !> @brief  Obtain a vector without "missing" values - int8
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
@@ -328,6 +434,162 @@ module AlphaStatMod
           Res(j) = x(i)
         end if
       enddo
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain an array without partially "missing" rows or columns - int8
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveAnyMissingMatrixI8(x, MissingValue, Dim) result(Res)
+      implicit none
+      integer(int8), intent(in)                   :: x(:, :)      !< values
+      integer(int8), intent(in)                   :: MissingValue !< missing value representation
+      integer, intent(in)                         :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
+      integer(int8), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x, Dim))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
+      nNotMissing = count(NotMissing)
+      if (Dim .eq. 1) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
+      else
+        allocate(Res(size(x, 1), nNotMissing))
+        j = 0
+        do i = 1, size(x, 2)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(:, j) = x(:, i)
+          end if
+        enddo
+      end if
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain an array without partially "missing" rows or columns - int32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveAnyMissingMatrixI32(x, MissingValue, Dim) result(Res)
+      implicit none
+      integer(int32), intent(in)                   :: x(:, :)      !< values
+      integer(int32), intent(in)                   :: MissingValue !< missing value representation
+      integer, intent(in)                          :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
+      integer(int32), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x, Dim))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
+      nNotMissing = count(NotMissing)
+      if (Dim .eq. 1) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
+      else
+        allocate(Res(size(x, 1), nNotMissing))
+        j = 0
+        do i = 1, size(x, 2)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(:, j) = x(:, i)
+          end if
+        enddo
+      end if
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain an array without partially "missing" rows or columns - real32
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveAnyMissingMatrixR32(x, MissingValue, Dim) result(Res)
+      implicit none
+      real(real32), intent(in)                   :: x(:, :)      !< values
+      real(real32), intent(in)                   :: MissingValue !< missing value representation
+      integer, intent(in)                        :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
+      real(real32), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x, Dim))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
+      nNotMissing = count(NotMissing)
+      if (Dim .eq. 1) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
+      else
+        allocate(Res(size(x, 1), nNotMissing))
+        j = 0
+        do i = 1, size(x, 2)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(:, j) = x(:, i)
+          end if
+        enddo
+      end if
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Obtain an array without partially "missing" rows or columns - real64
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 17, 2017
+    !---------------------------------------------------------------------------
+    pure function RemoveAnyMissingMatrixR64(x, MissingValue, Dim) result(Res)
+      implicit none
+      real(real64), intent(in)                   :: x(:, :)      !< values
+      real(real64), intent(in)                   :: MissingValue !< missing value representation
+      integer, intent(in)                        :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
+      real(real64), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      logical :: NotMissing(size(x, Dim))
+      integer :: nNotMissing, i, j
+
+      NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
+      nNotMissing = count(NotMissing)
+      if (Dim .eq. 1) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
+      else
+        allocate(Res(size(x, 1), nNotMissing))
+        j = 0
+        do i = 1, size(x, 2)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(:, j) = x(:, i)
+          end if
+        enddo
+      end if
     end function
 
     !###########################################################################
