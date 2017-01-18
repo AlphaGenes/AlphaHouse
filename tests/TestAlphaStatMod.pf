@@ -8,8 +8,8 @@ module TestAlphaStatMod
 
   implicit none
 
-  real(real32) :: TolS=0.000001
-  real(real64) :: TolD=0.0000000000001
+  real(real32) :: TolR32=0.000001
+  real(real64) :: TolR64=0.0000000000001
 
   contains
 
@@ -18,93 +18,126 @@ module TestAlphaStatMod
     @test
     subroutine TestIsMissing
       implicit none
-      integer(int32) :: xI(3)
-      real(real32) :: xS(3)
-      real(real64) :: xD(3)
+      integer(int8) :: xI8(3), mI8
+      integer(int32) :: xI32(3)
+      real(real32) :: xR32(3)
+      real(real64) :: xR64(3)
       logical :: rExp(3), r(3)
 
-      xI = [1,     2,     3]
-      xS = [1.0,   2.0,   3.0]
-      xD = [1.0d0, 2.0d0, 3.0d0]
+      xI8  = [1,     2,     3]
+      xI32 = [1,     2,     3]
+      xR32 = [1.0,   2.0,   3.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0]
 
-      r = IsMissing(xI, 1)
+      mI8 = 1
+      r = IsMissing(xI8, mI8)
       rExp = [.true., .false., .false.]
-      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for integer - 1st case, 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for integer - 1st case, 2nd element")
-      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for integer - 1st case, 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for int8 - 1st case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for int8 - 1st case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for int8 - 1st case, 3rd element")
 
-      r = IsMissing(xI, 0)
+      mI8 = 0
+      r = IsMissing(xI8, mI8)
       rExp = [.false., .false., .false.]
-      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for integer - 2nd case, 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for integer - 2nd case, 2nd element")
-      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for integer - 2nd case, 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for int8 - 2nd case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for int8 - 2nd case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for int8 - 2nd case, 3rd element")
 
-      r = IsMissing(xS, 1.0)
+      r = IsMissing(xI32, 1)
       rExp = [.true., .false., .false.]
-      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real - 2nd element")
-      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for int32 - 1st case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for int32 - 1st case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for int32 - 1st case, 3rd element")
 
-      r = IsMissing(xD, 1.0d0)
+      r = IsMissing(xI32, 0)
+      rExp = [.false., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for int32 - 2nd case, 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for int32 - 2nd case, 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for int32 - 2nd case, 3rd element")
+
+      r = IsMissing(xR32, 1.0)
       rExp = [.true., .false., .false.]
-      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real double - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real double - 2nd element")
-      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real double - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real32 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real32 - 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real32 - 3rd element")
+
+      r = IsMissing(xR64, 1.0d0)
+      rExp = [.true., .false., .false.]
+      @assertTrue(rExp(1) .eqv. r(1), "IsMissing failed for real64 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsMissing failed for real64 - 2nd element")
+      @assertTrue(rExp(3) .eqv. r(3), "IsMissing failed for real64 - 3rd element")
     end subroutine
-
 
     !###########################################################################
 
     @test
     subroutine TestRemoveMissing
       implicit none
-      integer(int32) :: xI(3)
-      real(real32) :: xS(3)
-      real(real64) :: xD(3)
+      integer(int8) :: xI8(3), mI8
+      integer(int32) :: xI32(3)
+      real(real32) :: xR32(3)
+      real(real64) :: xR64(3)
 
-      integer(int32), allocatable, dimension(:) :: rI, rIExp
-      real(real32), allocatable, dimension(:) :: rS, rSExp
-      real(real64), allocatable, dimension(:) :: rD, rDExp
+      integer(int8), allocatable, dimension(:) :: rI8, rI8Exp
+      integer(int32), allocatable, dimension(:) :: rI32, rI32Exp
+      real(real32), allocatable, dimension(:) :: rR32, rR32Exp
+      real(real64), allocatable, dimension(:) :: rR64, rR64Exp
 
-      xI = [1,     2,     3]
-      xS = [1.0,   2.0,   3.0]
-      xD = [1.0d0, 2.0d0, 3.0d0]
+      xI8  = [1,     2,     3]
+      xI32 = [1,     2,     3]
+      xR32 = [1.0,   2.0,   3.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0]
 
-      rI = RemoveMissing(xI, 1)
-      rIExp = [2, 3]
-      @assertEqual(rIExp(1), rI(1), "RemoveMissing failed for int32 - 1st case, 1st element")
-      @assertEqual(rIExp(2), rI(2), "RemoveMissing failed for int32 - 1st case, 2nd element")
+      ! int is because pFUnit does not work with int8
+      mI8 = 1
+      rI8 = RemoveMissing(xI8, mI8)
+      rI8Exp = [2, 3]
+      @assertEqual(int(rI8Exp(1)), int(rI8(1)), "RemoveMissing failed for int8 - 1st case, 1st element")
+      @assertEqual(int(rI8Exp(2)), int(rI8(2)), "RemoveMissing failed for int8 - 1st case, 2nd element")
 
-      deallocate(rI)
-      rI = RemoveMissing(xI, 0)
-      rIExp = [1, 2, 3]
-      @assertEqual(rIExp(1), rI(1), "RemoveMissing failed for int32 - 2nd case, 1st element")
-      @assertEqual(rIExp(2), rI(2), "RemoveMissing failed for int32 - 2nd case, 2nd element")
-      @assertEqual(rIExp(3), rI(3), "RemoveMissing failed for int32 - 2nd case, 2nd element")
+      deallocate(rI8)
+      mI8 = 0
+      rI8 = RemoveMissing(xI8, mI8)
+      rI8Exp = [1, 2, 3]
+      @assertEqual(int(rI8Exp(1)), int(rI8(1)), "RemoveMissing failed for int8 - 2nd case, 1st element")
+      @assertEqual(int(rI8Exp(2)), int(rI8(2)), "RemoveMissing failed for int8 - 2nd case, 2nd element")
+      @assertEqual(int(rI8Exp(3)), int(rI8(3)), "RemoveMissing failed for int8 - 2nd case, 2nd element")
 
-      rS = RemoveMissing(xS, 1.0)
-      rSExp = [2.0, 3.0]
-      @assertEqual(rSExp(1), rS(1), "IsMissing failed for real32 - 1st element")
-      @assertEqual(rSExp(2), rS(2), "IsMissing failed for real32 - 2nd element")
+      rI32 = RemoveMissing(xI32, 1)
+      rI32Exp = [2, 3]
+      @assertEqual(rI32Exp(1), rI32(1), "RemoveMissing failed for int32 - 1st case, 1st element")
+      @assertEqual(rI32Exp(2), rI32(2), "RemoveMissing failed for int32 - 1st case, 2nd element")
 
-      deallocate(rS)
-      rS = RemoveMissing(xS, 0.0)
-      rSExp = [1, 2, 3]
-      @assertEqual(rSExp(1), rS(1), "RemoveMissing failed for real32 - 2nd case, 1st element")
-      @assertEqual(rSExp(2), rS(2), "RemoveMissing failed for real32 - 2nd case, 2nd element")
-      @assertEqual(rSExp(3), rS(3), "RemoveMissing failed for real32 - 2nd case, 2nd element")
+      deallocate(rI32)
+      rI32 = RemoveMissing(xI32, 0)
+      rI32Exp = [1, 2, 3]
+      @assertEqual(rI32Exp(1), rI32(1), "RemoveMissing failed for int32 - 2nd case, 1st element")
+      @assertEqual(rI32Exp(2), rI32(2), "RemoveMissing failed for int32 - 2nd case, 2nd element")
+      @assertEqual(rI32Exp(3), rI32(3), "RemoveMissing failed for int32 - 2nd case, 2nd element")
 
-      rD = RemoveMissing(xD, 1.0d0)
-      rDExp = [2.0d0, 3.0d0]
-      @assertEqual(rDExp(1), rD(1), "IsMissing failed for real64 - 1st element")
-      @assertEqual(rDExp(2), rD(2), "IsMissing failed for real64 - 2nd element")
+      rR32 = RemoveMissing(xR32, 1.0)
+      rR32Exp = [2.0, 3.0]
+      @assertEqual(rR32Exp(1), rR32(1), "RemoveMissing failed for real32 - 1st element")
+      @assertEqual(rR32Exp(2), rR32(2), "RemoveMissing failed for real32 - 2nd element")
 
-      deallocate(rD)
-      rD = RemoveMissing(xD, 0.0d0)
-      rDExp = [1, 2, 3]
-      @assertEqual(rDExp(1), rD(1), "RemoveMissing failed for real64 - 2nd case, 1st element")
-      @assertEqual(rDExp(2), rD(2), "RemoveMissing failed for real64 - 2nd case, 2nd element")
-      @assertEqual(rDExp(3), rD(3), "RemoveMissing failed for real64 - 2nd case, 2nd element")
+      deallocate(rR32)
+      rR32 = RemoveMissing(xR32, 0.0)
+      rR32Exp = [1, 2, 3]
+      @assertEqual(rR32Exp(1), rR32(1), "RemoveMissing failed for real32 - 2nd case, 1st element")
+      @assertEqual(rR32Exp(2), rR32(2), "RemoveMissing failed for real32 - 2nd case, 2nd element")
+      @assertEqual(rR32Exp(3), rR32(3), "RemoveMissing failed for real32 - 2nd case, 2nd element")
+
+      rR64 = RemoveMissing(xR64, 1.0d0)
+      rR64Exp = [2.0d0, 3.0d0]
+      @assertEqual(rR64Exp(1), rR64(1), "RemoveMissing failed for real64 - 1st element")
+      @assertEqual(rR64Exp(2), rR64(2), "RemoveMissing failed for real64 - 2nd element")
+
+      deallocate(rR64)
+      rR64 = RemoveMissing(xR64, 0.0d0)
+      rR64Exp = [1, 2, 3]
+      @assertEqual(rR64Exp(1), rR64(1), "RemoveMissing failed for real64 - 2nd case, 1st element")
+      @assertEqual(rR64Exp(2), rR64(2), "RemoveMissing failed for real64 - 2nd case, 2nd element")
+      @assertEqual(rR64Exp(3), rR64(3), "RemoveMissing failed for real64 - 2nd case, 2nd element")
     end subroutine
 
     !###########################################################################
@@ -112,38 +145,52 @@ module TestAlphaStatMod
     @test
     subroutine TestMean
       implicit none
-      real(real32) :: xS(6), wS(6)
-      real(real64) :: xD(6), wD(6)
+      integer(int8) :: xI8(6)
+      integer(int32) :: xI32(6)
+      real(real32) :: xR32(6), wR32(6)
+      real(real64) :: xR64(6), wR64(6)
 
-      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI8  = [1,     2,     3,     4,     5,     6]
+      xI32 = [1,     2,     3,     4,     5,     6]
+      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
-      @assertEqual(Mean(xS), 3.5,   "Mean is wrong (single precision)")
-      @assertEqual(Mean(xD), 3.5d0, "Mean is wrong (double precision)")
+      @assertEqual(Mean(xI8),  3.5,   "Mean is wrong int8")
+      @assertEqual(Mean(xI32), 3.5,   "Mean is wrong int32")
+      @assertEqual(Mean(xR32), 3.5,   "Mean is wrong real32")
+      @assertEqual(Mean(xR64), 3.5d0, "Mean is wrong real64")
 
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
-      @assertEqual(Mean(xS, wS), 3.5,   "Mean with count-weights is wrong (single precision)")
-      @assertEqual(Mean(xD, wD), 3.5d0, "Mean with count-weights is wrong (double precision)")
+      @assertEqual(Mean(xI8,  wR32), 3.5,   "Mean with count-weights is wrong int8")
+      @assertEqual(Mean(xI32, wR32), 3.5,   "Mean with count-weights is wrong int32")
+      @assertEqual(Mean(xR32, wR32), 3.5,   "Mean with count-weights is wrong real32")
+      @assertEqual(Mean(xR64, wR64), 3.5d0, "Mean with count-weights is wrong real64")
 
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
-      @assertEqual(Mean(xS, wS), 3.0,   "Mean with count-weights of zero is wrong (single precision)")
-      @assertEqual(Mean(xD, wD), 3.0d0, "Mean with count-weights of zero is wrong (double precision)")
+      @assertEqual(Mean(xI8,  wR32), 3.0,   "Mean with count-weights of zero is wrong int8")
+      @assertEqual(Mean(xI32, wR32), 3.0,   "Mean with count-weights of zero is wrong int32")
+      @assertEqual(Mean(xR32, wR32), 3.0,   "Mean with count-weights of zero is wrong real32")
+      @assertEqual(Mean(xR64, wR64), 3.0d0, "Mean with count-weights of zero is wrong real64")
 
-      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
-      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
+      wR32 = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wR64 = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
 
-      @assertEqual(Mean(xS, wS), 3.8,   "Mean with variable count-weights is wrong (single precision)")
-      @assertEqual(Mean(xD, wD), 3.8d0, "Mean with variable count-weights is wrong (double precision)")
+      @assertEqual(Mean(xI8,  wR32), 3.8,   "Mean with variable count-weights is wrong int8")
+      @assertEqual(Mean(xI32, wR32), 3.8,   "Mean with variable count-weights is wrong int32")
+      @assertEqual(Mean(xR32, wR32), 3.8,   "Mean with variable count-weights is wrong real32")
+      @assertEqual(Mean(xR64, wR64), 3.8d0, "Mean with variable count-weights is wrong real64")
 
-      wS = [2.0  /15, 2.0  /15, 2.0  /15, 1.0  /5, 1.0  /5, 1.0  /5]
-      wD = [2.0d0/15, 2.0d0/15, 2.0d0/15, 1.0d0/5, 1.0d0/5, 1.0d0/5]
+      wR32 = [2.0  /15, 2.0  /15, 2.0  /15, 1.0  /5, 1.0  /5, 1.0  /5]
+      wR64 = [2.0d0/15, 2.0d0/15, 2.0d0/15, 1.0d0/5, 1.0d0/5, 1.0d0/5]
 
-      @assertEqual(Mean(xS, wS), 3.8,   TolS, "Mean with variable frequency-weights is wrong (single precision)")
-      @assertEqual(Mean(xD, wD), 3.8d0, TolD, "Mean with variable frequency-weights is wrong (double precision)")
+      @assertEqual(Mean(xI8,  wR32), 3.8,   TolR32, "Mean with variable frequency-weights is wrong int8")
+      @assertEqual(Mean(xI32, wR32), 3.8,   TolR32, "Mean with variable frequency-weights is wrong int32")
+      @assertEqual(Mean(xR32, wR32), 3.8,   TolR32, "Mean with variable frequency-weights is wrong real32")
+      @assertEqual(Mean(xR64, wR64), 3.8d0, TolR64, "Mean with variable frequency-weights is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -151,53 +198,68 @@ module TestAlphaStatMod
     @test
     subroutine TestVar
       implicit none
-      real(real32) :: xS(6), vS, wS(6), xS2(15)
-      real(real64) :: xD(6), vD, wD(6), xD2(15)
+      integer(int8) :: xI8(6)
+      integer(int32) :: xI32(6)
+      real(real32) :: xR32(6), vR32, wR32(6), xR322(15)
+      real(real64) :: xR64(6), vR64, wR64(6), xR642(15)
 
-      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI8  = [1,     2,     3,     4,     5,     6]
+      xI32 = [1,     2,     3,     4,     5,     6]
+      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
-      @assertEqual(Var(xS),           3.5,   "Variance is wrong (single precision)")
-      @assertEqual(Var(xD),           3.5d0, "Variance is wrong (double precision)")
-      @assertEqual(Var(xS, Mu=3.5),   3.5,   "Variance with precomputed mean is wrong (single precision)")
-      @assertEqual(Var(xD, Mu=3.5d0), 3.5d0, "Variance with precomputed mean is wrong (double precision)")
+      @assertEqual(Var(xI8),            3.5,   "Variance is wrong int8")
+      @assertEqual(Var(xI32),           3.5,   "Variance is wrong int32")
+      @assertEqual(Var(xR32),           3.5,   "Variance is wrong real32")
+      @assertEqual(Var(xR64),           3.5d0, "Variance is wrong real64")
+      @assertEqual(Var(xI8,  Mu=3.5),   3.5,   "Variance with precomputed mean is wrong int8")
+      @assertEqual(Var(xI32, Mu=3.5),   3.5,   "Variance with precomputed mean is wrong int32")
+      @assertEqual(Var(xR32, Mu=3.5),   3.5,   "Variance with precomputed mean is wrong real32")
+      @assertEqual(Var(xR64, Mu=3.5d0), 3.5d0, "Variance with precomputed mean is wrong real64")
 
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
-      @assertEqual(Var(xS, w=wS, wType="count"), 3.5,   "Variance with count-weights is wrong (single precision)")
-      @assertEqual(Var(xD, w=wD, wType="count"), 3.5d0, "Variance with count-weights is wrong (double precision)")
+      @assertEqual(Var(xI8,  w=wR32, wType="count"), 3.5,   "Variance with count-weights is wrong int8")
+      @assertEqual(Var(xI32, w=wR32, wType="count"), 3.5,   "Variance with count-weights is wrong int32")
+      @assertEqual(Var(xR32, w=wR32, wType="count"), 3.5,   "Variance with count-weights is wrong real32")
+      @assertEqual(Var(xR64, w=wR64, wType="count"), 3.5d0, "Variance with count-weights is wrong real64")
 
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
-      @assertEqual(Var(xS, w=wS, wType="count"), 2.5,   "Variance with count-weights of zero is wrong (single precision)")
-      @assertEqual(Var(xD, w=wD, wType="count"), 2.5d0, "Variance with count-weights of zero is wrong (double precision)")
+      @assertEqual(Var(xI8,  w=wR32, wType="count"), 2.5,   "Variance with count-weights of zero is wrong int8")
+      @assertEqual(Var(xI32, w=wR32, wType="count"), 2.5,   "Variance with count-weights of zero is wrong int32")
+      @assertEqual(Var(xR32, w=wR32, wType="count"), 2.5,   "Variance with count-weights of zero is wrong real32")
+      @assertEqual(Var(xR64, w=wR64, wType="count"), 2.5d0, "Variance with count-weights of zero is wrong real64")
 
-      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
-      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
-      xS2( 1: 3) = xS(1:3)
-      xS2( 4: 6) = xS(1:3)
-      xS2( 7: 9) = xS(4:6)
-      xS2(10:12) = xS(4:6)
-      xS2(13:15) = xS(4:6)
-      xD2( 1: 3) = xD(1:3)
-      xD2( 4: 6) = xD(1:3)
-      xD2( 7: 9) = xD(4:6)
-      xD2(10:12) = xD(4:6)
-      xD2(13:15) = xD(4:6)
+      wR32 = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wR64 = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
+      xR322( 1: 3) = xR32(1:3)
+      xR322( 4: 6) = xR32(1:3)
+      xR322( 7: 9) = xR32(4:6)
+      xR322(10:12) = xR32(4:6)
+      xR322(13:15) = xR32(4:6)
+      xR642( 1: 3) = xR64(1:3)
+      xR642( 4: 6) = xR64(1:3)
+      xR642( 7: 9) = xR64(4:6)
+      xR642(10:12) = xR64(4:6)
+      xR642(13:15) = xR64(4:6)
 
-      @assertEqual(Var(xS, w=wS, wType="count"), Var(xS2), TolS, "Variance with variable count-weights is wrong (single precision)")
-      @assertEqual(Var(xD, w=wD, wType="count"), Var(xD2), TolD, "Variance with variable count-weights is wrong (double precision)")
+      @assertEqual(Var(xI8,  w=wR32, wType="count"), Var(xR322), TolR32, "Variance with variable count-weights is wrong int8")
+      @assertEqual(Var(xI32, w=wR32, wType="count"), Var(xR322), TolR32, "Variance with variable count-weights is wrong int32")
+      @assertEqual(Var(xR32, w=wR32, wType="count"), Var(xR322), TolR32, "Variance with variable count-weights is wrong real32")
+      @assertEqual(Var(xR64, w=wR64, wType="count"), Var(xR642), TolR64, "Variance with variable count-weights is wrong real64")
 
-      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
-      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
-      wS = wS / sum(wS)
-      wD = wD / sum(wD)
+      wR32 = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wR64 = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
+      wR32 = wR32 / sum(wR32)
+      wR64 = wR64 / sum(wR64)
 
-      @assertEqual(Var(xS, w=wS, wType="freq"), 106.0  /31, TolS, "Variance with variable freq-weights is wrong (single precision)")
-      @assertEqual(Var(xD, w=wD, wType="freq"), 106.0d0/31, TolD, "Variance with variable freq-weights is wrong (double precision)")
-
+      @assertEqual(Var(xI8,  w=wR32, wType="freq"), 106.0  /31, TolR32, "Variance with variable freq-weights is wrong int8")
+      @assertEqual(Var(xI32, w=wR32, wType="freq"), 106.0  /31, TolR32, "Variance with variable freq-weights is wrong int32")
+      @assertEqual(Var(xR32, w=wR32, wType="freq"), 106.0  /31, TolR32, "Variance with variable freq-weights is wrong real32")
+      @assertEqual(Var(xR64, w=wR64, wType="freq"), 106.0d0/31, TolR64, "Variance with variable freq-weights is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -205,14 +267,20 @@ module TestAlphaStatMod
     @test
     subroutine TestStdDev
       implicit none
-      real(real32) :: xS(6)
-      real(real64) :: xD(6)
+      integer(int8) :: xI8(6)
+      integer(int32) :: xI32(6)
+      real(real32) :: xR32(6)
+      real(real64) :: xR64(6)
 
-      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI8  = [1,     2,     3,     4,     5,     6]
+      xI32 = [1,     2,     3,     4,     5,     6]
+      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
-      @assertEqual(StdDev(xS), sqrt(Var(xS)), "Standard deviation is wrong (single precision)")
-      @assertEqual(StdDev(xD), sqrt(Var(xD)), "Standard deviation is wrong (double precision)")
+      @assertEqual(StdDev(xI8),  sqrt(Var(xI8)),  "Standard deviation is wrong int8")
+      @assertEqual(StdDev(xI32), sqrt(Var(xI32)), "Standard deviation is wrong int32")
+      @assertEqual(StdDev(xR32), sqrt(Var(xR32)), "Standard deviation is wrong real32")
+      @assertEqual(StdDev(xR64), sqrt(Var(xR64)), "Standard deviation is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -220,28 +288,47 @@ module TestAlphaStatMod
     @test
     subroutine TestDescStat
       implicit none
-      real(real32) :: xS(6)
-      real(real64) :: xD(6)
-      type(DescStatS) :: rS
-      type(DescStatD) :: rD
+      integer(int8) :: xI8(6)
+      integer(int32) :: xI32(6)
+      real(real32) :: xR32(6)
+      real(real64) :: xR64(6)
+      type(DescStatReal32) :: rR32, rI32, rI8
+      type(DescStatReal64) :: rR64
 
-      xS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI8  = [1,     2,     3,     4,     5,     6]
+      xI32 = [1,     2,     3,     4,     5,     6]
+      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
 
-      rS = DescStat(xS)
-      rD = DescStat(xD)
+      rI8  = DescStat(xI8)
+      rI32 = DescStat(xR32)
+      rR32 = DescStat(xR32)
+      rR64 = DescStat(xR64)
 
-      @assertEqual(rS%n,    6,           "Number of values is wrong")
-      @assertEqual(rS%Mean, 3.5,         "Mean is wrong (single precision)")
-      @assertEqual(rD%Mean, 3.5d0,       "Mean is wrong (double precision)")
-      @assertEqual(rS%Var,  3.5,         "Variance is wrong (single precision)")
-      @assertEqual(rD%Var,  3.5d0,       "Variance is wrong (double precision)")
-      @assertEqual(rS%SD,   sqrt(3.5),   "Standard deviation is wrong (single precision)")
-      @assertEqual(rD%SD,   sqrt(3.5d0), "Standard deviation is wrong (double precision)")
-      @assertEqual(rS%Min,  1.0,         "Minimum is wrong (single precision)")
-      @assertEqual(rD%Min,  1.0d0,       "Minimum is wrong (double precision)")
-      @assertEqual(rS%Max,  6.0,         "Maximum is wrong (single precision)")
-      @assertEqual(rD%Max,  6.0d0,       "Maximum is wrong (double precision)")
+      @assertEqual(rI8%n,     6,           "Number of values is wrong int8")
+      @assertEqual(rI32%n,    6,           "Number of values is wrong int32")
+      @assertEqual(rR32%n,    6,           "Number of values is wrong real32")
+      @assertEqual(rR64%n,    6,           "Number of values is wrong real64")
+      @assertEqual(rI8%Mean,  3.5,         "Mean is wrong int8")
+      @assertEqual(rI32%Mean, 3.5,         "Mean is wrong int32")
+      @assertEqual(rR32%Mean, 3.5,         "Mean is wrong real32")
+      @assertEqual(rR64%Mean, 3.5d0,       "Mean is wrong real64")
+      @assertEqual(rI8%Var,   3.5,         "Variance is wrong int8")
+      @assertEqual(rI32%Var,  3.5,         "Variance is wrong int32")
+      @assertEqual(rR32%Var,  3.5,         "Variance is wrong real32")
+      @assertEqual(rR64%Var,  3.5d0,       "Variance is wrong real64")
+      @assertEqual(rI8%SD,    sqrt(3.5),   "Standard deviation is wrong int8")
+      @assertEqual(rI32%SD,   sqrt(3.5),   "Standard deviation is wrong int32")
+      @assertEqual(rR32%SD,   sqrt(3.5),   "Standard deviation is wrong real32")
+      @assertEqual(rR64%SD,   sqrt(3.5d0), "Standard deviation is wrong real64")
+      @assertEqual(rI8%Min,   1.0,         "Minimum is wrong int8")
+      @assertEqual(rI32%Min,  1.0,         "Minimum is wrong int32")
+      @assertEqual(rR32%Min,  1.0,         "Minimum is wrong real32")
+      @assertEqual(rR64%Min,  1.0d0,       "Minimum is wrong real64")
+      @assertEqual(rI8%Max,   6.0,         "Maximum is wrong int8")
+      @assertEqual(rI32%Max,  6.0,         "Maximum is wrong int32")
+      @assertEqual(rR32%Max,  6.0,         "Maximum is wrong real32")
+      @assertEqual(rR64%Max,  6.0d0,       "Maximum is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -249,53 +336,93 @@ module TestAlphaStatMod
     @test
     subroutine TestDescStatSymMatrix
       implicit none
-      real(real32) :: xS(3,3)
-      real(real64) :: xD(3,3)
-      type(DescStatMatrixS) :: rS
-      type(DescStatMatrixD) :: rD
+      integer(int8) :: xI8(3,3)
+      integer(int32) :: xI32(3,3)
+      real(real32) :: xR32(3,3)
+      real(real64) :: xR64(3,3)
+      type(DescStatMatrixReal32) :: rR32, rI32, rI8
+      type(DescStatMatrixReal64) :: rR64
 
-      xS(:,1) = [1.0,   2.0,   3.0]
-      xS(:,2) = [2.0,   2.0,   2.0]
-      xS(:,3) = [3.0,   2.0,   3.0]
-      xD(:,1) = [1.0d0, 2.0d0, 3.0d0]
-      xD(:,2) = [2.0d0, 2.0d0, 2.0d0]
-      xD(:,3) = [3.0d0, 2.0d0, 3.0d0]
+      xI8(:,1)  = [1,     2,     3]
+      xI8(:,2)  = [2,     2,     2]
+      xI8(:,3)  = [3,     2,     3]
+      xI32(:,1) = [1,     2,     3]
+      xI32(:,2) = [2,     2,     2]
+      xI32(:,3) = [3,     2,     3]
+      xR32(:,1) = [1.0,   2.0,   3.0]
+      xR32(:,2) = [2.0,   2.0,   2.0]
+      xR32(:,3) = [3.0,   2.0,   3.0]
+      xR64(:,1) = [1.0d0, 2.0d0, 3.0d0]
+      xR64(:,2) = [2.0d0, 2.0d0, 2.0d0]
+      xR64(:,3) = [3.0d0, 2.0d0, 3.0d0]
 
-      rS = DescStatSymMatrix(xS)
-      rD = DescStatSymMatrix(xD)
+      rI8  = DescStatSymMatrix(xI8)
+      rI32 = DescStatSymMatrix(xI32)
+      rR32 = DescStatSymMatrix(xR32)
+      rR64 = DescStatSymMatrix(xR64)
 
-      @assertEqual(rS%All%n,     6,             "Number of lower-triangle & diagonal values is wrong")
-      @assertEqual(rD%All%n,     6,             "Number of lower-triangle & diagonal values is wrong")
-      @assertEqual(rS%All%Mean, 13.0/  6,       "Mean of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Mean, 13.0d0/6,       "Mean of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Var, 17.0  /30, TolS, "Variance of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Var, 17.0d0/30,       "Variance of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Min,  1.0,            "Minimum of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Min,  1.0d0,          "Minimum of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Max,  3.0,            "Maximum of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Max,  3.0d0,          "Maximum of lower-triangle & diagonal is wrong (double precision)")
+      @assertEqual(rI8%All%n,      6,               "Number of lower-triangle & diagonal values is wrong int8")
+      @assertEqual(rI32%All%n,     6,               "Number of lower-triangle & diagonal values is wrong int32")
+      @assertEqual(rR32%All%n,     6,               "Number of lower-triangle & diagonal values is wrong real32")
+      @assertEqual(rR64%All%n,     6,               "Number of lower-triangle & diagonal values is wrong real64")
+      @assertEqual(rI8%All%Mean,  13.0/  6,         "Mean of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Mean, 13.0/  6,         "Mean of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Mean, 13.0/  6,         "Mean of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Mean, 13.0d0/6,         "Mean of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Var,  17.0  /30, TolR32, "Variance of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Var, 17.0  /30, TolR32, "Variance of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Var, 17.0  /30, TolR32, "Variance of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Var, 17.0d0/30,         "Variance of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Min,   1.0,              "Minimum of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Min,  1.0,              "Minimum of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Min,  1.0,              "Minimum of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Min,  1.0d0,            "Minimum of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Max,   3.0,              "Maximum of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Max,  3.0,              "Maximum of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Max,  3.0,              "Maximum of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Max,  3.0d0,            "Maximum of lower-triangle & diagonal is wrong real64")
 
-      @assertEqual(rS%Diag%n,    3,     "Number of diagonal values is wrong")
-      @assertEqual(rD%Diag%n,    3,     "Number of ldiagonal values is wrong")
-      @assertEqual(rS%Diag%Mean, 2.0,   "Mean of  diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Mean, 2.0d0, "Mean of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Var,  1.0,   "Variance of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Var,  1.0d0, "Variance of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Min,  1.0,   "Minimum of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Min,  1.0d0, "Minimum of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Max,  3.0,   "Maximum of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Max,  3.0d0, "Maximum of diagonal is wrong (double precision)")
+      @assertEqual(rI8%Diag%n,     3,     "Number of diagonal values is wrong int8")
+      @assertEqual(rI32%Diag%n,    3,     "Number of diagonal values is wrong int32")
+      @assertEqual(rR32%Diag%n,    3,     "Number of diagonal values is wrong real32")
+      @assertEqual(rR64%Diag%n,    3,     "Number of ldiagonal values is wrong real64")
+      @assertEqual(rI8%Diag%Mean,  2.0,   "Mean of  diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Mean, 2.0,   "Mean of  diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Mean, 2.0,   "Mean of  diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Mean, 2.0d0, "Mean of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Var,   1.0,   "Variance of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Var,  1.0,   "Variance of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Var,  1.0,   "Variance of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Var,  1.0d0, "Variance of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Min,   1.0,   "Minimum of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Min,  1.0,   "Minimum of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Min,  1.0,   "Minimum of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Min,  1.0d0, "Minimum of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Max,   3.0,   "Maximum of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Max,  3.0,   "Maximum of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Max,  3.0,   "Maximum of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Max,  3.0d0, "Maximum of diagonal is wrong real64")
 
-      @assertEqual(rS%OffDiag%n,    3,             "Number of lower-triangle values is wrong")
-      @assertEqual(rD%OffDiag%n,    3,             "Number of lower-triangle values is wrong")
-      @assertEqual(rS%OffDiag%Mean, 7.0/  3,       "Mean of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Mean, 7.0d0/3,       "Mean of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Var,  1.0  /3, TolS, "Variance of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Var,  1.0d0/3, TolD, "Variance of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Min,  2.0,           "Minimum of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Min,  2.0d0,         "Minimum of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Max,  3.0,           "Maximum of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Max,  3.0d0,         "Maximum of lower-triangle is wrong (double precision)")
+      @assertEqual(rI8%OffDiag%n,     3,               "Number of lower-triangle values is wrong int8")
+      @assertEqual(rI32%OffDiag%n,    3,               "Number of lower-triangle values is wrong int32")
+      @assertEqual(rR32%OffDiag%n,    3,               "Number of lower-triangle values is wrong real32")
+      @assertEqual(rR64%OffDiag%n,    3,               "Number of lower-triangle values is wrong real64")
+      @assertEqual(rI8%OffDiag%Mean,  7.0/  3,         "Mean of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Mean, 7.0/  3,         "Mean of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Mean, 7.0/  3,         "Mean of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Mean, 7.0d0/3,         "Mean of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Var,   1.0  /3, TolR32, "Variance of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Var,  1.0  /3, TolR32, "Variance of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Var,  1.0  /3, TolR32, "Variance of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Var,  1.0d0/3, TolR64, "Variance of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Min,   2.0,             "Minimum of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Min,  2.0,             "Minimum of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Min,  2.0,             "Minimum of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Min,  2.0d0,           "Minimum of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Max,   3.0,             "Maximum of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Max,  3.0,             "Maximum of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Max,  3.0,             "Maximum of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Max,  3.0d0,           "Maximum of lower-triangle is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -303,53 +430,93 @@ module TestAlphaStatMod
     @test
     subroutine TestDescStatMatrix
       implicit none
-      real(real32) :: xS(3,3)
-      real(real64) :: xD(3,3)
-      type(DescStatMatrixS) :: rS
-      type(DescStatMatrixD) :: rD
+      integer(int8) :: xI8(3,3)
+      integer(int32) :: xI32(3,3)
+      real(real32) :: xR32(3,3)
+      real(real64) :: xR64(3,3)
+      type(DescStatMatrixReal32) :: rR32, rI32, rI8
+      type(DescStatMatrixReal64) :: rR64
 
-      xS(:,1) = [1.0,   2.0,   4.0]
-      xS(:,2) = [2.0,   2.0,   2.0]
-      xS(:,3) = [3.0,   2.0,   4.0]
-      xD(:,1) = [1.0d0, 2.0d0, 4.0d0]
-      xD(:,2) = [2.0d0, 2.0d0, 2.0d0]
-      xD(:,3) = [3.0d0, 2.0d0, 4.0d0]
+      xI8(:,1)  = [1,     2,     4]
+      xI8(:,2)  = [2,     2,     2]
+      xI8(:,3)  = [3,     2,     4]
+      xI32(:,1) = [1,     2,     4]
+      xI32(:,2) = [2,     2,     2]
+      xI32(:,3) = [3,     2,     4]
+      xR32(:,1) = [1.0,   2.0,   4.0]
+      xR32(:,2) = [2.0,   2.0,   2.0]
+      xR32(:,3) = [3.0,   2.0,   4.0]
+      xR64(:,1) = [1.0d0, 2.0d0, 4.0d0]
+      xR64(:,2) = [2.0d0, 2.0d0, 2.0d0]
+      xR64(:,3) = [3.0d0, 2.0d0, 4.0d0]
 
-      rS = DescStatMatrix(xS)
-      rD = DescStatMatrix(xD)
+      rI8  = DescStatMatrix(xI8)
+      rI32 = DescStatMatrix(xI32)
+      rR32 = DescStatMatrix(xR32)
+      rR64 = DescStatMatrix(xR64)
 
-      @assertEqual(rS%All%n,     9,             "Number of lower-triangle & diagonal values is wrong")
-      @assertEqual(rD%All%n,     9,             "Number of lower-triangle & diagonal values is wrong")
-      @assertEqual(rS%All%Mean, 22.0/  9,       "Mean of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Mean, 22.0d0/9,       "Mean of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Var, 37.0  /36, TolS, "Variance of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Var, 37.0d0/36,       "Variance of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Min,  1.0,            "Minimum of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Min,  1.0d0,          "Minimum of lower-triangle & diagonal is wrong (double precision)")
-      @assertEqual(rS%All%Max,  4.0,            "Maximum of lower-triangle & diagonal is wrong (single precision)")
-      @assertEqual(rD%All%Max,  4.0d0,          "Maximum of lower-triangle & diagonal is wrong (double precision)")
+      @assertEqual(rI8%All%n,      9,               "Number of lower-triangle & diagonal values is wrong int8")
+      @assertEqual(rI32%All%n,     9,               "Number of lower-triangle & diagonal values is wrong int32")
+      @assertEqual(rR32%All%n,     9,               "Number of lower-triangle & diagonal values is wrong real32")
+      @assertEqual(rR64%All%n,     9,               "Number of lower-triangle & diagonal values is wrong real64")
+      @assertEqual(rI8%All%Mean,  22.0/  9,         "Mean of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Mean, 22.0/  9,         "Mean of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Mean, 22.0/  9,         "Mean of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Mean, 22.0d0/9,         "Mean of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Var,  37.0  /36, TolR32, "Variance of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Var, 37.0  /36, TolR32, "Variance of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Var, 37.0  /36, TolR32, "Variance of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Var, 37.0d0/36,         "Variance of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Min,  1.0,              "Minimum of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Min,  1.0,              "Minimum of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Min,  1.0,              "Minimum of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Min,  1.0d0,            "Minimum of lower-triangle & diagonal is wrong real64")
+      @assertEqual(rI8%All%Max,   4.0,              "Maximum of lower-triangle & diagonal is wrong int8")
+      @assertEqual(rI32%All%Max,  4.0,              "Maximum of lower-triangle & diagonal is wrong int32")
+      @assertEqual(rR32%All%Max,  4.0,              "Maximum of lower-triangle & diagonal is wrong real32")
+      @assertEqual(rR64%All%Max,  4.0d0,            "Maximum of lower-triangle & diagonal is wrong real64")
 
-      @assertEqual(rS%Diag%n,    3,             "Number of diagonal values is wrong")
-      @assertEqual(rD%Diag%n,    3,             "Number of ldiagonal values is wrong")
-      @assertEqual(rS%Diag%Mean, 7.0  /3,       "Mean of  diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Mean, 7.0d0/3,       "Mean of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Var,  7.0  /3, TolS, "Variance of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Var,  7.0d0/3, TolD, "Variance of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Min,  1.0,           "Minimum of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Min,  1.0d0,         "Minimum of diagonal is wrong (double precision)")
-      @assertEqual(rS%Diag%Max,  4.0,           "Maximum of diagonal is wrong (single precision)")
-      @assertEqual(rD%Diag%Max,  4.0d0,         "Maximum of diagonal is wrong (double precision)")
+      @assertEqual(rI8%Diag%n,     3,               "Number of diagonal values is wrong int8")
+      @assertEqual(rI32%Diag%n,    3,               "Number of diagonal values is wrong int32")
+      @assertEqual(rR32%Diag%n,    3,               "Number of diagonal values is wrong real32")
+      @assertEqual(rR64%Diag%n,    3,               "Number of ldiagonal values is wrong real64")
+      @assertEqual(rI8%Diag%Mean,  7.0  /3,         "Mean of  diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Mean, 7.0  /3,         "Mean of  diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Mean, 7.0  /3,         "Mean of  diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Mean, 7.0d0/3,         "Mean of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Var,   7.0  /3, TolR32, "Variance of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Var,  7.0  /3, TolR32, "Variance of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Var,  7.0  /3, TolR32, "Variance of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Var,  7.0d0/3, TolR64, "Variance of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Min,   1.0,             "Minimum of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Min,  1.0,             "Minimum of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Min,  1.0,             "Minimum of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Min,  1.0d0,           "Minimum of diagonal is wrong real64")
+      @assertEqual(rI8%Diag%Max,   4.0,             "Maximum of diagonal is wrong int8")
+      @assertEqual(rI32%Diag%Max,  4.0,             "Maximum of diagonal is wrong int32")
+      @assertEqual(rR32%Diag%Max,  4.0,             "Maximum of diagonal is wrong real32")
+      @assertEqual(rR64%Diag%Max,  4.0d0,           "Maximum of diagonal is wrong real64")
 
-      @assertEqual(rS%OffDiag%n,    6,           "Number of lower-triangle values is wrong")
-      @assertEqual(rD%OffDiag%n,    6,           "Number of lower-triangle values is wrong")
-      @assertEqual(rS%OffDiag%Mean, 2.5,         "Mean of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Mean, 2.5d0,       "Mean of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Var,  0.7,   TolS, "Variance of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Var,  0.7d0, TolD, "Variance of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Min,  2.0,         "Minimum of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Min,  2.0d0,       "Minimum of lower-triangle is wrong (double precision)")
-      @assertEqual(rS%OffDiag%Max,  4.0,         "Maximum of lower-triangle is wrong (single precision)")
-      @assertEqual(rD%OffDiag%Max,  4.0d0,       "Maximum of lower-triangle is wrong (double precision)")
+      @assertEqual(rI8%OffDiag%n,     6,             "Number of lower-triangle values is wrong int8")
+      @assertEqual(rI32%OffDiag%n,    6,             "Number of lower-triangle values is wrong int32")
+      @assertEqual(rR32%OffDiag%n,    6,             "Number of lower-triangle values is wrong real32")
+      @assertEqual(rR64%OffDiag%n,    6,             "Number of lower-triangle values is wrong real64")
+      @assertEqual(rI8%OffDiag%Mean,  2.5,           "Mean of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Mean, 2.5,           "Mean of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Mean, 2.5,           "Mean of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Mean, 2.5d0,         "Mean of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Var,   0.7,   TolR32, "Variance of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Var,  0.7,   TolR32, "Variance of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Var,  0.7,   TolR32, "Variance of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Var,  0.7d0, TolR64, "Variance of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Min,   2.0,           "Minimum of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Min,  2.0,           "Minimum of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Min,  2.0,           "Minimum of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Min,  2.0d0,         "Minimum of lower-triangle is wrong real64")
+      @assertEqual(rI8%OffDiag%Max,   4.0,           "Maximum of lower-triangle is wrong int8")
+      @assertEqual(rI32%OffDiag%Max,  4.0,           "Maximum of lower-triangle is wrong int32")
+      @assertEqual(rR32%OffDiag%Max,  4.0,           "Maximum of lower-triangle is wrong real32")
+      @assertEqual(rR64%OffDiag%Max,  4.0d0,         "Maximum of lower-triangle is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -357,46 +524,66 @@ module TestAlphaStatMod
     @test
     subroutine TestCov
       implicit none
-      real(real32) :: xS(3), yS(3), zS(6), wS(6)
-      real(real64) :: xD(3), yD(3), zD(6), wD(6)
+      integer(int8) :: xI8(3), yI8(3), zI8(6)
+      integer(int32) :: xI32(3), yI32(3), zI32(6)
+      real(real32) :: xR32(3), yR32(3), zR32(6), wR32(6)
+      real(real64) :: xR64(3), yR64(3), zR64(6), wR64(6)
 
-      xS(:) = [1.0,   2.0,   4.0]
-      yS(:) = [4.0,   2.0,   1.0]
-      xD(:) = [1.0d0, 2.0d0, 4.0d0]
-      yD(:) = [4.0d0, 2.0d0, 1.0d0]
+      xI8  = [1,     2,     4]
+      yI8  = [4,     2,     1]
+      xI32 = [1,     2,     4]
+      yI32 = [4,     2,     1]
+      xR32 = [1.0,   2.0,   4.0]
+      yR32 = [4.0,   2.0,   1.0]
+      xR64 = [1.0d0, 2.0d0, 4.0d0]
+      yR64 = [4.0d0, 2.0d0, 1.0d0]
 
-      @assertEqual(Cov(xS, xS),   7.0  /3, TolS, "Covariance is wrong (single precision)")
-      @assertEqual(Cov(xD, xD),   7.0d0/3, TolD, "Covariance is wrong (double precision)")
-      @assertEqual(Cov(xS, yS), -13.0  /6, TolS, "Covariance is wrong (single precision)")
-      @assertEqual(Cov(xD, yD), -13.0d0/6, TolD, "Covariance is wrong (double precision)")
+      @assertEqual(Cov(xI8,  xI8),    7.0  /3, TolR32, "Covariance is wrong int8")
+      @assertEqual(Cov(xI32, xI32),   7.0  /3, TolR32, "Covariance is wrong int32")
+      @assertEqual(Cov(xR32, xR32),   7.0  /3, TolR32, "Covariance is wrong real32")
+      @assertEqual(Cov(xR64, xR64),   7.0d0/3, TolR64, "Covariance is wrong real64")
+      @assertEqual(Cov(xI8,  yI8),  -13.0  /6, TolR32, "Covariance is wrong int8")
+      @assertEqual(Cov(xI32, yI32), -13.0  /6, TolR32, "Covariance is wrong int32")
+      @assertEqual(Cov(xR32, yR32), -13.0  /6, TolR32, "Covariance is wrong real32")
+      @assertEqual(Cov(xR64, yR64), -13.0d0/6, TolR64, "Covariance is wrong real64")
 
-      zS = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      zD = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
+      zI8  = [1,     2,     3,     4,     5,     6]
+      zI32 = [1,     2,     3,     4,     5,     6]
+      zR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
+      zR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   1.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0]
 
-      @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), "Covariance with count-weights is wrong (single precision)")
-      @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), "Covariance with count-weights is wrong (double precision)")
+      @assertEqual(Var(zI8,  w=wR32, wType="count"), Cov(zI8,  zI8,  w=wR32, wType="count"), "Covariance with count-weights is wrong int8")
+      @assertEqual(Var(zI32, w=wR32, wType="count"), Cov(zI32, zI32, w=wR32, wType="count"), "Covariance with count-weights is wrong int32")
+      @assertEqual(Var(zR32, w=wR32, wType="count"), Cov(zR32, zR32, w=wR32, wType="count"), "Covariance with count-weights is wrong real32")
+      @assertEqual(Var(zR64, w=wR64, wType="count"), Cov(zR64, zR64, w=wR64, wType="count"), "Covariance with count-weights is wrong real64")
 
-      wS = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
-      wD = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
+      wR32 = [1.0,   1.0,   1.0,   1.0,   1.0,   0.0]
+      wR64 = [1.0d0, 1.0d0, 1.0d0, 1.0d0, 1.0d0, 0.0d0]
 
-      @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), "Covariance with count-weights of zero is wrong (single precision)")
-      @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), "Covariance with count-weights of zero is wrong (double precision)")
+      @assertEqual(Var(zI8,  w=wR32, wType="count"), Cov(zI8,  zI8,  w=wR32, wType="count"), "Covariance with count-weights of zero is wrong int8")
+      @assertEqual(Var(zI32, w=wR32, wType="count"), Cov(zI32, zI32, w=wR32, wType="count"), "Covariance with count-weights of zero is wrong int32")
+      @assertEqual(Var(zR32, w=wR32, wType="count"), Cov(zR32, zR32, w=wR32, wType="count"), "Covariance with count-weights of zero is wrong real32")
+      @assertEqual(Var(zR64, w=wR64, wType="count"), Cov(zR64, zR64, w=wR64, wType="count"), "Covariance with count-weights of zero is wrong real64")
 
-      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
-      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
+      wR32 = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wR64 = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
 
-      @assertEqual(Var(zS, w=wS, wType="count"), Cov(zS, zS, w=wS, wType="count"), TolS, "Covariance with variable count-weights is wrong (single precision)")
-      @assertEqual(Var(zD, w=wD, wType="count"), Cov(zD, zD, w=wD, wType="count"), TolD, "Covariance with variable count-weights is wrong (double precision)")
+      @assertEqual(Var(zI8,  w=wR32, wType="count"), Cov(zI8,  zI8,  w=wR32, wType="count"), TolR32, "Covariance with variable count-weights is wrong int8")
+      @assertEqual(Var(zI32, w=wR32, wType="count"), Cov(zI32, zI32, w=wR32, wType="count"), TolR32, "Covariance with variable count-weights is wrong int32")
+      @assertEqual(Var(zR32, w=wR32, wType="count"), Cov(zR32, zR32, w=wR32, wType="count"), TolR32, "Covariance with variable count-weights is wrong real32")
+      @assertEqual(Var(zR64, w=wR64, wType="count"), Cov(zR64, zR64, w=wR64, wType="count"), TolR64, "Covariance with variable count-weights is wrong real64")
 
-      wS = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
-      wD = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
-      wS = wS / sum(wS)
-      wD = wD / sum(wD)
+      wR32 = [2.0,   2.0,   2.0,   3.0,   3.0,   3.0]
+      wR64 = [2.0d0, 2.0d0, 2.0d0, 3.0d0, 3.0d0, 3.0d0]
+      wR32 = wR32 / sum(wR32)
+      wR64 = wR64 / sum(wR64)
 
-      @assertEqual(Var(zS, w=wS, wType="freq"), Cov(zS, zS, w=wS, wType="freq"), TolS, "Covariance with variable freq-weights is wrong (single precision)")
-      @assertEqual(Var(zD, w=wD, wType="freq"), Cov(zD, zD, w=wD, wType="freq"), TolD, "Covariance with variable freq-weights is wrong (double precision)")
+      @assertEqual(Var(zI8,  w=wR32, wType="freq"), Cov(zI8,  zI8,  w=wR32, wType="freq"), TolR32, "Covariance with variable freq-weights is wrong int8")
+      @assertEqual(Var(zI32, w=wR32, wType="freq"), Cov(zI32, zI32, w=wR32, wType="freq"), TolR32, "Covariance with variable freq-weights is wrong int32")
+      @assertEqual(Var(zR32, w=wR32, wType="freq"), Cov(zR32, zR32, w=wR32, wType="freq"), TolR32, "Covariance with variable freq-weights is wrong real32")
+      @assertEqual(Var(zR64, w=wR64, wType="freq"), Cov(zR64, zR64, w=wR64, wType="freq"), TolR64, "Covariance with variable freq-weights is wrong real64")
     end subroutine
 
     !###########################################################################
@@ -404,32 +591,51 @@ module TestAlphaStatMod
     @test
     subroutine TestCor
       implicit none
-      real(real32) :: xS(3), yS(3)
-      real(real64) :: xD(3), yD(3)
-      type(CorrelationS) :: rS
-      type(CorrelationD) :: rD
+      integer(int8) :: xI8(3), yI8(3)
+      integer(int32) :: xI32(3), yI32(3)
+      real(real32) :: xR32(3), yR32(3)
+      real(real64) :: xR64(3), yR64(3)
+      type(CorrelationReal32) :: rR32, RI32, RI8
+      type(CorrelationReal64) :: rR64
 
-      xS(:) = [1.0,   2.0,   4.0]
-      yS(:) = [4.0,   2.0,   1.0]
-      xD(:) = [1.0d0, 2.0d0, 4.0d0]
-      yD(:) = [4.0d0, 2.0d0, 1.0d0]
+      xI8  = [1,     2,     4]
+      yI8  = [4,     2,     1]
+      xI32 = [1,     2,     4]
+      yI32 = [4,     2,     1]
+      xR32 = [1.0,   2.0,   4.0]
+      yR32 = [4.0,   2.0,   1.0]
+      xR64 = [1.0d0, 2.0d0, 4.0d0]
+      yR64 = [4.0d0, 2.0d0, 1.0d0]
 
-      rS = Cor(xS,  xS)
-      rD = Cor(xD,  xD)
+      rI8  = Cor(xI8,  xI8)
+      rI32 = Cor(xI32, xI32)
+      rR32 = Cor(xR32, xR32)
+      rR64 = Cor(xR64, xR64)
 
-      @assertEqual(rS%Cor,  1.0,   TolS, "Correlation is wrong (single precision)")
-      @assertEqual(rD%Cor,  1.0d0, TolD, "Correlation is wrong (double precision)")
+      @assertEqual(rI8%Cor,   1.0,   TolR32, "Correlation is wrong int8")
+      @assertEqual(rI32%Cor,  1.0,   TolR32, "Correlation is wrong int32")
+      @assertEqual(rR32%Cor,  1.0,   TolR32, "Correlation is wrong real32")
+      @assertEqual(rR64%Cor,  1.0d0, TolR64, "Correlation is wrong real64")
 
-      rS = Cor(xS,  -xS)
-      rD = Cor(xD,  -xD)
-      @assertEqual(rS%Cor, -1.0,   TolS, "Correlation is wrong (single precision)")
-      @assertEqual(rD%Cor, -1.0d0, TolD, "Correlation is wrong (double precision)")
+      rI8  = Cor(xI8,  -xI8)
+      rI32 = Cor(xI32, -xI32)
+      rR32 = Cor(xR32, -xR32)
+      rR64 = Cor(xR64, -xR64)
 
-      rS = Cor(xS,  yS)
-      rD = Cor(xD,  yD)
+      @assertEqual(rI8%Cor,  -1.0,   TolR32, "Correlation is wrong int8")
+      @assertEqual(rI32%Cor, -1.0,   TolR32, "Correlation is wrong int32")
+      @assertEqual(rR32%Cor, -1.0,   TolR32, "Correlation is wrong real32")
+      @assertEqual(rR64%Cor, -1.0d0, TolR64, "Correlation is wrong real64")
 
-      @assertEqual(rS%Cor, -13.0  /14, TolS, "Correlation is wrong (single precision)")
-      @assertEqual(rD%Cor, -13.0d0/14, TolD, "Correlation is wrong (double precision)")
+      rI8  = Cor(xI8,  yI8)
+      rI32 = Cor(xI32, yI32)
+      rR32 = Cor(xR32, yR32)
+      rR64 = Cor(xR64, yR64)
+
+      @assertEqual(rI8%Cor,  -13.0  /14, TolR32, "Correlation is wrong int8")
+      @assertEqual(rI32%Cor, -13.0  /14, TolR32, "Correlation is wrong int32")
+      @assertEqual(rR32%Cor, -13.0  /14, TolR32, "Correlation is wrong real32")
+      @assertEqual(rR64%Cor, -13.0d0/14, TolR64, "Correlation is wrong real64")
     end subroutine
 
     !###########################################################################
