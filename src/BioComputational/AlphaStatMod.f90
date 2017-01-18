@@ -170,13 +170,7 @@ module AlphaStatMod
       integer(int32), intent(in) :: x(:)         !< values
       integer(int32), intent(in) :: MissingValue !< missing value representation
       logical             :: Res(size(x)) !< @return test for missingness
-      integer :: i
-      Res = .false.
-      do i = 1, size(x)
-        if (x(i) .eq. MissingValue) then
-          Res(i) = .true.
-        end if
-      end do
+      Res = x .eq. MissingValue
     end function
 
     !###########################################################################
@@ -191,13 +185,7 @@ module AlphaStatMod
       real(real32), intent(in) :: x(:)         !< values
       real(real32), intent(in) :: MissingValue !< missing value representation
       logical                  :: Res(size(x)) !< @return test for missingness
-      integer :: i
-      Res = .false.
-      do i = 1, size(x)
-        if (.not. (x(i) .lt. MissingValue .or. x(i) .gt. MissingValue)) then
-          Res(i) = .true.
-        end if
-      end do
+      Res = .not. (x .lt. MissingValue .or. x .gt. MissingValue)
     end function
 
     !###########################################################################
@@ -212,13 +200,7 @@ module AlphaStatMod
       real(real64), intent(in) :: x(:)         !< values
       real(real64), intent(in) :: MissingValue !< missing value representation
       logical                  :: Res(size(x)) !< @return test for missingness
-      integer :: i
-      Res = .false.
-      do i = 1, size(x)
-        if (.not. (x(i) .lt. MissingValue .or. x(i) .gt. MissingValue)) then
-          Res(i) = .true.
-        end if
-      end do
+      Res = .not. (x .lt. MissingValue .or. x .gt. MissingValue)
     end function
 
     !###########################################################################
