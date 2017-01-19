@@ -21,6 +21,8 @@ SET(ALPHAHOUSE_src
 	BioComputational/HaplotypeModule.f90
 	BioComputational/BitUtilities.f90
 	BioComputational/FilterModule.f90
+        Utilities/SortingModule.f90
+	Utilities/ClusteringModule.f90
         main.f90
 	)
 
