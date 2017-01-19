@@ -241,19 +241,24 @@ module AlphaStatMod
     !---------------------------------------------------------------------------
     pure function IsAnyMissingMatrixI8(x, MissingValue, Dim) result(Res)
       implicit none
-      integer(int8), intent(in) :: x(:, :)          !< values
-      integer(int8), intent(in) :: MissingValue     !< missing value representation
-      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
-      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
-      integer :: i
-      do i = 1, size(x, Dim)
-        if (Dim .eq. 1) then
-          Res(i) = any(x(i, :) .eq. MissingValue)
-        end if
-        if (Dim .eq. 2) then
+      integer(int8), intent(in)          :: x(:, :)      !< values
+      integer(int8), intent(in)          :: MissingValue !< missing value representation
+      integer, intent(in)                :: Dim          !< Dim = 1 test along dimension 1 (i.e. missingnes within each column); Dim = 2, test along dimension 2. (i.e. missingnes within each row)
+      logical, allocatable, dimension(:) :: Res          !< @return test for missingness (a 1D array)
+      integer :: i, n
+      if (Dim .eq. 1) then ! n is the size of the remaining dimension once Dim has been removed.
+        n = size(x, 2)
+        allocate(Res(n))
+        do i = 1, n
           Res(i) = any(x(:, i) .eq. MissingValue)
-        end if
-      end do
+        end do
+      else if (Dim .eq. 2) then
+        n = size(x, 1)
+        allocate(Res(n))
+        do i = 1, n
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end do
+      endif
     end function
 
     !###########################################################################
@@ -265,19 +270,24 @@ module AlphaStatMod
     !---------------------------------------------------------------------------
     pure function IsAnyMissingMatrixI32(x, MissingValue, Dim) result(Res)
       implicit none
-      integer(int32), intent(in) :: x(:, :)         !< values
-      integer(int32), intent(in) :: MissingValue    !< missing value representation
-      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
-      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
-      integer :: i
-      do i = 1, size(x, Dim)
-        if (Dim .eq. 1) then
-          Res(i) = any(x(i, :) .eq. MissingValue)
-        end if
-        if (Dim .eq. 2) then
+      integer(int32), intent(in)         :: x(:, :)      !< values
+      integer(int32), intent(in)         :: MissingValue !< missing value representation
+      integer, intent(in)                :: Dim          !< Dim = 1 test along dimension 1 (i.e. missingnes within each column); Dim = 2, test along dimension 2. (i.e. missingnes within each row)
+      logical, allocatable, dimension(:) :: Res          !< @return test for missingness (a 1D array)
+      integer :: i, n
+      if (Dim .eq. 1) then ! n is the size of the remaining dimension once Dim has been removed.
+        n = size(x, 2)
+        allocate(Res(n))
+        do i = 1, n
           Res(i) = any(x(:, i) .eq. MissingValue)
-        end if
-      end do
+        end do
+      else if (Dim .eq. 2) then
+        n = size(x, 1)
+        allocate(Res(n))
+        do i = 1, n
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end do
+      endif
     end function
 
     !###########################################################################
@@ -289,19 +299,24 @@ module AlphaStatMod
     !---------------------------------------------------------------------------
     pure function IsAnyMissingMatrixR32(x, MissingValue, Dim) result(Res)
       implicit none
-      real(real32), intent(in) :: x(:, :)           !< values
-      real(real32), intent(in) :: MissingValue      !< missing value representation
-      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
-      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
-      integer :: i
-      do i = 1, size(x, Dim)
-        if (Dim .eq. 1) then
-          Res(i) = any(x(i, :) .eq. MissingValue)
-        end if
-        if (Dim .eq. 2) then
+      real(real32), intent(in)           :: x(:, :)      !< values
+      real(real32), intent(in)           :: MissingValue !< missing value representation
+      integer, intent(in)                :: Dim          !< Dim = 1 test along dimension 1 (i.e. missingnes within each column); Dim = 2, test along dimension 2. (i.e. missingnes within each row)
+      logical, allocatable, dimension(:) :: Res          !< @return test for missingness (a 1D array)
+      integer :: i, n
+      if (Dim .eq. 1) then ! n is the size of the remaining dimension once Dim has been removed.
+        n = size(x, 2)
+        allocate(Res(n))
+        do i = 1, n
           Res(i) = any(x(:, i) .eq. MissingValue)
-        end if
-      end do
+        end do
+      else if (Dim .eq. 2) then
+        n = size(x, 1)
+        allocate(Res(n))
+        do i = 1, n
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end do
+      endif
     end function
 
     !###########################################################################
@@ -313,19 +328,24 @@ module AlphaStatMod
     !---------------------------------------------------------------------------
     pure function IsAnyMissingMatrixR64(x, MissingValue, Dim) result(Res)
       implicit none
-      real(real64), intent(in) :: x(:, :)           !< values
-      real(real64), intent(in) :: MissingValue      !< missing value representation
-      integer, intent(in)      :: Dim               !< if Dim=1 test missingness across columns (row by row), if Dim=2 test missingness across rows (column by column)
-      logical                  :: Res(size(x, Dim)) !< @return test for missingness (a 1D array)
-      integer :: i
-      do i = 1, size(x, Dim)
-        if (Dim .eq. 1) then
-          Res(i) = any(x(i, :) .eq. MissingValue)
-        end if
-        if (Dim .eq. 2) then
+      real(real64), intent(in)           :: x(:, :)      !< values
+      real(real64), intent(in)           :: MissingValue !< missing value representation
+      integer, intent(in)                :: Dim          !< Dim = 1 test along dimension 1 (i.e. missingnes within each column); Dim = 2, test along dimension 2. (i.e. missingnes within each row)
+      logical, allocatable, dimension(:) :: Res          !< @return test for missingness (a 1D array)
+      integer :: i, n
+      if (Dim .eq. 1) then ! n is the size of the remaining dimension once Dim has been removed.
+        n = size(x, 2)
+        allocate(Res(n))
+        do i = 1, n
           Res(i) = any(x(:, i) .eq. MissingValue)
-        end if
-      end do
+        end do
+      else if (Dim .eq. 2) then
+        n = size(x, 1)
+        allocate(Res(n))
+        do i = 1, n
+          Res(i) = any(x(i, :) .eq. MissingValue)
+        end do
+      endif
     end function
 
     !###########################################################################
@@ -439,7 +459,7 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Obtain an array without partially "missing" rows or columns - int8
+    !> @brief  Obtain an array without partially missing rows or columns - int8
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
@@ -447,23 +467,13 @@ module AlphaStatMod
       implicit none
       integer(int8), intent(in)                   :: x(:, :)      !< values
       integer(int8), intent(in)                   :: MissingValue !< missing value representation
-      integer, intent(in)                         :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
-      integer(int8), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      integer, intent(in)                         :: Dim          !< Dim = 1 remove columns that contain missing values, if Dim = 2 remove rows that contain missing values
+      integer(int8), allocatable, dimension(:, :) :: Res          !< @return x with columns/rows removed
       logical :: NotMissing(size(x, Dim))
       integer :: nNotMissing, i, j
-
       NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
       nNotMissing = count(NotMissing)
       if (Dim .eq. 1) then
-        allocate(Res(nNotMissing, size(x, 2)))
-        j = 0
-        do i = 1, size(x, 1)
-          if (NotMissing(i)) then
-            j = j + 1
-            Res(j, :) = x(i, :)
-          end if
-        enddo
-      else
         allocate(Res(size(x, 1), nNotMissing))
         j = 0
         do i = 1, size(x, 2)
@@ -472,13 +482,22 @@ module AlphaStatMod
             Res(:, j) = x(:, i)
           end if
         enddo
+      else if (Dim .eq. 2) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
       end if
     end function
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Obtain an array without partially "missing" rows or columns - int32
+    !> @brief  Obtain an array without partially missing rows or columns - int32
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
@@ -486,23 +505,13 @@ module AlphaStatMod
       implicit none
       integer(int32), intent(in)                   :: x(:, :)      !< values
       integer(int32), intent(in)                   :: MissingValue !< missing value representation
-      integer, intent(in)                          :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
-      integer(int32), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      integer, intent(in)                          :: Dim          !< Dim = 1 remove columns that contain missing values, if Dim = 2 remove rows that contain missing values
+      integer(int32), allocatable, dimension(:, :) :: Res          !< @return x with columns/rows removed
       logical :: NotMissing(size(x, Dim))
       integer :: nNotMissing, i, j
-
       NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
       nNotMissing = count(NotMissing)
       if (Dim .eq. 1) then
-        allocate(Res(nNotMissing, size(x, 2)))
-        j = 0
-        do i = 1, size(x, 1)
-          if (NotMissing(i)) then
-            j = j + 1
-            Res(j, :) = x(i, :)
-          end if
-        enddo
-      else
         allocate(Res(size(x, 1), nNotMissing))
         j = 0
         do i = 1, size(x, 2)
@@ -511,13 +520,22 @@ module AlphaStatMod
             Res(:, j) = x(:, i)
           end if
         enddo
+      else if (Dim .eq. 2) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
+          end if
+        enddo
       end if
     end function
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Obtain an array without partially "missing" rows or columns - real32
+    !> @brief  Obtain an array without partially missing rows or columns - real32
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
@@ -525,29 +543,28 @@ module AlphaStatMod
       implicit none
       real(real32), intent(in)                   :: x(:, :)      !< values
       real(real32), intent(in)                   :: MissingValue !< missing value representation
-      integer, intent(in)                        :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
-      real(real32), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      integer, intent(in)                        :: Dim          !< Dim = 1 remove columns that contain missing values, if Dim = 2 remove rows that contain missing values
+      real(real32), allocatable, dimension(:, :) :: Res          !< @return x with columns/rows removed
       logical :: NotMissing(size(x, Dim))
       integer :: nNotMissing, i, j
-
       NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
       nNotMissing = count(NotMissing)
       if (Dim .eq. 1) then
-        allocate(Res(nNotMissing, size(x, 2)))
-        j = 0
-        do i = 1, size(x, 1)
-          if (NotMissing(i)) then
-            j = j + 1
-            Res(j, :) = x(i, :)
-          end if
-        enddo
-      else
         allocate(Res(size(x, 1), nNotMissing))
         j = 0
         do i = 1, size(x, 2)
           if (NotMissing(i)) then
             j = j + 1
             Res(:, j) = x(:, i)
+          end if
+        enddo
+      else if (Dim .eq. 2) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
           end if
         enddo
       end if
@@ -556,7 +573,7 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Obtain an array without partially "missing" rows or columns - real64
+    !> @brief  Obtain an array without partially missing rows or columns - real64
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
@@ -564,29 +581,28 @@ module AlphaStatMod
       implicit none
       real(real64), intent(in)                   :: x(:, :)      !< values
       real(real64), intent(in)                   :: MissingValue !< missing value representation
-      integer, intent(in)                        :: Dim          !< if Dim=1 remove rows, if Dim=2 remove columns
-      real(real64), allocatable, dimension(:, :) :: Res          !< @return x without missing values
+      integer, intent(in)                        :: Dim          !< Dim = 1 remove columns that contain missing values, if Dim = 2 remove rows that contain missing values
+      real(real64), allocatable, dimension(:, :) :: Res          !< @return x with columns/rows removed
       logical :: NotMissing(size(x, Dim))
       integer :: nNotMissing, i, j
-
       NotMissing = .not. IsAnyMissingMatrix(x, MissingValue, Dim)
       nNotMissing = count(NotMissing)
       if (Dim .eq. 1) then
-        allocate(Res(nNotMissing, size(x, 2)))
-        j = 0
-        do i = 1, size(x, 1)
-          if (NotMissing(i)) then
-            j = j + 1
-            Res(j, :) = x(i, :)
-          end if
-        enddo
-      else
         allocate(Res(size(x, 1), nNotMissing))
         j = 0
         do i = 1, size(x, 2)
           if (NotMissing(i)) then
             j = j + 1
             Res(:, j) = x(:, i)
+          end if
+        enddo
+      else if (Dim .eq. 2) then
+        allocate(Res(nNotMissing, size(x, 2)))
+        j = 0
+        do i = 1, size(x, 1)
+          if (NotMissing(i)) then
+            j = j + 1
+            Res(j, :) = x(i, :)
           end if
         enddo
       end if

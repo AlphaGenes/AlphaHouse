@@ -95,49 +95,50 @@ module TestAlphaStatMod
       xR64(2, :) = [2.0d0, 2.0d0, 3.0d0]
       xR64(3, :) = [2.0d0, 0.0d0, 3.0d0]
 
-      rExp = [.true., .false., .true.]
-      mI8 = 0
-      r = IsAnyMissingMatrix(xI8, mI8, Dim=1)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (rows) failed for int8 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for int8 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for int8 - 3rd element")
-
-      r = IsAnyMissingMatrix(xI32, 0, Dim=1)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (rows) failed for int32 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for int32 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for int32 - 3rd element")
-
-      r = IsAnyMissingMatrix(xR32, 0.0, Dim=1)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (rows) failed for real32 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for real32 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for real32 - 3rd element")
-
-      r = IsAnyMissingMatrix(xR64, 0.0d0, Dim=1)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (rows) failed for real64 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for real64 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (rows) failed for real64 - 3rd element")
-
       rExp = [.true., .true., .false.]
       mI8 = 0
+      r = IsAnyMissingMatrix(xI8, mI8, Dim=1)
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=1) failed for int8 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for int8 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for int8 - 3rd element")
+
+      r = IsAnyMissingMatrix(xI32, 0, Dim=1)
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=1) failed for int32 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for int32 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for int32 - 3rd element")
+
+      r = IsAnyMissingMatrix(xR32, 0.0, Dim=1)
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=1) failed for real32 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for real32 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for real32 - 3rd element")
+
+      r = IsAnyMissingMatrix(xR64, 0.0d0, Dim=1)
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=1) failed for real64 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for real64 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=1) failed for real64 - 3rd element")
+
+      rExp = [.true., .false., .true.]
+      mI8 = 0
       r = IsAnyMissingMatrix(xI8, mI8, Dim=2)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (cols) failed for int8 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for int8 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for int8 - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=2) failed for int8 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for int8 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for int8 - 3rd element")
 
       r = IsAnyMissingMatrix(xI32, 0, Dim=2)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (cols) failed for int32 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for int32 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for int32 - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=2) failed for int32 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for int32 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for int32 - 3rd element")
 
       r = IsAnyMissingMatrix(xR32, 0.0, Dim=2)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (cols) failed for real32 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for real32 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for real32 - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=2) failed for real32 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for real32 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for real32 - 3rd element")
 
       r = IsAnyMissingMatrix(xR64, 0.0d0, Dim=2)
-      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (cols) failed for real64 - 1st element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for real64 - 2nd element")
-      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (cols) failed for real64 - 3rd element")
+      @assertTrue(rExp(1) .eqv. r(1), "IsAnyMissingMatrix (dim=2) failed for real64 - 1st element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for real64 - 2nd element")
+      @assertTrue(rExp(2) .eqv. r(2), "IsAnyMissingMatrix (dim=2) failed for real64 - 3rd element")
+
     end subroutine
 
     !###########################################################################
@@ -247,63 +248,64 @@ module TestAlphaStatMod
 
       mI8 = 0
       rI8 = RemoveAnyMissingMatrix(xI8, mI8, Dim=1)
-      eI8(1, :) = xI8(2, :)
-      ! int is because pFUnit does not work with int8
-      @assertEqual(int(eI8(1, 1)), int(rI8(1, 1)), "RemoveAnyMissingMatrix (rows) failed for int8 - 1, 1 element")
-      @assertEqual(int(eI8(1, 2)), int(rI8(1, 2)), "RemoveAnyMissingMatrix (rows) failed for int8 - 1, 2 element")
-      @assertEqual(int(eI8(1, 3)), int(rI8(1, 3)), "RemoveAnyMissingMatrix (rows) failed for int8 - 1, 3 element")
+      eI8(:, 1) = xI8(:, 3)
+      ! int() because pFUnit does not work with int8
+      @assertEqual(int(eI8(1, 1)), int(rI8(1, 1)), "RemoveAnyMissingMatrix (dim=1) failed for int8 - 1, 1 element")
+      @assertEqual(int(eI8(2, 1)), int(rI8(2, 1)), "RemoveAnyMissingMatrix (dim=1) failed for int8 - 2, 1 element")
+      @assertEqual(int(eI8(3, 1)), int(rI8(3, 1)), "RemoveAnyMissingMatrix (dim=1) failed for int8 - 3, 1 element")
       deallocate(rI8)
 
       rI32 = RemoveAnyMissingMatrix(xI32, 0, Dim=1)
-      eI32(1, :) = xI32(2, :)
-      @assertEqual(eI32(1, 1), rI32(1, 1), "RemoveAnyMissingMatrix (rows) failed for int32 - 1, 1 element")
-      @assertEqual(eI32(1, 2), rI32(1, 2), "RemoveAnyMissingMatrix (rows) failed for int32 - 1, 2 element")
-      @assertEqual(eI32(1, 3), rI32(1, 3), "RemoveAnyMissingMatrix (rows) failed for int32 - 1, 3 element")
+      eI32(:, 1) = xI32(:, 3)
+      @assertEqual(eI32(1, 1), rI32(1, 1), "RemoveAnyMissingMatrix (dim=1) failed for int32 - 1, 1 element")
+      @assertEqual(eI32(2, 1), rI32(2, 1), "RemoveAnyMissingMatrix (dim=1) failed for int32 - 2, 1 element")
+      @assertEqual(eI32(3, 1), rI32(3, 1), "RemoveAnyMissingMatrix (dim=1) failed for int32 - 3, 1 element")
       deallocate(rI32)
 
       rR32 = RemoveAnyMissingMatrix(xR32, 0.0, Dim=1)
-      eR32(1, :) = xR32(2, :)
-      @assertEqual(eR32(1, 1), rR32(1, 1), "RemoveAnyMissingMatrix (rows) failed for real32 - 1, 1 element")
-      @assertEqual(eR32(1, 2), rR32(1, 2), "RemoveAnyMissingMatrix (rows) failed for real32 - 1, 2 element")
-      @assertEqual(eR32(1, 3), rR32(1, 3), "RemoveAnyMissingMatrix (rows) failed for real32 - 1, 3 element")
+      eR32(:, 1) = xR32(:, 3)
+      @assertEqual(eR32(1, 1), rR32(1, 1), "RemoveAnyMissingMatrix (dim=1) failed for real32 - 1, 1 element")
+      @assertEqual(eR32(2, 1), rR32(2, 1), "RemoveAnyMissingMatrix (dim=1) failed for real32 - 2, 1 element")
+      @assertEqual(eR32(3, 1), rR32(3, 1), "RemoveAnyMissingMatrix (dim=1) failed for real32 - 3, 1 element")
       deallocate(rR32)
 
       rR64 = RemoveAnyMissingMatrix(xR64, 0.0d0, Dim=1)
-      eR64(1, :) = xR64(2, :)
-      @assertEqual(eR64(1, 1), rR64(1, 1), "RemoveAnyMissingMatrix (rows) failed for real64 - 1, 1 element")
-      @assertEqual(eR64(1, 2), rR64(1, 2), "RemoveAnyMissingMatrix (rows) failed for real64 - 1, 2 element")
-      @assertEqual(eR64(1, 3), rR64(1, 3), "RemoveAnyMissingMatrix (rows) failed for real64 - 1, 3 element")
+      eR64(:, 1) = xR64(:, 3)
+      @assertEqual(eR64(1, 1), rR64(1, 1), "RemoveAnyMissingMatrix (dim=1) failed for real64 - 1, 1 element")
+      @assertEqual(eR64(2, 1), rR64(2, 1), "RemoveAnyMissingMatrix (dim=1) failed for real64 - 2, 1 element")
+      @assertEqual(eR64(3, 1), rR64(3, 1), "RemoveAnyMissingMatrix (dim=1) failed for real64 - 3, 1 element")
       deallocate(rR64)
 
       mI8 = 0
       rI8 = RemoveAnyMissingMatrix(xI8, mI8, Dim=2)
-      eI8(:, 1) = xI8(:, 3)
-      ! int() because pFUnit does not work with int8
-      @assertEqual(int(eI8(1, 1)), int(rI8(1, 1)), "RemoveAnyMissingMatrix (cols) failed for int8 - 1, 1 element")
-      @assertEqual(int(eI8(2, 1)), int(rI8(2, 1)), "RemoveAnyMissingMatrix (cols) failed for int8 - 2, 1 element")
-      @assertEqual(int(eI8(3, 1)), int(rI8(3, 1)), "RemoveAnyMissingMatrix (cols) failed for int8 - 3, 1 element")
+      eI8(1, :) = xI8(2, :)
+      ! int is because pFUnit does not work with int8
+      @assertEqual(int(eI8(1, 1)), int(rI8(1, 1)), "RemoveAnyMissingMatrix (dim=2) failed for int8 - 1, 1 element")
+      @assertEqual(int(eI8(1, 2)), int(rI8(1, 2)), "RemoveAnyMissingMatrix (dim=2) failed for int8 - 1, 2 element")
+      @assertEqual(int(eI8(1, 3)), int(rI8(1, 3)), "RemoveAnyMissingMatrix (dim=2) failed for int8 - 1, 3 element")
       deallocate(rI8)
 
       rI32 = RemoveAnyMissingMatrix(xI32, 0, Dim=2)
-      eI32(:, 1) = xI32(:, 3)
-      @assertEqual(eI32(1, 1), rI32(1, 1), "RemoveAnyMissingMatrix (cols) failed for int32 - 1, 1 element")
-      @assertEqual(eI32(2, 1), rI32(2, 1), "RemoveAnyMissingMatrix (cols) failed for int32 - 2, 1 element")
-      @assertEqual(eI32(3, 1), rI32(3, 1), "RemoveAnyMissingMatrix (cols) failed for int32 - 3, 1 element")
+      eI32(1, :) = xI32(2, :)
+      @assertEqual(eI32(1, 1), rI32(1, 1), "RemoveAnyMissingMatrix (dim=2) failed for int32 - 1, 1 element")
+      @assertEqual(eI32(1, 2), rI32(1, 2), "RemoveAnyMissingMatrix (dim=2) failed for int32 - 1, 2 element")
+      @assertEqual(eI32(1, 3), rI32(1, 3), "RemoveAnyMissingMatrix (dim=2) failed for int32 - 1, 3 element")
       deallocate(rI32)
 
       rR32 = RemoveAnyMissingMatrix(xR32, 0.0, Dim=2)
-      eR32(:, 1) = xR32(:, 3)
-      @assertEqual(eR32(1, 1), rR32(1, 1), "RemoveAnyMissingMatrix (cols) failed for real32 - 1, 1 element")
-      @assertEqual(eR32(2, 1), rR32(2, 1), "RemoveAnyMissingMatrix (cols) failed for real32 - 2, 1 element")
-      @assertEqual(eR32(3, 1), rR32(3, 1), "RemoveAnyMissingMatrix (cols) failed for real32 - 3, 1 element")
+      eR32(1, :) = xR32(2, :)
+      @assertEqual(eR32(1, 1), rR32(1, 1), "RemoveAnyMissingMatrix (dim=2) failed for real32 - 1, 1 element")
+      @assertEqual(eR32(1, 2), rR32(1, 2), "RemoveAnyMissingMatrix (dim=2) failed for real32 - 1, 2 element")
+      @assertEqual(eR32(1, 3), rR32(1, 3), "RemoveAnyMissingMatrix (dim=2) failed for real32 - 1, 3 element")
       deallocate(rR32)
 
       rR64 = RemoveAnyMissingMatrix(xR64, 0.0d0, Dim=2)
-      eR64(:, 1) = xR64(:, 3)
-      @assertEqual(eR64(1, 1), rR64(1, 1), "RemoveAnyMissingMatrix (cols) failed for real64 - 1, 1 element")
-      @assertEqual(eR64(2, 1), rR64(2, 1), "RemoveAnyMissingMatrix (cols) failed for real64 - 2, 1 element")
-      @assertEqual(eR64(3, 1), rR64(3, 1), "RemoveAnyMissingMatrix (cols) failed for real64 - 3, 1 element")
+      eR64(1, :) = xR64(2, :)
+      @assertEqual(eR64(1, 1), rR64(1, 1), "RemoveAnyMissingMatrix (dim=2) failed for real64 - 1, 1 element")
+      @assertEqual(eR64(1, 2), rR64(1, 2), "RemoveAnyMissingMatrix (dim=2) failed for real64 - 1, 2 element")
+      @assertEqual(eR64(1, 3), rR64(1, 3), "RemoveAnyMissingMatrix (dim=2) failed for real64 - 1, 3 element")
       deallocate(rR64)
+
     end subroutine
 
     !###########################################################################
