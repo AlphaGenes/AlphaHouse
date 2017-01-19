@@ -45,6 +45,7 @@ module HaplotypeModule
     procedure :: setZero
     procedure :: setOne
     procedure :: subset
+    procedure :: setSubset
   end type Haplotype
   
   interface Haplotype
@@ -551,6 +552,68 @@ contains
       sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i - 1)
     end do
   end function subset
+  
+  subroutine setSubset(h, sub, start)
+    class(Haplotype), intent(in) :: h, sub
+    integer, intent(in) :: start
+    
+    integer(kind=8) :: mask, startmask, endmask, shifted   
+    integer :: starti, endi, offset
+    integer :: i
+    
+    starti = (start - 1) / 64  + 1
+    endi = (start + sub%length - 1) / 64 + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections - 1
+	h%phase(i + starti - 1) = sub%phase(i)
+	h%missing(i + starti - 1) = sub%missing(i)
+      end do
+      mask = 0
+      do i = 1, 64 - sub%overhang
+	mask = ibset(mask, i - 1)
+      end do
+      h%phase(sub%sections) = IOR(IAND(mask, sub%phase(sub%sections)), IAND(NOT(mask), h%phase(sub%sections + starti - 1)))
+      h%missing(sub%sections) = IOR(IAND(mask, sub%missing(sub%sections)), IAND(NOT(mask), h%missing(sub%sections + starti - 1)))
+    else
+      startmask = 0
+      do i = offset+1, MIN(64, offset + sub%length)
+	startmask = ibset(startmask, i - 1)
+      end do      
+      shifted = ISHFT(sub%phase(1), offset)
+      h%phase(starti) = IOR(IAND(startmask, shifted), IAND(NOT(startmask), h%phase(starti)))
+      shifted = ISHFT(sub%missing(1), offset)
+      h%missing(starti) = IOR(IAND(startmask, shifted), IAND(NOT(startmask), h%missing(starti)))
+
+      do i = starti + 1, endi - 1
+	h%phase(i) = IOR(ISHFT(sub%phase(i-starti), offset - 64), ISHFT(sub%phase(i-starti+1), offset))
+	h%missing(i) = IOR(ISHFT(sub%missing(i-starti), offset - 64), ISHFT(sub%missing(i-starti+1), offset))
+      end do
+      
+      if (endi > 1) then
+	endmask = 0
+	if (offset - sub%overhang > 0) then
+	  do i = 1, offset - sub%overhang
+	    endmask = ibset(endmask, i - 1)
+	  enddo
+	  shifted = ISHFT(sub%phase(sub%sections), offset - 64)
+	  h%phase(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%phase(endi)))
+	  shifted = ISHFT(sub%missing(sub%sections), offset - 64)
+	  h%missing(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%missing(endi)))
+	else
+	  do i = 1, 64 + offset - sub%overhang
+	    endmask = ibset(endmask, i - 1)
+	  end do
+	  shifted = IOR(ISHFT(sub%phase(sub%sections-1), offset - 64), ISHFT(sub%phase(sub%sections), offset))
+	  h%phase(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%phase(endi)))
+	  shifted = IOR(ISHFT(sub%missing(sub%sections-1), offset - 64), ISHFT(sub%missing(sub%sections), offset))
+	  h%missing(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%missing(endi)))
+	endif
+      end if
+    end if
+    
+  end subroutine setSubset
     
 end module HaplotypeModule
   
