@@ -22,6 +22,7 @@ module HaplotypeModule
       integer :: length
     contains
     procedure :: toIntegerArray
+    procedure :: toIntegerArrayWithErrors
     procedure :: getPhaseMod
     procedure :: setPhaseMod
     procedure :: overlapMod
@@ -155,7 +156,7 @@ contains
     do i = 1, h%length
         if (btest(h%missing(cursection),curpos)) then
             if (btest(h%phase(cursection),curpos)) then
-                array(i) = ErrorPhaseCode
+                array(i) = MissingPhaseCode
             else
                 array(i) = MissingPhaseCode
             end if
@@ -174,6 +175,40 @@ contains
       end if
     end do
   end function toIntegerArray
+  
+  function toIntegerArrayWithErrors(h) result(array)
+    class(Haplotype), intent(in) :: h
+    
+    integer(kind=1), dimension(:), allocatable :: array
+    
+    integer :: i, cursection, curpos
+    
+    allocate(array(h%length))
+    
+    cursection = 1
+    curpos = 0
+    do i = 1, h%length
+        if (btest(h%missing(cursection),curpos)) then
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = ErrorPhaseCode
+            else
+                array(i) = MissingPhaseCode
+            end if
+        else
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = 1
+            else
+                array(i) = 0
+            end if
+        end if
+      
+      curpos = curpos + 1
+      if (curpos == 64) then
+        curpos = 0
+        cursection = cursection + 1
+      end if
+    end do
+  end function toIntegerArrayWithErrors
   
   function compareHaplotype(h1, h2) result(same)
     class(Haplotype), intent(in) :: h1, h2
