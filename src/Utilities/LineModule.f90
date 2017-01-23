@@ -9,7 +9,9 @@ module LineModule
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
-      procedure:: add => addAWord
+      procedure, private:: addAWordWithChar
+      procedure, private:: addAWordWithString
+      generic:: add => addAWordWithChar, addAWordWithString
       procedure, private:: removeByIndex
       procedure, private:: removeFirstName
       generic:: remove => removeFirstName, removeByIndex
@@ -75,7 +77,7 @@ module LineModule
 
     end subroutine removeByIndex
 
-    subroutine addAWord(self, charIn)
+    subroutine addAWordWithChar(self, charIn)
       class(Line), intent(inout):: self
       character(len=*), intent(in):: charIn
 
@@ -98,8 +100,14 @@ module LineModule
         self%words(1) = charIn
       end if
 
-    end subroutine addAWord
+    end subroutine addAWordWithChar
 
+    subroutine addAWordWithString(self, stringIn)
+      type(String), intent(in):: stringIn
+      class(Line), intent(inout):: self
+
+      call self%add(stringIn%line)
+    end subroutine addAWordWithString
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
