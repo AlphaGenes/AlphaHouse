@@ -73,19 +73,20 @@ module FilterModule
     logical, dimension(size(genos,2)) :: pass
     integer :: numPass
     integer :: i, j, newi
-    integer :: present, number
+    integer :: sum, number
     double precision :: maf
     
     numPass = 0    
     do i = 1, size(genos,2)
       sum = 0
+      number = 0
       do j = 1, size(genos,1)
 	if (genos(j, i) /= MissingGenotypeCode) then
 	  sum = sum + genos(j,i)
 	  number = number + 1
 	end if
       end do
-      maf = float(present) / (2.0 * number)
+      maf = float(sum) / (2.0 * number)
       pass(i) = (min(maf, 1.0 - maf) >= threshold)
       if (pass(i)) then
 	numPass = numPass + 1
