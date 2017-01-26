@@ -20,6 +20,7 @@ module LineModule
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
       procedure:: getNumWords
+      procedure:: setWord
       procedure, private:: writeFormattedLineType
       procedure, private:: writeUnformattedLineType
       procedure, private:: readLineType
@@ -42,6 +43,15 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWord(self, i, charIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      character(len=*), intent(in):: charIn !<What you want to set the word to
+      self%words(i) = charIn
+    end subroutine setWord
 
     !> @brief Removes all words
     !> @details Deallocates the array of strings that are being used to hold the words

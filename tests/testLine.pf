@@ -6,6 +6,27 @@ implicit none
 contains
 
 @test
+subroutine testSetWord()
+use StringModule
+type(Line):: lineUsed
+type(String):: expected, gotten
+character(len=5):: Toset
+
+toSet = "This!"
+
+expected = ToSet
+
+call lineUsed%add("A word")
+call lineUsed%setWord(1, toSet)
+
+gotten = lineUsed%GetWordAsString(1)
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testSetWord
+
+
+@test
 subroutine testRemoveAll()
 type(Line):: testType
 logical:: expected, gotten
