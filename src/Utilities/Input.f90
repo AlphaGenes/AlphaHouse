@@ -1,3 +1,31 @@
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file    Input.f90 
+!
+! DESCRIPTION:
+!> @brief    Holds a subroutine to get spec file
+!
+!> @details   This holds two subroutines to get the input spec file.   The input spec file is by default set to be the name of the
+!>program (gotten from get_command_arg(0)) appended by "Spec.txt", i.e. AlphaAnalyseSpec.txt.   You can change the name of the input
+!>file by passing the flag "-f <fileNameWanted>" into the program from the command line.
+!> 
+!> It is also possible to set what the input filename should be in your program by using setInputFile.   This is not recommended
+!though, as it means that trying to change the input file name via -f will stop working.
+!!           
+!
+!> @author   Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+!
+!> @date     January 24, 2017
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+!
+!-------------------------------------------------------------------------------
 module inputfile
   use iso_fortran_env
   implicit none
@@ -14,22 +42,28 @@ module inputfile
 
 contains
 
+!>@brief Sets the input file name
+!> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 subroutine setInputFile(fileNameIn)
-  character(len=*):: fileNameIn
+  character(len=*):: fileNameIn !< the filename that you want to set
 
   inputFileName = fileNameIn
 
 end subroutine setInputFile
 
+!> @brief A function to return the input file name
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 function getInputFile() result (inputFile)
-  character(len=:), allocatable:: inputFile
+  character(len=:), allocatable:: inputFile !< the name of the file send out
   if (.not. allocated(inputFileName)) then
     call initialise()
   end if
   inputFile=inputFileName
 end function getInputFile
 
-
+!> @brief A subroutine that will set up the input file name
+!> @details This subroutine will either set the input file name to be the name of the program followed by "Spec.txt", unless the -f
+!> flag has been used to send in a filename via the command line.   If the -f flag was used, then that file name is used instead.
 subroutine initialise(filePathIn)
   character(len=*), intent(in), optional::filePathIn
   character(len=fileLength):: currentWorkingDirectory
