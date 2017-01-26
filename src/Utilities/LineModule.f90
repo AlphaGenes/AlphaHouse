@@ -24,10 +24,12 @@ module LineModule
       procedure, private:: writeUnformattedLineType
       procedure, private:: readLineType
       procedure, private:: readUnformattedLineType
+      procedure:: removeAll
       generic:: write(formatted) => writeFormattedLineType
       generic:: write(unformatted) => writeUnformattedLineType
       generic:: read(formatted) => readLineType
       generic:: read(unformatted) => readUnformattedLineType
+      final:: deallocateLine
   end type
 
   interface assignment (=)
@@ -40,6 +42,27 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+
+    !> @brief Removes all words
+    !> @details Deallocates the array of strings that are being used to hold the words
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine removeAll(self)
+      class(Line), intent(inout):: self
+
+      call deallocateLine(self)
+    end subroutine removeAll
+
+    !> @brief Final sub to deallocate Line module
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine deallocateLine(self)
+      type(Line), intent(inout):: self
+
+      if (allocated(self%words)) then
+        deallocate(self%words)
+      end if
+    end subroutine deallocateLine
+    
+    
 
     !>@brief Removes the first occurance of a word in a line
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
@@ -108,6 +131,7 @@ module LineModule
 
       call self%add(stringIn%line)
     end subroutine addAWordWithString
+
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i

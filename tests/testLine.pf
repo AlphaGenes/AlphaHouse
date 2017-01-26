@@ -1,3 +1,26 @@
+module testLine
+use pFUnit_mod
+use LineModule
+implicit none
+
+contains
+
+@test
+subroutine testRemoveAll()
+type(Line):: testType
+logical:: expected, gotten
+
+call testType%add("A")
+call testType%add("B")
+
+call testType%removeAll()
+
+expected = .false.
+gotten = allocated(testType%words)
+
+@assertEqual(expected, gotten)
+end subroutine testRemoveAll
+
 @test
 subroutine testRemoveWordByIndex()
 use pFUnit_mod
@@ -164,3 +187,4 @@ gotten = lineIn%getWord(1)
 
 @assertEqual(expected, gotten)
 end subroutine testGetWord
+end Module testLine
