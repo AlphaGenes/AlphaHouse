@@ -223,7 +223,7 @@ module pageModule
         end if
         allocate(this%lines(i)%words(numWords))
         do j = 1, numWords
-          this%lines(i)%words(j) = charArray(i,j)
+          this%lines(i)%words(j) = trim(charArray(i,j))
         end do
       end do
       end subroutine initChar
