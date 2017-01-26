@@ -6,7 +6,25 @@ implicit none
 contains
 
 @test
-subroutine testSetWord()
+subroutine testSetWordWithString()
+use StringModule
+type(Line):: lineUsed
+type(String):: expected, gotten
+
+
+expected = "TEST"
+
+call lineUsed%add("A word")
+call lineUsed%setWord(1, expected)
+
+gotten = lineUsed%GetWordAsString(1)
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testSetWordWithString
+
+@test
+subroutine testSetWordWithChar()
 use StringModule
 type(Line):: lineUsed
 type(String):: expected, gotten
@@ -23,7 +41,7 @@ gotten = lineUsed%GetWordAsString(1)
 
 @assertEqualUserDefined(expected, gotten)
 
-end subroutine testSetWord
+end subroutine testSetWordWithChar
 
 
 @test

@@ -20,7 +20,9 @@ module LineModule
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
       procedure:: getNumWords
-      procedure:: setWord
+      procedure, private:: setWordWithChar
+      procedure, private:: setWordWithString
+      generic:: setWord => setWordWithChar, setWordWithString
       procedure, private:: writeFormattedLineType
       procedure, private:: writeUnformattedLineType
       procedure, private:: readLineType
@@ -46,12 +48,20 @@ module LineModule
 
     !> @brief Sets a single word
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
-    subroutine setWord(self, i, charIn)
+    subroutine setWordWithString(self, i, stringIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      type(String), intent(in):: stringIn !<What you want to set the word to
+      self%words(i) = stringIn
+    end subroutine setWordWithString
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWordWithChar(self, i, charIn)
       class(Line), intent(inout):: self
       integer, intent(in):: i !< The index of the word you want to set
       character(len=*), intent(in):: charIn !<What you want to set the word to
       self%words(i) = charIn
-    end subroutine setWord
+    end subroutine setWordWithChar
 
     !> @brief Removes all words
     !> @details Deallocates the array of strings that are being used to hold the words
