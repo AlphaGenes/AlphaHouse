@@ -15,9 +15,9 @@ module GenotypeModule
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   integer(kind=8), allocatable, dimension(:), public :: homo
   integer(kind=8), allocatable, dimension(:), public :: additional
-  integer :: sections
-  integer :: overhang
-  integer :: length
+  integer, public :: sections
+  integer, public :: overhang
+  integer, public :: length
   contains
   procedure :: toIntegerArray
   procedure :: getGenotype
@@ -45,6 +45,7 @@ module GenotypeModule
 
   interface Genotype
     module procedure newGenotypeInt
+    module procedure newGenotypeHap
   end interface Genotype
 
       contains
@@ -86,6 +87,40 @@ module GenotypeModule
             end if
         end do
     end function newGenotypeInt
+    
+    function newGenotypeHap(h1, h2) result (g)
+      use HaplotypeModule
+      type(Haplotype) :: h1, h2
+      
+      type(Genotype) :: g
+      integer :: i
+      
+      g%length = h1%length
+      g%sections = h1%sections
+      g%overhang = h1%overhang
+      
+      allocate(g%homo(g%sections))
+      allocate(g%additional(g%sections))
+      
+      do i = 1, g%sections
+	g%homo(i) = IOR( &
+	  ! BOTH HOMO MAJOR
+			      IAND( IAND(NOT(h1%phase(i)), NOT(h1%missing(i))), IAND(NOT(h2%phase(i)), NOT(h2%missing(i)))), &
+	  ! BOTH HOMO MINOR
+			      IAND( IAND(h1%phase(i), NOT(h1%missing(i))), IAND(h2%phase(i), NOT(h2%missing(i)))) )
+	
+	g%additional(i) = IOR ( &
+	  ! BOTH HOMO MINOR
+			      IAND( IAND(h1%phase(i), NOT(h1%missing(i))), IAND(h2%phase(i), NOT(h2%missing(i)))), &
+	  ! EITHER MISSING / ERROR
+			      IOR(h1%missing(i), h2%missing(i)) )
+      end do
+      
+      do i = 64 - g%overhang + 1, 64
+	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
+      end do
+      
+    end function newGenotypeHap
 
     function toIntegerArray(g) result(array)
         class(Genotype), intent(in) :: g
