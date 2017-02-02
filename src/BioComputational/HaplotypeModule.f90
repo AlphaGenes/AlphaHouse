@@ -18,8 +18,8 @@ module HaplotypeModule
       integer(kind=8), dimension(:), pointer, public :: phase
       integer(kind=8), dimension(:), pointer, public :: missing
       integer, public :: sections
-      integer :: overhang
-      integer :: length
+      integer, public :: overhang
+      integer, public :: length
     contains
     procedure :: toIntegerArray
     procedure :: toIntegerArrayWithErrors
@@ -414,6 +414,7 @@ contains
           IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
           NOT(IEOR(h1%phase(i), h2%phase(i))) ))
     end do
+    num = num - h1%overhang
   end function numberSame
   
   subroutine setUnphased(h)
