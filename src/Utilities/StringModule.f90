@@ -16,6 +16,7 @@ Module stringModule
     procedure, private:: getSubstringEnd
     procedure:: getPosition
     procedure:: toLowerCase => convertToLowerCaseString
+    procedure:: toLowerFun
     procedure:: writeType
     procedure:: readType
     procedure:: getSize
@@ -55,6 +56,14 @@ contains
 
     this%line = ToLower(this%line)
   end subroutine convertToLowerCaseString
+
+  pure function toLowerFun(self) result (lowerCaseOut)
+    use AlphaHouseMod, only:toLower
+    character(len=:), allocatable:: lowerCaseOut
+    class(String), intent(in):: self
+
+    lowerCaseOut = ToLower(self%line)
+  end function toLowerFun
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
