@@ -15,6 +15,7 @@ module LineModule
       procedure, private:: removeByIndex
       procedure, private:: removeFirstName
       generic:: remove => removeFirstName, removeByIndex
+      procedure:: has => hasWithin
       procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
@@ -45,6 +46,38 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+    !> @brief Checks to se if charecter is contained in Line
+    !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
+    !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
+    !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
+    pure integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
+      class(Line), intent(in):: self
+      character(len=*), intent(in):: charIn
+      logical, intent(in), optional:: isCaseSensitive
+
+      logical:: caseSensitiveUsed
+      integer:: i
+
+      if (present(isCaseSensitive)) then
+        caseSensitiveUsed = isCaseSensitive
+      else
+        caseSensitiveUsed = .false.
+      end if
+
+      indexOut = 0
+
+      if (caseSensitiveUsed) then
+        do i = 1, size(self%words)
+          call self%words(i)%toLowerCase()
+        end do
+      end if
+        do i =1, size(self%words)
+          if (self%words(i) == charIn) then
+            indexOut = i
+          end if
+        end do
+    end function hasWithin
+
 
     !> @brief Sets a single word
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
