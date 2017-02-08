@@ -2,12 +2,9 @@ module HaplotypeModule
   
     use constantModule, only: MissingPhaseCode,ErrorPhaseCode
     implicit none
-    private
-    !! This should go in a constants module but for now
     
     
-    type, public :: Haplotype
-      private
+    type :: Haplotype
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Phase       Phase   Missing !
       ! 0           0       0       !
@@ -15,11 +12,11 @@ module HaplotypeModule
       ! Missing     0       1       !
       ! Error       1       1       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      integer(kind=8), dimension(:), pointer, public :: phase
-      integer(kind=8), dimension(:), pointer, public :: missing
-      integer, public :: sections
-      integer, public :: overhang
-      integer, public :: length
+      integer(kind=8), dimension(:), pointer :: phase
+      integer(kind=8), dimension(:), pointer :: missing
+      integer :: sections
+      integer :: overhang
+      integer :: length
     contains
     procedure :: toIntegerArray
     procedure :: toIntegerArrayWithErrors

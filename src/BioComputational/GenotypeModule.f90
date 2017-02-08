@@ -2,10 +2,8 @@ module GenotypeModule
 
     use constantModule, only : MissingGenotypeCode
   implicit none
-  private
 
-  type, public :: Genotype
-  private
+  type :: Genotype
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Genotype    Homo    Additional !
   ! 0           1       0          !
@@ -13,11 +11,11 @@ module GenotypeModule
   ! 2           1       1          !
   ! Missing     0       1          !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  integer(kind=8), allocatable, dimension(:), public :: homo
-  integer(kind=8), allocatable, dimension(:), public :: additional
-  integer, public :: sections
-  integer, public :: overhang
-  integer, public :: length
+  integer(kind=8), allocatable, dimension(:) :: homo
+  integer(kind=8), allocatable, dimension(:) :: additional
+  integer :: sections
+  integer :: overhang
+  integer :: length
   contains
   procedure :: toIntegerArray
   procedure :: getGenotype
@@ -29,15 +27,15 @@ module GenotypeModule
   procedure :: getLength
   procedure :: complement
   procedure :: numNotMissing
-  procedure :: setHaplotype
+  procedure :: setHaplotypeFromGenotype
   procedure :: isZero
   procedure :: isTwo
   procedure :: isMissing
   procedure :: isHomo
   procedure :: numberErrors
   procedure :: getErrors
-  procedure :: setHaplotypeIfError
-  procedure :: setHaplotypeIfMissing
+  procedure :: setHaplotypeFromGenotypeIfError
+  procedure :: setHaplotypeFromGenotypeIfMissing
   procedure :: numberErrorsSingle
   procedure :: getErrorsSingle
   procedure :: subset
@@ -362,7 +360,7 @@ function numNotMissing(g) result(c)
 end function numNotMissing
 
 
-subroutine setHaplotype(g, h)
+subroutine setHaplotypeFromGenotype(g, h)
     use HaplotypeModule
 
     class(Haplotype), intent(in) :: h
@@ -378,9 +376,9 @@ subroutine setHaplotype(g, h)
   do i = 64 - g%overhang + 1, 64
       h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
-  end subroutine setHaplotype
+end subroutine setHaplotypeFromGenotype
 
-  subroutine setHaplotypeIfError(g, h, errors)
+  subroutine setHaplotypeFromGenotypeIfError(g, h, errors)
     use HaplotypeModule
 
     type(Haplotype), intent(in), pointer :: h
@@ -397,9 +395,9 @@ subroutine setHaplotype(g, h)
     do i = 64 - g%overhang + 1, 64
       h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
-  end subroutine setHaplotypeIfError
+  end subroutine setHaplotypeFromGenotypeIfError
 
-  subroutine setHaplotypeIfMissing(g, h)
+  subroutine setHaplotypeFromGenotypeIfMissing(g, h)
     use HaplotypeModule
 
     type(Haplotype), intent(in) :: h
@@ -414,7 +412,7 @@ subroutine setHaplotype(g, h)
     do i = 64 - g%overhang + 1, 64
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
-  end subroutine setHaplotypeIfMissing
+  end subroutine setHaplotypeFromGenotypeIfMissing
 
   function isZero(g, pos) result (zero)
     class(Genotype), intent(in) :: g
