@@ -959,8 +959,9 @@ end function getAllGenotypesAtPosition
 !     do i=1,this%maxGeneration
 !        tmpIndNode => this%generations(i)%first
 !         do h=1, this%generations(i)%length
-
-!             do j
+!             do j=1, tmpIndNode%nOffs
+!                 if(associated(tmpIndNode,tmpIndNode%offsprings(j)%sirePointer)) then
+!                     tmpIndNode%offsprings(j)%damPointer
 !         enddo
 
 !     enddo

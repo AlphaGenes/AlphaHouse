@@ -896,6 +896,7 @@ module AlphaHouseMod
      !---------------------------------------------------------------------------
     !> @brief   szudzik unpairing function in fortran
     !> @details returns two integers that generated unique number based on pair
+    !> Maximum unique range is (32767, 32767) = 1073741823
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
     subroutine unPair(num, xout, yout)
