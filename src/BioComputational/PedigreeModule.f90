@@ -55,6 +55,8 @@ type PedigreeHolder
         procedure :: sortPedigreeAndOverwriteWithDummyAtTheTop
         procedure :: makeRecodedPedigreeArray
         procedure :: printPedigree
+        procedure :: getMatePairsAndOffspring
+        procedure :: getAllGenotypesAtPosition
 
 end type PedigreeHolder
 
@@ -103,8 +105,9 @@ contains
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn !< path of pedigree file
         character(len=*), intent(in),optional :: genderFile !< path to gender file
-        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
+        
+        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
@@ -924,48 +927,74 @@ contains
 
 ! function should return offspringlist (=recID) and listOfParents(2, nMatingPairs))
 
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getAllGenotypesAtPosition(this, position) result(res)
 
-function getAllGenotypesAtPosition(this, position) result(res)
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
 
-    class(pedigreeHolder) :: this
-    integer(KIND=1), allocatable, dimension(:) :: res
-    integer :: counter
-    allocate(res(this%pedigreeSize))
+            counter = 0
+        ! TODO can do in parallel
+            do i=1, this%pedigreeSize
 
-    ! TODO can do in parallel
-        do i=1, this%pedigreeSize
+                if (this%pedigree(i)%isGenotyped()) then
+                    counter = counter +1
+                    res(counter) = this%pedigree(i)%genotype(position)
+                endif
 
-            if (this%pedigree(i)%isGenotyped()) then
-                counter = counter +1
-                res(counter) = this%pedigree(i)%genotype(position)
-            endif
+            enddo
 
+    end function getAllGenotypesAtPosition
+
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine getMatePairsAndOffspring(this, offSpringList, listOfParents)
+        class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
+        integer, dimension(:, :), allocatable, intent(out) :: listOfParents !< indexed by (sire/dam, mateID) = recodedId
+        type(IndividualLinkedList),allocatable, dimension(:) :: offspringList !< list off spring based on index of parents mateID
+        
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        integer :: parentCounter, i,h,j
+
+        parentCounter = 0
+        if (.not. allocated(this%generations)) then
+            call this%sortPedigreeAndOverwriteWithDummyAtTheTop 
+            ! TODO check if this is indeed what we want with dummys at top 
+        endif
+        allocate(listOfParents(2,this%pedigreeSize))
+        allocate(offspringList(this%pedigreeSize))
+
+        do i=0,this%maxGeneration
+        tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                do j=1, tmpIndNode%item%nOffs
+                    if(associated(tmpIndNode%item,tmpIndNode%item%offsprings(j)%p%sirePointer)) then
+                        parentCounter = parentCounter + 1
+                        listOfParents(1,parentCounter) = tmpIndNode%item%id
+                        listOfParents(2,parentCounter) = tmpIndNode%item%offsprings(j)%p%damPointer%id
+                        call offspringList(parentCounter)%list_add(tmpIndNode%item%offsprings(j)%p)
+                        ! TODO make sure using list rather than array here is not terrible
+                        ! TODO make sure if only checking sire is good enough
+                    endif
+                enddo
+                tmpIndNode => tmpIndNode%next
+                
+            enddo
         enddo
 
-end function getAllGenotypesAtPosition
 
-
-! subroutine getParentsAndOffspring(this, offSpringList, listOfParents)
-!     class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
-!     integer, dimension(:, :), allocatable, intent(out) :: listOfParents
-!     type(IndividualLinkedListNode), pointer :: tmpIndNode
-
-!     if (.not. allocated(this%generations)) then
-!         call this%sortPedigreeAndOverwriteWithDummyAtTheTop 
-!         ! TODO check if this is indeed what we want with dummys at top 
-!     endif
-
-
-!     do i=1,this%maxGeneration
-!        tmpIndNode => this%generations(i)%first
-!         do h=1, this%generations(i)%length
-!             do j=1, tmpIndNode%nOffs
-!                 if(associated(tmpIndNode,tmpIndNode%offsprings(j)%sirePointer)) then
-!                     listOfParents(1,parentCounter) = tmpIndNode%id
-!                     listOfParents(2,parentCounter) = tmpIndNode%offsprings(j)%damPointer%id
-!         enddo
-
-!     enddo
-! end subroutine getParentsAndOffspring
-    
+    end subroutine getMatePairsAndOffspring
+        
 end module PedigreeModule
