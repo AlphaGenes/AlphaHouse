@@ -922,7 +922,7 @@ contains
 
 ! TODO get (unique) list of mates. Sorted by Generation.
 
-! function should return offspringlist (=rec) and listOfParents(2, nMatingPairs))
+! function should return offspringlist (=recID) and listOfParents(2, nMatingPairs))
 
 
 function getAllGenotypesAtPosition(this, position) result(res)
@@ -945,7 +945,7 @@ function getAllGenotypesAtPosition(this, position) result(res)
 end function getAllGenotypesAtPosition
 
 
-! subroutine getMates(this, offSpringList, listOfParents)
+! subroutine getParentsAndOffspring(this, offSpringList, listOfParents)
 !     class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
 !     integer, dimension(:, :), allocatable, intent(out) :: listOfParents
 !     type(IndividualLinkedListNode), pointer :: tmpIndNode
@@ -959,10 +959,11 @@ end function getAllGenotypesAtPosition
 !     do i=1,this%maxGeneration
 !        tmpIndNode => this%generations(i)%first
 !         do h=1, this%generations(i)%length
-        
+
+!             do j
 !         enddo
 
 !     enddo
-! end subroutine getMates
+! end subroutine getParentsAndOffspring
     
 end module PedigreeModule

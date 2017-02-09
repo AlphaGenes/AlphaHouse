@@ -124,10 +124,10 @@ thresh = 1e-16
  @test
  subroutine testPairing()
     integer :: x,xout, yout, y
-    real(real32) :: result1, result2
+    integer :: result1, result2
 
-    x = 1
-    y = 2
+    x = 2
+    y = 1
 
     result1 = generatePairing(x,y)
     result2 = generatePairing(y,x)
@@ -136,14 +136,14 @@ thresh = 1e-16
     call unPair(result1, xout, yout)
 
 
-    ! Larger one will always be returned as x
-    @assertEqual(xout, y)
-    @assertEqual(yout, x)
+    ! smaller one will always be returned as x
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
 
     call unPair(result2, xout, yout)
 
-    @assertEqual(xout, y)
-    @assertEqual(yout, x)
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
 
   end subroutine testPairing
 

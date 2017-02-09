@@ -873,10 +873,10 @@ module AlphaHouseMod
 
       integer, intent(in) :: xin, yin
       integer :: x, y
-      real(kind=real32) :: res
+      integer :: res
 
       ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
-       if (yin > xin) then
+       if (xin < yin) then
         x = yin
         y = xin
       else
@@ -899,12 +899,12 @@ module AlphaHouseMod
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
     subroutine unPair(num, xout, yout)
-      real(kind=real32), intent(in) :: num !< number to unPair
+      integer, intent(in) :: num !< number to unPair
       integer, intent(out) :: xout , yout !< numbers used to get pairing function
 
       integer :: x,y
       real(kind=real32) :: sqrtz, sqrz
-      sqrtz = floor(SQRT(num))
+      sqrtz = floor(SQRT(real(num)))
       sqrz = sqrtz * sqrtz
 
       if ((num-sqrz) >= sqrtz) then
