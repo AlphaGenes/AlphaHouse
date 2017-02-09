@@ -38,6 +38,7 @@ module AlphaHouseMod
   public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
   public :: isDelim, PrintElapsedTime, intToChar, SetSeed
 
+  public :: generatePairing, unPair
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -861,6 +862,70 @@ module AlphaHouseMod
     end subroutine
 
     !###########################################################################
+
+
+    !---------------------------------------------------------------------------
+    !> @brief   szudzik pairing function in fortran
+    !> @details Generates a unique pairing based on two integers
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !---------------------------------------------------------------------------
+    function generatePairing(xin,yin) result(res)
+
+      integer, intent(in) :: xin, yin
+      integer :: x, y
+      real(kind=real32) :: res
+
+      ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+       if (yin > xin) then
+        x = yin
+        y = xin
+      else
+        x = xin
+        y = yin
+      endif
+
+      if (x >= y) then
+        res = x * x + x + y
+
+      else
+        res =y * y + x
+      endif
+
+    end function generatePairing
+
+     !---------------------------------------------------------------------------
+    !> @brief   szudzik unpairing function in fortran
+    !> @details returns two integers that generated unique number based on pair
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !---------------------------------------------------------------------------
+    subroutine unPair(num, xout, yout)
+      real(kind=real32), intent(in) :: num !< number to unPair
+      integer, intent(out) :: xout , yout !< numbers used to get pairing function
+
+      integer :: x,y
+      real(kind=real32) :: sqrtz, sqrz
+      sqrtz = floor(SQRT(num))
+      sqrz = sqrtz * sqrtz
+
+      if ((num-sqrz) >= sqrtz) then
+        x = sqrtz
+        y = num - sqrz - sqrtz
+      else
+        x = num - sqrz
+        y = sqrtz
+      endif      
+      
+      ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+      if (y > x) then
+        xout = y
+        yout = x
+      else
+        xout = x
+        yout = y
+      endif
+    end subroutine unPair
+
+
 end module
 
 !###############################################################################
