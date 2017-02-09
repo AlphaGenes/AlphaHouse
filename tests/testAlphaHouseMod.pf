@@ -145,6 +145,8 @@ thresh = 1e-16
     @assertEqual(xout, x)
     @assertEqual(yout, y)
 
+    result2 = generatePairing(32767,32767)
+    @assertEqual(result2, 1073741823)
   end subroutine testPairing
 
   @test
