@@ -18,7 +18,7 @@ module HaplotypeModule
       integer :: overhang
       integer :: length
     contains
-    procedure :: toIntegerArray
+    procedure :: toIntegerArray => haplotypeToIntegerArray
     procedure :: toIntegerArrayWithErrors
     procedure :: getPhaseMod
     procedure :: setPhaseMod
@@ -27,6 +27,7 @@ module HaplotypeModule
     procedure :: compatibleMod
     procedure :: mergeMod
     procedure :: numberMissing
+    procedure :: numberMissingOrError
     procedure :: numberNotMissing
     procedure :: numberError
     procedure :: compareHaplotype
@@ -44,6 +45,7 @@ module HaplotypeModule
     procedure :: setOne
     procedure :: subset
     procedure :: setSubset
+    procedure :: equalHap
   end type Haplotype
   
   interface Haplotype
@@ -139,7 +141,7 @@ contains
     end do
   end function newHaplotypeMissing
   
-  function toIntegerArray(h) result(array)
+  function haplotypeToIntegerArray(h) result(array)
     class(Haplotype), intent(in) :: h
     
     integer(kind=1), dimension(:), allocatable :: array
@@ -171,7 +173,7 @@ contains
         cursection = cursection + 1
       end if
     end do
-  end function toIntegerArray
+  end function haplotypeToIntegerArray
   
   function toIntegerArrayWithErrors(h) result(array)
     class(Haplotype), intent(in) :: h
@@ -325,6 +327,7 @@ contains
     
     h%sections = h1%sections
     h%overhang = h1%overhang
+    h%length = h1%length
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
     
@@ -373,6 +376,21 @@ contains
     end do
     
   end function numberMissing
+  
+  function numberMissingOrError(h) result (num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    integer :: i
+    
+    num = 0
+    
+    do i = 1, h%sections
+        num = num + POPCNT(h%missing(i))
+    end do
+    
+  end function numberMissingOrError
   
   function numberError(h) result (num)
     class(Haplotype), intent(in) :: h
@@ -647,6 +665,19 @@ contains
     end if
     
   end subroutine setSubset
+  
+  function equalHap(h1, h2) result (equal)
+    class(Haplotype) :: h1, h2
+    
+    logical :: equal
+    
+    integer :: i
+    
+    equal = .true.
+    do i = 1, h1%sections
+      equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
+    end do
+  end function equalHap
     
 end module HaplotypeModule
   

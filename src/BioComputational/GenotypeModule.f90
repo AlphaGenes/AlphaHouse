@@ -17,7 +17,7 @@ module GenotypeModule
   integer :: overhang
   integer :: length
   contains
-  procedure :: toIntegerArray
+  procedure :: toIntegerArray => genotypeToIntegerArray
   procedure :: getGenotype
   procedure :: compatibleHaplotypes
   procedure :: compatibleHaplotype
@@ -120,7 +120,7 @@ module GenotypeModule
       
     end function newGenotypeHap
 
-    function toIntegerArray(g) result(array)
+    function genotypeToIntegerArray(g) result(array)
         class(Genotype), intent(in) :: g
 
         integer(kind=1), dimension(:), allocatable :: array
@@ -152,7 +152,7 @@ module GenotypeModule
 	      cursection = cursection + 1
 	  end if
 	end do
-end function toIntegerArray
+    end function genotypeToIntegerArray
 
 function compareGenotype(g1, g2) result(same)
     class(Genotype), intent(in) :: g1, g2
