@@ -918,4 +918,51 @@ contains
         end do
     end subroutine makeRecodedPedigreeArray
 
+
+
+! TODO get (unique) list of mates. Sorted by Generation.
+
+! function should return offspringlist (=rec) and listOfParents(2, nMatingPairs))
+
+
+function getAllGenotypesAtPosition(this, position) result(res)
+
+    class(pedigreeHolder) :: this
+    integer(KIND=1), allocatable, dimension(:) :: res
+    integer :: counter
+    allocate(res(this%pedigreeSize))
+
+    ! TODO can do in parallel
+        do i=1, this%pedigreeSize
+
+            if (this%pedigree(i)%isGenotyped()) then
+                counter = counter +1
+                res(counter) = this%pedigree(i)%genotype(position)
+            endif
+
+        enddo
+
+end function getAllGenotypesAtPosition
+
+
+! subroutine getMates(this, offSpringList, listOfParents)
+!     class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
+!     integer, dimension(:, :), allocatable, intent(out) :: listOfParents
+!     type(IndividualLinkedListNode), pointer :: tmpIndNode
+
+!     if (.not. allocated(this%generations)) then
+!         call this%sortPedigreeAndOverwriteWithDummyAtTheTop 
+!         ! TODO check if this is indeed what we want with dummys at top 
+!     endif
+
+
+!     do i=1,this%maxGeneration
+!        tmpIndNode => this%generations(i)%first
+!         do h=1, this%generations(i)%length
+        
+!         enddo
+
+!     enddo
+! end subroutine getMates
+    
 end module PedigreeModule
