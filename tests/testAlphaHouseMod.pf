@@ -123,8 +123,8 @@ thresh = 1e-16
 
  @test
  subroutine testPairing()
-    integer :: x,xout, yout, y
-    integer :: result1, result2
+    integer(int32) :: x,xout, yout, y
+    integer(int64) :: result1, result2
 
     x = 2
     y = 1

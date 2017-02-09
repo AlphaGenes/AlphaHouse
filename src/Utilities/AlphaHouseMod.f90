@@ -867,13 +867,14 @@ module AlphaHouseMod
     !---------------------------------------------------------------------------
     !> @brief   szudzik pairing function in fortran
     !> @details Generates a unique pairing based on two integers
+     !> If input is (N,M) space, output will be (N*M) space.
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
     function generatePairing(xin,yin) result(res)
 
-      integer, intent(in) :: xin, yin
-      integer :: x, y
-      integer :: res
+      integer(int32), intent(in) :: xin, yin
+      integer(int32) :: x, y
+      integer(int64) :: res
 
       ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
        if (xin < yin) then
@@ -896,12 +897,12 @@ module AlphaHouseMod
      !---------------------------------------------------------------------------
     !> @brief   szudzik unpairing function in fortran
     !> @details returns two integers that generated unique number based on pair
-    !> Maximum unique range is (32767, 32767) = 1073741823
+    !> If using tuples, will overflow very quickly. 
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
     subroutine unPair(num, xout, yout)
-      integer, intent(in) :: num !< number to unPair
-      integer, intent(out) :: xout , yout !< numbers used to get pairing function
+      integer(int64), intent(in) :: num !< number to unPair
+      integer(int32), intent(out) :: xout , yout !< numbers used to get pairing function
 
       integer :: x,y
       real(kind=real32) :: sqrtz, sqrz
