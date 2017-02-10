@@ -332,19 +332,14 @@ contains
     allocate(h%missing(h%sections))
     
     do i = 1, h1%sections
-      h%missing(i) = IOR( &
-    !Both not missing but opposed
-    IAND(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
-    IXOR(h1%phase(i), h2%phase(i))), &
-    !Both missing
-    IAND(h1%missing(i),h2%missing(i)) &
-    )
-      h%phase(i) = IAND( &
-        ! Not missing (phase should always be zero if missing)
-    NOT(h%missing(i)), &
-    ! One of the phases is 1 (no need to test for missing as phase is only one if not missing)
-    IOR(h1%phase(i), h2%phase(i)) &
-    )
+      h%missing(i) = IOR( IOR( &
+	! Either is error
+	IOR( IAND(h1%missing(i), h1%phase(i)), IAND(h2%missing(i), h2%phase(i))), &
+	! Both are missing (or error)
+	IAND(h1%missing(i), h2%missing(i))), &
+	! Both are present both opposed
+	IAND(IAND(NOT(h1%missing(i)),NOT(h2%missing(i))), IXOR(h1%phase(i), h2%phase(i))))
+      h%phase(i) = IOR(h1%phase(i), h2%phase(i))
     end do
   end function mergeMod
   
