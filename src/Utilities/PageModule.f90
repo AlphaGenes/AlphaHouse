@@ -50,7 +50,7 @@ module pageModule
       Type(Line), intent(in):: lineIn
       integer, intent(in), optional:: position
       type(Line), dimension(:), allocatable:: tempLine1, tempLine2
-      integer:: positionUsed, totalSize
+      integer:: totalSize
 
         totalSize = self%getNumLines()
       if (present(position)) then
