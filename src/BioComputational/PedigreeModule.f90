@@ -960,17 +960,19 @@ contains
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine getMatePairsAndOffspring(this, offSpringList, listOfParents)
+    subroutine getMatePairsAndOffspring(this, offSpringList, listOfParents, nMatingPairs)
         class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
         integer, dimension(:, :), allocatable, intent(out) :: listOfParents !< indexed by (sire/dam, mateID) = recodedId
+        integer, intent(out) :: nMatingPairs
         type(IndividualLinkedList),allocatable, dimension(:) :: offspringList !< list off spring based on index of parents mateID
         
         type(IndividualLinkedListNode), pointer :: tmpIndNode
-        integer :: parentCounter, i,h,j
+        integer :: i,h,j
 
-        parentCounter = 0
+        
+        nMatingPairs = 0
         if (.not. allocated(this%generations)) then
-            call this%sortPedigreeAndOverwriteWithDummyAtTheTop 
+            call this%setPedigreeGenerationsAndBuildArrays 
             ! TODO check if this is indeed what we want with dummys at top 
         endif
         allocate(listOfParents(2,this%pedigreeSize))
@@ -981,10 +983,10 @@ contains
             do h=1, this%generations(i)%length
                 do j=1, tmpIndNode%item%nOffs
                     if(associated(tmpIndNode%item,tmpIndNode%item%offsprings(j)%p%sirePointer)) then
-                        parentCounter = parentCounter + 1
-                        listOfParents(1,parentCounter) = tmpIndNode%item%id
-                        listOfParents(2,parentCounter) = tmpIndNode%item%offsprings(j)%p%damPointer%id
-                        call offspringList(parentCounter)%list_add(tmpIndNode%item%offsprings(j)%p)
+                        nMatingPairs = nMatingPairs + 1
+                        listOfParents(1,nMatingPairs) = tmpIndNode%item%id
+                        listOfParents(2,nMatingPairs) = tmpIndNode%item%offsprings(j)%p%damPointer%id
+                        call offspringList(nMatingPairs)%list_add(tmpIndNode%item%offsprings(j)%p)
                         ! TODO make sure using list rather than array here is not terrible
                         ! TODO make sure if only checking sire is good enough
                     endif
