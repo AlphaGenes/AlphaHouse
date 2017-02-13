@@ -14,5 +14,5 @@ module ConstantModule
     integer, parameter :: SPECOPTIONLENGTH = 300
     integer, parameter :: MISSINGGENDERCODE = -9
     integer , parameter ::  DEFAULTDICTSIZE = 4993
-    integer, parameter :: DICT_NULL = -2147483648
+    integer, parameter :: DICT_NULL = -214748364
 end Module ConstantModule

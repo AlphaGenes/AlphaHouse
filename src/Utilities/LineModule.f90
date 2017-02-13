@@ -9,7 +9,9 @@ module LineModule
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
-      procedure:: add => addAWord
+      procedure, private:: addAWordWithChar
+      procedure, private:: addAWordWithString
+      generic:: add => addAWordWithChar, addAWordWithString
       procedure, private:: removeByIndex
       procedure, private:: removeFirstName
       generic:: remove => removeFirstName, removeByIndex
@@ -18,14 +20,19 @@ module LineModule
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
       procedure:: getNumWords
+      procedure, private:: setWordWithChar
+      procedure, private:: setWordWithString
+      generic:: setWord => setWordWithChar, setWordWithString
       procedure, private:: writeFormattedLineType
       procedure, private:: writeUnformattedLineType
       procedure, private:: readLineType
       procedure, private:: readUnformattedLineType
+      procedure:: removeAll
       generic:: write(formatted) => writeFormattedLineType
       generic:: write(unformatted) => writeUnformattedLineType
       generic:: read(formatted) => readLineType
       generic:: read(unformatted) => readUnformattedLineType
+      final:: deallocateLine
   end type
 
   interface assignment (=)
@@ -38,6 +45,44 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWordWithString(self, i, stringIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      type(String), intent(in):: stringIn !<What you want to set the word to
+      self%words(i) = stringIn
+    end subroutine setWordWithString
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWordWithChar(self, i, charIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      character(len=*), intent(in):: charIn !<What you want to set the word to
+      self%words(i) = charIn
+    end subroutine setWordWithChar
+
+    !> @brief Removes all words
+    !> @details Deallocates the array of strings that are being used to hold the words
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine removeAll(self)
+      class(Line), intent(inout):: self
+
+      call deallocateLine(self)
+    end subroutine removeAll
+
+    !> @brief Final sub to deallocate Line module
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine deallocateLine(self)
+      type(Line), intent(inout):: self
+
+      if (allocated(self%words)) then
+        deallocate(self%words)
+      end if
+    end subroutine deallocateLine
+    
+    
 
     !>@brief Removes the first occurance of a word in a line
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
@@ -75,7 +120,7 @@ module LineModule
 
     end subroutine removeByIndex
 
-    subroutine addAWord(self, charIn)
+    subroutine addAWordWithChar(self, charIn)
       class(Line), intent(inout):: self
       character(len=*), intent(in):: charIn
 
@@ -98,7 +143,14 @@ module LineModule
         self%words(1) = charIn
       end if
 
-    end subroutine addAWord
+    end subroutine addAWordWithChar
+
+    subroutine addAWordWithString(self, stringIn)
+      type(String), intent(in):: stringIn
+      class(Line), intent(inout):: self
+
+      call self%add(stringIn%line)
+    end subroutine addAWordWithString
 
     function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this

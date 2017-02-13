@@ -55,6 +55,8 @@ type PedigreeHolder
         procedure :: sortPedigreeAndOverwriteWithDummyAtTheTop
         procedure :: makeRecodedPedigreeArray
         procedure :: printPedigree
+        procedure :: getMatePairsAndOffspring
+        procedure :: getAllGenotypesAtPosition
 
 end type PedigreeHolder
 
@@ -103,8 +105,9 @@ contains
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn !< path of pedigree file
         character(len=*), intent(in),optional :: genderFile !< path to gender file
-        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
+        
+        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
@@ -918,4 +921,98 @@ contains
         end do
     end subroutine makeRecodedPedigreeArray
 
+
+
+! TODO get (unique) list of mates. Sorted by Generation.
+
+! function should return offspringlist (=recID) and listOfParents(2, nMatingPairs))
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getAllGenotypesAtPosition(this, position) result(res)
+
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
+
+            counter = 0
+        ! TODO can do in parallel
+            do i=1, this%pedigreeSize
+
+                if (this%pedigree(i)%isGenotyped()) then
+                    counter = counter +1
+                    res(counter) = this%pedigree(i)%genotype(position)
+                endif
+
+            enddo
+
+    end function getAllGenotypesAtPosition
+
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine getMatePairsAndOffspring(this, offSpringList, listOfParents, nMatingPairs)
+
+        use AlphaHouseMod, only : generatePairing
+
+        class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
+        integer, dimension(:, :), allocatable, intent(out) :: listOfParents !< indexed by (sire/dam, mateID) = recodedId
+        integer, intent(out) :: nMatingPairs
+        type(IndividualLinkedList),allocatable, dimension(:) :: offspringList !< list off spring based on index of parents mateID
+        
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        type(DictStructure) :: dictionary
+        integer(kind=int64) :: tmpPairingKey 
+        character(len=20) :: tmpPairingKeyStr ! 19 is largest characters for int64 so 20 just to be safe [and that its round]
+        integer :: i,h,j
+
+        dictionary = DictStructure()
+        nMatingPairs = 0
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays 
+        endif
+        allocate(listOfParents(2,this%pedigreeSize))
+        allocate(offspringList(this%pedigreeSize))
+
+        do i=0,this%maxGeneration
+        tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                
+                do j=1, tmpIndNode%item%nOffs
+                    if(associated(tmpIndNode%item,tmpIndNode%item%offsprings(j)%p%sirePointer)) then
+
+
+                        tmpPairingKey = generatePairing(tmpIndNode%item%offsprings(j)%p%sirePointer%id, tmpIndNode%item%offsprings(j)%p%damPointer%id)
+                        write(tmpPairingKeyStr, '(i0)') tmpPairingKey
+                        if (.not. dictionary%hasKey(tmpPairingKeyStr)) then
+                            nMatingPairs = nMatingPairs + 1
+                            listOfParents(1,nMatingPairs) = tmpIndNode%item%id
+                            listOfParents(2,nMatingPairs) = tmpIndNode%item%offsprings(j)%p%damPointer%id
+                            call offspringList(nMatingPairs)%list_add(tmpIndNode%item%offsprings(j)%p)
+                            call dictionary%addKey(tmpPairingKeyStr, nMatingPairs)
+                        else
+                            call offspringList(dictionary%getValue(tmpPairingKeyStr))%list_add(tmpIndNode%item%offsprings(j)%p)
+                        ! TODO make sure using list rather than array here is not terrible
+                        ! TODO make sure if only checking sire is good enough
+                        endif
+                    endif
+                enddo
+                tmpIndNode => tmpIndNode%next
+                
+            enddo
+        enddo
+
+        call dictionary%destroy()
+
+    end subroutine getMatePairsAndOffspring
+        
 end module PedigreeModule

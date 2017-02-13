@@ -62,7 +62,7 @@ private :: getElement
 private :: hashKey
 
 integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
-integer(kind=int64), parameter, private :: multiplier = 8
+integer(kind=int64), parameter, private :: multiplier = 17
 
 
 contains
@@ -319,10 +319,10 @@ end function getElement
     integer(kind=int64) :: hashKey !<hashkey out
     hashKey = 0
     do i = 1,len(key)
-        hashKey = multiplier * hashKey + ichar(key(i:i))
+        hashKey = KMOD(multiplier * hashKey + ichar(key(i:i)), hash_size)
     enddo
    
-    hashKey = 1 + KMOD( hashKey-1, hash_size )
+    hashKey = 1 + hashKey
 end function hashKey
 
 

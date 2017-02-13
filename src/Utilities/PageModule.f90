@@ -26,6 +26,7 @@ module pageModule
       procedure, public  :: setName
       procedure, public  :: getNumWords => getPageTypeNumWords
       procedure, public  :: getSubset
+      procedure, public  :: addLine
 
   end type
 
@@ -38,6 +39,37 @@ module pageModule
     module procedure initChar, initPageWithArray, initPageWithPage, initPageWithStringArray
   end interface 
   contains
+
+
+    !> @brief Subroutine that will take in a line and append it to the current Page
+    !> @details Takes in a line.   Assumes that if the position isn't given then the line is to be appended onto the end of the
+    !> page.
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine addLine(self, lineIn, position)
+      class(Page), intent(inout):: self
+      Type(Line), intent(in):: lineIn
+      integer, intent(in), optional:: position
+      type(Line), dimension(:), allocatable:: tempLine1, tempLine2
+      integer:: positionUsed, totalSize
+
+        totalSize = self%getNumLines()
+      if (present(position)) then
+        tempLine1 = self%lines(1:position-1)
+        tempLine2 = self%lines(position:)
+        deallocate(self%lines)
+        allocate(self%lines(totalSize+1))
+        self%lines(1:position-1) = tempLine1
+        self%lines(position) = lineIn
+        self%lines(position+1:) = tempLine2
+      else
+        tempLine1 = self%lines
+        deallocate(self%lines)
+        allocate(self%lines(totalSize+1))
+        self%lines(1:totalSize) = tempLine1
+        self%lines(totalSize+1) = lineIn
+      end if
+
+    end subroutine
 
     function comparePages(Page1, Page2) result (areSame)
       type(Page), intent(in):: Page1, Page2
@@ -223,7 +255,7 @@ module pageModule
         end if
         allocate(this%lines(i)%words(numWords))
         do j = 1, numWords
-          this%lines(i)%words(j) = charArray(i,j)
+          this%lines(i)%words(j) = trim(charArray(i,j))
         end do
       end do
       end subroutine initChar
