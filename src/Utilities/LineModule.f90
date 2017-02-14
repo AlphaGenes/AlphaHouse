@@ -71,9 +71,12 @@ module LineModule
     !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
     !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
     pure integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
+      use AlphaHouseMod, only: toLower
       class(Line), intent(in):: self
       character(len=*), intent(in):: charIn
       logical, intent(in), optional:: isCaseSensitive
+      type(Line):: lowerCaseLine
+      type(Line), pointer:: lineUsed
 
       logical:: caseSensitiveUsed
       integer:: i
@@ -88,14 +91,17 @@ module LineModule
 
       if (caseSensitiveUsed) then
         do i = 1, size(self%words)
-          call self%words(i)%toLowerCase()
+          if (toLower(self%getWord(i))== charIn) then
+          indexOut = i
+          end if
         end do
-      end if
-        do i =1, size(self%words)
-          if (self%words(i) == charIn) then
+      else
+        do i =1, lineUsed%getNumWords()
+          if (lineUsed%getWord(i) == charIn) then
             indexOut = i
           end if
         end do
+      end if
     end function hasWithin
 
 
@@ -205,7 +211,7 @@ module LineModule
       call self%add(stringIn%line)
     end subroutine addAWordWithString
 
-    function getWord(this, i) result (wordOut)
+    pure function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
       character(len=:), allocatable:: wordOut
