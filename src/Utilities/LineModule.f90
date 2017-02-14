@@ -1,3 +1,23 @@
+!###############################################################################
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     LineModule.f90
+!
+! DESCRIPTION:
+!> @brief    Holds a line of strings
+!
+!> @details  Allows you to modify strings, where strings are arbitary length characters. This is a list of those stings, like a line
+!> of a page.
+!
+!> @author   Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+!
+!-------------------------------------------------------------------------------
 module LineModule
   use iso_fortran_env
   use stringModule
@@ -46,7 +66,7 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
-    !> @brief Checks to se if charecter is contained in Line
+    !> @brief Checks to see if charecter is contained in Line
     !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
     !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
     !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
