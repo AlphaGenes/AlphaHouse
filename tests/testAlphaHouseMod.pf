@@ -121,6 +121,34 @@ thresh = 1e-16
 
  end subroutine testChar2Real
 
+ @test
+ subroutine testPairing()
+    integer(int32) :: x,xout, yout, y
+    integer(int64) :: result1, result2
+
+    x = 2
+    y = 1
+
+    result1 = generatePairing(x,y)
+    result2 = generatePairing(y,x)
+
+    @assertEqual(result1, result2)
+    call unPair(result1, xout, yout)
+
+
+    ! smaller one will always be returned as x
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
+
+    call unPair(result2, xout, yout)
+
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
+
+    result2 = generatePairing(32767,32767)
+    @assertEqual(result2, 1073741823)
+  end subroutine testPairing
+
   @test
   subroutine testFindLoc
     character(len=1) :: SetC(3)
