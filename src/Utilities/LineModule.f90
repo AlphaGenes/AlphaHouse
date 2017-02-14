@@ -193,7 +193,6 @@ module LineModule
         allocate(testString(newSize(1)))
         testString(1:self%getNumWords()) = self%words
         testString(newSize(1)) = newString(1)
-!        testString =  reshape(self%words, newSize, newString)
         deallocate(self%words)
         allocate(self%words(newSize(1)))
         self%words(:) = testString(:)
@@ -204,6 +203,8 @@ module LineModule
 
     end subroutine addAWordWithChar
 
+    !> @brief Add a string to the end of the line
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     subroutine addAWordWithString(self, stringIn)
       type(String), intent(in):: stringIn
       class(Line), intent(inout):: self
@@ -211,6 +212,8 @@ module LineModule
       call self%add(stringIn%line)
     end subroutine addAWordWithString
 
+    !> @brief Get the word at the index i as a character
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     pure function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
