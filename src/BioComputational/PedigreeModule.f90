@@ -48,7 +48,9 @@ type PedigreeHolder
         procedure :: setPedigreeGenerationsAndBuildArrays
         procedure :: outputSortedPedigree
         procedure :: setOffspringGeneration
-        procedure :: addGenotypeInformation
+        procedure :: addGenotypeInformationFromFile
+        procedure :: addGenotypeInformationFromArray
+        generic :: addGenotypeInformation => addGenotypeInformationFromArray, addGenotypeInformationFromFile
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
         procedure :: sortPedigreeAndOverwrite
@@ -431,7 +433,22 @@ contains
 
     end subroutine destroyPedigree
 
-    subroutine addGenotypeInformation(this, genotypeFile, nsnps, nAnnisG)
+
+
+    subroutine addGenotypeInformationFromArray(this, array)
+
+        use AlphaHouseMod, only : countLines
+        implicit none
+        class(PedigreeHolder) :: this
+        integer(kind=1),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
+        integer :: i 
+        do i=1,this%pedigreeSize-this%nDummys
+            this%pedigree(i)%genotype = array(i,:)
+        enddo
+
+    end subroutine addGenotypeInformationFromArray
+
+    subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG)
 
         use AlphaHouseMod, only : countLines
         implicit none
@@ -468,7 +485,8 @@ contains
 
 
 
-    end subroutine addGenotypeInformation
+    end subroutine addGenotypeInformationFromFile
+
     !---------------------------------------------------------------------------
     !< @brief builds correct generation information by looking at founders
     !< This is effectively a sort function for the pedigree
@@ -939,7 +957,7 @@ contains
         integer(KIND=1), allocatable, dimension(:) :: res
         integer :: counter, i
         allocate(res(this%pedigreeSize))
-
+        res = 9
             counter = 0
         ! TODO can do in parallel
             do i=1, this%pedigreeSize
@@ -980,7 +998,14 @@ contains
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays 
         endif
+        if (allocated(listOfParents)) then
+            deallocate(listOfParents)
+        endif
         allocate(listOfParents(2,this%pedigreeSize))
+        
+        if (allocated(offspringList)) then
+            deallocate(offspringList)
+        endif
         allocate(offspringList(this%pedigreeSize))
 
         do i=0,this%maxGeneration
