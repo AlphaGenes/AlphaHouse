@@ -1,3 +1,23 @@
+!###############################################################################
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     LineModule.f90
+!
+! DESCRIPTION:
+!> @brief    Holds a line of strings
+!
+!> @details  Allows you to modify strings, where strings are arbitary length characters. This is a list of those stings, like a line
+!> of a page.
+!
+!> @author   Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+!
+!-------------------------------------------------------------------------------
 module LineModule
   use iso_fortran_env
   use stringModule
@@ -15,6 +35,7 @@ module LineModule
       procedure, private:: removeByIndex
       procedure, private:: removeFirstName
       generic:: remove => removeFirstName, removeByIndex
+      procedure:: has => hasWithin
       procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
@@ -45,6 +66,44 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+    !> @brief Checks to see if charecter is contained in Line
+    !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
+    !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
+    !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
+    pure integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
+      use AlphaHouseMod, only: toLower
+      class(Line), intent(in):: self
+      character(len=*), intent(in):: charIn
+      logical, intent(in), optional:: isCaseSensitive
+      type(Line):: lowerCaseLine
+      type(Line), pointer:: lineUsed
+
+      logical:: caseSensitiveUsed
+      integer:: i
+
+      if (present(isCaseSensitive)) then
+        caseSensitiveUsed = isCaseSensitive
+      else
+        caseSensitiveUsed = .false.
+      end if
+
+      indexOut = 0
+
+      if (caseSensitiveUsed) then
+        do i = 1, size(self%words)
+          if (toLower(self%getWord(i))== charIn) then
+          indexOut = i
+          end if
+        end do
+      else
+        do i =1, lineUsed%getNumWords()
+          if (lineUsed%getWord(i) == charIn) then
+            indexOut = i
+          end if
+        end do
+      end if
+    end function hasWithin
+
 
     !> @brief Sets a single word
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
@@ -134,7 +193,6 @@ module LineModule
         allocate(testString(newSize(1)))
         testString(1:self%getNumWords()) = self%words
         testString(newSize(1)) = newString(1)
-!        testString =  reshape(self%words, newSize, newString)
         deallocate(self%words)
         allocate(self%words(newSize(1)))
         self%words(:) = testString(:)
@@ -145,6 +203,8 @@ module LineModule
 
     end subroutine addAWordWithChar
 
+    !> @brief Add a string to the end of the line
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     subroutine addAWordWithString(self, stringIn)
       type(String), intent(in):: stringIn
       class(Line), intent(inout):: self
@@ -152,7 +212,9 @@ module LineModule
       call self%add(stringIn%line)
     end subroutine addAWordWithString
 
-    function getWord(this, i) result (wordOut)
+    !> @brief Get the word at the index i as a character
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    pure function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
       character(len=:), allocatable:: wordOut

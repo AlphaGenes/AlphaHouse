@@ -541,7 +541,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function ToLower(StringIn) result(StringOut)
+    pure function ToLower(StringIn) result(StringOut)
       implicit none
 
       character(len=*),intent(in) :: StringIn  !< input string
