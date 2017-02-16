@@ -214,7 +214,9 @@ contains
 
       !---------------------------------------------------------------------------
     !< @brief Constructor for pedigree class using Genotype File format
-    !< @details Constructor builds pedigree, without any sorting being done. No Sorting is done.and 
+    !< @details Constructor builds pedigree, without any sorting being done. 
+    !< If no pedigree file is supplied, all animals are founders
+    !< If an animal is in the pedigree, but not in the genotypeFile, this animal is not created (no dummy either) and the animals parents are set to empty.
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
