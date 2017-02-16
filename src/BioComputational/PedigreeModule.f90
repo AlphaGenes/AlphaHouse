@@ -42,6 +42,8 @@ type PedigreeHolder
     integer(kind=int32) :: maxPedigreeSize
     integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
+    integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = newID 
+
     integer :: maxGeneration
     contains
         procedure :: destroyPedigree
@@ -77,6 +79,7 @@ end type
         module procedure initPedigree
         module procedure initPedigreeArrays
         module procedure initEmptyPedigree
+        module procedure initPedigreeGenotypeFiles
     end interface PedigreeHolder
 
     interface Sort !Sorts into generation list
@@ -205,6 +208,109 @@ contains
     deallocate(tmpAnimalArray)
     write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
     end function initPedigree
+
+
+
+
+      !---------------------------------------------------------------------------
+    !< @brief Constructor for pedigree class using Genotype File format
+    !< @details Constructor builds pedigree, without any sorting being done. No Sorting is done.and 
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp, pedFile) result(pedStructure)
+        use AlphaHouseMod, only : countLines
+        use iso_fortran_env
+        type(PedigreeHolder) :: pedStructure
+        integer, intent(in) :: nSnp !< number of snps to read
+        character(len=*),intent(in) :: fileIn !< path of Genotype file
+        integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
+        character(len=*),intent(in), optional :: pedFile !< path of pedigreeFile file
+
+        character(len=IDLENGTH) :: tmpId
+        integer(kind=int32) :: stat, fileUnit,tmpIdNum
+        integer(kind=int64) :: nIndividuals
+        integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
+        integer :: tmpAnimalArrayCount
+        integer :: i
+        integer, dimension(:), allocatable :: tmpGeno
+        integer(kind=int64) :: sizeDict
+
+
+        allocate(tmpGeno(nsnp))
+        pedStructure%nDummys = 0
+        tmpAnimalArrayCount = 0
+        
+        if (present(numberInFile)) then
+            nIndividuals = numberInFile
+        else
+            nIndividuals = countLines(fileIn)
+        endif
+        sizeDict = nIndividuals
+        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
+        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+        pedStructure%pedigreeSize = nIndividuals
+        pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+        allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+        pedStructure%maxGeneration = 0
+        open(newUnit=fileUnit, file=fileIn, status="old")
+
+        do i=1,nIndividuals
+
+            read(fileUnit,*) tmpId,tmpGeno(:)
+            call pedStructure%dictionary%addKey(tmpId, i)
+            pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+        enddo
+
+        close(fileUnit)
+
+
+
+        ! if we want gender info read in rather than calculated on the fly, lets do it here
+        if (present(pedFile)) then !read in gender here
+
+            block
+                character(len=IDLENGTH) :: tmpSire, tmpDam
+                integer :: tmpSireNum, tmpDamNum
+                
+                open(newUnit=fileUnit, file=pedFile, status="old")
+                do
+                    read (fileUnit,*, IOSTAT=stat) tmpId,tmpSire,tmpDam
+                    if (stat /=0) exit
+
+                    
+                        
+                    tmpIdNum = pedStructure%dictionary%getValue(tmpId)
+                    if (tmpIdNum /= DICT_NULL) then
+                        if (trim(tmpSire) == "0" .and. trim(tmpDam) == "0") then
+                            call pedStructure%Founders%list_add(pedStructure%pedigree(tmpIdNum))
+                        else
+                            tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
+                            tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
+                            if (tmpSireNum /= DICT_NULL) then
+                                pedStructure%pedigree(tmpIdNum)%sirePointer => pedStructure%pedigree(tmpSireNum)
+                                call pedStructure%pedigree(tmpSireNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
+                            ! else
+                                ! TODO ask daniel what to do about dummys
+                            endif
+                            if (tmpDamNum /= DICT_NULL) then
+                                pedStructure%pedigree(tmpIdNum)%damPointer => pedStructure%pedigree(tmpDamNum)
+                                call pedStructure%pedigree(tmpDamNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
+                            ! else
+                            !     ! TODO ask daniel what to do about dummys
+                            endif
+                        endif
+                    else
+                        ! We only care about animals that are in genotype file
+                        continue
+                    endif
+                end do
+            
+            end block
+
+        endif
+
+    end function initPedigreeGenotypeFiles
 
     !---------------------------------------------------------------------------
     !< @brief Constructor for pedigree class
