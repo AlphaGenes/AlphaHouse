@@ -307,7 +307,11 @@ contains
                 end do
             
             end block
-
+        else
+        ! Otherwise, with no animals, every animal is a founder 
+            do i=1, pedStructure%pedigreeSize
+               call pedStructure%Founders%list_add(pedStructure%pedigree(i)) 
+            enddo
         endif
 
     end function initPedigreeGenotypeFiles
