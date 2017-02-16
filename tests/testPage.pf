@@ -26,7 +26,40 @@ end subroutine setUp
 
 @after
 subroutine tearDown()
+if (allocated(setUpPage%lines)) then
+  deallocate(setUpPage%lines)
+end if
 end subroutine tearDown
+@test
+subroutine testAddLineWithoutPosition()
+use LineModule
+type(Line):: lineUsed
+
+call lineUsed%add("This")
+call lineUsed%add("is")
+call lineUsed%add("a")
+call lineUsed%add("Test")
+
+call setUpPage%addLine(lineUsed)
+
+@assertEqualUserDefined(lineUsed, setUpPage%lines(setUpPage%getNumLines()))
+end subroutine testAddLineWithoutPosition
+@test
+subroutine testAddLineWithPosition()
+use LineModule
+type(Line):: lineUsed
+
+call lineUsed%add("This")
+call lineUsed%add("is")
+call lineUsed%add("a")
+call lineUsed%add("Test")
+
+call setUpPage%addLine(lineUsed, 2)
+
+@assertEqualUserDefined(lineUsed, setUpPage%lines(2))
+
+end subroutine testAddLineWithPosition
+
 
 @test
 subroutine testGetWord()

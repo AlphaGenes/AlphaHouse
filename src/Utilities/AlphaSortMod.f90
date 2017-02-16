@@ -28,6 +28,7 @@ module AlphaSortMod
     interface HpSort
         procedure :: HpSortReal
         procedure :: HpSortI
+        procedure :: HpSortDS
     end interface HpSort
 
   contains

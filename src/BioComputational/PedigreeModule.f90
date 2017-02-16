@@ -48,13 +48,17 @@ type PedigreeHolder
         procedure :: setPedigreeGenerationsAndBuildArrays
         procedure :: outputSortedPedigree
         procedure :: setOffspringGeneration
-        procedure :: addGenotypeInformation
+        procedure :: addGenotypeInformationFromFile
+        procedure :: addGenotypeInformationFromArray
+        generic :: addGenotypeInformation => addGenotypeInformationFromArray, addGenotypeInformationFromFile
         procedure :: outputSortedPedigreeInAlphaImputeFormat
         procedure :: isDummy
         procedure :: sortPedigreeAndOverwrite
         procedure :: sortPedigreeAndOverwriteWithDummyAtTheTop
         procedure :: makeRecodedPedigreeArray
         procedure :: printPedigree
+        procedure :: getMatePairsAndOffspring
+        procedure :: getAllGenotypesAtPosition
 
 end type PedigreeHolder
 
@@ -103,8 +107,9 @@ contains
         type(PedigreeHolder) :: pedStructure
         character(len=*),intent(in) :: fileIn !< path of pedigree file
         character(len=*), intent(in),optional :: genderFile !< path to gender file
-        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
+        
+        character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
         integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
@@ -428,8 +433,23 @@ contains
 
     end subroutine destroyPedigree
 
-    subroutine addGenotypeInformation(this, genotypeFile, nsnps, nAnnisG)
-        use genotypeModule
+
+
+    subroutine addGenotypeInformationFromArray(this, array)
+
+        use AlphaHouseMod, only : countLines
+        implicit none
+        class(PedigreeHolder) :: this
+        integer(kind=1),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
+        integer :: i 
+        do i=1,this%pedigreeSize-this%nDummys
+            this%pedigree(i)%genotype = array(i,:)
+        enddo
+
+    end subroutine addGenotypeInformationFromArray
+
+    subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG)
+
         use AlphaHouseMod, only : countLines
         implicit none
         class(PedigreeHolder) :: this
@@ -437,7 +457,7 @@ contains
         character(len=IDLENGTH) :: tmpID
         integer,intent(in) :: nsnps
         integer,intent(in),optional :: nAnnisG
-        integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
+        integer, allocatable, dimension(:) :: tmpSnpArray
         integer :: i, j,fileUnit, nAnnis,tmpIdNum
 
 
@@ -458,13 +478,15 @@ contains
                 if (tmpIdNum == DICT_NULL) then
                     write(error_unit, *) "ERROR: Genotype info for non existing animal"
                 else
-                    this%pedigree(tmpIdNum)%individualGenotype = Genotype(tmpSnpArray)
+                    allocate(this%pedigree(tmpIdNum)%genotype(nsnps))
+                    this%pedigree(tmpIdNum)%genotype = tmpSnpArray
                 endif
             enddo
 
 
 
-    end subroutine addGenotypeInformation
+    end subroutine addGenotypeInformationFromFile
+
     !---------------------------------------------------------------------------
     !< @brief builds correct generation information by looking at founders
     !< This is effectively a sort function for the pedigree
@@ -917,4 +939,105 @@ contains
         end do
     end subroutine makeRecodedPedigreeArray
 
+
+
+! TODO get (unique) list of mates. Sorted by Generation.
+
+! function should return offspringlist (=recID) and listOfParents(2, nMatingPairs))
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getAllGenotypesAtPosition(this, position) result(res)
+
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
+        res = 9
+            counter = 0
+        ! TODO can do in parallel
+            do i=1, this%pedigreeSize
+
+                if (this%pedigree(i)%isGenotyped()) then
+                    counter = counter +1
+                    res(counter) = this%pedigree(i)%genotype(position)
+                endif
+
+            enddo
+
+    end function getAllGenotypesAtPosition
+
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine getMatePairsAndOffspring(this, offSpringList, listOfParents, nMatingPairs)
+
+        use AlphaHouseMod, only : generatePairing
+
+        class(pedigreeHolder), intent(inout) :: this      !< Pedigree object
+        integer, dimension(:, :), allocatable, intent(out) :: listOfParents !< indexed by (sire/dam, mateID) = recodedId
+        integer, intent(out) :: nMatingPairs
+        type(IndividualLinkedList),allocatable, dimension(:) :: offspringList !< list off spring based on index of parents mateID
+        
+        type(IndividualLinkedListNode), pointer :: tmpIndNode
+        type(DictStructure) :: dictionary
+        integer(kind=int64) :: tmpPairingKey 
+        character(len=20) :: tmpPairingKeyStr ! 19 is largest characters for int64 so 20 just to be safe [and that its round]
+        integer :: i,h,j
+
+        dictionary = DictStructure()
+        nMatingPairs = 0
+        if (.not. allocated(this%generations)) then
+            call this%setPedigreeGenerationsAndBuildArrays 
+        endif
+        if (allocated(listOfParents)) then
+            deallocate(listOfParents)
+        endif
+        allocate(listOfParents(2,this%pedigreeSize))
+        
+        if (allocated(offspringList)) then
+            deallocate(offspringList)
+        endif
+        allocate(offspringList(this%pedigreeSize))
+
+        do i=0,this%maxGeneration
+        tmpIndNode => this%generations(i)%first
+            do h=1, this%generations(i)%length
+                
+                do j=1, tmpIndNode%item%nOffs
+                    if(associated(tmpIndNode%item,tmpIndNode%item%offsprings(j)%p%sirePointer)) then
+
+
+                        tmpPairingKey = generatePairing(tmpIndNode%item%offsprings(j)%p%sirePointer%id, tmpIndNode%item%offsprings(j)%p%damPointer%id)
+                        write(tmpPairingKeyStr, '(i0)') tmpPairingKey
+                        if (.not. dictionary%hasKey(tmpPairingKeyStr)) then
+                            nMatingPairs = nMatingPairs + 1
+                            listOfParents(1,nMatingPairs) = tmpIndNode%item%id
+                            listOfParents(2,nMatingPairs) = tmpIndNode%item%offsprings(j)%p%damPointer%id
+                            call offspringList(nMatingPairs)%list_add(tmpIndNode%item%offsprings(j)%p)
+                            call dictionary%addKey(tmpPairingKeyStr, nMatingPairs)
+                        else
+                            call offspringList(dictionary%getValue(tmpPairingKeyStr))%list_add(tmpIndNode%item%offsprings(j)%p)
+                        ! TODO make sure using list rather than array here is not terrible
+                        ! TODO make sure if only checking sire is good enough
+                        endif
+                    endif
+                enddo
+                tmpIndNode => tmpIndNode%next
+                
+            enddo
+        enddo
+
+        call dictionary%destroy()
+
+    end subroutine getMatePairsAndOffspring
+        
 end module PedigreeModule

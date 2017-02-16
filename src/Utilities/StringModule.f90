@@ -16,6 +16,7 @@ Module stringModule
     procedure, private:: getSubstringEnd
     procedure:: getPosition
     procedure:: toLowerCase => convertToLowerCaseString
+    procedure:: toLowerFun
     procedure:: writeType
     procedure:: readType
     procedure:: getSize
@@ -49,12 +50,20 @@ contains
   ! PARAMETERS:
   !> @param[inout] input fileInput to be converted to lowercase 
   !---------------------------------------------------------------------------
-  subroutine convertToLowerCaseString(this)
+  pure subroutine convertToLowerCaseString(this)
     use AlphaHouseMod
     class(String), intent(inout):: this
 
     this%line = ToLower(this%line)
   end subroutine convertToLowerCaseString
+
+  pure function toLowerFun(self) result (lowerCaseOut)
+    use AlphaHouseMod, only:toLower
+    character(len=:), allocatable:: lowerCaseOut
+    class(String), intent(in):: self
+
+    lowerCaseOut = ToLower(self%line)
+  end function toLowerFun
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
@@ -71,7 +80,7 @@ contains
   !> @param[in] stringIn (type: String)- string to compare to
   !> @param[out] logical
   !---------------------------------------------------------------------------
-  function compareString(this, stringIn) result (same)
+  pure function compareString(this, stringIn) result (same)
     logical:: same
     class(String), intent(in):: this
     type(String), intent(in) :: stringIn
@@ -94,7 +103,7 @@ contains
   !> @param[in] stringIn (type: character(len=*))- character to compare to. 
   !> @param[out] logical
   !---------------------------------------------------------------------------
-  function compareCharacter(this, stringIn) result (same)
+  pure function compareCharacter(this, stringIn) result (same)
     logical:: same
     class(String), intent(in):: this
     character(len=*), intent(in) :: stringIn

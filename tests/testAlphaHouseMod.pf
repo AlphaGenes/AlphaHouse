@@ -120,4 +120,184 @@ thresh = 1e-16
  @assertEqual(expected, gotten, 1e-16)
 
  end subroutine testChar2Real
- end module testAlphaHouseMod
+
+ @test
+ subroutine testPairing()
+    integer(int32) :: x,xout, yout, y
+    integer(int64) :: result1, result2
+
+    x = 2
+    y = 1
+
+    result1 = generatePairing(x,y)
+    result2 = generatePairing(y,x)
+
+    @assertEqual(result1, result2)
+    call unPair(result1, xout, yout)
+
+
+    ! smaller one will always be returned as x
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
+
+    call unPair(result2, xout, yout)
+
+    @assertEqual(xout, x)
+    @assertEqual(yout, y)
+
+    result2 = generatePairing(32767,32767)
+    @assertEqual(result2, 1073741823)
+  end subroutine testPairing
+
+  @test
+  subroutine testFindLoc
+    character(len=1) :: SetC(3)
+    integer(int32) :: SetI(3), Ret, Expect
+    real(real32) :: SetS(3)
+    real(real64) :: SetD(3)
+
+    ! Character
+    SetC(1) = "C"
+    SetC(2) = "B"
+    SetC(3) = "X"
+
+    Ret = FindLoc(Val="C", Vec=SetC)
+    Expect = 1
+    @assertEqual(Expect, Ret, "FindLoc for character failed - test 1")
+
+    Ret = FindLoc(Val="B", Vec=SetC)
+    Expect = 2
+    @assertEqual(Expect, Ret, "FindLoc for character failed - test 2")
+
+    Ret = FindLoc(Val="Z", Vec=SetC)
+    Expect = 0
+    @assertEqual(Expect, Ret, "FindLoc for character failed - test 3")
+
+    ! Integer
+    SetI(1) = 1
+    SetI(2) = 2
+    SetI(3) = 3
+
+    Ret = FindLoc(Val=2, Vec=SetI)
+    Expect = 2
+    @assertEqual(Expect, Ret, "FindLoc for integer failed - test 1")
+
+    Ret = FindLoc(Val=3, Vec=SetI)
+    Expect = 3
+    @assertEqual(Expect, Ret, "FindLoc for integer failed - test 2")
+
+    Ret = FindLoc(Val=4, Vec=SetI)
+    Expect = 0
+    @assertEqual(Expect, Ret, "FindLoc for integer failed - test 3")
+
+    ! Real
+    SetS(1) = 1.0
+    SetS(2) = 2.0
+    SetS(3) = 3.0
+
+    Ret = FindLoc(Val=2.0, Vec=SetS)
+    Expect = 2
+    @assertEqual(Expect, Ret, "FindLoc for real failed - test 1")
+
+    Ret = FindLoc(Val=3.0, Vec=SetS)
+    Expect = 3
+    @assertEqual(Expect, Ret, "FindLoc for real failed - test 2")
+
+    Ret = FindLoc(Val=4.0, Vec=SetS)
+    Expect = 0
+    @assertEqual(Expect, Ret, "FindLoc for real failed - test 3")
+
+    ! Real double
+    SetD(1) = 1.0d0
+    SetD(2) = 2.0d0
+    SetD(3) = 3.0d0
+
+    Ret = FindLoc(Val=2.0d0, Vec=SetD)
+    Expect = 2
+    @assertEqual(Expect, Ret, "FindLoc for real double failed - test 1")
+
+    Ret = FindLoc(Val=3.0d0, Vec=SetD)
+    Expect = 3
+    @assertEqual(Expect, Ret, "FindLoc for real double failed - test 2")
+
+    Ret = FindLoc(Val=4.0d0, Vec=SetD)
+    Expect = 0
+    @assertEqual(Expect, Ret, "FindLoc for real double failed - test 3")
+  end subroutine
+
+  @test
+  subroutine testMatch
+    character(len=1) :: SetC1(3), SetC2(5)
+    integer(int32) :: SetI1(3), SetI2(5), Ret(3), Expect(3)
+    real(real32) :: SetS1(3), SetS2(5)
+    real(real64) :: SetD1(3), SetD2(5)
+
+    ! Character
+    SetC1(1) = "C"
+    SetC1(2) = "B"
+    SetC1(3) = "X"
+
+    SetC2(1) = "A"
+    SetC2(2) = "B"
+    SetC2(3) = "C"
+    SetC2(4) = "D"
+    SetC2(5) = "E"
+
+    Ret = Match(Set=SetC1, TargetSet=SetC2)
+    Expect =[3, 2, 0]
+    @assertEqual(Expect(1), Ret(1), "Match for character failed - 1st element")
+    @assertEqual(Expect(2), Ret(2), "Match for character failed - 2nd element")
+    @assertEqual(Expect(3), Ret(3), "Match for character failed - 3rd element")
+
+    ! Integer
+    SetI1(1) = 3
+    SetI1(2) = 2
+    SetI1(3) = 9
+
+    SetI2(1) = 1
+    SetI2(2) = 2
+    SetI2(3) = 3
+    SetI2(4) = 4
+    SetI2(5) = 5
+
+    Ret = Match(Set=SetI1, TargetSet=SetI2)
+    Expect =[3, 2, 0]
+    @assertEqual(Expect(1), Ret(1), "Match for integer failed - 1st element")
+    @assertEqual(Expect(2), Ret(2), "Match for integer failed - 2nd element")
+    @assertEqual(Expect(3), Ret(3), "Match for integer failed - 3rd element")
+
+    ! Real
+    SetS1(1) = 3.0
+    SetS1(2) = 2.0
+    SetS1(3) = 9.0
+
+    SetS2(1) = 1.0
+    SetS2(2) = 2.0
+    SetS2(3) = 3.0
+    SetS2(4) = 4.0
+    SetS2(5) = 5.0
+
+    Ret = Match(Set=SetS1, TargetSet=SetS2)
+    Expect =[3, 2, 0]
+    @assertEqual(Expect(1), Ret(1), "Match for real failed - 1st element")
+    @assertEqual(Expect(2), Ret(2), "Match for real failed - 2nd element")
+    @assertEqual(Expect(3), Ret(3), "Match for real failed - 3rd element")
+
+    ! Real double
+    SetD1(1) = 3.0d0
+    SetD1(2) = 2.0d0
+    SetD1(3) = 9.0d0
+
+    SetD2(1) = 1.0d0
+    SetD2(2) = 2.0d0
+    SetD2(3) = 3.0d0
+    SetD2(4) = 4.0d0
+    SetD2(5) = 5.0d0
+
+    Ret = Match(Set=SetD1, TargetSet=SetD2)
+    Expect = [3, 2, 0]
+    @assertEqual(Expect(1), Ret(1), "Match for real double failed - 1st element")
+    @assertEqual(Expect(2), Ret(2), "Match for real double failed - 2nd element")
+    @assertEqual(Expect(3), Ret(3), "Match for real double failed - 3rd element")
+  end subroutine
+end module testAlphaHouseMod

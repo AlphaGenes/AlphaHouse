@@ -61,6 +61,7 @@ module IndividualModule
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
             procedure :: SetAsGenotyped
+            procedure :: setGenotypeArray
             procedure :: isHD
             procedure :: SetHD
             procedure :: getSireId
@@ -769,6 +770,19 @@ contains
         class(Individual), intent(inout) :: this
         this%Genotyped = .true.
     end subroutine SetAsGenotyped
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setGenotypeArray(this, geno)
+        class(Individual), intent(inout) :: this
+        integer(KIND=1), allocatable, dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+        this%Genotyped = .true.
+        this%genotype = geno
+    end subroutine setGenotypeArray
 
     !---------------------------------------------------------------------------
     !> @brief returns true if the individual is genotyped at high density.

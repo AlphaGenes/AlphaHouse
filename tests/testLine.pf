@@ -1,3 +1,113 @@
+module testLine
+use pFUnit_mod
+use LineModule
+implicit none
+
+contains
+@test
+subroutine testHasWithinWithOut()
+type(Line):: lineUsed
+integer:: usedNum, gotten
+character(len=:), allocatable:: expected , other
+integer::i
+
+other ="Not searched For"
+expected = "Searched For"
+
+
+usedNum = 0
+do i =1, 3
+  call lineUsed%add(other)
+end do
+do i =1, 2
+  call lineUsed%add(other)
+end do
+
+gotten = lineUsed%has(expected)
+
+@assertEqual(usedNum, gotten)
+end subroutine testHasWithinWithOut
+@test
+subroutine testHasWithinWith()
+type(Line):: lineUsed
+integer:: usedNum, gotten
+character(len=:), allocatable:: expected , other
+integer::i
+
+other ="Not searched For"
+expected = "Searched For"
+
+
+usedNum = 5
+do i =1, usedNum-1
+  call lineUsed%add(other)
+end do
+call lineUsed%add(expected)
+do i =1, 2
+  call lineUsed%add(other)
+end do
+
+gotten = lineUsed%has(expected)
+
+@assertEqual(usedNum, gotten)
+end subroutine testHasWithinWith
+
+
+@test
+subroutine testSetWordWithString()
+use StringModule
+type(Line):: lineUsed
+type(String):: expected, gotten
+
+
+expected = "TEST"
+
+call lineUsed%add("A word")
+call lineUsed%setWord(1, expected)
+
+gotten = lineUsed%GetWordAsString(1)
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testSetWordWithString
+
+@test
+subroutine testSetWordWithChar()
+use StringModule
+type(Line):: lineUsed
+type(String):: expected, gotten
+character(len=5):: Toset
+
+toSet = "This!"
+
+expected = ToSet
+
+call lineUsed%add("A word")
+call lineUsed%setWord(1, toSet)
+
+gotten = lineUsed%GetWordAsString(1)
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testSetWordWithChar
+
+
+@test
+subroutine testRemoveAll()
+type(Line):: testType
+logical:: expected, gotten
+
+call testType%add("A")
+call testType%add("B")
+
+call testType%removeAll()
+
+expected = .false.
+gotten = allocated(testType%words)
+
+@assertEqual(expected, gotten)
+end subroutine testRemoveAll
+
 @test
 subroutine testRemoveWordByIndex()
 use pFUnit_mod
@@ -47,7 +157,7 @@ call gotten%remove("ANOTHER")
 end subroutine testRemoveWordByName
 
 @test
-subroutine testAddWord()
+subroutine testAddWordWithChar()
 use pFUnit_mod
 use lineModule
 use AlphaHouseMod, only: int2Char
@@ -72,7 +182,36 @@ gottenLine = char
 call gottenLine%add(newChar)
 @assertEqualUserDefined(expectedLine,gottenLine)
 
-end subroutine testAddWord
+end subroutine testAddWordWithChar
+
+@test
+subroutine testAddWordWithString()
+use pFUnit_mod
+use StringModule
+use lineModule
+use AlphaHouseMod, only: int2Char
+character(len=5), dimension(5):: char
+type(String):: newChar
+character(len=5), dimension(6):: expected
+type(line):: expectedLine, gottenLine
+integer::i
+
+do i = 1, 5
+  char(i) = "test"//int2Char(i)
+end do
+
+newChar = "test6"
+
+expected(1:5) = char
+expected(6) = newChar%line
+
+expectedLine = expected
+
+gottenLine = char
+call gottenLine%add(newChar)
+@assertEqualUserDefined(expectedLine,gottenLine)
+
+end subroutine testAddWordWithString
 
 @test
 subroutine testNumWords()
@@ -135,3 +274,4 @@ gotten = lineIn%getWord(1)
 
 @assertEqual(expected, gotten)
 end subroutine testGetWord
+end Module testLine

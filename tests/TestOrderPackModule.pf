@@ -1,0 +1,146 @@
+
+!###############################################################################
+
+module TestOrderPackModule
+  use ISO_Fortran_env, STDOUT => output_unit
+  use pFUnit_mod
+  use OrderPackModule
+
+  implicit none
+
+  contains
+
+  !#############################################################################
+
+  @test
+  subroutine TestMrgRnk
+    implicit none
+    integer(int32), allocatable, dimension(:) :: Result
+    integer(int32) :: I(5), Expect(5)
+    real(real32) :: S(5)
+    real(real64) :: D(5)
+
+    I = [5, 3, 8, 3, 8]
+    S = [5.0, 3.0, 8.0, 3.0, 8.0]
+    D = [5.0d0, 3.0d0, 8.0d0, 3.0d0, 8.0d0]
+    Expect = [2, 4, 1, 3, 5]
+
+    Result = MrgRnk(I)
+    ! print*, Result
+    ! print*, I(Result)
+    @AssertEqual(Expect(1), Result(1), "MrgRnk on integer failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "MrgRnk on integer failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "MrgRnk on integer failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "MrgRnk on integer failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "MrgRnk on integer failed - 5th element")
+
+    Result = MrgRnk(S)
+    ! print*, Result
+    ! print*, S(Result)
+    @AssertEqual(Expect(1), Result(1), "MrgRnk on real failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "MrgRnk on real failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "MrgRnk on real failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "MrgRnk on real failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "MrgRnk on real failed - 5th element")
+
+    Result = MrgRnk(D)
+    ! print*, Result
+    ! print*, D(Result)
+    @AssertEqual(Expect(1), Result(1), "MrgRnk on real double failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "MrgRnk on real double failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "MrgRnk on real double failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "MrgRnk on real double failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "MrgRnk on real double failed - 5th element")
+  end subroutine
+
+  !#############################################################################
+
+  @test
+  subroutine TestUniSta
+    implicit none
+    integer(int32) :: I(5), ExpectI(3)
+    integer(int32), allocatable, dimension(:) :: ResultI
+    real(real32) :: S(5), ExpectS(3)
+    real(real32), allocatable, dimension(:) :: ResultS
+    real(real64) :: D(5), ExpectD(3)
+    real(real64), allocatable, dimension(:) :: ResultD
+
+    I = [5, 3, 8, 3, 8]
+    ExpectI = [5, 3, 8]
+
+    S = [5.0, 3.0, 8.0, 3.0, 8.0]
+    ExpectS = [5.0, 3.0, 8.0]
+
+    D = [5.0d0, 3.0d0, 8.0d0, 3.0d0, 8.0d0]
+    ExpectD = [5.0d0, 3.0d0, 8.0d0]
+
+    ResultI = UniSta(S)
+    ! print*, ExpectI
+    ! print*, ResultI
+    @AssertEqual(ExpectI(1), ResultI(1), "UniSta on integer failed - 1st element")
+    @AssertEqual(ExpectI(2), ResultI(2), "UniSta on integer failed - 2nd element")
+    @AssertEqual(ExpectI(3), ResultI(3), "UniSta on integer failed - 3rd element")
+
+    ResultS = UniSta(S)
+    ! print*, ExpectS
+    ! print*, ResultS
+    @AssertEqual(ExpectS(1), ResultS(1), "UniSta on real failed - 1st element")
+    @AssertEqual(ExpectS(2), ResultS(2), "UniSta on real failed - 2nd element")
+    @AssertEqual(ExpectS(3), ResultS(3), "UniSta on real failed - 3rd element")
+
+    ResultD = UniSta(D)
+    ! print*, ExpectD
+    ! print*, ResultD
+    @AssertEqual(ExpectD(1), ResultD(1), "UniSta on real double failed - 1st element")
+    @AssertEqual(ExpectD(2), ResultD(2), "UniSta on real double failed - 2nd element")
+    @AssertEqual(ExpectD(3), ResultD(3), "UniSta on real double failed - 3rd element")
+  end subroutine
+
+  !#############################################################################
+
+  @test
+  subroutine TestUniInv
+    implicit none
+    integer(int32), allocatable, dimension(:) :: Result
+    integer(int32) :: I(5), Expect(5)
+    real(real32) :: S(5)
+    real(real64) :: D(5)
+
+    I = [5, 3, 8, 3, 8]
+    S = [5.0, 3.0, 8.0, 3.0, 8.0]
+    D = [5.0d0, 3.0d0, 8.0d0, 3.0d0, 8.0d0]
+    Expect = [2, 1, 3, 1, 3]
+
+    Result = UniInv(I)
+    ! print*, Result
+    ! print*, I(Result)
+    @AssertEqual(Expect(1), Result(1), "UniInv on integer failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "UniInv on integer failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "UniInv on integer failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "UniInv on integer failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "UniInv on integer failed - 5th element")
+
+    Result = UniInv(S)
+    ! print*, Result
+    ! print*, S(Result)
+    @AssertEqual(Expect(1), Result(1), "UniInv on real failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "UniInv on real failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "UniInv on real failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "UniInv on real failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "UniInv on real failed - 5th element")
+
+    Result = UniInv(D)
+    ! print*, Result
+    ! print*, D(Result)
+    @AssertEqual(Expect(1), Result(1), "UniInv on real double failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "UniInv on real double failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "UniInv on real double failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "UniInv on real double failed - 4th element")
+    @AssertEqual(Expect(5), Result(5), "UniInv on real double failed - 5th element")
+  end subroutine
+
+  !#############################################################################
+
+end module
+
+!###############################################################################

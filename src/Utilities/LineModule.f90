@@ -1,3 +1,23 @@
+!###############################################################################
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     LineModule.f90
+!
+! DESCRIPTION:
+!> @brief    Holds a line of strings
+!
+!> @details  Allows you to modify strings, where strings are arbitary length characters. This is a list of those stings, like a line
+!> of a page.
+!
+!> @author   Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+!
+!-------------------------------------------------------------------------------
 module LineModule
   use iso_fortran_env
   use stringModule
@@ -9,23 +29,31 @@ module LineModule
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
-      procedure:: add => addAWord
+      procedure, private:: addAWordWithChar
+      procedure, private:: addAWordWithString
+      generic:: add => addAWordWithChar, addAWordWithString
       procedure, private:: removeByIndex
       procedure, private:: removeFirstName
       generic:: remove => removeFirstName, removeByIndex
+      procedure:: has => hasWithin
       procedure:: getWordAsString
       procedure:: getWord
       procedure, private:: setArbitaryLengthLine
       procedure, private:: setArbitaryLengthLineChar
       procedure:: getNumWords
+      procedure, private:: setWordWithChar
+      procedure, private:: setWordWithString
+      generic:: setWord => setWordWithChar, setWordWithString
       procedure, private:: writeFormattedLineType
       procedure, private:: writeUnformattedLineType
       procedure, private:: readLineType
       procedure, private:: readUnformattedLineType
+      procedure:: removeAll
       generic:: write(formatted) => writeFormattedLineType
       generic:: write(unformatted) => writeUnformattedLineType
       generic:: read(formatted) => readLineType
       generic:: read(unformatted) => readUnformattedLineType
+      final:: deallocateLine
   end type
 
   interface assignment (=)
@@ -38,6 +66,82 @@ module LineModule
     module procedure compareLine
   end interface 
   contains
+    !> @brief Checks to see if charecter is contained in Line
+    !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
+    !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
+    !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
+    pure integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
+      use AlphaHouseMod, only: toLower
+      class(Line), intent(in):: self
+      character(len=*), intent(in):: charIn
+      logical, intent(in), optional:: isCaseSensitive
+      type(Line):: lowerCaseLine
+      type(Line), pointer:: lineUsed
+
+      logical:: caseSensitiveUsed
+      integer:: i
+
+      if (present(isCaseSensitive)) then
+        caseSensitiveUsed = isCaseSensitive
+      else
+        caseSensitiveUsed = .false.
+      end if
+
+      indexOut = 0
+
+      if (caseSensitiveUsed) then
+        do i = 1, size(self%words)
+          if (toLower(self%getWord(i))== charIn) then
+          indexOut = i
+          end if
+        end do
+      else
+        do i =1, lineUsed%getNumWords()
+          if (lineUsed%getWord(i) == charIn) then
+            indexOut = i
+          end if
+        end do
+      end if
+    end function hasWithin
+
+
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWordWithString(self, i, stringIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      type(String), intent(in):: stringIn !<What you want to set the word to
+      self%words(i) = stringIn
+    end subroutine setWordWithString
+    !> @brief Sets a single word
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine setWordWithChar(self, i, charIn)
+      class(Line), intent(inout):: self
+      integer, intent(in):: i !< The index of the word you want to set
+      character(len=*), intent(in):: charIn !<What you want to set the word to
+      self%words(i) = charIn
+    end subroutine setWordWithChar
+
+    !> @brief Removes all words
+    !> @details Deallocates the array of strings that are being used to hold the words
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine removeAll(self)
+      class(Line), intent(inout):: self
+
+      call deallocateLine(self)
+    end subroutine removeAll
+
+    !> @brief Final sub to deallocate Line module
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+    subroutine deallocateLine(self)
+      type(Line), intent(inout):: self
+
+      if (allocated(self%words)) then
+        deallocate(self%words)
+      end if
+    end subroutine deallocateLine
+    
+    
 
     !>@brief Removes the first occurance of a word in a line
     !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
@@ -75,7 +179,7 @@ module LineModule
 
     end subroutine removeByIndex
 
-    subroutine addAWord(self, charIn)
+    subroutine addAWordWithChar(self, charIn)
       class(Line), intent(inout):: self
       character(len=*), intent(in):: charIn
 
@@ -89,7 +193,6 @@ module LineModule
         allocate(testString(newSize(1)))
         testString(1:self%getNumWords()) = self%words
         testString(newSize(1)) = newString(1)
-!        testString =  reshape(self%words, newSize, newString)
         deallocate(self%words)
         allocate(self%words(newSize(1)))
         self%words(:) = testString(:)
@@ -98,9 +201,20 @@ module LineModule
         self%words(1) = charIn
       end if
 
-    end subroutine addAWord
+    end subroutine addAWordWithChar
 
-    function getWord(this, i) result (wordOut)
+    !> @brief Add a string to the end of the line
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    subroutine addAWordWithString(self, stringIn)
+      type(String), intent(in):: stringIn
+      class(Line), intent(inout):: self
+
+      call self%add(stringIn%line)
+    end subroutine addAWordWithString
+
+    !> @brief Get the word at the index i as a character
+    !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    pure function getWord(this, i) result (wordOut)
       class(Line), intent(in):: this
       integer, intent(in):: i
       character(len=:), allocatable:: wordOut

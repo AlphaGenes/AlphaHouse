@@ -33,38 +33,38 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines,int2Char, Real2Char, RandomOrder, ToLower, FindLoc, SetSeed
+  public :: CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
-  public :: checkFileExists, char2Int, char2Int64, char2Real, char2Double, Log2Char
-  public :: isDelim, PrintElapsedTime, intToChar
+  public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
+  public :: isDelim, PrintElapsedTime, intToChar, SetSeed
 
-
+  public :: generatePairing, unPair
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-  !> @brief Real2Char interface
   interface Real2Char
-    module procedure RealS2Char,RealD2Char
+    module procedure Real322Char, Real642Char
   end interface
 
-  !>@brief char2Int interface
+  interface int2Char
+    module procedure Int82Char, Int322Char, Int642Char
+  end interface
+
+  interface intToChar
+    module procedure int82CharArray, int322CharArray, int642CharArray
+  end interface
+
   interface char2Int
     module procedure char2Int32
   end interface
 
-  !> @brief Integer to character interface
-  interface int2Char
-    module procedure Int2Char32, Int2Char64
-  end interface
-
-  interface intToChar
-    module procedure int2CharArray, int642CharArray
-  end interface
-
-  !> @brief FindLoc interface
   interface FindLoc
     module procedure FindLocC, FindLocI, FindLocS, FindLocD
+  end interface
+
+  interface Match
+    module procedure MatchC, MatchI, MatchS, MatchD
   end interface
 
   contains
@@ -208,10 +208,11 @@ module AlphaHouseMod
            end if
         end if
     end function removewhitespace
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Convert character to integer
+    !> @brief   Convert character to int32
     !> @details See http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90. Returns a 32 bit
     !integer.
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
@@ -227,34 +228,18 @@ module AlphaHouseMod
       return
     end function
 
-    !---------------------------------------------------------------------------
-    !> @brief   Convert character to integer
-    !> @details See http://stackoverflow.com/questions/24071722/converting-a-string-to-an-integer-in-fortran-90. Returns a 64 bit
-    !integer.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
-    !> @date    September 26, 2016
-    !---------------------------------------------------------------------------
-    function Char2Int64(c) result(Res)
-      implicit none
-
-      character(*), intent(in) :: c   !< character
-      integer(int64)           :: Res !< @return integer
-
-      read(c, *) Res
-      return
-    end function
-
     !###########################################################################
+
     !---------------------------------------------------------------------------
-    !> @brief   Convert integer to character
-    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran. Converts 64 bit integer.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
-    !> @date    October 28, 2016
+    !> @brief   Convert int8 to character
+    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    January 9, 2017
     !---------------------------------------------------------------------------
-    function Int2Char64(i,fmt) result(Res)
+    function Int82Char(i,fmt) result(Res)
       implicit none
 
-      integer(int64),intent(in)        :: i   !< integer
+      integer(int8),intent(in)         :: i   !< integer
       character(*),intent(in),optional :: fmt !< format
       character(:),allocatable         :: Res !< @return character
 
@@ -269,58 +254,15 @@ module AlphaHouseMod
       return
     end function
 
-    !---------------------------------------------------------------------------
-    !> @brief   Convert integer to character
-    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
-    !> @date    December 13th, 2016
-    !---------------------------------------------------------------------------
-    function int642CharArray(i, sizeIn, fmt) result (res)
-      integer(int64), intent(in), dimension(:):: i
-      integer(int64), intent(in):: sizeIn
-      character(len=*), intent(in), optional:: fmt
-      character(len=sizeIn), dimension(size(i)):: res
-      integer::j
-
-      do j = 1, size(i)
-      if (present(fmt)) then
-        write(res(j), fmt) i(j)
-      else
-        write(res(j), "(i0)") i(j)
-      end if
-    end do
-    end function int642CharArray
+    !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Convert integer to character
-    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
-    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
-    !> @date    December 13th, 2016
-    !---------------------------------------------------------------------------
-    function int2CharArray(i, sizeIn, fmt) result (res)
-      integer(int32), intent(in), dimension(:):: i
-      integer(int32), intent(in):: sizeIn
-      character(len=*), intent(in), optional:: fmt
-      character(len=sizeIn), dimension(size(i)):: res
-      integer::j
-
-!      allocate(character(len=sizeIn) :: res)
-     do j =1, size(i)
-      if (present(fmt)) then
-        write(res(j), fmt) i(j)
-      else
-        write(res(j), "(i0)") i(j)
-      end if
-    end do
-    end function int2CharArray
-
-    !---------------------------------------------------------------------------
-    !> @brief   Convert integer to character
+    !> @brief   Convert int32 to character
     !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function Int2Char32(i,fmt) result(Res)
+    function Int322Char(i,fmt) result(Res)
       implicit none
 
       integer(int32),intent(in)        :: i   !< integer
@@ -341,27 +283,99 @@ module AlphaHouseMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Convert real (single precision) to character
-    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran
-    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-    !> @date    September 26, 2016
+    !> @brief   Convert int64 to character
+    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran. Converts 64 bit integer.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    October 28, 2016
     !---------------------------------------------------------------------------
-    function RealS2Char(r,fmt) result(Res)
+    function Int642Char(i,fmt) result(Res)
       implicit none
 
-      real(real32),intent(in)          :: r   !< real
+      integer(int64),intent(in)        :: i   !< integer
       character(*),intent(in),optional :: fmt !< format
       character(:),allocatable         :: Res !< @return character
 
-      character(range(r)+2) :: Tmp
+      character(range(i)+2) :: Tmp
 
       if (present(fmt)) then
-        write(Tmp,fmt) r
+        write(Tmp,fmt) i
       else
-        write(Tmp,"(f)") r
+        write(Tmp,"(i0)") i
       end if
       Res=trim(Tmp)
       return
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert int8 to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int82CharArray(i, sizeIn, fmt) result (res)
+      integer(int8), intent(in), dimension(:):: i
+      integer(int32), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+     do j = 1, size(i)
+      if (present(fmt)) then
+        write(res(j), fmt) i(j)
+      else
+        write(res(j), "(i0)") i(j)
+      end if
+    end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert int32 to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int322CharArray(i, sizeIn, fmt) result (res)
+      integer(int32), intent(in), dimension(:):: i
+      integer(int32), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+      do j = 1, size(i)
+        if (present(fmt)) then
+          write(res(j), fmt) i(j)
+        else
+          write(res(j), "(i0)") i(j)
+        end if
+      end do
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert int64 to character
+    !> @details Converts an integer to a character.   Character out size is given by a parameter.   Usable with arrays.
+    !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
+    !> @date    December 13th, 2016
+    !---------------------------------------------------------------------------
+    function int642CharArray(i, sizeIn, fmt) result (res)
+      integer(int64), intent(in), dimension(:):: i
+      integer(int64), intent(in):: sizeIn
+      character(len=*), intent(in), optional:: fmt
+      character(len=sizeIn), dimension(size(i)):: res
+      integer::j
+
+      do j = 1, size(i)
+        if (present(fmt)) then
+          write(res(j), fmt) i(j)
+        else
+          write(res(j), "(i0)") i(j)
+        end if
+      end do
     end function
 
     !###########################################################################
@@ -406,6 +420,7 @@ module AlphaHouseMod
         read(charIn, *) realOut
       end if
     end function char2Double
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -427,15 +442,42 @@ module AlphaHouseMod
         read(charIn, *) realOut
       end if
     end function char2Real
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Convert real (single precision) to character
+    !> @brief   Convert real32 to character
     !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function RealD2Char(r,fmt) result(Res)
+    function Real322Char(r,fmt) result(Res)
+      implicit none
+
+      real(real32),intent(in)          :: r   !< real
+      character(*),intent(in),optional :: fmt !< format
+      character(:),allocatable         :: Res !< @return character
+
+      character(range(r)+2) :: Tmp
+
+      if (present(fmt)) then
+        write(Tmp,fmt) r
+      else
+        write(Tmp,"(f)") r
+      end if
+      Res=trim(Tmp)
+      return
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Convert real64 to character
+    !> @details See http://stackoverflow.com/questions/1262695/converting-integers-to-strings-in-fortran
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    function Real642Char(r,fmt) result(Res)
       implicit none
 
       real(real64),intent(in)          :: r   !< real
@@ -499,7 +541,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function ToLower(StringIn) result(StringOut)
+    pure function ToLower(StringIn) result(StringOut)
       implicit none
 
       character(len=*),intent(in) :: StringIn  !< input string
@@ -581,8 +623,7 @@ module AlphaHouseMod
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        !> @todo handle floating point representation
-        if (Val == Vec(j)) then
+        if (.not. (Val .lt. Vec(j) .or. Val .gt. Vec(j))) then
           i=j
           exit
         end if
@@ -606,8 +647,7 @@ module AlphaHouseMod
       integer(int32) :: j
       i=0
       do j=1,size(Vec)
-        !> @todo handle floating point representation
-        if (Val == Vec(j)) then
+        if (.not. (Val .lt. Vec(j) .or. Val .gt. Vec(j))) then
           i=j
           exit
         end if
@@ -615,6 +655,107 @@ module AlphaHouseMod
       return
     end function
 
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - character
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchC(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      character(len=*), intent(in) :: Set(:)              !< A set
+      character(len=*), intent(in) :: TargetSet(:)        !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - integer
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchI(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      integer(int32), intent(in) :: Set(:)                !< A set
+      integer(int32), intent(in) :: TargetSet(:)          !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - single real
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchS(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      real(real32), intent(in) :: Set(:)                  !< A set
+      real(real32), intent(in) :: TargetSet(:)            !< Target set
+      integer(int32), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
+
+    !-------------------------------------------------------------------------
+    !> @brief  Match one set of values onto another - double real
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   January 4, 2017
+    !-------------------------------------------------------------------------
+    pure function MatchD(Set, TargetSet) result(Result)
+      implicit none
+
+      ! Arguments
+      real(real64), intent(in) :: Set(:)                  !< A set
+      real(real64), intent(in) :: TargetSet(:)            !< Target set
+      integer(int64), allocatable, dimension(:) :: Result !< @return Locations of set values in the other set, 0 for no match
+
+      ! Other
+      integer(int32) :: i, n
+
+      n = size(Set)
+      allocate(Result(n))
+      do i = 1, n
+        Result(i) = FindLoc(Val=Set(i), Vec=TargetSet)
+      end do
+    end function
+
+    !###########################################################################
     !---------------------------------------------------------------------------
     !> @brief   splits string into initial and second part, where second part is another array
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
@@ -758,6 +899,74 @@ module AlphaHouseMod
     end subroutine
 
     !###########################################################################
+
+
+    !---------------------------------------------------------------------------
+    !> @brief   szudzik pairing function in fortran
+    !> @details Generates a unique pairing based on two integers
+     !> If input is (N,M) space, output will be (N*M) space.
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !---------------------------------------------------------------------------
+    function generatePairing(xin,yin) result(res)
+
+      integer(int32), intent(in) :: xin, yin
+      integer(int32) :: x, y
+      integer(int64) :: res
+
+      ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+       if (xin < yin) then
+        x = yin
+        y = xin
+      else
+        x = xin
+        y = yin
+      endif
+
+      if (x >= y) then
+        res = x * x + x + y
+
+      else
+        res =y * y + x
+      endif
+
+    end function generatePairing
+
+     !---------------------------------------------------------------------------
+    !> @brief   szudzik unpairing function in fortran
+    !> @details returns two integers that generated unique number based on pair
+    !> If using tuples, will overflow very quickly.
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !---------------------------------------------------------------------------
+    subroutine unPair(num, xout, yout)
+      integer(int64), intent(in) :: num !< number to unPair
+      integer(int32), intent(out) :: xout , yout !< numbers used to get pairing function
+
+      integer :: x,y
+      real(kind=real32) :: sqrtz, sqrz
+      sqrtz = floor(SQRT(real(num)))
+      sqrz = sqrtz * sqrtz
+
+      if ((num-sqrz) >= sqrtz) then
+        x = sqrtz
+        y = num - sqrz - sqrtz
+      else
+        x = num - sqrz
+        y = sqrtz
+      endif
+
+      ! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+      if (y > x) then
+        xout = y
+        yout = x
+      else
+        xout = x
+        yout = y
+      endif
+    end subroutine unPair
+
+
+
+
 end module
 
 !###############################################################################
