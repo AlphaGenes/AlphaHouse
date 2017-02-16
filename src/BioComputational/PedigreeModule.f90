@@ -443,7 +443,7 @@ contains
         integer(kind=1),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
         integer :: i 
         do i=1,this%pedigreeSize-this%nDummys
-            this%pedigree(i)%genotype = array(i,:)
+            call this%pedigree(i)%setGenotypeArray(array(i,:))
         enddo
 
     end subroutine addGenotypeInformationFromArray
@@ -457,7 +457,7 @@ contains
         character(len=IDLENGTH) :: tmpID
         integer,intent(in) :: nsnps
         integer,intent(in),optional :: nAnnisG
-        integer, allocatable, dimension(:) :: tmpSnpArray
+        integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
         integer :: i, j,fileUnit, nAnnis,tmpIdNum
 
 
@@ -478,8 +478,7 @@ contains
                 if (tmpIdNum == DICT_NULL) then
                     write(error_unit, *) "ERROR: Genotype info for non existing animal"
                 else
-                    allocate(this%pedigree(tmpIdNum)%genotype(nsnps))
-                    this%pedigree(tmpIdNum)%genotype = tmpSnpArray
+                    call this%pedigree(tmpIdNum)%setGenotypeArray(tmpSnpArray)
                 endif
             enddo
 
@@ -964,7 +963,7 @@ contains
 
                 if (this%pedigree(i)%isGenotyped()) then
                     counter = counter +1
-                    res(counter) = this%pedigree(i)%genotype(position)
+                    res(counter) = this%pedigree(i)%individualGenotype%getGenotype(position)
                 endif
 
             enddo

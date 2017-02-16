@@ -779,9 +779,9 @@ contains
     !---------------------------------------------------------------------------
     subroutine setGenotypeArray(this, geno)
         class(Individual), intent(inout) :: this
-        integer(KIND=1), allocatable, dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+        integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
         this%Genotyped = .true.
-        this%genotype = geno
+        this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
 
     !---------------------------------------------------------------------------
