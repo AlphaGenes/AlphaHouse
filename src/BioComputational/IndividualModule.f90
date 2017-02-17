@@ -60,7 +60,6 @@ module IndividualModule
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
-            procedure :: SetAsGenotyped
             procedure :: setGenotypeArray
             procedure :: isHD
             procedure :: SetHD
@@ -760,16 +759,6 @@ contains
         ans = this%Genotyped
     end function isGenotyped
 
-
-    !---------------------------------------------------------------------------
-    !> @brief Sets the individual to be genotyped.
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    subroutine SetAsGenotyped(this)
-        class(Individual), intent(inout) :: this
-        this%Genotyped = .true.
-    end subroutine SetAsGenotyped
 
 
     !---------------------------------------------------------------------------

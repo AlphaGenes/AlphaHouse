@@ -43,7 +43,8 @@ type PedigreeHolder
     integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = newID 
-
+    type(DictStructure) :: genotypeDictionary
+    integer(kind=int32) :: nGenotyped
     integer :: maxGeneration
     contains
         procedure :: destroyPedigree
@@ -61,6 +62,7 @@ type PedigreeHolder
         procedure :: printPedigree
         procedure :: getMatePairsAndOffspring
         procedure :: getAllGenotypesAtPosition
+        procedure :: setAnimalAsGenotyped
 
 end type PedigreeHolder
 
@@ -220,11 +222,12 @@ contains
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp, pedFile) result(pedStructure)
+    function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp,GenotypeFileFormat, pedFile) result(pedStructure)
         use AlphaHouseMod, only : countLines
         use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
         integer, intent(in) :: nSnp !< number of snps to read
+        integer , intent(in) :: GenotypeFileFormat
         character(len=*),intent(in) :: fileIn !< path of Genotype file
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
         character(len=*),intent(in), optional :: pedFile !< path of pedigreeFile file
@@ -234,10 +237,10 @@ contains
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount
-        integer :: i
-        integer, dimension(:), allocatable :: tmpGeno
+        integer :: i,j
+        integer(kind=1), dimension(:), allocatable :: tmpGeno
         integer(kind=int64) :: sizeDict
-
+        integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
         allocate(tmpGeno(nsnp))
         pedStructure%nDummys = 0
@@ -258,11 +261,34 @@ contains
         open(newUnit=fileUnit, file=fileIn, status="old")
 
         do i=1,nIndividuals
+            
+            select case(GenotypeFileFormat)
 
-            read(fileUnit,*) tmpId,tmpGeno(:)
+            case(1)
+                read(fileUnit,*) tmpId,tmpGeno(:)
+            case(2)
+                read (fileUnit, *) tmpId, tmpGeno(:)
+	            read (fileUnit, *) tmpId, tmpGeno(:)
+                ! TODO check with john as to why this is there
+            case(3)
+                read(fileUnit,*) tmpId,WorkVec(:)
+            end select
+
+
+            if (GenotypeFileFormat == 3) then
+                do j=1, nsnp
+                    tmpGeno(j) = MissingGenotypeCode
+                    if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 1)) tmpGeno(j) = 0
+                    if ((WorkVec(j*2 - 1) == 1).and.(WorkVec(j*2) == 2)) tmpGeno(j) = 1
+                    if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 1)) tmpGeno(j) = 1
+                    if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 2)) tmpGeno(j) = 2
+                enddo
+            endif
             call pedStructure%dictionary%addKey(tmpId, i)
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+            call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
         enddo
+        
 
         close(fileUnit)
 
@@ -546,7 +572,14 @@ contains
     end subroutine destroyPedigree
 
 
-
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !> @brief     Adds genotype information to pedigree from a 2 dimensional array
+    !
+    !> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+    !
+    !> @date       October 25, 2016
+    !---------------------------------------------------------------------------
     subroutine addGenotypeInformationFromArray(this, array)
 
         use AlphaHouseMod, only : countLines
@@ -554,12 +587,21 @@ contains
         class(PedigreeHolder) :: this
         integer(kind=1),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
         integer :: i 
-        do i=1,this%pedigreeSize-this%nDummys
-            call this%pedigree(i)%setGenotypeArray(array(i,:))
+        do i=1,this%pedigreeSize-this%nDummys !< assumes dummys are at end, otherwise this will NOT work
+            call this%setAnimalAsGenotyped(i, array(i,:))
         enddo
 
     end subroutine addGenotypeInformationFromArray
 
+
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !> @brief     Adds genotype information to pedigree from a file
+    !
+    !> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+    !
+    !> @date       October 25, 2016
+    !--------------------------------------------------------------------------
     subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG)
 
         use AlphaHouseMod, only : countLines
@@ -590,7 +632,7 @@ contains
                 if (tmpIdNum == DICT_NULL) then
                     write(error_unit, *) "ERROR: Genotype info for non existing animal"
                 else
-                    call this%pedigree(tmpIdNum)%setGenotypeArray(tmpSnpArray)
+                    call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
                 endif
             enddo
 
@@ -689,6 +731,12 @@ contains
         endif
     end subroutine outputSortedPedigree
 
+
+    !---------------------------------------------------------------------------
+    !< @brief Output pedigree to stdout in the format recodedID, recodedSireId, recodedDamId, originalId
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine outputSortedPedigreeInAlphaImputeFormat(this, file)
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
@@ -742,6 +790,13 @@ contains
 
 
 
+
+    !---------------------------------------------------------------------------
+    !< @brief Sorts pedigree, and overwrites all fields to new values
+    !< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom 
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine sortPedigreeAndOverwrite(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
@@ -1150,5 +1205,35 @@ contains
         call dictionary%destroy()
 
     end subroutine getMatePairsAndOffspring
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setAnimalAsGenotyped(this, individualIndex, geno)
+
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: individualIndex !< index of animal to get genotyped
+        integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+
+        if (this%nGenotyped == 0) then
+            this%genotypeDictionary = DictStructure()
+            allocate(this%genotypeMap(this%pedigreeSize))
+
+        else  if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
+            ! if animal has already been genotyped, overwrite array, but don't increment
+            
+            call this%pedigree(individualIndex)%setGenotypeArray(geno)
+            return
+        endif 
         
+        this%nGenotyped = this%nGenotyped+1
+        call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)      
+        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        this%genotypeMap(this%nGenotyped) = individualIndex
+
+    end subroutine setAnimalAsGenotyped
+    
 end module PedigreeModule
