@@ -809,7 +809,7 @@ contains
         integer :: i
         if (.not. indiv%founder) then
             ! if the generation of both parents has been set, add one to the greater one
-            if (indiv%sirePointer%generation /= -9999 .and. indiv%damPointer%generation /= -9999 ) then
+            if (indiv%sirePointer%generation /= NOGENERATIONVALUE .and. indiv%damPointer%generation /= NOGENERATIONVALUE) then
 
                 if (indiv%sirePointer%generation > indiv%damPointer%generation) then
                     indiv%generation = indiv%sirePointer%generation + 1
