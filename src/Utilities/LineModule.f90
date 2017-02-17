@@ -70,7 +70,7 @@ module LineModule
     !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
     !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
     !>Setting this to true will cause it to disregard case.   By default it will be false (i.e. case sensitive).
-    pure integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
+    integer function hasWithin(self, charIn, isCaseSensitive) result (indexOut)
       use AlphaHouseMod, only: toLower
       class(Line), intent(in):: self
       character(len=*), intent(in):: charIn
@@ -96,8 +96,8 @@ module LineModule
           end if
         end do
       else
-        do i =1, lineUsed%getNumWords()
-          if (lineUsed%getWord(i) == charIn) then
+        do i =1, self%getNumWords()
+          if (self%getWord(i) == charIn) then
             indexOut = i
           end if
         end do
