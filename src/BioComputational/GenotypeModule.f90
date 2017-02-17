@@ -305,24 +305,25 @@ function compatibleHaplotype(g, h, threshold) result(c)
 
     integer :: i, num
 
+  
     num = 0
 
     do i = 1, g%sections
-      num = num + POPCNT( IAND( &
+      num = num + POPCNT( IOR( &
         !! Genotype is zero !!
         IAND( &
           ! Genotype is 0
           IAND(g%homo(i), NOT(g%additional(i))), &
           ! The haplotypes is 1
-          h%phase(i) ), &
+          IAND(h%phase(i), NOT(h%missing(i))) ), &
         !! Genotype is two
         IAND( &
           ! Genotype is 2
           IAND(g%homo(i), g%additional(i)), &
           ! One of the haplotypes is 0
           IAND(NOT(h%phase(i)), NOT(h%missing(i))))))
-  end do
-
+    end do
+    
   c = num <= threshold
 end function compatibleHaplotype
 

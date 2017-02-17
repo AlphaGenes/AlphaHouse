@@ -52,6 +52,7 @@ module HaplotypeModule
     module procedure newHaplotypeInt
     module procedure newHaplotypeBits
     module procedure newHaplotypeMissing
+    module procedure newHaplotypeHaplotype
   end interface Haplotype
   
 contains
@@ -117,6 +118,14 @@ contains
     end do
     
   end function newHaplotypeBits
+  
+  function newHaplotypeHaplotype(oh) result(h)
+    class(Haplotype) :: oh
+    
+    type(Haplotype) :: h
+    
+    h = Haplotype(oh%phase, oh%missing, oh%length)
+  end function newHaplotypeHaplotype
   
   function newHaplotypeMissing(length) result(h)
     integer, intent(in) :: length
