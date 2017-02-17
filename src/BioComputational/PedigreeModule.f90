@@ -42,7 +42,7 @@ type PedigreeHolder
     integer(kind=int32) :: maxPedigreeSize
     integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
-    integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = newID 
+    integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
     type(DictStructure) :: genotypeDictionary
     integer(kind=int32) :: nGenotyped
     integer :: maxGeneration
