@@ -1131,8 +1131,7 @@ contains
                 if (this%pedigree(i)%isGenotyped()) then
                     counter = counter +1
                     res(counter) = this%pedigree(i)%individualGenotype%getGenotype(position)
-                    if (res(counter) /= 0 .or. res(counter) /= 1 .or. res(counter) /= 2 .or. res(counter) /= MISSINGPHASECODE) then
-
+                    if (res(counter) /= 0 .and. res(counter) /= 1 .and. res(counter) /= 2 .and. res(counter) /= MISSINGPHASECODE) then
                         res(counter) = MISSINGPHASECODE
                     endif
                 endif
