@@ -25,6 +25,8 @@ SET(ALPHAHOUSE_src
 	BioComputational/FilterModule.f90
         Utilities/SortingModule.f90
 	Utilities/ClusteringModule.f90
+	Utilities/par_zig_mod.f90
+	Utilities/LegacyRandom.f90
         main.f90
 	)
 
