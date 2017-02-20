@@ -1125,7 +1125,7 @@ contains
         allocate(res(this%pedigreeSize))
         res = MISSINGPHASECODE
             counter = 0
-        ! TODO can do in parallel
+        
             do i=1, this%pedigreeSize
 
                 if (this%pedigree(i)%isGenotyped()) then
