@@ -1117,13 +1117,13 @@ contains
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     function getAllGenotypesAtPosition(this, position) result(res)
-
+        use constantModule, only : MISSINGPHASECODE
         class(pedigreeHolder) :: this
         integer, intent(in) :: position
         integer(KIND=1), allocatable, dimension(:) :: res
         integer :: counter, i
         allocate(res(this%pedigreeSize))
-        res = 9
+        res = MISSINGPHASECODE
             counter = 0
         ! TODO can do in parallel
             do i=1, this%pedigreeSize
@@ -1131,6 +1131,10 @@ contains
                 if (this%pedigree(i)%isGenotyped()) then
                     counter = counter +1
                     res(counter) = this%pedigree(i)%individualGenotype%getGenotype(position)
+                    if (res(counter) /= 1 .or. res(counter) /= 2 .or. res(counter) /= MISSINGPHASECODE) then
+
+                        res(counter) = MISSINGPHASECODE
+                    endif
                 endif
 
             enddo
