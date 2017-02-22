@@ -2,7 +2,7 @@ module ConstantModule
 
     integer, parameter :: MissingPhaseCode = 9
     integer, parameter :: ErrorPhaseCode = -1
-    integer, parameter :: MissingGenotypeCode = 3
+    integer, parameter :: MissingGenotypeCode = 9
     integer, parameter :: MissingHaplotypeCode = -99
     character, parameter :: EMPTY_PARENT = '0'
     character, parameter :: EMPTYID = '0'
@@ -16,4 +16,5 @@ module ConstantModule
     integer, parameter :: MISSINGGENDERCODE = -9
     integer , parameter ::  DEFAULTDICTSIZE = 4993
     integer, parameter :: DICT_NULL = -2147483648
+    integer, parameter :: DICT_MULTIPLIER = 17
 end Module ConstantModule
