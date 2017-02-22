@@ -1106,9 +1106,11 @@ contains
 
         call RecPed%init(n=this%pedigreeSize)
 
-        if (.not. allocated(this%generations)) then
-            call this%sortPedigreeAndOverwriteWithDummyAtTheTop
+        if ( allocated(this%generations)) then
+           deallocate(this%generations)
         end if
+
+         call this%sortPedigreeAndOverwriteWithDummyAtTheTop
 
         counter = 0
         do i=0, this%maxGeneration
