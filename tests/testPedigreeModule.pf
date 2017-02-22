@@ -142,17 +142,16 @@ module TestPedigreeModule
 
       call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
-      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     2,     4,     6,     8,     8]
-      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     5,     3,     3,     1,     1]
+      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]
+      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     3,     5,     3,     1,     1]
       do i = 0, pedigree%pedigreeSize
-         print*, trim(recPed%originalId(i)), recPed%generation(i), recPed%id(1:3,i)
-         print*,"li", trim(expRecPed%originalId(i)), expRecPed%generation(i), expRecPed%id(1:3,i)
-        !  @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
-        !  @assertEqual(expRecPed%generation(i), recPed%generation(i))
-        !  @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+         @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
+         @assertEqual(expRecPed%generation(i), recPed%generation(i))
+         @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+         
       end do
     end subroutine
 
