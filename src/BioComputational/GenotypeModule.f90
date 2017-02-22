@@ -22,6 +22,7 @@ module GenotypeModule
   procedure :: compatibleHaplotypes
   procedure :: compatibleHaplotype
   procedure :: numIncommon
+  procedure :: numMissing
   procedure :: mismatches
   procedure :: compareGenotype
   procedure :: getLength
@@ -359,6 +360,15 @@ function numNotMissing(g) result(c)
       c = c + POPCNT(NOT(IAND(NOT(g%homo(i)), g%additional(i))))
   end do
 end function numNotMissing
+
+function numMissing(g) result(c)
+    class(Genotype), intent(in) :: g
+
+    integer :: c
+
+    c = g%length - g%numNotMissing()
+end function numMissing
+
 
 
 subroutine setHaplotypeFromGenotype(g, h)
