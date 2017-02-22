@@ -567,7 +567,12 @@ contains
         enddo
         call this%Founders%destroyLinkedList
         call this%dictionary%destroy !destroy dictionary as we no longer need it
+        if (this%nGenotyped > 0) then
+            call this%genotypeDictionary%destroy
+            deallocate(this%genotypeMap)
+        endif
             deallocate(this%pedigree)
+
 
     end subroutine destroyPedigree
 
@@ -630,7 +635,7 @@ contains
                 enddo
                 tmpIdNum = this%dictionary%getValue(tmpId)
                 if (tmpIdNum == DICT_NULL) then
-                    write(error_unit, *) "ERROR: Genotype info for non existing animal"
+                    write(error_unit, *) "ERROR: Genotype info for non existing animal:",tmpId
                 else
                     call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
                 endif
