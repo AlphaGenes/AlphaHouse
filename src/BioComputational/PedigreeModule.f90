@@ -223,22 +223,22 @@ contains
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp,GenotypeFileFormat, pedFile) result(pedStructure)
+    function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile) result(pedStructure)
         use AlphaHouseMod, only : countLines
         use iso_fortran_env
         type(PedigreeHolder) :: pedStructure
         integer, intent(in) :: nSnp !< number of snps to read
-        integer , intent(in) :: GenotypeFileFormat
+        integer , intent(in), optional :: GenotypeFileFormatIn
         character(len=*),intent(in) :: fileIn !< path of Genotype file
         integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
-        character(len=*),intent(in), optional :: pedFile !< path of pedigreeFile file
-
+        character(len=*),intent(in), optional :: pedFile !< path of pedigree file
+         character(len=*),intent(in), optional :: genderfile !< path of gender file
         character(len=IDLENGTH) :: tmpId
         integer(kind=int32) :: stat, fileUnit,tmpIdNum
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount
-        integer :: i,j
+        integer :: i,j,GenotypeFileFormat
         integer(kind=1), dimension(:), allocatable :: tmpGeno
         integer(kind=int64) :: sizeDict
         integer(kind=1), dimension(nSnp * 2) :: WorkVec
@@ -247,6 +247,11 @@ contains
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
         
+        if (present(GenotypeFileFormatIn)) then
+            GenotypeFileFormat = GenotypeFileFormatIn
+        else
+            GenotypeFileFormat = 1
+        endif
         if (present(numberInFile)) then
             nIndividuals = numberInFile
         else
@@ -341,6 +346,26 @@ contains
             do i=1, pedStructure%pedigreeSize
                call pedStructure%Founders%list_add(pedStructure%pedigree(i)) 
             enddo
+        endif
+
+
+           ! if we want gender info read in rather than calculated on the fly, lets do it here
+        if (present(genderFile)) then !read in gender here
+            open(newUnit=fileUnit, file=genderFile, status="old")
+            do
+                read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
+                if (stat /=0) exit
+
+                tmpIdNum = pedStructure%dictionary%getValue(tmpId)
+                if (tmpIdNum /= DICT_NULL) then
+                    pedStructure%Pedigree(i)%gender = int(tmpGender)
+                else
+                    write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
+                    write(error_unit, *) "Amimal:",tmpId
+                endif
+            end do
+
+
         endif
 
     end function initPedigreeGenotypeFiles
