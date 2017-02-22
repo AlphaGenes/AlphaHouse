@@ -112,7 +112,7 @@ contains
     h%phase = phase
     h%missing = missing
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
     end do
@@ -144,7 +144,7 @@ contains
     h%missing = NOT(h%missing)
 
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
     end do
@@ -416,7 +416,7 @@ contains
         
     integer :: num
     
-    num = h%length - h%numberMissing()
+    num = h%length - h%numberMissingOrError()
   end function numberNotMissing
   
   function numberSame(h1, h2) result (num)
@@ -445,7 +445,7 @@ contains
     h%missing = 0
     h%missing = NOT(h%missing)
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
@@ -602,7 +602,7 @@ contains
       end if
     end if    
           
-    do i = 64 - sub%overhang + 1, 64
+    do i = 64 - sub%overhang, 63
       sub%phase(sub%sections) = ibclr(sub%phase(sub%sections), i - 1)
       sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i - 1)
     end do

@@ -114,7 +114,7 @@ module GenotypeModule
 			      IOR(h1%missing(i), h2%missing(i)) )
       end do
       
-      do i = 64 - g%overhang + 1, 64
+      do i = 64 - g%overhang, 63
 	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
       end do
       
@@ -374,7 +374,7 @@ subroutine setHaplotypeFromGenotype(g, h)
 
       h%phase(i) = IAND(g%homo(i), g%additional(i))
   end do
-  do i = 64 - g%overhang + 1, 64
+  do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
 end subroutine setHaplotypeFromGenotype
@@ -393,7 +393,7 @@ end subroutine setHaplotypeFromGenotype
 
       h%phase(i) = IOR(IAND(NOT(errors(i)), h%phase(i)), IAND(errors(i), IAND(g%homo(i), g%additional(i))))
     end do
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
     end do
   end subroutine setHaplotypeFromGenotypeIfError
@@ -410,7 +410,7 @@ end subroutine setHaplotypeFromGenotype
       h%phase(i) = IOR(IAND(NOT(h%missing(i)), h%phase(i)), IAND(h%missing(i), IAND(g%homo(i), g%additional(i))))
       h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
     end do
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
   end subroutine setHaplotypeFromGenotypeIfMissing
@@ -498,7 +498,7 @@ function isHomo(g, pos) result (two)
       errors(i) = IAND(allnotmissing, IOR(zeroerror, twoerror))
     end do
 
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       errors(g%sections) = ibclr(errors(g%sections), i - 1)
     end do
   end function getErrorsSingle
@@ -541,7 +541,7 @@ function isHomo(g, pos) result (two)
       errors(i) = IAND(allnotmissing, IOR(  IOR(zeroerror, twoerror), oneerror))
     end do
 
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       errors(g%sections) = ibclr(errors(g%sections), i - 1)
     end do
 
@@ -599,7 +599,7 @@ function isHomo(g, pos) result (two)
       end if
     end if    
           
-    do i = 64 - sub%overhang + 1, 64
+    do i = 64 - sub%overhang, 63
       sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i - 1)
       sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i - 1)
     end do
