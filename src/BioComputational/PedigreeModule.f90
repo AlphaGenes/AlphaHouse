@@ -1141,6 +1141,23 @@ contains
     end function getAllGenotypesAtPosition
 
 
+    function getGenotypesAsArray(this) result(res)
+        
+        class(pedigreeHolder) :: this
+        integer(kind=1) ,dimension(:,:), allocatable :: res
+        integer :: i
+
+
+        allocate(res(this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+       do i=1, this%nGenotyped
+        res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+
+       enddo
+
+    end function getGenotypesAsArray
+        
+
+
 
     !---------------------------------------------------------------------------
     !< @brief returns list of mates and offspring for those mate pairs for given pedigree
