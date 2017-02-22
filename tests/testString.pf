@@ -5,10 +5,10 @@ use StringModule
 use iso_fortran_env
 
 Type(String):: stringOut, stringExpected, stringIn
-integer(int32):: expected,gotten
+!integer(int32):: expected,gotten
 character(len=:), allocatable:: StringUsed
 real(real32):: temp
-integer(int32):: startPos, endPos
+integer(int32):: endPos
 
 StringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:''|\/?><,.~`+="
 stringIn = StringUsed
@@ -34,7 +34,7 @@ use StringModule
 use iso_fortran_env
 
 Type(String):: stringOut, stringExpected, stringIn
-integer(int32):: expected,gotten
+!integer(int32):: expected,gotten
 character(len=:), allocatable:: StringUsed
 real(real32):: temp
 integer(int32):: startPos, endPos
@@ -83,9 +83,7 @@ StringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:''|\/?><,.~`+="
 StringIn = StringUsed
 call random_seed()
 call random_number(temp)
-expected = len(StringUsed)*temp
-
-
+expected = len(StringUsed)*temp+1
 
 gotten = stringIn%getPosition(StringUsed(expected:expected))
 
@@ -159,7 +157,7 @@ type(String):: inputString
 type(String), dimension(5):: outputString, expectedOutputString
 character(len=1), dimension(3):: delim
 
-integer:: i
+!integer:: i
 
 inputString = "test,test2,    , ,test3,, , ,  , , ,test4,test5"
 expectedOutputString(1) = "test"

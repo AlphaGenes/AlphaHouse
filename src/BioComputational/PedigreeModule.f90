@@ -661,7 +661,7 @@ contains
         tmpIndNode => this%Founders%first
         allocate(this%generations(0:generationThreshold))
         do i=1, this%Founders%length
-            call this%setOffspringGeneration(0, tmpIndNode%item)
+            call this%setOffspringGeneration(tmpIndNode%item)
 
             tmpIndNode => tmpIndNode%next
         end do
@@ -963,37 +963,49 @@ contains
           enddo
     end subroutine printPedigree
 
+
     !---------------------------------------------------------------------------
     !< @brief Sets generation of an individual and his children recursively
+    !< @details makes assumption that both parents also exist, and that is how generation is got
+    !< both parents generation has to be set for this to work
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !< @date    October 26, 2016
+    !< @date    Febuary 17, 2016
     !< @param[in] generation (integer)
     !< @param[in] pointer to an individual
     !---------------------------------------------------------------------------
-    recursive subroutine setOffspringGeneration(this,generation, indiv)
+    recursive subroutine setOffspringGeneration(this, indiv)
         type(Individual),pointer, intent(inout) :: indiv
-        integer, intent(in) :: generation
         class(pedigreeHolder):: this
 
 
         integer :: i
+        if (.not. indiv%founder) then
+            ! if the generation of both parents has been set, add one to the greater one
+            if (indiv%sirePointer%generation /= NOGENERATIONVALUE .and. indiv%damPointer%generation /= NOGENERATIONVALUE) then
 
-        if (generation > indiv%generation) then
-            if (indiv%generation /= 0 .and. indiv%generation > 0) then !remove from other list, as has already been set
-                call this%generations(indiv%generation)%list_remove(indiv)
+                if (indiv%sirePointer%generation > indiv%damPointer%generation) then
+                    indiv%generation = indiv%sirePointer%generation + 1
+                else 
+                    indiv%generation = indiv%damPointer%generation + 1
+                endif
+
+            else !otherwise, both parents have not been set so return, as animal will get checked later
+                return
             endif
 
-            indiv%generation = generation
-
-            call this%generations(indiv%generation)%list_add(indiv)
-            if(indiv%generation > this%maxGeneration) then
-                this%maxGeneration = indiv%generation
-            endif
+        else
+            indiv%generation = 0     
         endif
+
+        call this%generations(indiv%generation)%list_add(indiv)
+        if(indiv%generation > this%maxGeneration) then
+            this%maxGeneration = indiv%generation
+        endif
+        
         if ( indiv%nOffs /= 0) then
             do i=1,indiv%nOffs
-
-                call this%setOffspringGeneration(indiv%generation+1,indiv%OffSprings(i)%p)
+                
+                call this%setOffspringGeneration(indiv%OffSprings(i)%p)
             enddo
         endif
     end subroutine setOffspringGeneration
