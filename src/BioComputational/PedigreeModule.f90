@@ -63,6 +63,7 @@ type PedigreeHolder
         procedure :: getMatePairsAndOffspring
         procedure :: getAllGenotypesAtPosition
         procedure :: setAnimalAsGenotyped
+        procedure :: getGenotypesAsArray
 
 end type PedigreeHolder
 
@@ -1146,6 +1147,12 @@ contains
     end function getAllGenotypesAtPosition
 
 
+
+    !---------------------------------------------------------------------------
+    !< @brief returns array of genotype information as is used by alphaimpute in format (nGenotyped, nSnp)
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     function getGenotypesAsArray(this) result(res)
         
         class(pedigreeHolder) :: this
@@ -1156,7 +1163,6 @@ contains
         allocate(res(this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
        do i=1, this%nGenotyped
         res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
-
        enddo
 
     end function getGenotypesAsArray
