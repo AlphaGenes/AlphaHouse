@@ -1131,10 +1131,6 @@ contains
 
         call RecPed%init(n=this%pedigreeSize)
 
-        if ( allocated(this%generations)) then
-           deallocate(this%generations)
-        end if
-
          call this%sortPedigreeAndOverwriteWithDummyAtTheTop
 
         counter = 0
