@@ -40,6 +40,14 @@ module GenotypeModule
   procedure :: numberErrorsSingle
   procedure :: getErrorsSingle
   procedure :: subset
+  procedure :: readFormattedGenotype
+  procedure :: readunFormattedGenotype
+  procedure :: writeFormattedGenotype
+  procedure :: writeunFormattedGenotype
+  generic:: write(formatted) => writeFormattedGenotype
+  generic:: write(unformatted) => writeunFormattedGenotype
+  generic:: read(formatted) => readFormattedGenotype
+  generic:: read(unformatted) => readunFormattedGenotype
   end type Genotype
 
   interface Genotype
@@ -614,6 +622,77 @@ function isHomo(g, pos) result (two)
       sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i - 1)
     end do
   end function subset
+
+
+    subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
+      class(Genotype), intent(in) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: v_list(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+
+      integer(kind=1), dimension(:), allocatable :: array
+
+
+      array = dtv%toIntegerArray()
+      write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+    
+      end subroutine writeFormattedGenotype
+
+
+      subroutine writeunFormattedGenotype(dtv, unit, iostat, iomsg)
+        class(Genotype), intent(in)::dtv
+        integer, intent(in):: unit
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+  
+        integer(kind=1), dimension(:), allocatable :: array
+
+        array = dtv%toIntegerArray()
+        write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+
+      end subroutine writeunFormattedGenotype
+
+
+
+      subroutine readUnformattedGenotype(dtv, unit, iostat, iomsg)
+        class(genotype), intent(inout) :: dtv         ! Object to write.
+        integer, intent(in) :: unit         ! Internal unit to write to.
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+        integer(kind=1), dimension(:), allocatable :: array
+
+
+        read(unit,"(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)",iostat=iostat, iomsg=iomsg) array
+
+        call wrapper(dtv, array)
+    end subroutine readUnformattedGenotype
+
+
+
+    pure subroutine wrapper(geno, array) 
+
+      type(genotype), intent(out) :: geno
+      integer(kind=1), dimension(:),intent(in), allocatable :: array
+
+      geno = newGenotypeInt(array)
+    
+    end subroutine wrapper
+
+
+    subroutine readFormattedGenotype(dtv, unit, iotype, vlist, iostat, iomsg)
+      class(Genotype), intent(inout) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: vlist(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+      integer(kind=1), dimension(:), allocatable :: array
+      read(unit,iotype, iostat=iostat, iomsg=iomsg) array
+
+      call wrapper(dtv, array)
+    end subroutine readFormattedGenotype
 
 end module GenotypeModule
 
