@@ -43,7 +43,7 @@ type PedigreeHolder
     integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
-    type(DictStructure) :: genotypeDictionary
+    type(DictStructure) :: genotypeDictionary !implement this with sorting
     integer(kind=int32) :: nGenotyped
     integer :: maxGeneration
     contains
@@ -316,23 +316,26 @@ contains
                         
                     tmpIdNum = pedStructure%dictionary%getValue(tmpId)
                     if (tmpIdNum /= DICT_NULL) then
+ 
+                        tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
+                        tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
+                        if (tmpSireNum /= DICT_NULL) then
+                            pedStructure%pedigree(tmpIdNum)%sirePointer => pedStructure%pedigree(tmpSireNum)
+                            call pedStructure%pedigree(tmpSireNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
+                        else
+                            ! No dummys should be created as these would not be genotyped
+                            pedStructure%pedigree(tmpIdNum)%sireId = "0"
+                        endif
+                        if (tmpDamNum /= DICT_NULL) then
+                            pedStructure%pedigree(tmpIdNum)%damPointer => pedStructure%pedigree(tmpDamNum)
+                            call pedStructure%pedigree(tmpDamNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
+                        else
+                            ! No dummys should be created as these would not be genotyped
+                            pedStructure%pedigree(tmpIdNum)%damId = "0"
+                        endif
                         if (trim(tmpSire) == "0" .and. trim(tmpDam) == "0") then
                             call pedStructure%Founders%list_add(pedStructure%pedigree(tmpIdNum))
-                        else
-                            tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
-                            tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
-                            if (tmpSireNum /= DICT_NULL) then
-                                pedStructure%pedigree(tmpIdNum)%sirePointer => pedStructure%pedigree(tmpSireNum)
-                                call pedStructure%pedigree(tmpSireNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
-                            ! else
-                                ! TODO ask daniel what to do about dummys
-                            endif
-                            if (tmpDamNum /= DICT_NULL) then
-                                pedStructure%pedigree(tmpIdNum)%damPointer => pedStructure%pedigree(tmpDamNum)
-                                call pedStructure%pedigree(tmpDamNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
-                            ! else
-                            !     ! TODO ask daniel what to do about dummys
-                            endif
+                            pedStructure%pedigree(tmpIdNum)%Founder = .true.
                         endif
                     else
                         ! We only care about animals that are in genotype file
@@ -348,6 +351,7 @@ contains
             enddo
         endif
 
+        pedStructure%genotypeDictionary =  pedStructure%dictionary
 
            ! if we want gender info read in rather than calculated on the fly, lets do it here
         if (present(genderFile)) then !read in gender here
