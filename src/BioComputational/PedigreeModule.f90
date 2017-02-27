@@ -43,7 +43,7 @@ type PedigreeHolder
     integer(kind=int32), dimension(:), allocatable :: sortedIndexList
 
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
-    type(DictStructure) :: genotypeDictionary !implement this with sorting
+    type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
     integer(kind=int32) :: nGenotyped
     integer :: maxGeneration
     contains
@@ -351,10 +351,10 @@ contains
             enddo
         endif
 
-        pedStructure%genotypeDictionary =  pedStructure%dictionary
-
            ! if we want gender info read in rather than calculated on the fly, lets do it here
         if (present(genderFile)) then !read in gender here
+            block
+            integer(kind=int32) :: tmpGender
             open(newUnit=fileUnit, file=genderFile, status="old")
             do
                 read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
@@ -368,6 +368,7 @@ contains
                     write(error_unit, *) "Amimal:",tmpId
                 endif
             end do
+            end block
 
 
         endif
@@ -835,7 +836,7 @@ contains
     subroutine sortPedigreeAndOverwrite(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
-        integer :: i,h, pedCounter, tmpId
+        integer :: i,h, pedCounter, tmpId,tmpGenotypeMapIndex
         integer(kind=int64) :: sizeDict
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         type(Individual), pointer, dimension(:) :: newPed
@@ -854,12 +855,23 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
+
                  if (tmpIndNode%item%isDummy) then
                     call dummyList%list_add(tmpIndNode%item)
                     cycle
                  endif
                  pedCounter = pedCounter +1
+
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
+
+                !  update genotype map
+                if (this%nGenotyped > 0) then
+                    tmpGenotypeMapIndex = this%genotypeDictionary%getValue(tmpIndNode%item%originalID)
+                    if (tmpGenotypeMapIndex /= DICT_NULL) then
+                        this%genotypeMap(tmpGenotypeMapIndex) = pedCounter
+                    endif
+                endif
+
                  newPed(pedCounter) = tmpIndNode%item
                  newPed(pedCounter)%id = pedCounter
                  call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
@@ -870,6 +882,8 @@ contains
                         newPed(pedCounter)%sirePointer=> newPed(tmpId)
                     endif
                 endif
+
+                
                 if (associated(newPed(pedCounter)%damPointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
                     if (tmpID /= DICT_NULL) then
@@ -877,6 +891,7 @@ contains
                         newPed(pedCounter)%damPointer=> newPed(tmpId)
                     endif
                 endif
+
                 if (i ==0 ) then !if object is afounder add to founder array
                    call  this%founders%list_add(newPed(pedCounter))
                 endif
@@ -928,7 +943,7 @@ contains
     subroutine sortPedigreeAndOverwriteWithDummyAtTheTop(this)
         use iso_fortran_env, only : output_unit, int64
         class(PedigreeHolder) :: this
-        integer :: i,h, pedCounter, tmpId
+        integer :: i,h, pedCounter, tmpId,tmpGenotypeMapIndex
         integer(kind=int64) :: sizeDict
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         type(Individual), pointer, dimension(:) :: newPed
@@ -948,9 +963,21 @@ contains
             do h=1, this%generations(i)%length
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
+
+                 if (this%nGenotyped > 0) then
+                    !  update genotype map
+                    tmpGenotypeMapIndex = this%genotypeDictionary%getValue(tmpIndNode%item%originalID)
+                    if (tmpGenotypeMapIndex /= DICT_NULL) then
+                        this%genotypeMap(tmpGenotypeMapIndex) = pedCounter
+                    endif
+                endif
+                
                  newPed(pedCounter) = tmpIndNode%item
                  newPed(pedCounter)%id = pedCounter
                  call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
+
+
+
                  if (associated(newPed(pedCounter)%sirePointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%sirePointer%originalID)
                     if (tmpID /= DICT_NULL) then
@@ -958,6 +985,7 @@ contains
                         newPed(pedCounter)%sirePointer=> newPed(tmpId)
                     endif
                 endif
+
                 if (associated(newPed(pedCounter)%damPointer)) then
                     tmpId =  this%dictionary%getValue(newPed(pedCounter)%damPointer%originalID)
                     if (tmpID /= DICT_NULL) then
