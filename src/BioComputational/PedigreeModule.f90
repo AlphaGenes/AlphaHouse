@@ -37,15 +37,15 @@ type PedigreeHolder
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
     type(IndividualLinkedList) :: Founders !linked List holding all founders
     type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
-    type(DictStructure) :: dictionary
+    type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
     integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
-    integer(kind=int32) :: maxPedigreeSize
-    integer(kind=int32), dimension(:), allocatable :: sortedIndexList
+    integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
+    integer(kind=int32), dimension(:), allocatable :: sortedIndexList ! Only created if output or outputinalphaimputeformat is used
 
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
     type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
-    integer(kind=int32) :: nGenotyped
-    integer :: maxGeneration
+    integer(kind=int32) :: nGenotyped ! number of animals that are genotyped
+    integer :: maxGeneration ! largest generation
     contains
         procedure :: destroyPedigree
         procedure :: setPedigreeGenerationsAndBuildArrays
@@ -592,16 +592,26 @@ contains
 
         do i=1,this%pedigreeSize
             call this%Pedigree(i)%destroyIndividual
-            if (allocated(this%generations)) then
-                deallocate(this%generations)
-            endif
+           
         enddo
+         if (allocated(this%generations)) then
+
+            do i=1, this%maxGeneration
+                call this%generations(i)%destroyLinkedList
+            enddo 
+            deallocate(this%generations)
+        endif
+            
         call this%Founders%destroyLinkedList
         call this%dictionary%destroy !destroy dictionary as we no longer need it
         if (this%nGenotyped > 0) then
             call this%genotypeDictionary%destroy
             deallocate(this%genotypeMap)
         endif
+        if (allocated(this%sortedIndexList)) then
+            deallocate(this%sortedIndexList)
+        endif
+        
             deallocate(this%pedigree)
 
 
