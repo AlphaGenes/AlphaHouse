@@ -19,6 +19,7 @@ module GenotypeModule
   contains
   procedure :: toIntegerArray => genotypeToIntegerArray
   procedure :: getGenotype
+  procedure :: setGenotype
   procedure :: compatibleHaplotypes
   procedure :: compatibleHaplotype
   procedure :: numIncommon
@@ -205,6 +206,31 @@ function getGenotype(g, pos) result (genotype)
         end if
     end if
 end function getGenotype
+
+
+function setGenotype(g, pos, val)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: val
+    integer, intent(in) :: pos
+
+    integer :: cursection, curpos
+
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64 - 1
+
+    select case (val)
+      case (0)
+          g%homo(cursection) = ibset(g%homo(cursection), curpos)
+      case (1)
+          ! Nothing to do due to defaults
+      case (2)
+          g%homo(cursection) = ibset(g%homo(cursection), curpos)
+          g%additional(cursection) = ibset(g%additional(cursection), curpos)
+      case default
+          g%additional(cursection) = ibset(g%additional(cursection), curpos)
+    end select 
+
+end function setGenotype
 
 function numOppose(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2

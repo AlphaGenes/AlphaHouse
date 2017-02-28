@@ -64,6 +64,7 @@ type PedigreeHolder
         procedure :: getAllGenotypesAtPosition
         procedure :: setAnimalAsGenotyped
         procedure :: getGenotypesAsArray
+        procedure :: getNumGenotypesMissing
 
 end type PedigreeHolder
 
@@ -1245,6 +1246,23 @@ contains
     end function getGenotypesAsArray
         
 
+        !---------------------------------------------------------------------------
+    !< @brief returns integer value of number of missing genotypes accross all genotypes
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getNumGenotypesMissing(this) result(count)
+        
+        class(pedigreeHolder) :: this
+        integer :: count
+
+        count = 0
+        do i=1, this%nGenotyped
+            count = count + this%pedigree(this%genotypeMap(i))%individualGenotype%numMissing()
+        enddo
+
+    end function getNumGenotypesMissing
+        
 
 
     !---------------------------------------------------------------------------
