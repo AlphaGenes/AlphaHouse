@@ -208,8 +208,8 @@ function getGenotype(g, pos) result (genotype)
 end function getGenotype
 
 
-function setGenotype(g, pos, val)
-    class(Genotype), intent(in) :: g
+subroutine setGenotype(g, pos, val)
+    class(Genotype), intent(inout) :: g
     integer, intent(in) :: val
     integer, intent(in) :: pos
 
@@ -230,7 +230,7 @@ function setGenotype(g, pos, val)
           g%additional(cursection) = ibset(g%additional(cursection), curpos)
     end select 
 
-end function setGenotype
+end subroutine setGenotype
 
 function numOppose(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2

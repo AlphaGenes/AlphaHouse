@@ -1254,7 +1254,7 @@ contains
     function getNumGenotypesMissing(this) result(count)
         
         class(pedigreeHolder) :: this
-        integer :: count
+        integer :: count,i
 
         count = 0
         do i=1, this%nGenotyped
