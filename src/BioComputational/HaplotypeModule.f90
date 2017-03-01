@@ -113,8 +113,8 @@ contains
     h%missing = missing
     
     do i = 64 - h%overhang, 63
-        h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
-        h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
     
   end function newHaplotypeBits
@@ -145,8 +145,8 @@ contains
 
     
     do i = 64 - h%overhang, 63
-        h%phase(h%sections) = ibclr(h%phase(h%sections), i - 1)
-        h%missing(h%sections) = ibclr(h%missing(h%sections), i - 1)
+        h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+        h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
   end function newHaplotypeMissing
   
@@ -416,7 +416,7 @@ contains
         
     integer :: num
     
-    num = h%length - h%numberMissingOrError()
+    num = h%length - h%numberMissing()
   end function numberNotMissing
   
   function numberSame(h1, h2) result (num)
@@ -603,8 +603,8 @@ contains
     end if    
           
     do i = 64 - sub%overhang, 63
-      sub%phase(sub%sections) = ibclr(sub%phase(sub%sections), i - 1)
-      sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i - 1)
+      sub%phase(sub%sections) = ibclr(sub%phase(sub%sections), i)
+      sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i)
     end do
   end function subset
   
