@@ -1257,10 +1257,11 @@ contains
         integer :: count,i
 
         count = 0
+        !$omp parallel do reduction(+:count)
         do i=1, this%nGenotyped
             count = count + this%pedigree(this%genotypeMap(i))%individualGenotype%numMissing()
         enddo
-
+        !$omp end parallel do 
     end function getNumGenotypesMissing
         
 
