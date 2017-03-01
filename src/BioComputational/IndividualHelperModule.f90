@@ -241,6 +241,58 @@ module IndividualHelperModule
     end function getMates
 
     !---------------------------------------------------------------------------
+    !> @brief Returns true if animals are mates, false otherwise 
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !---------------------------------------------------------------------------
+    function areMates(ind1, ind2) result(res)
+
+        use IndividualModule
+        use IndividualLinkedListModule
+
+        type(Individual), intent(in) :: ind1, ind2 !< animals to determine if mates
+        type(Individual),pointer :: tmpInd
+
+        type(IndividualLinkedList) :: mates1
+        logical :: res !< true if animals are mates
+
+        res = .false.
+        mates1 = getMates(ind1)
+        res = mates1%contains(ind2)
+
+    end function areMates
+
+        !---------------------------------------------------------------------------
+    !> @brief Returns true if animals share mates, .false otherwise
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !---------------------------------------------------------------------------
+    function doShareMates(ind1, ind2) result(res)
+        use IndividualModule
+        use IndividualLinkedListModule
+
+        type(Individual), intent(in) :: ind1, ind2
+        type(IndividualLinkedListNode),pointer :: tmpInd
+
+        type(IndividualLinkedList) :: mates1, mates2
+        logical :: res
+        integer :: i
+        res = .false.
+        mates1 = getMates(ind1)
+        mates2 = getMates(ind2)
+
+        tmpInd = mates1%first
+        do i=1, mates1%length
+            if (mates2%contains(tmpInd%item)) then
+                res = .true.
+                return
+            endif
+            tmpInd = tmpInd%next
+        enddo
+
+    end function doShareMates
+
+    !---------------------------------------------------------------------------
     !> @brief creates list of ancestors of given animal
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016

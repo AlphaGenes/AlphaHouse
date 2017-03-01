@@ -65,6 +65,7 @@ type PedigreeHolder
         procedure :: setAnimalAsGenotyped
         procedure :: getGenotypesAsArray
         procedure :: getNumGenotypesMissing
+        procedure :: getGenotypedFounders
 
 end type PedigreeHolder
 
@@ -465,7 +466,13 @@ contains
     end function initPedigreeArrays
 
 
-
+    !---------------------------------------------------------------------------
+    !< @brief Helper function to avoid code duplication
+    !< required by constructors to determine animals that need offspring info added
+    !< due to it not being initially availabel in the pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine addOffspringsAfterReadIn(pedStructure, tmpAnimalArray, tmpAnimalArrayCount)
         use ConstantModule, only : IDLENGTH
         class(PedigreeHolder) :: pedStructure
@@ -581,6 +588,84 @@ contains
     end subroutine addOffspringsAfterReadIn
 
 
+
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns a list of animals that are genotyped, and are classed as founders
+    !< Animals are classed as founders if they have no ancestors that are genotyped in a given number of generations
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getGenotypedFounders(this, numberOfGenerations) result(genotypedFounders)
+
+
+    class(pedigreeHolder) :: this
+    integer, intent(in) :: numberOfGenerations
+    type(IndividualLinkedList) :: genotypedFounders
+    integer :: i
+
+    do i=1, this%pedigreeSize
+
+        if (this%pedigree(i)%genotyped) then
+
+            if (this%pedigree(i)%founder) then
+                call genotypedFounders%list_add(this%pedigree(i))
+            else if (.not. hasGenotypedAnsestors(this%pedigree(i),numberOfGenerations)) then
+                call genotypedFounders%list_add(this%pedigree(i))
+            endif
+
+        endif
+    enddo
+
+
+
+    end function getGenotypedFounders
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns true if individual has genotyped ancestors up to certrain gen, false otherwise
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    recursive function hasGenotypedAnsestors(ind,count) result(res)
+        type(individual) ,intent(in) :: ind !< individual to check ancestors of
+        integer, intent(in) :: count !< how many generations should we look for
+        logical :: res
+
+        if (count == 0) then
+            res = .false.
+            return
+        endif
+
+        if (associated(ind%damPointer)) then
+            
+            if (ind%damPointer%genotyped) then
+                res= .true.
+                return
+            endif
+        endif
+        if (associated(ind%sirePointer)) then
+            
+            if (ind%sirePointer%genotyped) then
+                res= .true.
+                return
+            endif
+            res = hasGenotypedAnsestors(ind%sirePointer, count -1)
+            if (res) then
+                return
+            endif
+        endif
+
+        ! This is done to insure no recursion is done if it is not neccessary, as recursion is more expensive than the branch, which can be trivially optimised
+        if (associated(ind%damPointer)) then
+            res = hasGenotypedAnsestors(ind%damPointer, count -1)
+            if (res) then
+                return
+            endif
+        endif
+
+    end function hasGenotypedAnsestors
 
     !---------------------------------------------------------------------------
     !< @brief distructor for pedigree class
