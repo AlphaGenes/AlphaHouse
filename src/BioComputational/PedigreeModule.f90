@@ -152,7 +152,6 @@ contains
             call pedStructure%dictionary%addKey(tmpId, i)
 
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
-
             if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
                 tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
                 if (tmpSireNum /= DICT_NULL) then
@@ -221,7 +220,7 @@ contains
     !< @brief Constructor for pedigree class using Genotype File format
     !< @details Constructor builds pedigree, without any sorting being done. 
     !< If no pedigree file is supplied, all animals are founders
-    !< If an animal is in the pedigree, but not in the genotypeFile, this animal is not created (no dummy either) and the animals parents are set to empty.
+    !< If an animal is in the pedigree, but not in the genotypeFile, this animal is still created as a dummy!
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -418,7 +417,7 @@ contains
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine addOffspringsAfterReadIn(pedStructure, tmpAnimalArray, tmpAnimalArrayCount)
-        use ConstantModule, only : IDLENGTH
+        use ConstantModule, only : IDLENGTH,EMPTY_PARENT
         class(PedigreeHolder) :: pedStructure
         integer, dimension(:), intent(in) :: tmpAnimalArray !< array containing indexes of tmp animals
         integer, intent(in) :: tmpAnimalArrayCount !< number of animals actually in tmpAnimalArray
@@ -440,13 +439,17 @@ contains
             tmpDam = pedStructure%Pedigree(tmpAnimalArray(i))%getDamId()
             tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
 
+
             if (tmpSire /= EMPTY_PARENT) then
-                if (tmpSireNum /= DICT_NULL) then !if sire has been found in hashtable
+
+                ! check that we've not already defined the parent above
+                if (tmpSireNum /= DICT_NULL .and. .not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then !if sire has been found in hashtable
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                     call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
-
-                else !if sire is defined but not in the pedigree, create him
+                
+                ! check that we've not already defined the parent above
+                else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
                     ! check if the tmp animal has already been created
                     tmpSireNum = pedStructure%dictionary%getValue("dum"//trim(tmpSire))
                     if (tmpSireNum == DICT_NULL) then
@@ -474,11 +477,14 @@ contains
             endif
 
             if (tmpDam /= EMPTY_PARENT) then
-                if (tmpDamNum /= DICT_NULL) then !if dam has been found
+
+                ! check that we've not already defined the parent above
+                if (tmpDamNum /= DICT_NULL .and. .not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then !if dam has been found
                         pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                         call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                         call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
-                else
+               ! check that we've not already defined the parent above
+                else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
                     ! Check for defined animals that have nit been set in pedigree
                     tmpDamNum = pedStructure%dictionary%getValue("dum"//trim(tmpDam))
                     if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
@@ -507,25 +513,43 @@ contains
             endif
 
 
-            if (.not. damFound .XOR. .not. sireFound) then
-                tmpCounter =  tmpCounter + 1
-                write(tmpCounterStr, '(I3.3)') tmpCounter
-                pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-                pedStructure%nDummys = pedStructure%nDummys + 1
+            if (.not. damFound .OR. .not. sireFound) then
+                
+                if (.not. damFound) then
+                    tmpCounter =  tmpCounter + 1
+                    write(tmpCounterStr, '(I3.3)') tmpCounter
+                    pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                    pedStructure%nDummys = pedStructure%nDummys + 1
                     if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
                     endif
                     pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-                    if (.not. damFound) then
-                        pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-                    else if (.not. sireFound) then
-                        pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-                    endif
+                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
+                    pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+                endif
+                if (.not. sireFound) then
+                    tmpCounter =  tmpCounter + 1
+                    write(tmpCounterStr, '(I3.3)') tmpCounter
+                    pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+                    pedStructure%nDummys = pedStructure%nDummys + 1
+                    if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+                        write(error_unit,*) "ERROR: too many undefined animals"
+                        stop
+                    endif
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
+                    pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+                    call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+                endif
+                    
             endif
         enddo
 
