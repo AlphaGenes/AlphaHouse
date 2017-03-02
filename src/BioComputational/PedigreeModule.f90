@@ -66,6 +66,7 @@ type PedigreeHolder
         procedure :: getGenotypesAsArray
         procedure :: getNumGenotypesMissing
         procedure :: getGenotypedFounders
+        procedure :: getSireDamGenotypeIDByIndex
 
 end type PedigreeHolder
 
@@ -1416,4 +1417,53 @@ contains
 
     end subroutine setAnimalAsGenotyped
     
+
+             !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id, the sires id or dams id based on
+    !> which index is passed.
+
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    function getSireDamGenotypeIDByIndex(this,ind, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(PedigreeHolder), intent(in) :: this
+        type(Individual), intent(in) :: ind
+        character(len=IDLENGTH) :: tmp
+        integer, intent(in) :: index !< index of geno index to return (1 for this, 2 for sire, 3 for dam)
+        integer:: v
+
+        v = 0
+        select case (index)
+            case(1)
+                tmp = ind%originalId
+                v = this%genotypeDictionary%getValue(tmp)
+                if (v == DICT_NULL) then
+                    v = 0
+                endif
+            case(2)
+                if (associated(ind%sirePointer)) then
+                    tmp = ind%sirePointer%originalId
+                    v = this%genotypeDictionary%getValue(tmp)
+                    if (v == DICT_NULL) then
+                        v = 0
+                    endif
+                endif
+            case(3)
+               if (associated(ind%damPointer)) then
+                    tmp = ind%damPointer%originalId
+                    v = this%genotypeDictionary%getValue(tmp)
+                    if (v == DICT_NULL) then
+                        v = 0
+                    endif
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamGenotypeIDByIndex
 end module PedigreeModule

@@ -303,10 +303,13 @@ module IndividualHelperModule
         use IndividualLinkedListModule
         type(Individual), intent(in) :: ind !< individual to get ancestors of
         type(IndividualLinkedList),target, optional :: resIn !< linked list of individual's mates
-        type(IndividualLinkedList) :: res
+        type(IndividualLinkedList), pointer :: res
 
         if (present(resIn)) then
-            res = resIn
+            res => resIn
+
+        else 
+            allocate(res)
         endif
         if (associated(ind%sirePointer)) then
             if (.not. res%contains(ind%sirePointer)) then
