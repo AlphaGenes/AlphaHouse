@@ -246,26 +246,37 @@ contains
         integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
         allocate(tmpGeno(nsnp))
-        pedStructure%nDummys = 0
-        tmpAnimalArrayCount = 0
-        
+
+        if  (present(pedFile)) then
+            if (present(genderFile)) then
+                pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
+            else
+                pedStructure = PedigreeHolder(pedFile)
+            endif
+        else
+            pedStructure%nDummys = 0
+            tmpAnimalArrayCount = 0
+            sizeDict = nIndividuals
+            pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
+            allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+            pedStructure%pedigreeSize = nIndividuals
+            pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+            allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+            pedStructure%maxGeneration = 0
+        endif
+            
         if (present(GenotypeFileFormatIn)) then
             GenotypeFileFormat = GenotypeFileFormatIn
         else
             GenotypeFileFormat = 1
         endif
+
         if (present(numberInFile)) then
             nIndividuals = numberInFile
         else
             nIndividuals = countLines(fileIn)
         endif
-        sizeDict = nIndividuals
-        pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
-        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
-        pedStructure%pedigreeSize = nIndividuals
-        pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
-        allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
-        pedStructure%maxGeneration = 0
+       
         open(newUnit=fileUnit, file=fileIn, status="old")
 
         do i=1,nIndividuals
@@ -292,9 +303,14 @@ contains
                     if ((WorkVec(j*2 - 1) == 2).and.(WorkVec(j*2) == 2)) tmpGeno(j) = 2
                 enddo
             endif
-            call pedStructure%dictionary%addKey(tmpId, i)
-            pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
-            call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
+            if (present(pedFile)) then
+                j = pedStructure%dictionary%getValue(tmpID)
+                call pedStructure%setAnimalAsGenotyped(j,tmpGeno)
+            else 
+                call pedStructure%dictionary%addKey(tmpId, i)
+                pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+                call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
+            endif
         enddo
         
 
@@ -302,78 +318,6 @@ contains
 
 
 
-        ! if we want gender info read in rather than calculated on the fly, lets do it here
-        if (present(pedFile)) then !read in gender here
-
-            block
-                character(len=IDLENGTH) :: tmpSire, tmpDam
-                integer :: tmpSireNum, tmpDamNum
-                
-                open(newUnit=fileUnit, file=pedFile, status="old")
-                do
-                    read (fileUnit,*, IOSTAT=stat) tmpId,tmpSire,tmpDam
-                    if (stat /=0) exit
-
-                    
-                        
-                    tmpIdNum = pedStructure%dictionary%getValue(tmpId)
-                    if (tmpIdNum /= DICT_NULL) then
- 
-                        tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
-                        tmpDamNum = pedStructure%dictionary%getValue(tmpDam)
-                        if (tmpSireNum /= DICT_NULL) then
-                            pedStructure%pedigree(tmpIdNum)%sirePointer => pedStructure%pedigree(tmpSireNum)
-                            call pedStructure%pedigree(tmpSireNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
-                        else
-                            ! No dummys should be created as these would not be genotyped
-                            pedStructure%pedigree(tmpIdNum)%sireId = "0"
-                        endif
-                        if (tmpDamNum /= DICT_NULL) then
-                            pedStructure%pedigree(tmpIdNum)%damPointer => pedStructure%pedigree(tmpDamNum)
-                            call pedStructure%pedigree(tmpDamNum)%addOffspring(pedStructure%pedigree(tmpIdNum))
-                        else
-                            ! No dummys should be created as these would not be genotyped
-                            pedStructure%pedigree(tmpIdNum)%damId = "0"
-                        endif
-                        if (trim(tmpSire) == "0" .and. trim(tmpDam) == "0") then
-                            call pedStructure%Founders%list_add(pedStructure%pedigree(tmpIdNum))
-                            pedStructure%pedigree(tmpIdNum)%Founder = .true.
-                        endif
-                    else
-                        ! We only care about animals that are in genotype file
-                        continue
-                    endif
-                end do
-            
-            end block
-        else
-        ! Otherwise, with no animals, every animal is a founder 
-            do i=1, pedStructure%pedigreeSize
-               call pedStructure%Founders%list_add(pedStructure%pedigree(i)) 
-            enddo
-        endif
-
-           ! if we want gender info read in rather than calculated on the fly, lets do it here
-        if (present(genderFile)) then !read in gender here
-            block
-            integer(kind=int32) :: tmpGender
-            open(newUnit=fileUnit, file=genderFile, status="old")
-            do
-                read (fileUnit,*, IOSTAT=stat) tmpId,tmpGender
-                if (stat /=0) exit
-
-                tmpIdNum = pedStructure%dictionary%getValue(tmpId)
-                if (tmpIdNum /= DICT_NULL) then
-                    pedStructure%Pedigree(i)%gender = int(tmpGender)
-                else
-                    write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
-                    write(error_unit, *) "Amimal:",tmpId
-                endif
-            end do
-            end block
-
-
-        endif
 
     end function initPedigreeGenotypeFiles
 
