@@ -1281,18 +1281,20 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !< @brief returns array of genotype information as is used by alphaimpute in format (nGenotyped, nSnp)
+    !< @brief returns array of genotype information as is used by alphaimpute in format (0:nGenotyped, nSnp)
+    !< 
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     function getGenotypesAsArray(this) result(res)
         
         class(pedigreeHolder) :: this
-        integer(kind=1) ,dimension(:,:), allocatable :: res
+        integer(kind=1) ,dimension(:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
         integer :: i
 
 
-        allocate(res(this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+        allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+        res(0,:) = 9
        do i=1, this%nGenotyped
         res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
        enddo
