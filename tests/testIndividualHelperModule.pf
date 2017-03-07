@@ -131,9 +131,11 @@ module TestIndividualHelperModule
           @test
     subroutine TestgetAncestors
         use IndividualModule
+        use integerLinkedListModule
         implicit none
         type(Individual), pointer :: check,tmp, tmp2,tmp3,tmp4,tmp5,tmp6
         type(individualLinkedList) :: ret
+        type(integerLinkedList) :: dist
         check => pedigree%pedigree(pedigree%dictionary%getValue("iii"))
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("ccc"))
@@ -141,9 +143,9 @@ module TestIndividualHelperModule
         tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
         tmp5 => pedigree%pedigree(pedigree%dictionary%getValue("aaa"))
         tmp6 => pedigree%pedigree(pedigree%dictionary%getValue("hhh"))
-        call getAncestors(check,ret)
+        call getAncestors(check,0,ret,dist, 99999)
 
-        write(*,*) ret
+        @assertEqual(dist%length,6)
         @assertEqual(ret%length,6)
         @assertTrue(ret%contains(tmp))
         @assertTrue(ret%contains(tmp2))

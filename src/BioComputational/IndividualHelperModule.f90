@@ -297,32 +297,51 @@ module IndividualHelperModule
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    November 26, 2016
     !---------------------------------------------------------------------------
-    recursive subroutine getAncestors(ind, resIn)
+    recursive subroutine getAncestors(ind, disCount, res, distList, cap)
     ! TODO write tests
         use IndividualModule
         use IndividualLinkedListModule
+        use IntegerLinkedListModule
         type(Individual), intent(in) :: ind !< individual to get ancestors of
-        type(IndividualLinkedList),target, optional :: resIn !< linked list of individual's mates
-        type(IndividualLinkedList), pointer :: res
-
-        if (present(resIn)) then
-            res => resIn
-
-        else 
-            allocate(res)
+        type(integerLinkedList),intent(inout) ::distList !< list of genetic distance to indivs in res
+        type(IndividualLinkedList),intent(inout) :: res
+        integer, intent(in) :: disCount !< count of current distance
+        integer,intent(in) :: cap !< should be set to max int if no cap is desired
+        if (disCount >= cap) then
+            Return
         endif
+
         if (associated(ind%sirePointer)) then
             if (.not. res%contains(ind%sirePointer)) then
                 call res%list_add(ind%sirePointer)
+                call distList%list_add(disCount+1)
             endif
-            call getAncestors(ind%sirePointer, res)
+            call getAncestors(ind%sirePointer,disCount+1, res, distList, cap)
         endif
         if (associated(ind%damPointer)) then
             if (.not. res%contains(ind%damPointer)) then
                 call res%list_add(ind%damPointer)
+                call distList%list_add(disCount+1)
             endif
-            call getAncestors(ind%damPointer,res)
+            call getAncestors(ind%damPointer,disCount+1,res,distList, cap)
         endif
 end subroutine getAncestors
+
+
+
+
+
+! integer function calcGenDistance(ind1, ind2)
+
+
+!     type(individual) :: ind1,ind2
+
+
+
+
+
+
+! end function calcGenDistance
+
 end module IndividualHelperModule
 
