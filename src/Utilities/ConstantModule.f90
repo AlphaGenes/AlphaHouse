@@ -17,4 +17,5 @@ module ConstantModule
     integer , parameter ::  DEFAULTDICTSIZE = 4993
     integer, parameter :: DICT_NULL = -2147483648
     integer, parameter :: DICT_MULTIPLIER = 17
+    integer, parameter :: MAXINT32 = 2147483647
 end Module ConstantModule
