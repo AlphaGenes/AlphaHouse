@@ -330,18 +330,48 @@ end subroutine getAncestors
 
 
 
+!---------------------------------------------------------------------------
+!> @brief calculates the minimum genetic distance between two animals
+!> If no relationship is found a distance of MAXINT32 is returned.
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!> @date    November 26, 2016
+!---------------------------------------------------------------------------
+integer function calcGenDistance(ind1, ind2)
+    use IndividualModule
+    use IndividualLinkedListModule
+    use IntegerLinkedListModule
+    use ConstantModule
 
-! integer function calcGenDistance(ind1, ind2)
+    type(individual), intent(in) :: ind1,ind2 !< individuals to calculate genetic distance of
+    type(IndividualLinkedListNode) :: tmp1, tmp2
+    type(integerLinkedList)::dist1,dist2
+    type(IndividualLinkedList):: an1,an2
+    integer :: val,i,h
+    calcGenDistance = MAXINT32 !< init to a large num
+    
+    call getAncestors(ind1, 0, an1, dist1, MAXINT32) !< take ancestors of both animals
+    call getAncestors(ind2, 0, an2, dist2, MAXINT32)
+
+    tmp1 = an1%first
+
+    ! loop through animals of both animals and see where they interest
+    do i=1, an1%length
+        tmp2 = an2%first
+        do h=1, an2%length
+
+            if (associated(tmp1%item, tmp2%item)) then
+                val = dist1%list_get_nth(i) + dist2%list_get_nth(h)
+                if (calcGenDistance > val ) then
+                    calcGenDistance = val
+                endif
+            endif
+            tmp2 = tmp2%next
+        enddo
+        tmp1 = tmp1%next
+    enddo
 
 
-!     type(individual) :: ind1,ind2
-
-
-
-
-
-
-! end function calcGenDistance
+end function calcGenDistance
 
 end module IndividualHelperModule
 
