@@ -222,6 +222,8 @@ module IndividualHelperModule
         integer ::  i
         do i=1, individualOne%nOffs
 
+            
+
             if (individualOne%offsprings(i)%p%sirePointer == IndividualOne) then
                 if (associated(individualOne%offsprings(i)%p%damPointer)) then
                     if (.not. res%contains(individualOne%offsprings(i)%p%damPointer)) then

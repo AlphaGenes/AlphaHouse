@@ -71,6 +71,8 @@ type PedigreeHolder
         procedure :: getNumGenotypesMissing
         procedure :: getGenotypedFounders
         procedure :: getSireDamGenotypeIDByIndex
+        procedure :: setAnimalAsHD
+        
 
 end type PedigreeHolder
 

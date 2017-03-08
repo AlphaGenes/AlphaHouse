@@ -28,7 +28,7 @@ module IndividualModule
     use genotypeModule
     implicit none
 
-    public :: Individual,individualPointerContainer,operator ( == )
+    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual
     
     private
 
@@ -153,7 +153,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     logical function compareIndividual(l1,l2)
-        class(Individual), intent(in) :: l1,l2 !< individuals to compare
+        class(Individual), intent(in) :: l1
+        type (Individual) , intent(in) :: l2 !< individuals to compare
 
         if (l1%id == l2%id .and. l1%sireID == l2%sireID .and. l1%damID == l2%damID) then
             compareIndividual=.true.

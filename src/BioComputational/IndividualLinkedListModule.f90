@@ -25,7 +25,7 @@
 
 module IndividualLinkedListModule
     use iso_fortran_env
-    use individualModule, only :individual
+    use individualModule
 
 
     abstract interface
@@ -219,17 +219,22 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    logical function contains(this, in)
+    logical function contains(this, ind)
+        
+        use IndividualModule
         class(IndividualLinkedList),intent(in) :: this
-        type(individual),target, intent(in) :: in !< item to check
+        type(individual),target, intent(in) :: ind !< item to check
         type(IndividualLinkedListNode),pointer :: node
 
+        logical :: tmp
 
         if (associated(this%first)) then
           node => this%first
 
           do
-            if (associated(node%item,in)) then
+            tmp = compareIndividual(node%item, ind)
+            
+            if (tmp) then
                 contains = .true.
                 return
             else if (.not.associated(node%next)) then
