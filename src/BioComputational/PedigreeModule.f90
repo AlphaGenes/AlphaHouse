@@ -1487,19 +1487,28 @@ contains
 
 
     subroutine setAnimalAsHD(this, indId)
+        use iso_fortran_env
+        class(PedigreeHolder) :: this
+        integer, intent(in) :: indId
 
-    class(PedigreeHolder) :: this
-    integer, intent(in) :: indId
+        ! if index not in pedigree return. 
+        if (indId > this%pedigreeSize) then
+            write(error_unit, *) "warning - setAnimalAsHD was given an index that was out of range"
+            return
+        endif 
+        if (this%nHd == 0) then
+            this%hdDictionary = DictStructure()
+        endif
 
-    if (this%nHd == 0) then
-        this%hdDictionary = DictStructure()
-    endif
-    this%nHd = this%nHd + 1
-    this%pedigree(indId)%hd = .true.
+        if (this%hdDictionary%getValue(this%pedigree(indId)%originalId) ==DICT_NULL) then
+            this%nHd = this%nHd + 1
+            this%pedigree(indId)%hd = .true.
 
-    this%hdMap(this%nHd) = indId
-    call this%hdDictionary%addKey(this%pedigree(indId)%originalId, this%nHd)
-
+            this%hdMap(this%nHd) = indId
+            call this%hdDictionary%addKey(this%pedigree(indId)%originalId, this%nHd)
+        else 
+            this%pedigree(indId)%hd = .true.
+        endif
 
 
 
