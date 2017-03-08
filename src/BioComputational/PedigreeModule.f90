@@ -45,6 +45,10 @@ type PedigreeHolder
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
     type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
     integer(kind=int32) :: nGenotyped ! number of animals that are genotyped
+
+    integer, dimension(:) , allocatable :: hdMap ! map going from genotypeMap(1:nHd) = recID 
+    type(DictStructure) :: hdDictionary ! maps id to location in genotype map
+    integer(kind=int32) :: nHd ! number of animals that are genotyped hd
     integer :: maxGeneration ! largest generation
     contains
         procedure :: destroyPedigree
@@ -101,6 +105,8 @@ contains
         pedStructure%dictionary = DictStructure()
         pedStructure%pedigreeSize = 0
         pedStructure%nDummys = 0
+        pedStructure%nGenotyped = 0
+        pedStructure%nHd = 0
         pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
     end function initEmptyPedigree
 
@@ -128,7 +134,9 @@ contains
         logical :: sireFound, damFound
 
         pedStructure%nDummys = 0
+        pedStructure%nHd = 0
         tmpAnimalArrayCount = 0
+        pedStructure%nGenotyped = 0
         
         if (present(numberInFile)) then
             nIndividuals = numberInFile
@@ -247,6 +255,9 @@ contains
 
         allocate(tmpGeno(nsnp))
 
+        pedStructure%nHd = 0
+        pedStructure%nGenotyped = 0
+
         if  (present(pedFile)) then
             if (present(genderFile)) then
                 pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
@@ -313,6 +324,7 @@ contains
             endif
         enddo
         
+        
 
         close(fileUnit)
 
@@ -341,6 +353,8 @@ contains
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
+        pedStructure%nHd = 0
+        pedStructure%nGenotyped = 0
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
 
@@ -1468,4 +1482,24 @@ contains
         end select
         return
     end function getSireDamGenotypeIDByIndex
+
+
+    subroutine setAnimalAsHD(this, indId)
+
+    class(PedigreeHolder) :: this
+    integer, intent(in) :: indId
+
+    if (this%nHd == 0) then
+        this%hdDictionary = DictStructure()
+    endif
+    this%nHd = this%nHd + 1
+    this%pedigree(indId)%hd = .true.
+
+    this%hdMap(this%nHd) = indId
+    call this%hdDictionary%addKey(this%pedigree(indId)%originalId, this%nHd)
+
+
+
+
+    end subroutine setAnimalAsHD
 end module PedigreeModule
