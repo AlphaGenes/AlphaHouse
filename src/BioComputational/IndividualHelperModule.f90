@@ -222,13 +222,13 @@ module IndividualHelperModule
         integer ::  i
         do i=1, individualOne%nOffs
 
-            if (associated(individualOne%offsprings(i)%p%sirePointer, IndividualOne)) then
+            if (individualOne%offsprings(i)%p%sirePointer == IndividualOne) then
                 if (associated(individualOne%offsprings(i)%p%damPointer)) then
                     if (.not. res%contains(individualOne%offsprings(i)%p%damPointer)) then
                         call res%list_add(individualOne%offsprings(i)%p%damPointer)
                     endif
                 endif
-            else if (associated(individualOne%offsprings(i)%p%damPointer, IndividualOne)) then
+            else if (individualOne%offsprings(i)%p%damPointer == IndividualOne) then
                 if (associated(individualOne%offsprings(i)%p%sirePointer)) then
                     if (.not. res%contains(individualOne%offsprings(i)%p%sirePointer)) then
                         call res%list_add(individualOne%offsprings(i)%p%sirePointer)
@@ -237,6 +237,7 @@ module IndividualHelperModule
             endif  
         enddo
 
+        print *,res%length
 
     end function getMates
 
@@ -399,7 +400,7 @@ integer function calcGenDistance(ind1, ind2)
         tmp2 = an2%first
         do h=1, an2%length
 
-            if (associated(tmp1%item, tmp2%item)) then
+            if (tmp1%item == tmp2%item) then
                 val = dist1%list_get_nth(i) + dist2%list_get_nth(h)
                 if (calcGenDistance > val ) then
                     calcGenDistance = val
