@@ -237,8 +237,6 @@ module IndividualHelperModule
             endif  
         enddo
 
-        print *,res%length
-
     end function getMates
 
     !---------------------------------------------------------------------------
