@@ -251,7 +251,6 @@ module IndividualHelperModule
         use IndividualLinkedListModule
 
         type(Individual), intent(in) :: ind1, ind2 !< animals to determine if mates
-        type(Individual),pointer :: tmpInd
 
         type(IndividualLinkedList) :: mates1
         logical :: res !< true if animals are mates
@@ -281,13 +280,17 @@ module IndividualHelperModule
         mates1 = getMates(ind1)
         mates2 = getMates(ind2)
 
-        tmpInd = mates1%first
+        if (.not. associated(mates1%first) .or. .not. associated(mates2%first)) then
+            res = .false.
+            return
+        endif
+        tmpInd => mates1%first
         do i=1, mates1%length
             if (mates2%contains(tmpInd%item)) then
                 res = .true.
                 return
             endif
-            tmpInd = tmpInd%next
+            tmpInd => tmpInd%next
         enddo
 
     end function doShareMates
@@ -350,8 +353,45 @@ integer function calcGenDistance(ind1, ind2)
     calcGenDistance = MAXINT32 !< init to a large num
     
     call getAncestors(ind1, 0, an1, dist1, MAXINT32) !< take ancestors of both animals
+
+    if (associated(an1%first)) then
+
+        tmp1 = an1%first
+
+        ! loop through ancestors of ind1 and see if ind2 is an ancestor
+        do i=1, an1%length
+            
+            if ( tmp1%item == ind2) then
+
+                calcGenDistance = dist1%list_get_nth(i)
+                return
+            endif
+            tmp1 = tmp1%next
+        enddo
+    endif
+
+
     call getAncestors(ind2, 0, an2, dist2, MAXINT32)
 
+    if (associated(an2%first)) then
+        tmp2 = an2%first
+    ! loop through ancestors of ind1 and see if ind2 is an ancestor
+        do i=1, an2%length
+            
+            if (tmp2%item == ind1) then
+
+                calcGenDistance = dist2%list_get_nth(i)
+                return
+            endif
+            tmp2 = tmp2%next
+        enddo
+    endif 
+
+    ! if they are not ancestors and either list is empty then animals aren't connected
+    if (.not. associated(an1%first) .or. .not. associated(an2%first)) then
+        calcGenDistance = MAXINT32
+        return
+    end if
     tmp1 = an1%first
 
     ! loop through animals of both animals and see where they interest
