@@ -31,7 +31,7 @@ module PedigreeModule
  use AlphaHouseMod, only : Int2Char
 
  private addOffspringsAfterReadIn
-
+ 
 type PedigreeHolder
 
     type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
@@ -1498,6 +1498,7 @@ contains
         endif 
         if (this%nHd == 0) then
             this%hdDictionary = DictStructure()
+            allocate(this%hdMap(this%pedigreeSize))
         endif
 
         if (this%hdDictionary%getValue(this%pedigree(indId)%originalId) ==DICT_NULL) then
