@@ -45,30 +45,31 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
-	# file(GLOB testDeps "${SRC}/*.f90")
-	SET(testDeps
-        ${SRC}/Utilities/ConstantModule.f90
-        ${SRC}/Utilities/AlphaHouseMod.f90
-        ${SRC}/Utilities/AlphaSystemMod.f90
-		${SRC}/BioComputational/AlphaStatMod.f90
-    ${SRC}/Utilities/OrderPackModule.f90
-		${SRC}/Utilities/HashModule.f90
-		${SRC}/Utilities/LinkedListModule.f90
-		${SRC}/BioComputational/IndividualModule.f90
-		${SRC}/BioComputational/IndividualLinkedListModule.f90
-		${SRC}/BioComputational/IndividualHelperModule.f90
-		${SRC}/BioComputational/PedigreeModule.f90
-		${SRC}/BioComputational/IntelRNGMod.f90
-		${SRC}/Utilities/HelperSubroutines.f90
-        ${SRC}/Utilities/StringModule.f90
-        ${SRC}/Utilities/LineModule.f90
-        ${SRC}/Utilities/PageModule.f90
-		${SRC}/Utilities/IntegerLinkedListModule.f90
-        ${SRC}/Utilities/Input.f90
-		${SRC}/BioComputational/GenotypeModule.f90
-		${SRC}/BioComputational/HaplotypeModule.f90
-		${SRC}/BioComputational/BitUtilities.f90
-	)
+  # file(GLOB testDeps "${SRC}/*.f90")
+  SET(testDeps
+      ${SRC}/Utilities/ConstantModule.f90
+      ${SRC}/Utilities/AlphaHouseMod.f90
+      ${SRC}/Utilities/AlphaSystemMod.f90
+      ${SRC}/BioComputational/AlphaStatMod.f90
+      ${SRC}/Utilities/OrderPackModule.f90
+      ${SRC}/Utilities/HashModule.f90
+      ${SRC}/Utilities/LinkedListModule.f90
+      ${SRC}/BioComputational/IndividualModule.f90
+      ${SRC}/BioComputational/IndividualLinkedListModule.f90
+      ${SRC}/BioComputational/IndividualHelperModule.f90
+      ${SRC}/BioComputational/PedigreeModule.f90
+      ${SRC}/BioComputational/IntelRNGMod.f90
+      ${SRC}/Utilities/HelperSubroutines.f90
+      ${SRC}/Utilities/StringModule.f90
+      ${SRC}/Utilities/LineModule.f90
+      ${SRC}/Utilities/PageModule.f90
+      ${SRC}/Utilities/IntegerLinkedListModule.f90
+      ${SRC}/Utilities/Input.f90
+      ${SRC}/BioComputational/GenotypeModule.f90
+      ${SRC}/BioComputational/HaplotypeModule.f90
+      ${SRC}/BioComputational/BitUtilities.f90
+      ${SRC}/BioComputational/AlphaEvolveModule.f90
+)
 
 endif (${RUN_TESTS})
 
@@ -100,23 +101,24 @@ ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
-set (TESTFILES
-	${TESTS}/TestAlphaStatMod.pf
-  ${TESTS}/TestOrderPackModule.pf
-	${TESTS}/TestHashTable.pf
-	${TESTS}/TestIndividual.pf
-	${TESTS}/TestIntelRNGMod.pf
-	${TESTS}/TestLinkedList.pf
-	${TESTS}/testAlphaHouseMod.pf
-	${TESTS}/testIndividualHelperModule.pf
-	${TESTS}/testIndividualLinkedList.pf
-	${TESTS}/testInputFile.pf
-	 ${TESTS}/testLine.pf
-	 ${TESTS}/testPage.pf
-	${TESTS}/testPedigreeModule.pf
-	 ${TESTS}/testString.pf
-	${TESTS}/testSystemMod.pf
-	)
+set(TESTFILES
+    ${TESTS}/TestAlphaStatMod.pf
+    ${TESTS}/TestOrderPackModule.pf
+    ${TESTS}/TestHashTable.pf
+    ${TESTS}/TestIndividual.pf
+    ${TESTS}/TestIntelRNGMod.pf
+    ${TESTS}/TestLinkedList.pf
+    ${TESTS}/testAlphaHouseMod.pf
+    ${TESTS}/testIndividualHelperModule.pf
+    ${TESTS}/testIndividualLinkedList.pf
+    ${TESTS}/testInputFile.pf
+    ${TESTS}/testLine.pf
+    ${TESTS}/testPage.pf
+    ${TESTS}/testPedigreeModule.pf
+    ${TESTS}/testString.pf
+    ${TESTS}/testSystemMod.pf
+)
+
 # file(GLOB TESTFILES ${TESTS}/*.pf)
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
