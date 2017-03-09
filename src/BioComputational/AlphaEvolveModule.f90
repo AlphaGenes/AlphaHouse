@@ -3,7 +3,7 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     AlphaEvolveMod.f90
+!> @file     AlphaEvolveModule.f90
 !
 ! DESCRIPTION:
 !> @brief    Evolutionary algorithms
@@ -21,7 +21,7 @@
 ! 2016-09-26 GGorjanc - Initial Version
 !
 !-------------------------------------------------------------------------------
-module AlphaEvolveMod
+module AlphaEvolveModule
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
   use AlphaHouseMod, only : int2Char, Real2Char, ToLower
