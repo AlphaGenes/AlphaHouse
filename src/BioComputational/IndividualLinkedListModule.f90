@@ -257,6 +257,7 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_remove(this,item)
+        use IndividualModule
         class(IndividualLinkedList),intent(inout) :: this
         type(individual),pointer, intent(in) :: item !< item to remove
         type(individual), pointer :: tmpItem
@@ -303,6 +304,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     function convertToArray(this) result(res)
+
+        use individualModule
         class(IndividualLinkedList) :: this !< linked list
         type(individual),pointer, dimension(:) :: res !< one dimensional array of animal pointers to return
         integer :: counter
