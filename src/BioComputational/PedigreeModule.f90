@@ -72,6 +72,7 @@ type PedigreeHolder
         procedure :: getGenotypedFounders
         procedure :: getSireDamGenotypeIDByIndex
         procedure :: setAnimalAsHD
+        procedure :: getSireDamHDIDByIndex
         
 
 end type PedigreeHolder
@@ -1407,7 +1408,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    !> @brief Sets the individual to be genotyped at high density.
+    !> @brief Sets the individual to be genotyped.
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -1436,16 +1437,13 @@ contains
     end subroutine setAnimalAsGenotyped
     
 
-             !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
     !> which index is passed.
 
     !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
-    ! PARAMETERS:
-    !> @param[in] index - the index
-    !> @return .True. if file exists, otherwise .false.
     !---------------------------------------------------------------------------
     function getSireDamGenotypeIDByIndex(this,ind, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
@@ -1486,6 +1484,11 @@ contains
     end function getSireDamGenotypeIDByIndex
 
 
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped at high density.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine setAnimalAsHD(this, indId)
         use iso_fortran_env
         class(PedigreeHolder) :: this
@@ -1495,7 +1498,10 @@ contains
         if (indId > this%pedigreeSize) then
             write(error_unit, *) "warning - setAnimalAsHD was given an index that was out of range"
             return
-        endif 
+        endif
+        if (.not. this%pedigree(indId)%genotyped) then
+            write(error_unit, *) "warning - setAnimalAsHD was given an index of animal that was not genotyped"
+        endif
         if (this%nHd == 0) then
             this%hdDictionary = DictStructure()
             allocate(this%hdMap(this%pedigreeSize))
@@ -1514,4 +1520,55 @@ contains
 
 
     end subroutine setAnimalAsHD
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns either the individuals id in hd index, the sires id or dams id based on
+    !> which index is passed.
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return hdIndex of animal based on index
+    !---------------------------------------------------------------------------
+    function getSireDamHDIDByIndex(this,ind, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(PedigreeHolder), intent(in) :: this
+        type(Individual), intent(in) :: ind
+        character(len=IDLENGTH) :: tmp
+        integer, intent(in) :: index !< index of hd index to return (1 for this, 2 for sire, 3 for dam)
+        integer:: v
+
+        v = 0
+        select case (index)
+            case(1)
+                tmp = ind%originalId
+                v = this%hdDictionary%getValue(tmp)
+                if (v == DICT_NULL) then
+                    v = 0
+                endif
+            case(2)
+                if (associated(ind%sirePointer)) then
+                    tmp = ind%sirePointer%originalId
+                    v = this%hdDictionary%getValue(tmp)
+                    if (v == DICT_NULL) then
+                        v = 0
+                    endif
+                endif
+            case(3)
+               if (associated(ind%damPointer)) then
+                    tmp = ind%damPointer%originalId
+                    v = this%hdDictionary%getValue(tmp)
+                    if (v == DICT_NULL) then
+                        v = 0
+                    endif
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamHDIDByIndex
+
 end module PedigreeModule
