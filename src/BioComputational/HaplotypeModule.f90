@@ -46,6 +46,15 @@ module HaplotypeModule
     procedure :: subset
     procedure :: setSubset
     procedure :: equalHap
+    procedure :: readUnformattedHaplotype
+    procedure :: readFormattedHaplotype
+    procedure :: writeFormattedHaplotype
+    procedure :: writeunFormattedHaplotype
+
+    generic:: write(formatted) => writeFormattedHaplotype
+    generic:: write(unformatted) => writeunFormattedHaplotype
+    generic:: read(formatted) => readFormattedHaplotype
+    generic:: read(unformatted) => readunFormattedHaplotype
   end type Haplotype
   
   interface Haplotype
@@ -57,7 +66,7 @@ module HaplotypeModule
   
 contains
   
-  function newHaplotypeInt(hap) result(h)
+  pure function newHaplotypeInt(hap) result(h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
     type(Haplotype) :: h
@@ -682,6 +691,76 @@ contains
       equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
     end do
   end function equalHap
+
+
+  subroutine writeFormattedHaplotype(dtv, unit, iotype, v_list, iostat, iomsg)
+      class(Haplotype), intent(in) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: v_list(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+
+      integer(kind=1), dimension(:), allocatable :: array
+
+
+      array = dtv%toIntegerArray()
+      write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+    
+  end subroutine writeFormattedHaplotype
+
+
+      subroutine writeunFormattedHaplotype(dtv, unit, iostat, iomsg)
+        class(Haplotype), intent(in)::dtv
+        integer, intent(in):: unit
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+  
+        integer(kind=1), dimension(:), allocatable :: array
+
+        array = dtv%toIntegerArray()
+        write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+
+      end subroutine writeunFormattedHaplotype
+
+         subroutine readUnformattedHaplotype(dtv, unit, iostat, iomsg)
+        class(haplotype), intent(inout) :: dtv         ! Object to write.
+        integer, intent(in) :: unit         ! Internal unit to write to.
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+        integer(kind=1), dimension(:), allocatable :: array
+
+
+        read(unit,"(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)",iostat=iostat, iomsg=iomsg) array
+
+        call wrapper(dtv, array)
+    end subroutine readUnformattedHaplotype
+
+
+
+    pure subroutine wrapper(hap, array) 
+
+      type(haplotype), intent(out) :: hap
+      integer(kind=1), dimension(:),intent(in), allocatable :: array
+
+      hap = newHaplotypeInt(array)
+    
+    end subroutine wrapper
+
+
+    subroutine readFormattedHaplotype(dtv, unit, iotype, vlist, iostat, iomsg)
+      class(Haplotype), intent(inout) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: vlist(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+      integer(kind=1), dimension(:), allocatable :: array
+      read(unit,iotype, iostat=iostat, iomsg=iomsg) array
+
+      call wrapper(dtv, array)
+    end subroutine readFormattedHaplotype
+
     
 end module HaplotypeModule
   

@@ -247,7 +247,7 @@ contains
         character(len=*),intent(in), optional :: pedFile !< path of pedigree file
          character(len=*),intent(in), optional :: genderfile !< path of gender file
         character(len=IDLENGTH) :: tmpId
-        integer(kind=int32) :: stat, fileUnit,tmpIdNum
+        integer(kind=int32) :: stat, fileUnit
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount
@@ -1101,6 +1101,19 @@ contains
             print *, this%pedigree(i)%id, this%pedigree(i)%getIntegerVectorOfRecodedIds()
           enddo
     end subroutine printPedigree
+
+    !---------------------------------------------------------------------------
+    !< @brief Output pedigree to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine writeOutGenotypes(this, filename)
+          class(PedigreeHolder) :: this
+          integer ::i
+          do i= 1, this%nGenotyped
+            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
+          enddo
+    end subroutine writeOutGenotypes
 
 
     !---------------------------------------------------------------------------
