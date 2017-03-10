@@ -40,7 +40,6 @@ type PedigreeHolder
     type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
     integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
     integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
-    integer(kind=int32), dimension(:), allocatable :: sortedIndexList ! Only created if output or outputinalphaimputeformat is used
 
     integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID 
     type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
@@ -222,7 +221,9 @@ contains
     call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
 
     deallocate(tmpAnimalArray)
+    write(output_unit, *) "Number of animals in Pedigree:",pedStructure%pedigreeSize-pedStructure%nDummys
     write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
+    
     end function initPedigree
 
 
@@ -680,9 +681,7 @@ contains
             call this%genotypeDictionary%destroy
             deallocate(this%genotypeMap)
         endif
-        if (allocated(this%sortedIndexList)) then
-            deallocate(this%sortedIndexList)
-        endif
+
         
             deallocate(this%pedigree)
 
@@ -754,6 +753,8 @@ contains
                 endif
             enddo
 
+            write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
+
 
 
     end subroutine addGenotypeInformationFromFile
@@ -814,14 +815,10 @@ contains
         use iso_fortran_env, only : output_unit
         class(PedigreeHolder) :: this
         character(len=*), intent(in), optional :: file !< output path for sorted pedigree
-        integer :: unit, i,h,sortCounter
+        integer :: unit, i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode
         character(len=:), allocatable :: fmt
 
-        sortCounter = 0
-         if (.not. allocated(this%sortedIndexList)) then
-            allocate(this%sortedIndexList(this%pedigreeSize))
-        endif
 
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
@@ -837,8 +834,6 @@ contains
         do i=0, this%maxGeneration
             tmpIndNode => this%generations(i)%first
             do h=1, this%generations(i)%length
-                sortCounter = sortCounter + 1
-                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                     write(unit, fmt) tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId, tmpIndNode%item%generation
                     ! write(*, fmt) tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -861,11 +856,6 @@ contains
         character(len=*), intent(in), optional :: file !< output path for sorted pedigree
         integer :: unit, i,h, sortCounter
         type(IndividualLinkedListNode), pointer :: tmpIndNode
-
-
-        if (.not. allocated(this%sortedIndexList)) then
-            allocate(this%sortedIndexList(this%pedigreeSize))
-        endif
         sortCounter = 0
         if (.not. allocated(this%generations)) then
             call this%setPedigreeGenerationsAndBuildArrays
@@ -894,7 +884,6 @@ contains
                         sireId = 0
                     endif
                     sortCounter = sortCounter +1
-                    this%sortedIndexList(sortCounter) = tmpIndNode%item%id
                      write (unit, fmt) tmpIndNode%item%id,sireId,damId, tmpIndNode%item%originalID
                     ! write(*,'(a,",",a,",",a,",",i8)') tmpIndNode%item%originalID,tmpIndNode%item%sireId,tmpIndNode%item%damId,tmpIndNode%item%generation
                     tmpIndNode => tmpIndNode%next
@@ -1107,13 +1096,14 @@ contains
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine writeOutGenotypes(this, filename)
-          class(PedigreeHolder) :: this
-          integer ::i
-          do i= 1, this%nGenotyped
-            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
-          enddo
-    end subroutine writeOutGenotypes
+    ! subroutine writeOutGenotypes(this, filename)
+    !       class(PedigreeHolder) :: this
+    !       character(*), intent(in) :: filename
+    !       integer ::i, fileUnit
+    !       do i= 1, this%nGenotyped
+    !         write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
+    !       enddo
+    ! end subroutine writeOutGenotypes
 
 
     !---------------------------------------------------------------------------
