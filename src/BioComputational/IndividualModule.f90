@@ -88,6 +88,7 @@ module IndividualModule
             procedure :: getMaternalGrandDamRecodedIndexNoDummy
             procedure :: getIntegerVectorOfRecodedIdsNoDummy
             procedure :: resetOffspringInformation
+            procedure :: removeOffspring
             procedure :: writeIndividual
             generic:: write(formatted) => writeIndividual
     end type Individual
@@ -861,7 +862,39 @@ contains
 
 
 
+    !---------------------------------------------------------------------------
+    !> @brief removes offspring information and disassociatespointers for given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @param[in] generation (integer) 
+    !---------------------------------------------------------------------------
+    subroutine removeOffspring(this, offspring)
+        use iso_fortran_env
+        class(individual ) :: this
+        type(individual) :: offspring
+        integer :: i,h
 
+        do i=1, this%nOffs
+
+
+            if (compareIndividual(this%offsprings(i)%p, offspring)) then
+
+                if (compareIndividual(this%offsprings(i)%p%sirePointer, this)) then
+                    this%offsprings(i)%p%sirePointer => null() 
+                else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
+                    this%offsprings(i)%p%damPointer => null() 
+                    do h=i, this%nOffs-1
+                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    enddo
+                    this%nOffs = this%nOffs - 1
+                else
+                    write(error_unit,*) "ERROR: offspring isn't present"
+                endif
+                return
+            endif
+        enddo
+
+    end subroutine removeOffspring
 
 
 end module IndividualModule

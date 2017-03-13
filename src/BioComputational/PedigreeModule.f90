@@ -73,6 +73,7 @@ type PedigreeHolder
         procedure :: getSireDamGenotypeIDByIndex
         procedure :: setAnimalAsHD
         procedure :: getSireDamHDIDByIndex
+        procedure :: createDummyAnimalAtEndOfPedigree
         
 
 end type PedigreeHolder
@@ -1588,4 +1589,38 @@ contains
         return
     end function getSireDamHDIDByIndex
 
+
+    subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
+        class(PedigreeHolder) :: this
+        integer, optional :: offspringId
+        integer, intent(out) :: dummyId
+        character(len=IDLENGTH) :: tmpCounterStr
+
+        this%pedigreeSize = this%pedigreeSize+1
+        this%nDummys = this%nDummys + 1
+         write(tmpCounterStr, '(I3.3)') this%nDummys
+        this%Pedigree(this%pedigreeSize) =  Individual("dum"//tmpCounterStr ,'0','0', this%pedigreeSize)
+        call this%dictionary%addKey("dum"//tmpCounterStr, this%pedigreeSize)
+        this%Pedigree(this%pedigreeSize)%isDummy = .true.
+        call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
+        this%Pedigree(this%pedigreeSize)%founder = .true.
+
+        if (present(offspringId)) then
+            if (offspringId > this%pedigreeSize) then
+                write(error_unit,*) "ERROR - dummy list given index larger than pedigree"
+            endif
+
+            call this%Pedigree(this%pedigreeSize)%AddOffspring(this%pedigree(offspringId))
+
+            if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
+                this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+            else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
+                this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+            else
+                write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
+            end if
+
+        endif
+        dummyId = this%pedigreeSize
+    end subroutine createDummyAnimalAtEndOfPedigree
 end module PedigreeModule
