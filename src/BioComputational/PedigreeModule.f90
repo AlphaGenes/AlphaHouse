@@ -49,6 +49,7 @@ type PedigreeHolder
     type(DictStructure) :: hdDictionary ! maps id to location in genotype map
     integer(kind=int32) :: nHd ! number of animals that are genotyped hd
     integer :: maxGeneration ! largest generation
+    logical :: isSorted
     contains
         procedure :: destroyPedigree
         procedure :: setPedigreeGenerationsAndBuildArrays
@@ -135,6 +136,7 @@ contains
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
+        pedStructure%isSorted = .false. 
         pedStructure%nDummys = 0
         pedStructure%nHd = 0
         tmpAnimalArrayCount = 0
@@ -259,6 +261,7 @@ contains
 
         allocate(tmpGeno(nsnp))
 
+        pedStructure%isSorted = .false. 
         pedStructure%nHd = 0
         pedStructure%nGenotyped = 0
 
@@ -362,6 +365,7 @@ contains
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
 
+        pedStructure%isSorted = .false. 
         sizeDict = size(pedArray)
         pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
@@ -917,6 +921,7 @@ contains
             call this%setPedigreeGenerationsAndBuildArrays
         endif
         pedCounter = 0
+
         call this%dictionary%destroy()
         call this%founders%destroyLinkedList()
         sizeDict  =this%pedigreeSize
@@ -929,12 +934,16 @@ contains
 
                  if (tmpIndNode%item%isDummy) then
                     call dummyList%list_add(tmpIndNode%item)
+                    tmpIndNode => tmpIndNode%next
                     cycle
                  endif
-                 pedCounter = pedCounter +1
 
+
+                 pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
 
+
+                
                 !  update genotype map
                 if (this%nGenotyped > 0) then
                     tmpGenotypeMapIndex = this%genotypeDictionary%getValue(tmpIndNode%item%originalID)
@@ -976,6 +985,7 @@ contains
 
         tmpIndNode => dummyList%first
 
+
         ! add dummys to end of pedigree
         do i=1, dummyList%length
             pedCounter = pedCounter +1
@@ -1000,9 +1010,10 @@ contains
 
         enddo
 
-
+        print *,"MAX NUM =", pedCounter
         this%pedigree = newPed
         this%generations = newGenerationList
+        this%isSorted = .true.
     end subroutine sortPedigreeAndOverwrite
 
 
@@ -1076,6 +1087,7 @@ contains
 
         this%pedigree = newPed
         this%generations = newGenerationList
+        this%isSorted = .true.
     end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
     !---------------------------------------------------------------------------
@@ -1121,6 +1133,9 @@ contains
 
 
         integer :: i
+        if (indiv%generation /= NOGENERATIONVALUE) then !< animal has already been set so return
+            return
+        endif
         if (.not. indiv%founder) then
             ! if the generation of both parents has been set, add one to the greater one
             if (indiv%sirePointer%generation /= NOGENERATIONVALUE .and. indiv%damPointer%generation /= NOGENERATIONVALUE) then
