@@ -1010,7 +1010,6 @@ contains
 
         enddo
 
-        print *,"MAX NUM =", pedCounter
         this%pedigree = newPed
         this%generations = newGenerationList
         this%isSorted = .true.
