@@ -357,7 +357,7 @@ integer function calcGenDistance(ind1, ind2)
 
     if (associated(an1%first)) then
 
-        tmp1 = an1%first
+        tmp1 => an1%first
 
         ! loop through ancestors of ind1 and see if ind2 is an ancestor
         do i=1, an1%length
@@ -375,7 +375,7 @@ integer function calcGenDistance(ind1, ind2)
     call getAncestors(ind2, 0, an2, dist2, MAXINT32)
 
     if (associated(an2%first)) then
-        tmp2 = an2%first
+        tmp2 => an2%first
     ! loop through ancestors of ind1 and see if ind2 is an ancestor
         do i=1, an2%length
             if (tmp2%item == ind1) then
@@ -392,11 +392,11 @@ integer function calcGenDistance(ind1, ind2)
         calcGenDistance = MAXINT32
         return
     end if
-    tmp1 = an1%first
+    tmp1 => an1%first
 
     ! loop through animals of both animals and see where they interest
     do i=1, an1%length
-        tmp2 = an2%first
+        tmp2 => an2%first
         do h=1, an2%length
             if (tmp1%item == tmp2%item) then
                 val = dist1%list_get_nth(i) + dist2%list_get_nth(h)
