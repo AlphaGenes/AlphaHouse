@@ -73,6 +73,7 @@ type PedigreeHolder
         procedure :: getSireDamGenotypeIDByIndex
         procedure :: setAnimalAsHD
         procedure :: getSireDamHDIDByIndex
+        procedure :: getGenotypePercentage
         procedure :: createDummyAnimalAtEndOfPedigree
         
 
@@ -601,7 +602,7 @@ contains
 
     do i=1, this%pedigreeSize
 
-        if (this%pedigree(i)%genotyped) then
+        if (this%pedigree(i)%isGenotypedNonMissing()) then
 
             if (this%pedigree(i)%founder) then
                 call genotypedFounders%list_add(this%pedigree(i))
@@ -634,14 +635,14 @@ contains
 
         if (associated(ind%damPointer)) then
             
-            if (ind%damPointer%genotyped) then
+            if (ind%damPointer%isGenotypedNonMissing()) then
                 res= .true.
                 return
             endif
         endif
         if (associated(ind%sirePointer)) then
             
-            if (ind%sirePointer%genotyped) then
+            if (ind%sirePointer%isGenotypedNonMissing()) then
                 res= .true.
                 return
             endif
@@ -1314,6 +1315,30 @@ contains
             enddo
 
     end function getAllGenotypesAtPosition
+
+    function getGenotypePercentage(this) result(res)
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        real(KIND=real64), allocatable, dimension(:) :: res
+        integer(kind=1), allocatable, dimension(:) :: indGenotypeArray
+        logical, dimension(:), allocatable :: genotypedAtMarker
+        integer :: i
+
+        allocate(res(this%pedigreeSize))
+        res = 0
+    
+        do i=1, this%pedigreeSize
+
+            if (this%pedigree(i)%isGenotyped()) then
+
+                ! print *, "genotyped", indGenotypeArray
+                indGenotypeArray = this%pedigree(i)%individualGenotype%toIntegerArray()
+                genotypedAtMarker = ((indGenotypeArray == 0 .or. indGenotypeArray == 1) .or. indGenotypeArray == 2)
+                res(i) = count(genotypedAtMarker)*1d0/size(genotypedAtMarker)
+            endif
+        enddo
+
+    end function getGenotypePercentage
 
 
 
