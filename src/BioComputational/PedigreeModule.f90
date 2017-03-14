@@ -252,7 +252,7 @@ contains
         character(len=*),intent(in), optional :: pedFile !< path of pedigree file
          character(len=*),intent(in), optional :: genderfile !< path of gender file
         character(len=IDLENGTH) :: tmpId
-        integer(kind=int32) :: stat, fileUnit
+        integer(kind=int32) :: fileUnit
         integer(kind=int64) :: nIndividuals
         integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
         integer :: tmpAnimalArrayCount
