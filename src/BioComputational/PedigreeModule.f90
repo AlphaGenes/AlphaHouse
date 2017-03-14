@@ -266,6 +266,12 @@ contains
         pedStructure%nHd = 0
         pedStructure%nGenotyped = 0
 
+         if (present(numberInFile)) then
+            nIndividuals = numberInFile
+        else
+            nIndividuals = countLines(fileIn)
+        endif
+
         if  (present(pedFile)) then
             if (present(genderFile)) then
                 pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
@@ -290,11 +296,7 @@ contains
             GenotypeFileFormat = 1
         endif
 
-        if (present(numberInFile)) then
-            nIndividuals = numberInFile
-        else
-            nIndividuals = countLines(fileIn)
-        endif
+       
        
         open(newUnit=fileUnit, file=fileIn, status="old")
 
@@ -1440,7 +1442,10 @@ contains
             this%genotypeDictionary = DictStructure()
             allocate(this%genotypeMap(this%pedigreeSize))
 
-        else  if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
+        else if (this%nGenotyped > this%pedigreeSize) then
+            ! Following error should never appear
+            write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"     
+        else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
             ! if animal has already been genotyped, overwrite array, but don't increment
             
             call this%pedigree(individualIndex)%setGenotypeArray(geno)
