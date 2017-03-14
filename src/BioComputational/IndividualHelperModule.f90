@@ -366,8 +366,9 @@ integer function calcGenDistance(ind1, ind2)
                 calcGenDistance = dist1%list_get_nth(i)
                 return
             endif
+            tmp1 => tmp1%next
         enddo
-        tmp1 => tmp1%next
+        
     endif
 
 
@@ -382,6 +383,7 @@ integer function calcGenDistance(ind1, ind2)
                 calcGenDistance = dist2%list_get_nth(i)
                 return
             endif
+            tmp2 => tmp2%next
         enddo
     endif 
 
