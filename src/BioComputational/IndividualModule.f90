@@ -59,6 +59,7 @@ module IndividualModule
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
+            procedure :: isGenotypedNonMissing
             procedure :: setGenotypeArray
             procedure :: isHD
             procedure :: SetHD
@@ -720,6 +721,23 @@ contains
         logical :: ans
         ans = this%Genotyped
     end function isGenotyped
+!---------------------------------------------------------------------------
+    !> @brief returns true if object is genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return .True. if object is genotyped
+    !---------------------------------------------------------------------------
+    elemental function isGenotypedNonMissing(this) result(ans)
+        class(Individual), intent(in) :: this
+        integer(kind=1), dimension(:), allocatable :: geno
+        logical :: ans
+        ans = this%Genotyped
+
+        if(ans) then
+            geno = this%individualGenotype%toIntegerArray()
+            ans = any(geno == 0 .or. geno == 1 .or. geno==2)
+        endif
+    end function isGenotypedNonMissing
 
 
 
@@ -732,6 +750,8 @@ contains
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
         this%Genotyped = .true.
+        !TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
+        ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
 
