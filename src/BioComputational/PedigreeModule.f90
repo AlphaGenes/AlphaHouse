@@ -49,6 +49,7 @@ type PedigreeHolder
     type(DictStructure) :: hdDictionary ! maps id to location in genotype map
     integer(kind=int32) :: nHd ! number of animals that are genotyped hd
     integer :: maxGeneration ! largest generation
+    logical :: isSorted
     contains
         procedure :: destroyPedigree
         procedure :: setPedigreeGenerationsAndBuildArrays
@@ -73,6 +74,7 @@ type PedigreeHolder
         procedure :: setAnimalAsHD
         procedure :: getSireDamHDIDByIndex
         procedure :: getGenotypePercentage
+        procedure :: createDummyAnimalAtEndOfPedigree
         
 
 end type PedigreeHolder
@@ -136,6 +138,7 @@ contains
         integer(kind=int64) :: sizeDict
         logical :: sireFound, damFound
 
+        pedStructure%isSorted = .false. 
         pedStructure%nDummys = 0
         pedStructure%nHd = 0
         tmpAnimalArrayCount = 0
@@ -260,6 +263,7 @@ contains
 
         allocate(tmpGeno(nsnp))
 
+        pedStructure%isSorted = .false. 
         pedStructure%nHd = 0
         pedStructure%nGenotyped = 0
 
@@ -363,6 +367,7 @@ contains
         pedStructure%nDummys = 0
         tmpAnimalArrayCount = 0
 
+        pedStructure%isSorted = .false. 
         sizeDict = size(pedArray)
         pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
         allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
@@ -918,6 +923,7 @@ contains
             call this%setPedigreeGenerationsAndBuildArrays
         endif
         pedCounter = 0
+
         call this%dictionary%destroy()
         call this%founders%destroyLinkedList()
         sizeDict  =this%pedigreeSize
@@ -930,12 +936,16 @@ contains
 
                  if (tmpIndNode%item%isDummy) then
                     call dummyList%list_add(tmpIndNode%item)
+                    tmpIndNode => tmpIndNode%next
                     cycle
                  endif
-                 pedCounter = pedCounter +1
 
+
+                 pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
 
+
+                
                 !  update genotype map
                 if (this%nGenotyped > 0) then
                     tmpGenotypeMapIndex = this%genotypeDictionary%getValue(tmpIndNode%item%originalID)
@@ -977,6 +987,7 @@ contains
 
         tmpIndNode => dummyList%first
 
+
         ! add dummys to end of pedigree
         do i=1, dummyList%length
             pedCounter = pedCounter +1
@@ -1001,9 +1012,9 @@ contains
 
         enddo
 
-
         this%pedigree = newPed
         this%generations = newGenerationList
+        this%isSorted = .true.
     end subroutine sortPedigreeAndOverwrite
 
 
@@ -1077,6 +1088,7 @@ contains
 
         this%pedigree = newPed
         this%generations = newGenerationList
+        this%isSorted = .true.
     end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
     !---------------------------------------------------------------------------
@@ -1122,6 +1134,9 @@ contains
 
 
         integer :: i
+        if (indiv%generation /= NOGENERATIONVALUE) then !< animal has already been set so return
+            return
+        endif
         if (.not. indiv%founder) then
             ! if the generation of both parents has been set, add one to the greater one
             if (indiv%sirePointer%generation /= NOGENERATIONVALUE .and. indiv%damPointer%generation /= NOGENERATIONVALUE) then
@@ -1599,4 +1614,38 @@ contains
         return
     end function getSireDamHDIDByIndex
 
+
+    subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
+        class(PedigreeHolder) :: this
+        integer, optional :: offspringId
+        integer, intent(out) :: dummyId
+        character(len=IDLENGTH) :: tmpCounterStr
+
+        this%pedigreeSize = this%pedigreeSize+1
+        this%nDummys = this%nDummys + 1
+         write(tmpCounterStr, '(I3.3)') this%nDummys
+        this%Pedigree(this%pedigreeSize) =  Individual("dum"//tmpCounterStr ,'0','0', this%pedigreeSize)
+        call this%dictionary%addKey("dum"//tmpCounterStr, this%pedigreeSize)
+        this%Pedigree(this%pedigreeSize)%isDummy = .true.
+        call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
+        this%Pedigree(this%pedigreeSize)%founder = .true.
+
+        if (present(offspringId)) then
+            if (offspringId > this%pedigreeSize) then
+                write(error_unit,*) "ERROR - dummy list given index larger than pedigree"
+            endif
+
+            call this%Pedigree(this%pedigreeSize)%AddOffspring(this%pedigree(offspringId))
+
+            if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
+                this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+            else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
+                this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+            else
+                write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
+            end if
+
+        endif
+        dummyId = this%pedigreeSize
+    end subroutine createDummyAnimalAtEndOfPedigree
 end module PedigreeModule
