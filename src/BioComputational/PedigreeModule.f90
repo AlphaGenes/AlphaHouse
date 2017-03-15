@@ -74,6 +74,7 @@ type PedigreeHolder
         procedure :: setAnimalAsHD
         procedure :: getSireDamHDIDByIndex
         procedure :: getGenotypePercentage
+        procedure :: writeOutGenotypes
         procedure :: createDummyAnimalAtEndOfPedigree
         
 
@@ -1107,18 +1108,20 @@ contains
     end subroutine printPedigree
 
     !---------------------------------------------------------------------------
-    !< @brief Output pedigree to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+    !< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    ! subroutine writeOutGenotypes(this, filename)
-    !       class(PedigreeHolder) :: this
-    !       character(*), intent(in) :: filename
-    !       integer ::i, fileUnit
-    !       do i= 1, this%nGenotyped
-    !         write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
-    !       enddo
-    ! end subroutine writeOutGenotypes
+    subroutine writeOutGenotypes(this, filename)
+          class(PedigreeHolder) :: this
+          character(*), intent(in) :: filename
+          integer ::i, fileUnit
+
+          open(newUnit=fileUnit,file=filename,status="unknown")
+          do i= 1, this%nGenotyped
+            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
+          enddo
+    end subroutine writeOutGenotypes
 
 
     !---------------------------------------------------------------------------
@@ -1315,6 +1318,8 @@ contains
             enddo
 
     end function getAllGenotypesAtPosition
+
+
 
     function getGenotypePercentage(this) result(res)
         use constantModule, only : MISSINGPHASECODE
