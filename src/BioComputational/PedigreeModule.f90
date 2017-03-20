@@ -1625,9 +1625,15 @@ contains
     end function getSireDamHDIDByIndex
 
 
+    !---------------------------------------------------------------------------
+    !> @brief creates a new dummy animal at end of pedigree
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !---------------------------------------------------------------------------
     subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
         class(PedigreeHolder) :: this
-        integer, optional :: offspringId
+        integer, optional :: offspringId !< offspring recoded id canbe given here
         integer, intent(out) :: dummyId
         character(len=IDLENGTH) :: tmpCounterStr
 
