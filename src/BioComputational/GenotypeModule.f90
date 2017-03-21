@@ -419,7 +419,7 @@ subroutine setHaplotypeFromGenotype(g, h)
       h%phase(i) = IAND(g%homo(i), g%additional(i))
   end do
   do i = 64 - g%overhang, 63
-      h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
 end subroutine setHaplotypeFromGenotype
 
@@ -438,7 +438,7 @@ end subroutine setHaplotypeFromGenotype
       h%phase(i) = IOR(IAND(NOT(errors(i)), h%phase(i)), IAND(errors(i), IAND(g%homo(i), g%additional(i))))
     end do
     do i = 64 - g%overhang, 63
-      h%missing(g%sections) = ibclr(h%missing(g%sections), i - 1)
+      h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
   end subroutine setHaplotypeFromGenotypeIfError
 
@@ -543,7 +543,7 @@ function isHomo(g, pos) result (two)
     end do
 
     do i = 64 - g%overhang, 63
-      errors(g%sections) = ibclr(errors(g%sections), i - 1)
+      errors(g%sections) = ibclr(errors(g%sections), i)
     end do
   end function getErrorsSingle
 
@@ -586,7 +586,7 @@ function isHomo(g, pos) result (two)
     end do
 
     do i = 64 - g%overhang, 63
-      errors(g%sections) = ibclr(errors(g%sections), i - 1)
+      errors(g%sections) = ibclr(errors(g%sections), i)
     end do
 
   end function getErrors
@@ -644,8 +644,8 @@ function isHomo(g, pos) result (two)
     end if    
           
     do i = 64 - sub%overhang, 63
-      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i - 1)
-      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i - 1)
+      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i)
+      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i)
     end do
   end function subset
 
