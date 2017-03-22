@@ -17,7 +17,7 @@ SET(ALPHAHOUSE_src
     Utilities/LineModule.f90
     Utilities/PageModule.f90
     Utilities/Input.f90
-    Utilities/PlinkHandler.f90
+    Utilities/CompatibilityModule.f90
     Utilities/AlphaSortMod.f90
     Utilities/IntegerLinkedListModule.f90
     BioComputational/GenotypeModule.f90
