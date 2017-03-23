@@ -75,8 +75,6 @@ module LineModule
       class(Line), intent(in):: self
       character(len=*), intent(in):: charIn
       logical, intent(in), optional:: isCaseSensitive
-      type(Line):: lowerCaseLine
-      type(Line), pointer:: lineUsed
 
       logical:: caseSensitiveUsed
       integer:: i

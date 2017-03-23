@@ -21,6 +21,7 @@ Module stringModule
     procedure:: readType
     procedure:: getSize
     procedure:: split
+    procedure:: getNumOccurances
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted) => writeType
     generic:: read(formatted) => readType
@@ -36,6 +37,49 @@ Module stringModule
   end interface 
 
 contains
+
+  pure function getNumOccurances(self, characterIn) result(numOccurances)
+    class(String), intent(in):: self 
+    character(len=*), intent(in):: characterIn
+    integer:: numOccurances
+    logical:: same
+
+
+    integer:: stringCounter, characterCounter, characterMax, stringMax, tempStringCounter
+
+    characterMax = len(characterIn)
+    stringMax = len(self%line)
+
+    numOccurances = 0
+    if (characterMax>stringMax) then
+      return
+    end if
+
+    if (characterIn == "") then
+      return
+    end if
+
+    stringCounter = 1
+    characterCounter = 1
+
+    do while (stringCounter< stringMax)
+      same = self%line(stringCounter:stringCounter) == characterIn(characterCounter:characterCounter)
+      if (same) then
+        tempStringCounter = stringCounter
+        do while (same .and. characterCounter .lt. characterMax)
+        characterCounter = characterCounter+1
+        tempStringCounter = stringCounter +1
+        same = self%line(tempStringCounter:tempStringCounter) == characterIn(characterCounter:characterCounter)
+        end do
+        if (same) then
+          numOccurances = numOccurances+1
+          stringCounter = stringCounter+characterMax-1
+        end if
+        characterCounter = 1
+      end if
+      stringCounter = stringCounter+1
+    end do
+  end function getNumOccurances
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:

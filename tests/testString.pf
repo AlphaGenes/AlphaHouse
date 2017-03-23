@@ -1,4 +1,102 @@
 @test
+subroutine testGetOccurancesWithMoreThanOneOccuranceTogether()
+use pFUnit_mod
+use StringModule
+integer:: expected, gotten
+
+type(String):: temp
+
+temp = "OHOHOHOHOHASSASSOHOHOHOHASSASSOHOHOHOHfdsaf"
+expected = 4
+
+gotten = temp%getNumOccurances("ASS")
+
+@assertEqual(expected, gotten)
+end subroutine testGetOccurancesWithMoreThanOneOccuranceTogether
+
+@test
+subroutine testGetOccurancesWithMoreThanOneOccuranceSplit()
+use pFUnit_mod
+use StringModule
+integer:: expected, gotten
+
+type(String):: temp
+
+temp = "OHOHOHOHOHASSOHOHOHOHASSOHOHOHOHASS"
+expected = 3
+
+gotten = temp%getNumOccurances("ASS")
+
+@assertEqual(expected, gotten)
+end subroutine testGetOccurancesWithMoreThanOneOccuranceSplit
+
+@test
+subroutine testGetNumOccurancesWithNoOccurance()
+use pFUnit_mod
+use StringModule
+
+type(String):: temp
+integer:: expected, gotten
+
+temp = "OHOHOHOHOHOHOHOHOHOHOH"
+expected = 0
+
+gotten = temp%getNumOccurances("ASAS")
+
+@assertEqual(expected, gotten)
+end subroutine
+
+@test
+subroutine testGetNumOccurancesWithOneOccurace()
+use pFUnit_mod
+use StringModule
+
+type(String):: temp
+integer:: expected, gotten
+
+temp = "OHOHOHOHASSOHOHOHOH"
+
+expected = 1
+gotten = temp%getNumOccurances("ASS")
+
+@assertEqual(expected, gotten)
+end subroutine testGetNumOccurancesWithOneOccurace
+
+
+@test
+subroutine testWithEmptyString()
+use pFUnit_mod
+use StringModule
+integer:: expected, gotten
+
+type(String):: temp
+
+temp ="HREOHFLDSKDKJSHFKLDJSHFLKJSHDF"
+
+gotten = temp%getNumOccurances("")
+expected = 0
+
+@assertEqual(expected, gotten)
+end subroutine testWithEmptyString
+
+@test
+subroutine testWithBiggerString()
+use pFUnit_mod
+use StringModule
+integer:: expected, gotten
+type(String):: temp
+
+temp =""
+
+expected = 0
+gotten = temp%getNumOccurances("BIGGER")
+
+@assertEqual(expected, gotten)
+
+end subroutine testWithBiggerString
+
+
+@test
 subroutine testGetSubStringWithoutStart()
 use pFUnit_mod
 use StringModule
