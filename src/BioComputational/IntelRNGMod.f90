@@ -173,8 +173,8 @@ module IntelRNGMod
 
       ! Arguments
       integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      integer(int32),intent(in),optional :: a      !< minimal value (default 0)
-      integer(int32),intent(in),optional :: b      !< maximal value (default 1)
+      integer(int32),intent(in),optional :: a      !< minimal value (inclusive) (default 0)
+      integer(int32),intent(in),optional :: b      !< maximal value (inclusive) (default 1)
       integer(int32),allocatable         :: Res(:) !< @return samples
 
       ! Other

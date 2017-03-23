@@ -5,7 +5,7 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     IndividualLinkedListModule.f90
+!> @file     IntegerLinkedListModule.f90
 !
 ! DESCRIPTION:
 !> @brief    Module containing definition of linked List for objects (currently Individuals.
@@ -23,30 +23,18 @@
 
 !-------------------------------------------------------------------------------
 
-module IndividualLinkedListModule
+module IntegerLinkedListModule
     use iso_fortran_env
-    use individualModule
+    use ConstantModule
 
-
-    abstract interface
-
-! Abstract function required to allow for listing of types
-    logical function logicalAbstractFunction(item)
-      import :: Individual
-      type(Individual),intent(in) :: item
-    end function logicalAbstractFunction
-      end interface
-
-
-    type :: IndividualLinkedList
-        type(IndividualLinkedListNode),pointer :: first => null()
-        type(IndividualLinkedListNode),pointer :: last => null()
+    type :: IntegerLinkedList
+        type(IntegerLinkedListNode),pointer :: first => null()
+        type(IntegerLinkedListNode),pointer :: last => null()
         ! TODO - maybe have a middle?
         integer :: length = 0 
 
         contains
             procedure :: list_add
-            procedure :: list_all
             procedure :: list_pop
             procedure :: list_get_nth
             procedure :: list_remove
@@ -54,16 +42,15 @@ module IndividualLinkedListModule
             procedure :: writeLinkedList
             procedure :: destroyLinkedList
             procedure :: convertToArray
-            procedure :: convertToArrayIDs
             generic:: write(formatted) => writeLinkedList
 
-    end type IndividualLinkedList
+    end type IntegerLinkedList
 
-    type :: IndividualLinkedListNode
-            type(individual), pointer :: item
-            type(IndividualLinkedListNode),pointer :: next =>null()
-            type(IndividualLinkedListNode),pointer :: previous =>null()
-    end type IndividualLinkedListNode
+    type :: IntegerLinkedListNode
+            integer, pointer :: item
+            type(IntegerLinkedListNode),pointer :: next =>null()
+            type(IntegerLinkedListNode),pointer :: previous =>null()
+    end type IntegerLinkedListNode
 
 
 contains
@@ -74,9 +61,9 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
-        class(IndividualLinkedList),intent(inout) :: this
-        type(IndividualLinkedListNode),pointer :: node
-        type(individual),pointer :: tmp
+        class(IntegerLinkedList),intent(inout) :: this
+        type(IntegerLinkedListNode),pointer :: node
+        integer,pointer :: tmp
         if (associated(this%first)) then
             node => this%first
 
@@ -97,14 +84,14 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine writeLinkedList(dtv, unit, iotype, v_list, iostat, iomsg)
-        class(IndividualLinkedList), intent(in) :: dtv         !< Object to write.
+        class(IntegerLinkedList), intent(in) :: dtv         !< Object to write.
         integer, intent(in) :: unit         !< Internal unit to write to.
         character(*), intent(in) :: iotype  !< LISTDIRECTED or DTxxx
         integer, intent(in) :: v_list(:)    !< parameters from fmt spec.
         integer, intent(out) :: iostat      !< non zero on error, etc.
         character(*), intent(inout) :: iomsg  !< define if iostat non zero.
 
-        type(IndividualLinkedListNode),pointer :: node
+        type(IntegerLinkedListNode),pointer :: node
         node => dtv%first
 
         do while (associated(node))
@@ -125,8 +112,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_add(this,item)
-        class(IndividualLinkedList),intent(inout) :: this
-        type(individual),intent(in), target :: item !< item to add
+        class(IntegerLinkedList),intent(inout) :: this
+        integer,intent(in), target :: item !< item to add
 
         if (.not.associated(this%last)) then
         allocate(this%first)
@@ -142,21 +129,6 @@ contains
     end subroutine list_add
 
 
-      
-    recursive logical function list_all(this,proc) result(res)
-        class(IndividualLinkedList),intent(inout) :: this
-        procedure(logicalAbstractFunction) :: proc
-        type(IndividualLinkedListNode),pointer :: node
-        res = .true.      
-        node => this%first
-
-        do while (associated(node))
-        res =  proc(node%item)
-        if (.not.res) return
-        node => node%next
-      end do
-
-    end function list_all
 
        !---------------------------------------------------------------------------
     !> @brief returns and then removes the item at the end of the list
@@ -164,8 +136,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_pop(this, item)
-        class(IndividualLinkedList),intent(inout) :: this
-        type(individual),pointer,intent(out) :: item !< item at the end of the list
+        class(IntegerLinkedList),intent(inout) :: this
+        integer,pointer,intent(out) :: item !< item at the end of the list
         if (associated(this%last)) then
             item => this%last%item         
             this%last => this%last%previous
@@ -187,21 +159,21 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     function list_get_nth(this,n) result(res)
-        class(individual),pointer :: res !< item returned
-        class(IndividualLinkedList),intent(in) :: this
+        integer :: res !< item returned
+        class(IntegerLinkedList),intent(in) :: this
         integer, intent(in) :: n !< position of item to return 
         integer :: i
-        type(IndividualLinkedListNode),pointer :: node
+        type(IntegerLinkedListNode),pointer :: node
 
         if (associated(this%first).and.this%length>=n) then
           node => this%first
           i = 1
           do
             if (i==n) then
-              res => node%item
+              res = node%item
               exit
             else if (i<n.and..not.associated(node%next)) then
-              res => null()
+              res = DICT_NULL
               exit
             else
               i = i + 1
@@ -209,7 +181,7 @@ contains
             end if
           end do
         else
-          res => null()
+          res = DICT_NULL
         end if
     end function list_get_nth
 
@@ -219,22 +191,17 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    logical function contains(this, ind)
-        
-        use IndividualModule
-        class(IndividualLinkedList),intent(in) :: this
-        type(individual),target, intent(in) :: ind !< item to check
-        type(IndividualLinkedListNode),pointer :: node
+    logical function contains(this, in)
+        class(IntegerLinkedList),intent(in) :: this
+        integer,target, intent(in) :: in !< item to check
+        type(IntegerLinkedListNode),pointer :: node
 
-        logical :: tmp
 
         if (associated(this%first)) then
           node => this%first
 
           do
-            tmp = compareIndividual(node%item, ind)
-            
-            if (tmp) then
+            if (associated(node%item,in)) then
                 contains = .true.
                 return
             else if (.not.associated(node%next)) then
@@ -257,11 +224,10 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_remove(this,item)
-        use IndividualModule
-        class(IndividualLinkedList),intent(inout) :: this
-        type(individual),pointer, intent(in) :: item !< item to remove
-        type(individual), pointer :: tmpItem
-        type(IndividualLinkedListNode),pointer :: node
+        class(IntegerLinkedList),intent(inout) :: this
+        integer,pointer, intent(in) :: item !< item to remove
+        integer, pointer :: tmpItem
+        type(IntegerLinkedListNode),pointer :: node
         if (associated(this%first)) then
             node => this%first
             if (associated(node%item,item)) then
@@ -304,12 +270,10 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     function convertToArray(this) result(res)
-
-        use individualModule
-        class(IndividualLinkedList) :: this !< linked list
-        type(individual),pointer, dimension(:) :: res !< one dimensional array of animal pointers to return
+        class(IntegerLinkedList) :: this !< linked list
+        integer, dimension(:), allocatable :: res !< one dimensional array of integers to return
         integer :: counter
-        type(IndividualLinkedListNode),pointer :: node
+        type(IntegerLinkedListNode),pointer :: node
         
 
         counter = 1
@@ -326,29 +290,6 @@ contains
     end function convertToArray              
 
 
-        !---------------------------------------------------------------------------
-    !> @brief Converts linked list to 1 dimensional array (vector) of integer recoded id's
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    function convertToArrayIDs(this) result(res)
-        class(IndividualLinkedList) :: this !< linked list
-        integer, dimension(:), allocatable :: res !< one dimensional array of recoded id's to return
-        integer :: counter
-        type(IndividualLinkedListNode),pointer :: node
-        
+             
 
-        counter = 1
-        allocate(res(this%length))
-        node => this%first
-
-        do while (associated(node))
-            res(counter) = node%item%id
-
-            counter = counter+1
-            node => node%next
-
-        enddo
-    end function convertToArrayIDs              
-
-end Module IndividualLinkedListModule
+end Module IntegerLinkedListModule

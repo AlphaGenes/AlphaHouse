@@ -5,7 +5,7 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     PlinkHandler.f90
+!> @file     CompatibilityModule.f90
 !
 ! DESCRIPTION:
 !> @brief    Module cotaining subroutines to deal with text PLINK format

@@ -826,9 +826,9 @@ module AlphaHouseMod
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional  :: Seed     !< A number to initialize RNG
-      character(len=*),optional           :: SeedFile !< File to save the seed in
-      integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
+      integer(int32),intent(in),optional    :: Seed     !< A number to initialize RNG
+      character(len=*),intent(in), optional :: SeedFile !< File to save the seed in
+      integer(int32),intent(out),optional   :: Out      !< Make the seed value available outside
 
       ! Other
       integer(int32) :: Size,Unit

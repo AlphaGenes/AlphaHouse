@@ -35,7 +35,8 @@ end type HASH_LIST
 type DictStructure
     
     type(HASH_LIST), pointer, dimension(:),private :: table
-
+    integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
+    
     contains
 
     procedure :: destroy
@@ -45,6 +46,7 @@ type DictStructure
     procedure :: hasKey
     procedure :: getElement
     procedure :: getSize
+    procedure :: hashKey
 end type DictStructure
 
 interface DictStructure
@@ -61,8 +63,8 @@ private :: LinkedList
 private :: getElement
 private :: hashKey
 
-integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
-integer(kind=int64), parameter, private :: multiplier = 17
+
+
 
 
 contains
@@ -93,12 +95,12 @@ function dict_create(size) result(dict)
     integer(kind=int64) :: i
 
     if (present(size)) then
-        hash_size = size
+        dict%hash_size = size
     endif
     ! allocate( dict )
-    allocate( dict%table(hash_size) )
+    allocate( dict%table(dict%hash_size) )
 
-    do i = 1,hash_size
+    do i = 1,dict%hash_size
         dict%table(i)%list => null()
     enddo
 
@@ -119,18 +121,18 @@ function dict_create_val(key, value, size ) result(dict)
     integer(kind=int64):: hash
 
     if (present(size)) then
-        hash_size = size
+        dict%hash_size = size
     endif
-    allocate( dict%table(hash_size) )
+    allocate( dict%table(dict%hash_size) )
 
-    do i = 1,hash_size
+    do i = 1,dict%hash_size
         dict%table(i)%list => null()
     enddo
 
     data%key   = key
     data%value = value
 
-    hash = hashKey( trim(key ) )
+    hash = dict%hashKey( trim(key ) )
     call list_create( dict%table(hash)%list, data )
 
 end function dict_create_val
@@ -187,7 +189,7 @@ subroutine addKey( this, key, value )
     else
         data%key   = key
         data%value = value
-        hash       = hashKey( trim(key) )
+        hash       = this%hashKey( trim(key) )
         if ( associated( this%table(hash)%list ) ) then
             call list_insert( this%table(hash)%list, data )
         else
@@ -219,7 +221,7 @@ subroutine deleteKey( this, key )
     elem => this%getElement(key )
 
     if ( associated(elem) ) then
-        hash = hashKey( trim(key) )
+        hash = this%hashKey( trim(key) )
         call list_delete_element( this%table(hash)%list, elem )
     endif
 end subroutine deleteKey
@@ -288,7 +290,7 @@ function getElement( this, key ) result(elem)
     type(LinkedList), pointer :: elem
     integer(kind=int64) :: hash
 
-    hash = hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
+    hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
         if ( elem%data%key .eq. key ) then
@@ -312,14 +314,15 @@ end function getElement
   ! PARAMETERS:
   !> @param[in] sizeOut. String.  
   !---------------------------------------------------------------------------
- function hashKey(key)
+ function hashKey(dict, key)
     character(len=*), intent(in) :: key
+    class(DictStructure) :: dict
 
     integer(kind=int64) :: i
     integer(kind=int64) :: hashKey !<hashkey out
     hashKey = 0
     do i = 1,len(key)
-        hashKey = KMOD(multiplier * hashKey + ichar(key(i:i)), hash_size)
+        hashKey = KMOD(DICT_MULTIPLIER * hashKey + ichar(key(i:i)), dict%hash_size)
     enddo
    
     hashKey = 1 + hashKey

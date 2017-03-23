@@ -2,12 +2,9 @@ module HaplotypeModule
   
     use constantModule, only: MissingPhaseCode,ErrorPhaseCode
     implicit none
-    private
-    !! This should go in a constants module but for now
     
     
-    type, public :: Haplotype
-      private
+    type :: Haplotype
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Phase       Phase   Missing !
       ! 0           0       0       !
@@ -15,13 +12,14 @@ module HaplotypeModule
       ! Missing     0       1       !
       ! Error       1       1       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      integer(kind=8), dimension(:), pointer, public :: phase
-      integer(kind=8), dimension(:), pointer, public :: missing
-      integer, public :: sections
+      integer(kind=8), dimension(:), pointer :: phase
+      integer(kind=8), dimension(:), pointer :: missing
+      integer :: sections
       integer :: overhang
       integer :: length
     contains
-    procedure :: toIntegerArray
+    procedure :: toIntegerArray => haplotypeToIntegerArray
+    procedure :: toIntegerArrayWithErrors
     procedure :: getPhaseMod
     procedure :: setPhaseMod
     procedure :: overlapMod
@@ -29,6 +27,7 @@ module HaplotypeModule
     procedure :: compatibleMod
     procedure :: mergeMod
     procedure :: numberMissing
+    procedure :: numberMissingOrError
     procedure :: numberNotMissing
     procedure :: numberError
     procedure :: compareHaplotype
@@ -44,17 +43,30 @@ module HaplotypeModule
     procedure :: setOneBits
     procedure :: setZero
     procedure :: setOne
+    procedure :: subset
+    procedure :: setSubset
+    procedure :: equalHap
+    procedure :: readUnformattedHaplotype
+    procedure :: readFormattedHaplotype
+    procedure :: writeFormattedHaplotype
+    procedure :: writeunFormattedHaplotype
+
+    generic:: write(formatted) => writeFormattedHaplotype
+    generic:: write(unformatted) => writeunFormattedHaplotype
+    generic:: read(formatted) => readFormattedHaplotype
+    generic:: read(unformatted) => readunFormattedHaplotype
   end type Haplotype
   
   interface Haplotype
     module procedure newHaplotypeInt
     module procedure newHaplotypeBits
     module procedure newHaplotypeMissing
+    module procedure newHaplotypeHaplotype
   end interface Haplotype
   
 contains
   
-  function newHaplotypeInt(hap) result(h)
+  pure function newHaplotypeInt(hap) result(h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
     type(Haplotype) :: h
@@ -69,7 +81,7 @@ contains
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
     cursection = 1
-    curpos = 1
+    curpos = 0
     h%phase = 0
     h%missing = 0
     do i = 1, h%length
@@ -85,8 +97,8 @@ contains
             h%missing(cursection) = ibset(h%missing(cursection), curpos)
         end select
         curpos = curpos + 1
-        if (curpos == 65) then
-            curpos = 1
+        if (curpos == 64) then
+            curpos = 0
             cursection = cursection + 1
         end if
     end do
@@ -109,12 +121,20 @@ contains
     h%phase = phase
     h%missing = missing
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
     
   end function newHaplotypeBits
+  
+  function newHaplotypeHaplotype(oh) result(h)
+    class(Haplotype) :: oh
+    
+    type(Haplotype) :: h
+    
+    h = Haplotype(oh%phase, oh%missing, oh%length)
+  end function newHaplotypeHaplotype
   
   function newHaplotypeMissing(length) result(h)
     integer, intent(in) :: length
@@ -133,13 +153,13 @@ contains
     h%missing = NOT(h%missing)
 
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
   end function newHaplotypeMissing
   
-  function toIntegerArray(h) result(array)
+  function haplotypeToIntegerArray(h) result(array)
     class(Haplotype), intent(in) :: h
     
     integer(kind=1), dimension(:), allocatable :: array
@@ -149,7 +169,41 @@ contains
     allocate(array(h%length))
     
     cursection = 1
-    curpos = 1
+    curpos = 0
+    do i = 1, h%length
+        if (btest(h%missing(cursection),curpos)) then
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = MissingPhaseCode
+            else
+                array(i) = MissingPhaseCode
+            end if
+        else
+            if (btest(h%phase(cursection),curpos)) then
+                array(i) = 1
+            else
+                array(i) = 0
+            end if
+        end if
+      
+      curpos = curpos + 1
+      if (curpos == 64) then
+        curpos = 0
+        cursection = cursection + 1
+      end if
+    end do
+  end function haplotypeToIntegerArray
+  
+  function toIntegerArrayWithErrors(h) result(array)
+    class(Haplotype), intent(in) :: h
+    
+    integer(kind=1), dimension(:), allocatable :: array
+    
+    integer :: i, cursection, curpos
+    
+    allocate(array(h%length))
+    
+    cursection = 1
+    curpos = 0
     do i = 1, h%length
         if (btest(h%missing(cursection),curpos)) then
             if (btest(h%phase(cursection),curpos)) then
@@ -166,12 +220,12 @@ contains
         end if
       
       curpos = curpos + 1
-      if (curpos == 65) then
-        curpos = 1
+      if (curpos == 64) then
+        curpos = 0
         cursection = cursection + 1
       end if
     end do
-  end function toIntegerArray
+  end function toIntegerArrayWithErrors
   
   function compareHaplotype(h1, h2) result(same)
     class(Haplotype), intent(in) :: h1, h2
@@ -199,7 +253,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
   
     if (btest(h%missing(cursection),curpos)) then
         if (btest(h%phase(cursection),curpos)) then
@@ -224,7 +278,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64    
+    curpos = pos - (cursection - 1) * 64 - 1 
     
     select case (phase)
       case (0)
@@ -291,23 +345,19 @@ contains
     
     h%sections = h1%sections
     h%overhang = h1%overhang
+    h%length = h1%length
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
     
     do i = 1, h1%sections
-      h%missing(i) = IOR( &
-    !Both not missing but opposed
-    IAND(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
-    IXOR(h1%phase(i), h2%phase(i))), &
-    !Both missing
-    IAND(h1%missing(i),h2%missing(i)) &
-    )
-      h%phase(i) = IAND( &
-        ! Not missing (phase should always be zero if missing)
-    NOT(h%missing(i)), &
-    ! One of the phases is 1 (no need to test for missing as phase is only one if not missing)
-    IOR(h1%phase(i), h2%phase(i)) &
-    )
+      h%missing(i) = IOR( IOR( &
+	! Either is error
+	IOR( IAND(h1%missing(i), h1%phase(i)), IAND(h2%missing(i), h2%phase(i))), &
+	! Both are missing (or error)
+	IAND(h1%missing(i), h2%missing(i))), &
+	! Both are present both opposed
+	IAND(IAND(NOT(h1%missing(i)),NOT(h2%missing(i))), IXOR(h1%phase(i), h2%phase(i))))
+      h%phase(i) = IOR(h1%phase(i), h2%phase(i))
     end do
   end function mergeMod
   
@@ -339,6 +389,21 @@ contains
     end do
     
   end function numberMissing
+  
+  function numberMissingOrError(h) result (num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    integer :: i
+    
+    num = 0
+    
+    do i = 1, h%sections
+        num = num + POPCNT(h%missing(i))
+    end do
+    
+  end function numberMissingOrError
   
   function numberError(h) result (num)
     class(Haplotype), intent(in) :: h
@@ -377,6 +442,7 @@ contains
           IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
           NOT(IEOR(h1%phase(i), h2%phase(i))) ))
     end do
+    num = num - h1%overhang
   end function numberSame
   
   subroutine setUnphased(h)
@@ -388,7 +454,7 @@ contains
     h%missing = 0
     h%missing = NOT(h%missing)
     
-    do i = 64 - h%overhang + 1, 64
+    do i = 64 - h%overhang, 63
         h%phase(h%sections) = ibclr(h%phase(h%sections), i)
         h%missing(h%sections) = ibclr(h%missing(h%sections), i)
     end do
@@ -410,7 +476,7 @@ contains
    integer :: cursection, curpos
 
    cursection = (pos-1) / 64 + 1
-   curpos = pos - (cursection - 1) * 64
+   curpos = pos - (cursection - 1) * 64 - 1
 
 
    missing = BTEST(h%missing(cursection), curpos)
@@ -451,8 +517,8 @@ contains
     integer :: i
     
     do i = 1, h%sections
-      h%missing(i) = IAND(h%missing(i), oh%missing(i))
       h%phase(i) = IOR(IAND(NOT(h%missing(i)),h%phase(i)), IAND(h%missing(i), oh%phase(i)))
+      h%missing(i) = IAND(h%missing(i), oh%missing(i))      
     end do
   end subroutine setFromOtherIfMissing
   
@@ -487,7 +553,7 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
     
     h%phase(cursection) = ibclr(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
@@ -500,11 +566,201 @@ contains
     integer :: cursection, curpos
     
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
     
     h%phase(cursection) = ibset(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
   end subroutine setOne
+  
+  function subset(h,start,finish) result (sub)
+    class(Haplotype), intent(in) :: h
+    integer, intent(in) :: start, finish
+    
+    type(Haplotype) :: sub
+    
+    integer :: offset, starti, i
+    
+    sub%length = finish - start + 1
+
+    sub%sections = sub%length / 64 + 1
+    sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
+    
+    allocate(sub%phase(sub%sections))
+    allocate(sub%missing(sub%sections))
+    
+    starti = (start - 1) / 64  + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections
+	sub%phase(i) = h%phase(i + starti - 1)
+	sub%missing(i) = h%missing(i + starti - 1)
+      end do
+    else
+      do i = 1, sub%sections - 1
+	sub%phase(i) = IOR(ISHFT(h%phase(i + starti - 1),-offset), ISHFT(h%phase(i + starti), 64 - offset))
+	sub%missing(i) = IOR(ISHFT(h%missing(i + starti - 1),-offset), ISHFT(h%missing(i + starti), 64 - offset))
+      end do
+      
+      if (sub%sections + starti - 1 == h%sections) then
+	sub%phase(sub%sections) = ISHFT(h%phase(sub%sections + starti - 1),offset)
+	sub%missing(sub%sections) = ISHFT(h%missing(sub%sections + starti - 1),offset)
+      else
+	sub%phase(sub%sections) = IOR(ISHFT(h%phase(sub%sections + starti - 1),-offset), ISHFT(h%phase(sub%sections + starti), 64 - offset))
+	sub%missing(sub%sections) = IOR(ISHFT(h%missing(sub%sections + starti - 1),-offset), ISHFT(h%missing(sub%sections + starti), 64 - offset))
+      end if
+    end if    
+          
+    do i = 64 - sub%overhang, 63
+      sub%phase(sub%sections) = ibclr(sub%phase(sub%sections), i)
+      sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i)
+    end do
+  end function subset
+  
+  subroutine setSubset(h, sub, start)
+    class(Haplotype), intent(in) :: h, sub
+    integer, intent(in) :: start
+    
+    integer(kind=8) :: mask, startmask, endmask, shifted   
+    integer :: starti, endi, offset
+    integer :: i
+    
+    starti = (start - 1) / 64  + 1
+    endi = (start + sub%length - 1) / 64 + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections - 1
+	h%phase(i + starti - 1) = sub%phase(i)
+	h%missing(i + starti - 1) = sub%missing(i)
+      end do
+      mask = 0
+      do i = 1, 64 - sub%overhang
+	mask = ibset(mask, i - 1)
+      end do
+      h%phase(sub%sections) = IOR(IAND(mask, sub%phase(sub%sections)), IAND(NOT(mask), h%phase(sub%sections + starti - 1)))
+      h%missing(sub%sections) = IOR(IAND(mask, sub%missing(sub%sections)), IAND(NOT(mask), h%missing(sub%sections + starti - 1)))
+    else
+      startmask = 0
+      do i = offset+1, MIN(64, offset + sub%length)
+	startmask = ibset(startmask, i - 1)
+      end do      
+      shifted = ISHFT(sub%phase(1), offset)
+      h%phase(starti) = IOR(IAND(startmask, shifted), IAND(NOT(startmask), h%phase(starti)))
+      shifted = ISHFT(sub%missing(1), offset)
+      h%missing(starti) = IOR(IAND(startmask, shifted), IAND(NOT(startmask), h%missing(starti)))
+
+      do i = starti + 1, endi - 1
+	h%phase(i) = IOR(ISHFT(sub%phase(i-starti), offset - 64), ISHFT(sub%phase(i-starti+1), offset))
+	h%missing(i) = IOR(ISHFT(sub%missing(i-starti), offset - 64), ISHFT(sub%missing(i-starti+1), offset))
+      end do
+      
+      if (endi > 1) then
+	endmask = 0
+	if (offset - sub%overhang > 0) then
+	  do i = 1, offset - sub%overhang
+	    endmask = ibset(endmask, i - 1)
+	  enddo
+	  shifted = ISHFT(sub%phase(sub%sections), offset - 64)
+	  h%phase(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%phase(endi)))
+	  shifted = ISHFT(sub%missing(sub%sections), offset - 64)
+	  h%missing(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%missing(endi)))
+	else
+	  do i = 1, 64 + offset - sub%overhang
+	    endmask = ibset(endmask, i - 1)
+	  end do
+	  shifted = IOR(ISHFT(sub%phase(sub%sections-1), offset - 64), ISHFT(sub%phase(sub%sections), offset))
+	  h%phase(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%phase(endi)))
+	  shifted = IOR(ISHFT(sub%missing(sub%sections-1), offset - 64), ISHFT(sub%missing(sub%sections), offset))
+	  h%missing(endi) = IOR(IAND(endmask, shifted), IAND(NOT(endmask), h%missing(endi)))
+	endif
+      end if
+    end if
+    
+  end subroutine setSubset
+  
+  function equalHap(h1, h2) result (equal)
+    class(Haplotype) :: h1, h2
+    
+    logical :: equal
+    
+    integer :: i
+    
+    equal = .true.
+    do i = 1, h1%sections
+      equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
+    end do
+  end function equalHap
+
+
+  subroutine writeFormattedHaplotype(dtv, unit, iotype, v_list, iostat, iomsg)
+      class(Haplotype), intent(in) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: v_list(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+
+      integer(kind=1), dimension(:), allocatable :: array
+
+
+      array = dtv%toIntegerArray()
+      write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+    
+  end subroutine writeFormattedHaplotype
+
+
+      subroutine writeunFormattedHaplotype(dtv, unit, iostat, iomsg)
+        class(Haplotype), intent(in)::dtv
+        integer, intent(in):: unit
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+  
+        integer(kind=1), dimension(:), allocatable :: array
+
+        array = dtv%toIntegerArray()
+        write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+
+      end subroutine writeunFormattedHaplotype
+
+         subroutine readUnformattedHaplotype(dtv, unit, iostat, iomsg)
+        class(haplotype), intent(inout) :: dtv         ! Object to write.
+        integer, intent(in) :: unit         ! Internal unit to write to.
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+        integer(kind=1), dimension(:), allocatable :: array
+
+
+        read(unit,"(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)",iostat=iostat, iomsg=iomsg) array
+
+        call wrapper(dtv, array)
+    end subroutine readUnformattedHaplotype
+
+
+
+    pure subroutine wrapper(hap, array) 
+
+      type(haplotype), intent(out) :: hap
+      integer(kind=1), dimension(:),intent(in), allocatable :: array
+
+      hap = newHaplotypeInt(array)
+    
+    end subroutine wrapper
+
+
+    subroutine readFormattedHaplotype(dtv, unit, iotype, vlist, iostat, iomsg)
+      class(Haplotype), intent(inout) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: vlist(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+      integer(kind=1), dimension(:), allocatable :: array
+      read(unit,iotype, iostat=iostat, iomsg=iomsg) array
+
+      call wrapper(dtv, array)
+    end subroutine readFormattedHaplotype
+
     
 end module HaplotypeModule
   

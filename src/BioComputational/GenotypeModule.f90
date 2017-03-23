@@ -2,10 +2,8 @@ module GenotypeModule
 
     use constantModule, only : MissingGenotypeCode
   implicit none
-  private
 
-  type, public :: Genotype
-  private
+  type :: Genotype
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Genotype    Homo    Additional !
   ! 0           1       0          !
@@ -13,38 +11,50 @@ module GenotypeModule
   ! 2           1       1          !
   ! Missing     0       1          !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  integer(kind=8), allocatable, dimension(:), public :: homo
-  integer(kind=8), allocatable, dimension(:), public :: additional
+  integer(kind=8), allocatable, dimension(:) :: homo
+  integer(kind=8), allocatable, dimension(:) :: additional
   integer :: sections
   integer :: overhang
   integer :: length
   contains
-  procedure :: toIntegerArray
+  procedure :: toIntegerArray => genotypeToIntegerArray
   procedure :: getGenotype
+  procedure :: setGenotype
   procedure :: compatibleHaplotypes
   procedure :: compatibleHaplotype
   procedure :: numIncommon
+  procedure :: numMissing
   procedure :: mismatches
   procedure :: compareGenotype
   procedure :: getLength
   procedure :: complement
   procedure :: numNotMissing
-  procedure :: setHaplotype
+  procedure :: setHaplotypeFromGenotype
   procedure :: isZero
   procedure :: isTwo
   procedure :: isMissing
   procedure :: isHomo
   procedure :: numberErrors
   procedure :: getErrors
-  procedure :: setHaplotypeIfError
-  procedure :: setHaplotypeIfMissing
+  procedure :: setHaplotypeFromGenotypeIfError
+  procedure :: setHaplotypeFromGenotypeIfMissing
   procedure :: numberErrorsSingle
   procedure :: getErrorsSingle
+  procedure :: subset
+  procedure :: readFormattedGenotype
+  procedure :: readunFormattedGenotype
+  procedure :: writeFormattedGenotype
+  procedure :: writeunFormattedGenotype
+  generic:: write(formatted) => writeFormattedGenotype
+  generic:: write(unformatted) => writeunFormattedGenotype
+  generic:: read(formatted) => readFormattedGenotype
+  generic:: read(unformatted) => readunFormattedGenotype
   end type Genotype
 
   interface Genotype
-  module procedure newGenotypeInt
-      end interface Genotype
+    module procedure newGenotypeInt
+    module procedure newGenotypeHap
+  end interface Genotype
 
       contains
 
@@ -63,7 +73,7 @@ module GenotypeModule
         allocate(g%homo(g%sections))
         allocate(g%additional(g%sections))
         cursection = 1
-        curpos = 1
+        curpos = 0
         g%homo = 0
         g%additional = 0
         do i = 1, g%length
@@ -79,46 +89,80 @@ module GenotypeModule
                 g%additional(cursection) = ibset(g%additional(cursection), curpos)
             end select
             curpos = curpos + 1
-            if (curpos == 65) then
-                curpos = 1
+            if (curpos == 64) then
+                curpos = 0
                 cursection = cursection + 1
             end if
         end do
     end function newGenotypeInt
+    
+    function newGenotypeHap(h1, h2) result (g)
+      use HaplotypeModule
+      type(Haplotype) :: h1, h2
+      
+      type(Genotype) :: g
+      integer :: i
+      
+      g%length = h1%length
+      g%sections = h1%sections
+      g%overhang = h1%overhang
+      
+      allocate(g%homo(g%sections))
+      allocate(g%additional(g%sections))
+      
+      do i = 1, g%sections
+	g%homo(i) = IOR( &
+	  ! BOTH HOMO MAJOR
+			      IAND( IAND(NOT(h1%phase(i)), NOT(h1%missing(i))), IAND(NOT(h2%phase(i)), NOT(h2%missing(i)))), &
+	  ! BOTH HOMO MINOR
+			      IAND( IAND(h1%phase(i), NOT(h1%missing(i))), IAND(h2%phase(i), NOT(h2%missing(i)))) )
+	
+	g%additional(i) = IOR ( &
+	  ! BOTH HOMO MINOR
+			      IAND( IAND(h1%phase(i), NOT(h1%missing(i))), IAND(h2%phase(i), NOT(h2%missing(i)))), &
+	  ! EITHER MISSING / ERROR
+			      IOR(h1%missing(i), h2%missing(i)) )
+      end do
+      
+      do i = 64 - g%overhang, 63
+	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
+      end do
+      
+    end function newGenotypeHap
 
-    function toIntegerArray(g) result(array)
+    function genotypeToIntegerArray(g) result(array)
         class(Genotype), intent(in) :: g
 
         integer(kind=1), dimension(:), allocatable :: array
 
         integer :: i, cursection, curpos
-
+	
         allocate(array(g%length))
 
         cursection = 1
-        curpos = 1
+        curpos = 0
         do i = 1, g%length
             if (btest(g%homo(cursection),curpos)) then
               if (btest(g%additional(cursection),curpos)) then
                 array(i) = 2
-            else
-                array(i) = 0
-            end if
-        else
-          if (btest(g%additional(cursection),curpos)) then
-            array(i) = MissingGenotypeCode
-        else
-            array(i) = 1
-        end if
-    end if
-
-    curpos = curpos + 1
-    if (curpos == 65) then
-        curpos = 1
-        cursection = cursection + 1
-    end if
-end do
-end function toIntegerArray
+	      else
+		  array(i) = 0
+	      end if
+	      else
+		if (btest(g%additional(cursection),curpos)) then
+		  array(i) = MissingGenotypeCode
+	      else
+		  array(i) = 1
+	      end if
+	    end if
+	
+	  curpos = curpos + 1
+	  if (curpos == 64) then
+	      curpos = 0
+	      cursection = cursection + 1
+	  end if
+	end do
+    end function genotypeToIntegerArray
 
 function compareGenotype(g1, g2) result(same)
     class(Genotype), intent(in) :: g1, g2
@@ -146,7 +190,7 @@ function getGenotype(g, pos) result (genotype)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
     if (btest(g%homo(cursection),curpos)) then
         if (btest(g%additional(cursection),curpos)) then
@@ -162,6 +206,31 @@ function getGenotype(g, pos) result (genotype)
         end if
     end if
 end function getGenotype
+
+
+subroutine setGenotype(g, pos, val)
+    class(Genotype), intent(inout) :: g
+    integer, intent(in) :: val
+    integer, intent(in) :: pos
+
+    integer :: cursection, curpos
+
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64 - 1
+
+    select case (val)
+      case (0)
+          g%homo(cursection) = ibset(g%homo(cursection), curpos)
+      case (1)
+          ! Nothing to do due to defaults
+      case (2)
+          g%homo(cursection) = ibset(g%homo(cursection), curpos)
+          g%additional(cursection) = ibset(g%additional(cursection), curpos)
+      case default
+          g%additional(cursection) = ibset(g%additional(cursection), curpos)
+    end select 
+
+end subroutine setGenotype
 
 function numOppose(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2
@@ -205,8 +274,8 @@ function complement(g,h) result(c)
     allocate(phase(g%sections))
     allocate(missing(g%sections))
     do i = 1, g%sections
-      !phase = IOR( IAND(h%phase(i), h%missing(i)), &
-      phase(i) = IOR( h%missing(i), &
+      phase(i) = IOR( IAND(h%phase(i), h%missing(i)), &
+!      phase(i) = IOR( h%missing(i), &
          IOR( IAND(IAND(h%phase(i),NOT(h%missing(i))),g%homo(i)), &
             IAND(NOT(IOR(h%phase(i),h%missing(i))), NOT(IEOR(g%homo(i), g%additional(i))))))
       missing(i) = IOR (h%missing(i), &
@@ -271,24 +340,25 @@ function compatibleHaplotype(g, h, threshold) result(c)
 
     integer :: i, num
 
+  
     num = 0
 
     do i = 1, g%sections
-      num = num + POPCNT( IAND( &
+      num = num + POPCNT( IOR( &
         !! Genotype is zero !!
         IAND( &
           ! Genotype is 0
           IAND(g%homo(i), NOT(g%additional(i))), &
           ! The haplotypes is 1
-          h%phase(i) ), &
+          IAND(h%phase(i), NOT(h%missing(i))) ), &
         !! Genotype is two
         IAND( &
           ! Genotype is 2
           IAND(g%homo(i), g%additional(i)), &
           ! One of the haplotypes is 0
           IAND(NOT(h%phase(i)), NOT(h%missing(i))))))
-  end do
-
+    end do
+    
   c = num <= threshold
 end function compatibleHaplotype
 
@@ -325,8 +395,17 @@ function numNotMissing(g) result(c)
   end do
 end function numNotMissing
 
+function numMissing(g) result(c)
+    class(Genotype), intent(in) :: g
 
-subroutine setHaplotype(g, h)
+    integer :: c
+
+    c = g%length - g%numNotMissing()
+end function numMissing
+
+
+
+subroutine setHaplotypeFromGenotype(g, h)
     use HaplotypeModule
 
     class(Haplotype), intent(in) :: h
@@ -339,12 +418,12 @@ subroutine setHaplotype(g, h)
 
       h%phase(i) = IAND(g%homo(i), g%additional(i))
   end do
-  do i = 64 - g%overhang + 1, 64
+  do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
-  end subroutine setHaplotype
+end subroutine setHaplotypeFromGenotype
 
-  subroutine setHaplotypeIfError(g, h, errors)
+  subroutine setHaplotypeFromGenotypeIfError(g, h, errors)
     use HaplotypeModule
 
     type(Haplotype), intent(in), pointer :: h
@@ -358,28 +437,27 @@ subroutine setHaplotype(g, h)
 
       h%phase(i) = IOR(IAND(NOT(errors(i)), h%phase(i)), IAND(errors(i), IAND(g%homo(i), g%additional(i))))
     end do
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
-  end subroutine setHaplotypeIfError
+  end subroutine setHaplotypeFromGenotypeIfError
 
-  subroutine setHaplotypeIfMissing(g, h)
+  subroutine setHaplotypeFromGenotypeIfMissing(g, h)
     use HaplotypeModule
 
-    type(Haplotype), intent(in), pointer :: h
+    type(Haplotype), intent(in) :: h
     class(Genotype), intent(in) :: g
 
     integer :: i
 
     do i = 1, g%sections
-      h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
-
       h%phase(i) = IOR(IAND(NOT(h%missing(i)), h%phase(i)), IAND(h%missing(i), IAND(g%homo(i), g%additional(i))))
+      h%missing(i) = IAND(h%missing(i), NOT(g%homo(i)))
     end do
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       h%missing(g%sections) = ibclr(h%missing(g%sections), i)
     end do
-  end subroutine setHaplotypeIfMissing
+  end subroutine setHaplotypeFromGenotypeIfMissing
 
   function isZero(g, pos) result (zero)
     class(Genotype), intent(in) :: g
@@ -390,7 +468,7 @@ subroutine setHaplotype(g, h)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     zero = BTEST(IAND(g%homo(cursection),NOT(g%additional(cursection))), curpos)
@@ -405,7 +483,7 @@ function isTwo(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(IAND(g%homo(cursection),g%additional(cursection)), curpos)
@@ -420,7 +498,7 @@ function isMissing(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(IAND(NOT(g%homo(cursection)),g%additional(cursection)), curpos)
@@ -435,7 +513,7 @@ function isHomo(g, pos) result (two)
     integer :: cursection, curpos
 
     cursection = (pos-1) / 64 + 1
-    curpos = pos - (cursection - 1) * 64
+    curpos = pos - (cursection - 1) * 64 - 1
 
 
     two = BTEST(g%homo(cursection), curpos)
@@ -464,7 +542,7 @@ function isHomo(g, pos) result (two)
       errors(i) = IAND(allnotmissing, IOR(zeroerror, twoerror))
     end do
 
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       errors(g%sections) = ibclr(errors(g%sections), i)
     end do
   end function getErrorsSingle
@@ -507,7 +585,7 @@ function isHomo(g, pos) result (two)
       errors(i) = IAND(allnotmissing, IOR(  IOR(zeroerror, twoerror), oneerror))
     end do
 
-    do i = 64 - g%overhang + 1, 64
+    do i = 64 - g%overhang, 63
       errors(g%sections) = ibclr(errors(g%sections), i)
     end do
 
@@ -525,6 +603,122 @@ function isHomo(g, pos) result (two)
     c = bitCount(g%getErrors(h1,h2))
 
   end function numberErrors
+  
+  function subset(g,start,finish) result (sub)
+    class(Genotype), intent(in) :: g
+    integer, intent(in) :: start, finish
+    
+    type(Genotype) :: sub
+    
+    integer :: offset, starti, i
+    
+    sub%length = finish - start + 1
+
+    sub%sections = sub%length / 64 + 1
+    sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
+    
+    allocate(sub%homo(sub%sections))
+    allocate(sub%additional(sub%sections))
+    
+    starti = (start - 1) / 64  + 1
+    offset = mod(start - 1, 64)
+    
+    if (offset == 0) then
+      do i = 1, sub%sections
+	sub%homo(i) = g%homo(i + starti - 1)
+	sub%additional(i) = g%additional(i + starti - 1)
+      end do
+    else
+      do i = 1, sub%sections - 1
+	sub%homo(i) = IOR(ISHFT(g%homo(i + starti - 1),-offset), ISHFT(g%homo(i + starti), 64 - offset))
+	sub%additional(i) = IOR(ISHFT(g%additional(i + starti - 1),-offset), ISHFT(g%additional(i + starti), 64 - offset))
+      end do
+      
+      if (sub%sections + starti - 1 == g%sections) then
+	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),offset)
+	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),offset)
+      else
+	sub%homo(sub%sections) = IOR(ISHFT(g%homo(sub%sections + starti - 1),-offset), ISHFT(g%homo(sub%sections + starti), 64 - offset))
+	sub%additional(sub%sections) = IOR(ISHFT(g%additional(sub%sections + starti - 1),-offset), ISHFT(g%additional(sub%sections + starti), 64 - offset))
+      end if
+    end if    
+          
+    do i = 64 - sub%overhang, 63
+      sub%homo(sub%sections) = ibclr(sub%homo(sub%sections), i)
+      sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i)
+    end do
+  end function subset
+
+
+    subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
+      class(Genotype), intent(in) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: v_list(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+
+      integer(kind=1), dimension(:), allocatable :: array
+
+
+      array = dtv%toIntegerArray()
+      write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+    
+      end subroutine writeFormattedGenotype
+
+
+      subroutine writeunFormattedGenotype(dtv, unit, iostat, iomsg)
+        class(Genotype), intent(in)::dtv
+        integer, intent(in):: unit
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+  
+        integer(kind=1), dimension(:), allocatable :: array
+
+        array = dtv%toIntegerArray()
+        write(unit, "(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)", iostat = iostat, iomsg = iomsg) array
+
+      end subroutine writeunFormattedGenotype
+
+
+
+      subroutine readUnformattedGenotype(dtv, unit, iostat, iomsg)
+        class(genotype), intent(inout) :: dtv         ! Object to write.
+        integer, intent(in) :: unit         ! Internal unit to write to.
+        integer, intent(out) :: iostat      ! non zero on error, etc.
+        character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+        integer(kind=1), dimension(:), allocatable :: array
+
+
+        read(unit,"(20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1,20000i1)",iostat=iostat, iomsg=iomsg) array
+
+        call wrapper(dtv, array)
+    end subroutine readUnformattedGenotype
+
+
+
+    pure subroutine wrapper(geno, array) 
+
+      type(genotype), intent(out) :: geno
+      integer(kind=1), dimension(:),intent(in), allocatable :: array
+
+      geno = newGenotypeInt(array)
+    
+    end subroutine wrapper
+
+
+    subroutine readFormattedGenotype(dtv, unit, iotype, vlist, iostat, iomsg)
+      class(Genotype), intent(inout) :: dtv         ! Object to write.
+      integer, intent(in) :: unit         ! Internal unit to write to.
+      character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
+      integer, intent(in) :: vlist(:)    ! parameters from fmt spec.
+      integer, intent(out) :: iostat      ! non zero on error, etc.
+      character(*), intent(inout) :: iomsg  ! define if iostat non zero.
+      integer(kind=1), dimension(:), allocatable :: array
+      read(unit,iotype, iostat=iostat, iomsg=iomsg) array
+
+      call wrapper(dtv, array)
+    end subroutine readFormattedGenotype
 
 end module GenotypeModule
 

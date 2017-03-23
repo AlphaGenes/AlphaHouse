@@ -3,7 +3,7 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     AlphaEvolveMod.f90
+!> @file     AlphaEvolveModule.f90
 !
 ! DESCRIPTION:
 !> @brief    Evolutionary algorithms
@@ -21,7 +21,7 @@
 ! 2016-09-26 GGorjanc - Initial Version
 !
 !-------------------------------------------------------------------------------
-module AlphaEvolveMod
+module AlphaEvolveModule
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
   use AlphaHouseMod, only : int2Char, Real2Char, ToLower
@@ -49,6 +49,7 @@ module AlphaEvolveMod
   end type
 
   contains
+
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -60,34 +61,34 @@ module AlphaEvolveMod
     !> @date    September 26, 2016
     !> @return  The best evolved solution (BestSol); log on STDOUT and files
     !---------------------------------------------------------------------------
-    subroutine DifferentialEvolution(nParam, nSol, Init, nGen, nGenBurnIn, nGenStop,&
-      StopTolerance, nGenPrint, LogFile, LogPop, LogPopFile, CritType, CRBurnIn, CRLate, FBase,&
-      FHigh1, FHigh2, BestSol)
+    subroutine DifferentialEvolution(nParam, nSol, Init, nIter, nIterBurnIn, nIterStop,&
+      StopTolerance, nIterPrint, LogFile, LogStdout, LogPop, LogPopFile, CritType,&
+      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO
       implicit none
 
       ! Arguments
-      integer(int32), intent(in)             :: nParam         !< No. of parameters in a solution
-      integer(int32), intent(in)             :: nSol           !< No. of solutions to test each generation/Iteration
-      real(real64), intent(in), optional     :: Init(:,:)      !< Initial solutions to start with
-      integer(int32), intent(in)             :: nGen           !< No. of generations/iterations to run
-      integer(int32), intent(in)             :: nGenBurnIn     !< No. of generations/iterations with more loose parameters
-      integer(int32), intent(in)             :: nGenStop       !< Stop after no progress for nGenStop
-      real(real64), intent(in)               :: StopTolerance  !< Stopping tolerance
-      integer(int32), intent(in)             :: nGenPrint      !< Print changed solution every nGenPrint
-      character(len=*), intent(in)           :: LogFile        !< Which file to log best solution into
-      logical, intent(in), optional          :: LogPop         !< Log all solutions
-      character(len=*), intent(in), optional :: LogPopFile     !< Which file to log all solutions into
-      character(len=*), intent(in), optional :: CritType       !< Passed to Evaluate
-      real(real64), intent(in), optional     :: CRBurnIn       !< Crossover rate for nGenBurnIn
-      real(real64), intent(in), optional     :: CRLate         !< Crossover rate
-      real(real64), intent(in), optional     :: FBase          !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh1         !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh2         !< F is multiplier of difference used to mutate
-      class(AlphaEvolveSol), intent(out)     :: BestSol        !< The best evolved solution
-      !class(*), intent(inout)                :: BestSol        ! The best evolved solution
+      integer(int32), intent(in)             :: nParam        !< No. of parameters in a solution
+      integer(int32), intent(in)             :: nSol          !< No. of solutions to test each generation/Iteration
+      real(real64), intent(in), optional     :: Init(:,:)     !< Initial solutions to start with
+      integer(int32), intent(in)             :: nIter         !< No. of generations/iterations to run
+      integer(int32), intent(in)             :: nIterBurnIn   !< No. of generations/iterations with more loose parameters
+      integer(int32), intent(in)             :: nIterStop     !< Stop after no progress for nIterStop
+      real(real64), intent(in)               :: StopTolerance !< Stopping tolerance
+      integer(int32), intent(in)             :: nIterPrint    !< Print changed solution every nIterPrint
+      character(len=*), intent(in), optional :: LogFile       !< Which file to log best solution into
+      logical, intent(in), optional          :: LogStdout     !< Log to STDOUT? (default .true.)
+      logical, intent(in), optional          :: LogPop        !< Save all evaluated solutions to a file
+      character(len=*), intent(in), optional :: LogPopFile    !< File for the evaluated solutions
+      character(len=*), intent(in), optional :: CritType      !< Passed to Evaluate
+      real(real64), intent(in), optional     :: CRBurnIn      !< Crossover rate for nIterBurnIn
+      real(real64), intent(in), optional     :: CRLate        !< Crossover rate
+      real(real64), intent(in), optional     :: FBase         !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
+      class(AlphaEvolveSol), intent(out)     :: BestSol       !< The best evolved solution
 
       ! Other
-      integer(int32) :: nInit, Param, ParamLoc, Gen, LastGenPrint, LogUnit, LogPopUnit
+      integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
       integer(int32) :: i, a, b, c, j
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
@@ -95,17 +96,16 @@ module AlphaEvolveMod
       real(real64) :: AcceptRate, OldChrom(nParam, nSol), NewChrom(nParam, nSol), Chrom(nParam)
       real(real64) :: BestSolCriterion
 
-      logical :: DiffOnly, BestSolChanged, LogPopInternal
+      logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
       class(AlphaEvolveSol), allocatable :: Sol(:), HoldSol
-      !class(*), allocatable :: Sol(:), HoldSol
 
       ! --- Allocate and Initialize ---
 
       allocate(Sol(nSol), source=BestSol)
       allocate(HoldSol, source=BestSol)
 
-      LastGenPrint = 0
+      LastIterPrint = 0
       BestSolCriterion = -huge(RanNum)
       BestSol%Criterion = BestSolCriterion
 
@@ -115,18 +115,21 @@ module AlphaEvolveMod
         LogPopInternal = .false.
       end if
 
-      if (LogPopInternal) then
-        if (.not. present(LogPopFile)) then
-          write (STDERR, "(a)") "ERROR: When LogPop is .true. the LogPopFile must be given!"
-          write (STDERR, "(a)") " "
-          stop 1
-        end if
+      if (present(LogStdout)) then
+        LogStdoutInternal = LogStdout
+      else
+        LogStdoutInternal = .true.
       end if
 
       ! --- Printout log header ---
 
-      open(newunit=LogUnit, file=trim(LogFile), status="unknown")
-      call HoldSol%LogHead(LogUnit=LogUnit)
+      if (present(LogFile)) then
+        open(newunit=LogUnit, file=trim(LogFile), status="unknown")
+        call HoldSol%LogHead(LogUnit)
+      end if
+      if (LogStdoutInternal) then
+        call HoldSol%LogHead()
+      end if
       if (LogPopInternal) then
         open(newunit=LogPopUnit, file=trim(LogPopFile), status="unknown")
         call HoldSol%LogPopHead(LogPopUnit)
@@ -188,30 +191,30 @@ module AlphaEvolveMod
 
       ! --- Evolve ---
 
-      do Gen = 1, nGen
+      do Iter = 1, nIter
 
         ! Vary differential and non-differential mutation to escape valleys
-        if (mod(Gen, 3) == 0) then
+        if (mod(Iter, 3) == 0) then
           DiffOnly = .true.
         else
           DiffOnly = .false.
         end if
 
         ! Burn-in
-        if (Gen < nGenBurnIn) then
+        if (Iter < nIterBurnIn) then
           CRInt = CRBurnInInt
         else
           CRInt = CRLateInt
         end if
 
         ! Vary mutation rate every few generations
-        if (mod(Gen, 4) == 0) then
+        if (mod(Iter, 4) == 0) then
           FInt = FHigh1Int
         else
           FInt = FBaseInt
         end if
 
-        if (mod(Gen, 7) == 0) then
+        if (mod(Iter, 7) == 0) then
           FInt = FHigh2Int
         else
           FInt = FBaseInt
@@ -318,12 +321,17 @@ module AlphaEvolveMod
         ! --- Monitor ---
 
         if (BestSolChanged) then
-          if ((Gen == 1) .or. ((Gen - LastGenPrint) >= nGenPrint)) then
-            LastGenPrint = Gen
-            call BestSol%Log(LogUnit, Gen, AcceptRate)
+          if ((Iter == 1) .or. ((Iter - LastIterPrint) >= nIterPrint)) then
+            LastIterPrint = Iter
+            if (present(LogFile)) then
+              call BestSol%Log(LogUnit, Iter, AcceptRate)
+            end if
+            if (LogStdoutInternal) then
+              call BestSol%Log(Iteration=Iter, AcceptRate=AcceptRate)
+            end if
             if (LogPopInternal) then
               do i = 1, nSol
-                call Sol(i)%LogPop(LogPopUnit, Gen, i)
+                call Sol(i)%LogPop(LogPopUnit, Iter, i)
               end do
             end if
           end if
@@ -331,25 +339,32 @@ module AlphaEvolveMod
 
         ! --- Test if solution is improving to continue or stop early ---
 
-        if (mod(Gen, nGenStop) == 0) then
+        if (mod(Iter, nIterStop) == 0) then
           if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then
             BestSolCriterion = BestSol%Criterion
           else
-            write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
-              trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nGenStop)), &
-              " iterations. Stopping the optimisation."
-            write(STDOUT, "(a)") " "
+            if (LogStdoutInternal) then
+              write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
+                trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nIterStop)), &
+                " iterations. Stopping the optimisation."
+              write(STDOUT, "(a)") " "
+            end if
             exit
           end if
         end if
 
-      end do ! Gen
+      end do ! Iter
 
       ! --- The winner solution ---
 
-      call BestSol%Log(LogUnit, Gen, AcceptRate)
-      write(STDOUT, "(a)") " "
-      close(LogUnit)
+      if (present(LogFile)) then
+        call BestSol%Log(LogUnit, Iter, AcceptRate)
+        close(LogUnit)
+      end if
+      if (LogStdoutInternal) then
+        call BestSol%Log(Iteration=Iter, AcceptRate=AcceptRate)
+        write(STDOUT, "(a)") " "
+      end if
       if (LogPopInternal) then
         close(LogPopUnit)
       end if
@@ -367,7 +382,7 @@ module AlphaEvolveMod
     !!          log on STDOUT and files
     !---------------------------------------------------------------------------
     subroutine RandomSearch(Mode, nParam, Init, nSamp, nSampStop, StopTolerance, &
-      nSampPrint, LogFile, CritType, BestSol)
+      nSampPrint, LogFile, LogStdout, CritType, BestSol) ! not pure due to IO
       implicit none
 
       ! Arguments
@@ -378,10 +393,10 @@ module AlphaEvolveMod
       integer(int32), intent(in), optional   :: nSampStop      !< Stop after no progress for nSampStop
       real(real64), intent(in)               :: StopTolerance  !< Stopping tolerance
       integer(int32), intent(in)             :: nSampPrint     !< Print changed solution every nSampPrint
-      character(len=*), intent(in)           :: LogFile        !< Which file to log best solution into
+      character(len=*), intent(in), optional :: LogFile        !< Which file to log best solution into
+      logical, intent(in), optional          :: LogStdout      !< Log to STDOUT?
       character(len=*), intent(in), optional :: CritType       !< Passed to Evaluate
       class(AlphaEvolveSol), intent(out)     :: BestSol        !< The best found solution
-      !class(*), intent(inout)                :: BestSol        ! The best found solution
 
       ! Other
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
@@ -389,10 +404,15 @@ module AlphaEvolveMod
 
       real(real64) :: RanNum, AcceptRate, BestSolCriterion, Chrom(nParam)
 
-      logical :: ModeAvg, ModeMax, BestSolChanged
+      logical :: ModeAvg, ModeMax, BestSolChanged, LogStdoutInternal
 
       class(AlphaEvolveSol), allocatable :: HoldSol
-      !class(*), allocatable :: HoldSol
+
+      if (present(LogStdout)) then
+        LogStdoutInternal = LogStdout
+      else
+        LogStdoutInternal = .true.
+      end if
 
       ! --- Mode ---
 
@@ -430,8 +450,13 @@ module AlphaEvolveMod
 
       ! --- Printout log header ---
 
-      open(newunit=LogUnit, file=trim(LogFile), status="unknown")
-      call HoldSol%LogHead(LogUnit=LogUnit)
+      if (present(LogFile)) then
+        open(newunit=LogUnit, file=trim(LogFile), status="unknown")
+        call HoldSol%LogHead(LogUnit=LogUnit)
+      end if
+      if (LogStdoutInternal) then
+        call HoldSol%LogHead()
+      end if
 
       ! --- Initialise with the provided solutions ---
 
@@ -497,7 +522,12 @@ module AlphaEvolveMod
               call BestSol%Log(LogUnit, Samp, AcceptRate)
             else if (ModeMax) then
               AcceptRate = AcceptRate / (Samp - LastSampPrint)
-              call BestSol%Log(LogUnit, Samp, AcceptRate)
+              if (present(LogFile)) then
+                call BestSol%Log(LogUnit, Samp, AcceptRate)
+              end if
+              if (LogStdoutInternal) then
+                call BestSol%Log(Iteration=Samp, AcceptRate=AcceptRate)
+              end if
               AcceptRate = 0.0d0
             end if
             LastSampPrint = Samp
@@ -510,10 +540,12 @@ module AlphaEvolveMod
           if ((BestSol%Criterion - BestSolCriterion) > StopTolerance) then
             BestSolCriterion = BestSol%Criterion
           else
-            write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
-              trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nSampStop)), &
-              " samples. Stopping the random search."
-            write(STDOUT, "(a)") " "
+            if (LogStdoutInternal) then
+              write(STDOUT, "(5a)") "NOTE: Criterion did not improve for ", &
+                trim(Real2Char(StopTolerance)), " in the last ", trim(Int2Char(nSampStop)), &
+                " samples. Stopping the random search."
+              write(STDOUT, "(a)") " "
+            end if
             exit
           end if
         end if
@@ -525,9 +557,14 @@ module AlphaEvolveMod
       if (ModeMax) then
         AcceptRate = AcceptRate / (Samp - LastSampPrint)
       end if
-      call BestSol%Log(LogUnit, Samp, AcceptRate)
-      write(STDOUT, "(a)") " "
-      close(LogUnit)
+      if (present(LogFile)) then
+        call BestSol%Log(LogUnit, Samp, AcceptRate)
+        close(LogUnit)
+      end if
+      if (LogStdoutInternal) then
+        call BestSol%Log(Iteration=Samp, AcceptRate=AcceptRate)
+        write(STDOUT, "(a)") " "
+      end if
     end subroutine
 
     !###########################################################################
@@ -537,7 +574,7 @@ module AlphaEvolveMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine InitialiseAlphaEvolveSol(This)
+    pure subroutine InitialiseAlphaEvolveSol(This)
       implicit none
 
       ! Argument
@@ -554,7 +591,7 @@ module AlphaEvolveMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine AssignAlphaEvolveSol(Out, In)
+    pure subroutine AssignAlphaEvolveSol(Out, In)
       implicit none
 
       ! Arguments
@@ -574,7 +611,7 @@ module AlphaEvolveMod
     !> @date    September 26, 2016
     !> @return  Solution with average metrics
     !---------------------------------------------------------------------------
-    subroutine UpdateMeanAlphaEvolveSol(This, Add, n)
+    pure subroutine UpdateMeanAlphaEvolveSol(This, Add, n)
       implicit none
 
       ! Arguments
@@ -598,16 +635,15 @@ module AlphaEvolveMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine EvaluateAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here - I have made them optional (I want
-      !  to remove them but don't want to break stuff -DdB
+    subroutine EvaluateAlphaEvolveSol(This, Chrom, CritType) ! Chrom and CritType not used here, but defined for later extension; not pure due to RNG
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSol), intent(inout)  :: This      !< @return solution
-      real(real64), intent(inout), optional :: Chrom(:)  !< internal representation of the solution
-      character(len=*), intent(in), optional:: CritType  !< type of criterion; not used here
+      class(AlphaEvolveSol), intent(inout)   :: This      !< @return solution
+      real(real64), intent(inout), optional  :: Chrom(:)  !< internal representation of the solution
+      character(len=*), intent(in), optional :: CritType  !< type of criterion; not used here
 
-      !> @todo is not Chrom now part of solution
+      ! @todo is not Chrom now part of solution
       ! Initialize the solution
       call This%Initialise()
 
@@ -621,13 +657,15 @@ module AlphaEvolveMod
     !> @brief   Print log head
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
-    !> @return  Print log head to STDOUT and optionally file unit
+    !> @return  Print log head to unit
     !---------------------------------------------------------------------------
-    subroutine LogHeadAlphaEvolveSol(LogUnit)
+    subroutine LogHeadAlphaEvolveSol(LogUnit, String, StringNum) ! not pure due to IO
       implicit none
-      integer(int32), intent(in), optional :: LogUnit !< log file unit
+      integer(int32), intent(in), optional   :: LogUnit   !< log file unit (default STDOUT)
+      character(len=*), intent(in), optional :: String    !< additional string that will be written before the head
+      integer(int32), optional               :: StringNum !< How much space is needed for the String
 
-      character(len=12) :: ColnameLogStdout(3)
+      character(len=12) :: ColnameLogStdout(3), StringFmt
       character(len=22) :: ColnameLogUnit(3)
       !                      123456789012
       ColnameLogStdout(1) = "   Iteration"
@@ -637,9 +675,23 @@ module AlphaEvolveMod
       ColnameLogUnit(1) = "             Iteration"
       ColnameLogUnit(2) = "            AcceptRate"
       ColnameLogUnit(3) = "             Criterion"
-      write(STDOUT, "(3a12)")    ColnameLogStdout(:)
+      if (present(String)) then
+        if (present(StringNum)) then
+          StringFmt = "("//Int2Char(StringNum)//"a)"
+        else
+          StringFmt = "(a)"
+        end if
+      end if
       if (present(LogUnit)) then
+        if (present(String)) then
+          write(LogUnit, StringFmt, Advance="No") String
+        end if
         write(LogUnit, "(3a22)") ColnameLogUnit(:)
+      else
+        if (present(String)) then
+          write(STDOUT, StringFmt, Advance="No") String
+        end if
+        write(STDOUT,  "(3a12)") ColnameLogStdout(:)
       end if
     end subroutine
 
@@ -649,59 +701,88 @@ module AlphaEvolveMod
     !> @brief   Print log
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
-    !> @return  Print log to STDOUT and optionally file unit
+    !> @return  Print log to unit
     !---------------------------------------------------------------------------
-    subroutine LogAlphaEvolveSol(This, LogUnit, Gen, AcceptRate)
+    subroutine LogAlphaEvolveSol(This, LogUnit, Iteration, AcceptRate, String, StringNum) ! not pure due to IO
       implicit none
-      class(AlphaEvolveSol), intent(in)    :: This       !< solution
-      integer(int32), intent(in), optional :: LogUnit    !< log file unit
-      integer(int32), intent(in)           :: Gen        !< generation/iteration
-      real(real64), intent(in)             :: AcceptRate !< acceptance rate
-      write(STDOUT,  "(i12, 2(1x, f11.5))")     Gen, AcceptRate, This%Criterion
+      class(AlphaEvolveSol), intent(in)      :: This       !< solution
+      integer(int32), intent(in), optional   :: LogUnit    !< log file unit (default STDOUT)
+      integer(int32), intent(in)             :: Iteration  !< generation/iteration
+      real(real64), intent(in)               :: AcceptRate !< acceptance rate
+      character(len=*), intent(in), optional :: String     !< additional string that will be written before the head
+      integer(int32), optional               :: StringNum  !< How much space is needed for the String
+      integer(int32) :: Unit
+      character(len=20) :: Fmt, StringFmt
       if (present(LogUnit)) then
-        write(LogUnit, "(i22, 2(1x, es21.14))") Gen, AcceptRate, This%Criterion
+        Unit = LogUnit
+        Fmt = "(a22, 2(1x, es21.14))"
+      else
+        Unit = STDOUT
+        Fmt = "(a12, 2(1x, f11.5))"
       end if
+      if (present(String)) then
+        if (present(StringNum)) then
+          StringFmt = "("//Int2Char(StringNum)//"a)"
+        else
+          StringFmt = "(a)"
+        end if
+      end if
+      if (present(String)) then
+        write(Unit, StringFmt, Advance="No") String
+      end if
+      write(Unit, Fmt) Iteration, AcceptRate, This%Criterion
     end subroutine
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
     !> @brief   Print population log head
-    !> @details This is meant to log all the evaluated solutions and not just the
-    !!          best one as LogHeadAlphaEvolveSol
+    !> @details This is meant to log all the evaluated solutions (the population)
+    !!          and not just the best one as LogHeadAlphaEvolveSol does
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
-    !> @return  Print population log head to STDOUT and optionally file unit
+    !> @return  Print population log head to unit
     !---------------------------------------------------------------------------
-    subroutine LogPopHeadAlphaEvolveSol(LogPopUnit)
+    subroutine LogPopHeadAlphaEvolveSol(LogPopUnit) ! not pure due to IO
       implicit none
-      integer(int32), intent(in) :: LogPopUnit !< log file unit
-
+      integer(int32), intent(in), optional :: LogPopUnit !< log file unit (default STDOUT)
+      integer(int32) :: Unit
       character(len=22) :: ColnameLogPopUnit(3)
+      if (present(LogPopUnit)) then
+        Unit = LogPopUnit
+      else
+        Unit = STDOUT
+      end if
       !                       1234567890123456789012
       ColnameLogPopUnit(1) = "             Iteration"
       ColnameLogPopUnit(2) = "              Solution"
       ColnameLogPopUnit(3) = "             Criterion"
-      write(LogPopUnit, "(3a22)") ColnameLogPopUnit(:)
+      write(Unit, "(3a22)") ColnameLogPopUnit(:)
     end subroutine
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
     !> @brief   Print population log
-    !> @details This is meant to log all the evaluated solutions and not just the
-    !!          best one as LogAlphaEvolveSol
+    !> @details This is meant to log all the evaluated solutions (the population)
+    !!          and not just the best one as LogAlphaEvolveSol does
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
-    !> @return  Print population log to STDOUT and optionally file unit
+    !> @return  Print population log to unit
     !---------------------------------------------------------------------------
-    subroutine LogPopAlphaEvolveSol(This, LogPopUnit, Gen, i)
+    subroutine LogPopAlphaEvolveSol(This, LogPopUnit, Iteration, i) ! not pure due to IO
       implicit none
-      class(AlphaEvolveSol), intent(in) :: This       !< solution
-      integer(int32), intent(in)        :: LogPopUnit !< population log file unit
-      integer(int32), intent(in)        :: Gen        !< generation/iteration
-      integer(int32), intent(in)        :: i          !< solution id
-      write(LogPopUnit, "(2(i22, 1x), es21.14)") Gen, i, This%Criterion
+      class(AlphaEvolveSol), intent(in)    :: This       !< solution
+      integer(int32), intent(in), optional :: LogPopUnit !< population log file unit (default STDOUT)
+      integer(int32), intent(in)           :: Iteration  !< generation/iteration
+      integer(int32), intent(in)           :: i          !< solution id
+      integer(int32) :: Unit
+      if (present(LogPopUnit)) then
+        Unit = LogPopUnit
+      else
+        Unit = STDOUT
+      end if
+      write(Unit, "(2(i22, 1x), es21.14)") Iteration, i, This%Criterion
     end subroutine
 
     !###########################################################################

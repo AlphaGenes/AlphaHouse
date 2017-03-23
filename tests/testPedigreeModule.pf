@@ -11,7 +11,7 @@ module TestPedigreeModule
     @before
     subroutine initialise
         implicit none
-        integer(int32) :: pedUnit
+        integer(int32) :: pedUnit, genUnit
 
         ! A sorted pedigree with one parent (d1) not given as individual
         open(newunit=pedUnit, file="testPed.txt", status="unknown")
@@ -26,6 +26,13 @@ module TestPedigreeModule
         close(pedUnit)
         pedigree = PedigreeHolder("testPed.txt")
 
+        open(newunit=genUnit, file="testGen.txt", status="unknown")
+        write (genUnit,'(a20,4i2)') "bbb", 0, 2, 1, 9
+        write (genUnit,'(a20,4i2)') "fff", 1, 1, 1, 1
+        close(pedUnit)
+
+        
+       
         ! An unsorted pedigree with two parents (aaa and d1) not given as individuals
         open(newunit=pedUnit, file="testPedUnsorted.txt", status="unknown")
         write(pedUnit, "(a)") "ccc aaa bbb"
@@ -36,7 +43,11 @@ module TestPedigreeModule
         write(pedUnit, "(a)") "ddd aaa 0"
         write(pedUnit, "(a)") "hhh 0   d1"
         close(pedUnit)
+
+        
         pedigreeUnsorted = PedigreeHolder("testPedUnsorted.txt")
+        call pedigree%addGenotypeInformationFromFile("testGen.txt", 4)
+         
     end subroutine
 
     @after
@@ -67,7 +78,29 @@ module TestPedigreeModule
          @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
 
+     @test
+    subroutine testGenos
+        implicit none
+        integer :: tmp1, tmp,i
+        integer(kind=1), dimension(:), allocatable :: array
+        integer(kind=1), dimension(4) :: test1
+        integer(kind=1), dimension(4) :: test2
 
+        test1 = [ 0,2,1,9 ]
+        test2 = [ 1,1,1,1 ] 
+        tmp1 = pedigree%dictionary%getValue("bbb")
+        @assertFalse(tmp1 == DICT_NULL)
+        tmp = pedigree%genotypeDictionary%getValue("bbb")
+        @assertFalse(tmp == DICT_NULL)
+        tmp = pedigree%genotypeDictionary%getValue("fff")
+        @assertFalse(tmp == DICT_NULL)
+        array = pedigree%pedigree(tmp1)%individualGenotype%toIntegerArray()
+        print *, array
+        print *, test1
+        @assertEqualUserDefined(array, test1)
+        array = pedigree%pedigree(tmp)%individualGenotype%toIntegerArray()
+         @assertEqualUserDefined(array, test1)
+    end subroutine testGenos
 
     @test
     subroutine testSorting
@@ -109,17 +142,16 @@ module TestPedigreeModule
 
       call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "bbb", "dumaaa", "dumd1", "dum001", "dum002", "dum003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
-      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     2,     4,     6,     8,     8]
-      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     5,     3,     3,     1,     1]
+      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]
+      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     3,     5,     3,     1,     1]
       do i = 0, pedigree%pedigreeSize
-         ! print*, recPed%originalId(i), recPed%generation(i), recPed%id(1:3,i)
-         ! print*, expRecPed%originalId(i), expRecPed%generation(i), expRecPed%id(1:3,i)
          @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
          @assertEqual(expRecPed%generation(i), recPed%generation(i))
          @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+         
       end do
     end subroutine
 
