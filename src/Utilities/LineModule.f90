@@ -49,8 +49,8 @@ module LineModule
       procedure, private:: readLineType
       procedure, private:: readUnformattedLineType
       procedure:: removeAll
-      generic:: write(formatted) => writeFormattedLineType
-      generic:: write(unformatted) => writeUnformattedLineType
+      generic:: write(formatted)=> writeFormattedLineType
+      generic:: write(unformatted)=> writeUnformattedLineType
       generic:: read(formatted) => readLineType
       generic:: read(unformatted) => readUnformattedLineType
       final:: deallocateLine

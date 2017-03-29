@@ -23,7 +23,7 @@ Module stringModule
     procedure:: split
     procedure:: getNumOccurances
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
-    generic:: write(formatted) => writeType
+    generic:: write(formatted)=> writeType
     generic:: read(formatted) => readType
   end type 
 

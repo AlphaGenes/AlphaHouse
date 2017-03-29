@@ -51,8 +51,8 @@ module HaplotypeModule
     procedure :: writeFormattedHaplotype
     procedure :: writeunFormattedHaplotype
 
-    generic:: write(formatted) => writeFormattedHaplotype
-    generic:: write(unformatted) => writeunFormattedHaplotype
+    generic:: write(formatted)=> writeFormattedHaplotype
+    generic:: write(unformatted)=> writeunFormattedHaplotype
     generic:: read(formatted) => readFormattedHaplotype
     generic:: read(unformatted) => readunFormattedHaplotype
   end type Haplotype
