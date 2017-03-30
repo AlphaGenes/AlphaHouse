@@ -42,7 +42,7 @@ module IntegerLinkedListModule
             procedure :: writeLinkedList
             procedure :: destroyLinkedList
             procedure :: convertToArray
-            generic:: write(formatted) => writeLinkedList
+            generic:: write(formatted)=> writeLinkedList
 
     end type IntegerLinkedList
 

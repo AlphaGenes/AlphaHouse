@@ -55,7 +55,7 @@ module IndividualLinkedListModule
             procedure :: destroyLinkedList
             procedure :: convertToArray
             procedure :: convertToArrayIDs
-            generic:: write(formatted) => writeLinkedList
+            generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
 

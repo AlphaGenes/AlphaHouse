@@ -91,7 +91,7 @@ module IndividualModule
             procedure :: resetOffspringInformation
             procedure :: removeOffspring
             procedure :: writeIndividual
-            generic:: write(formatted) => writeIndividual
+            generic:: write(formatted)=> writeIndividual
     end type Individual
 
     interface Individual

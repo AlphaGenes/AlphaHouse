@@ -45,8 +45,8 @@ module GenotypeModule
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
   procedure :: writeunFormattedGenotype
-  generic:: write(formatted) => writeFormattedGenotype
-  generic:: write(unformatted) => writeunFormattedGenotype
+  generic:: write(formatted)=> writeFormattedGenotype
+  generic:: write(unformatted)=> writeunFormattedGenotype
   generic:: read(formatted) => readFormattedGenotype
   generic:: read(unformatted) => readunFormattedGenotype
   end type Genotype
