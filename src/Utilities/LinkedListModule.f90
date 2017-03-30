@@ -73,6 +73,7 @@ subroutine list_destroy( list )
         deallocate( current )
         current => next
     enddo
+    
 end subroutine list_destroy
 
 ! list_count --

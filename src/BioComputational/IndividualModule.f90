@@ -73,6 +73,7 @@ module IndividualModule
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
+            procedure :: getSireDamNewIDByIndexNoDummy
             procedure :: getIntegerVectorOfRecodedIds
             procedure :: getCharacterVectorOfRecodedIds
             procedure :: getPaternalGrandSireRecodedIndex
@@ -564,7 +565,6 @@ contains
     !> @date    October 26, 2016
     ! PARAMETERS:
     !> @param[in] index - the index
-    !> @return .True. if file exists, otherwise .false.
     !---------------------------------------------------------------------------
     function getSireDamNewIDByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
@@ -593,6 +593,45 @@ contains
     end function getSireDamNewIDByIndex
 
 
+            !---------------------------------------------------------------------------
+        !> @brief Returns either the individuals id, the sires id or dams id based on
+        !> which index is passed. 0 is returned if no parent or if parent is a dummy
+
+        !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+        !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+        !> @date    October 26, 2016
+        ! PARAMETERS:
+        !> @param[in] index - the index
+        !---------------------------------------------------------------------------
+        function getSireDamNewIDByIndexNoDummy(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
+        integer:: v
+        select case (index)
+            case(1)
+                v = this%id
+            case(2)
+                if (associated(this%sirePointer)) then
+                    if (.not. this%sirePointer%isDummy) then
+                        v = this%sirePointer%id
+                    endif
+                else
+                    v = 0
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    if (.not. this%damPointer%isDummy) then
+                        v = this%damPointer%id
+                    endif
+                else
+                    v = 0
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamNewIDByIndexNoDummy
 
     !---------------------------------------------------------------------------
     !> @brief returns true if either paretns are a dummy animal
