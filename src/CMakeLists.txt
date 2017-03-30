@@ -12,24 +12,24 @@ SET(ALPHAHOUSE_src
     BioComputational/IndividualHelperModule.f90
     BioComputational/PedigreeModule.f90
     BioComputational/IntelRNGMod.f90
-    Untested/HelperSubroutines.f90
+    NotUnitTested/Utilities/HelperSubroutines.f90
     Utilities/StringModule.f90
     Utilities/LineModule.f90
     Utilities/PageModule.f90
     Utilities/Input.f90
-    Untested/CompatibilityModule.f90
-    Untested/AlphaSortMod.f90
+    NotUnitTested/Utilities/CompatibilityModule.f90
+    NotUnitTested/Utilities/AlphaSortMod.f90
     Utilities/IntegerLinkedListModule.f90
-    Untested/GenotypeModule.f90
-    Untested/HaplotypeModule.f90
-    Untested/BitUtilities.f90
-    Untested/FilterModule.f90
-    # Untested/CoreIndexModule.f90
-    Untested/SortingModule.f90
-    Untested/ClusteringModule.f90
-    Untested/par_zig_mod.f90
+    NotUnitTested/BioComputational/GenotypeModule.f90
+    NotUnitTested/BioComputational/HaplotypeModule.f90
+    NotUnitTested/BioComputational/BitUtilities.f90
+    NotUnitTested/BioComputational/FilterModule.f90
+    # NotUnitTested/BioComputational/CoreIndexModule.f90
+    NotUnitTested/Utilities/SortingModule.f90
+    NotUnitTested/Utilities/ClusteringModule.f90
+    NotUnitTested/Utilities/par_zig_mod.f90
     Utilities/LegacyRandom.f90
-    Untested/AlphaEvolveModule.f90
+    NotUnitTested/BioComputational/AlphaEvolveModule.f90
     main.f90
 )
 
