@@ -47,7 +47,6 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 if (${RUN_TESTS})
   # file(GLOB testDeps "${SRC}/*.f90")
   SET(testDeps
-      ${SRC}/Utilities/ConstantModule.f90
       ${SRC}/Utilities/AlphaHouseMod.f90
       ${SRC}/Utilities/AlphaSystemMod.f90
       ${SRC}/BioComputational/AlphaStatMod.f90
@@ -59,16 +58,14 @@ if (${RUN_TESTS})
       ${SRC}/BioComputational/IndividualHelperModule.f90
       ${SRC}/BioComputational/PedigreeModule.f90
       ${SRC}/BioComputational/IntelRNGMod.f90
-      ${SRC}/Utilities/HelperSubroutines.f90
       ${SRC}/Utilities/StringModule.f90
       ${SRC}/Utilities/LineModule.f90
       ${SRC}/Utilities/PageModule.f90
       ${SRC}/Utilities/IntegerLinkedListModule.f90
       ${SRC}/Utilities/Input.f90
-      ${SRC}/BioComputational/GenotypeModule.f90
-      ${SRC}/BioComputational/HaplotypeModule.f90
-      ${SRC}/BioComputational/BitUtilities.f90
-      ${SRC}/BioComputational/AlphaEvolveModule.f90
+      ${SRC}/Untested/BitUtilities.f90
+      ${SRC}/Untested/HaplotypeModule.f90
+      ${SRC}/Untested/GenotypeModule.f90
 )
 
 endif (${RUN_TESTS})

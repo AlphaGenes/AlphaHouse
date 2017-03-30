@@ -226,8 +226,8 @@ contains
     call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
 
     deallocate(tmpAnimalArray)
-    write(output_unit, *) "Number of animals in Pedigree:",pedStructure%pedigreeSize-pedStructure%nDummys
-    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
+  !  write(output_unit, *) "Number of animals in Pedigree:",pedStructure%pedigreeSize-pedStructure%nDummys
+  !  write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
     
     end function initPedigree
 
@@ -762,7 +762,7 @@ contains
                 endif
             enddo
 
-            write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
+            !write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
 
 

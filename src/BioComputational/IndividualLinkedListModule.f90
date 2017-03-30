@@ -269,7 +269,7 @@ contains
                 this%length = this%length - 1 
                 if (.not. associated(this%first)) then
                     deallocate(this%last)
-                    print *, "LIST EMPTY:", this%length
+                    !print *, "LIST EMPTY:", this%length
                 else 
                     this%first%previous => null()                    
                 endif
