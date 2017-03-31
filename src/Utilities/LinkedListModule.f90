@@ -68,11 +68,21 @@ subroutine list_destroy( list )
     type(LinkedList), pointer  :: next
 
     current => list
-    do while ( associated(current%next) )
-        next => current%next
-        deallocate( current )
-        current => next
-    enddo
+    if (.not. associated(current%next)) then
+        deallocate( current%data%key )
+        deallocate(current)
+    
+
+    else 
+
+        do while ( associated(current%next) )
+            next => current%next
+            deallocate( current%data%key )
+            deallocate( current )
+            current => next
+        enddo
+    endif
+    ! deallocate(list)
     
 end subroutine list_destroy
 
@@ -121,7 +131,7 @@ end function list_next
 !
 subroutine list_insert( elem, data )
     type(LinkedList), pointer  :: elem
-    type(LIST_DATA), intent(in) :: data
+    type(LIST_DATA) :: data
 
     type(LinkedList), pointer :: next
 
@@ -130,6 +140,7 @@ subroutine list_insert( elem, data )
     next%next => elem%next
     elem%next => next
     next%data =  data
+    deallocate(data%key)
 end subroutine list_insert
 
 ! list_insert_head

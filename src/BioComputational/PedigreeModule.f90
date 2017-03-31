@@ -678,13 +678,13 @@ contains
         enddo
          if (allocated(this%generations)) then
 
-            do i=1, this%maxGeneration
-                call this%generations(i)%destroyLinkedList
+            do i=0, this%maxGeneration
+                call this%generations(i)%destroyLinkedListFinal
             enddo 
             deallocate(this%generations)
         endif
             
-        call this%Founders%destroyLinkedList
+        call this%Founders%destroyLinkedListFinal
         call this%dictionary%destroy !destroy dictionary as we no longer need it
         if (this%nGenotyped > 0) then
             call this%genotypeDictionary%destroy
@@ -945,6 +945,7 @@ contains
 
 
                  pedCounter = pedCounter +1
+
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
 
 
@@ -1015,8 +1016,14 @@ contains
 
         enddo
 
+        call dummyList%destroyLinkedList()
+
         this%pedigree = newPed
+        do i = 0, this%maxGeneration
+            call this%generations(i)%destroyLinkedList
+        enddo
         this%generations = newGenerationList
+        
         this%isSorted = .true.
     end subroutine sortPedigreeAndOverwrite
 
@@ -1087,7 +1094,9 @@ contains
                 tmpIndNode => tmpIndNode%next
             end do
         enddo
-
+        do i = 0, this%maxGeneration
+            call this%generations(i)%destroyLinkedList
+        enddo
 
         this%pedigree = newPed
         this%generations = newGenerationList

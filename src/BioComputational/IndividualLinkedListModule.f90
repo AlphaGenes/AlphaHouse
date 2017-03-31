@@ -55,6 +55,7 @@ module IndividualLinkedListModule
             procedure :: destroyLinkedList
             procedure :: convertToArray
             procedure :: convertToArrayIDs
+            procedure :: destroyLinkedListFinal
             generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
@@ -87,9 +88,35 @@ contains
         endif
         deallocate(this%first)
         deallocate(this%last)
-        ! deallocate(tmp)
 
     end subroutine destroyLinkedList
+
+
+        !---------------------------------------------------------------------------
+    !> @brief Destructor for linked list, note that data set is deallocated as well
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine destroyLinkedListFinal(this)
+        class(IndividualLinkedList),intent(inout) :: this
+        type(IndividualLinkedListNode),pointer :: node
+        type(individual),pointer :: tmp
+        if (associated(this%first)) then
+            node => this%first
+
+            do while(associated(node))
+                call this%list_pop(tmp)
+                if (associated(tmp)) then
+                    deallocate(tmp)
+                endif
+
+                node => this%first
+            enddo
+        endif
+        deallocate(this%first)
+        deallocate(this%last)
+
+    end subroutine destroyLinkedListFinal
 
     !---------------------------------------------------------------------------
     !> @brief output for Linked List
