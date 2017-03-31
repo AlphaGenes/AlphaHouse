@@ -679,7 +679,7 @@ contains
          if (allocated(this%generations)) then
 
             do i=0, this%maxGeneration
-                call this%generations(i)%destroyLinkedListFinal
+                call this%generations(i)%destroyLinkedList
             enddo 
             deallocate(this%generations)
         endif
@@ -689,6 +689,11 @@ contains
         if (this%nGenotyped > 0) then
             call this%genotypeDictionary%destroy
             deallocate(this%genotypeMap)
+        endif
+
+         if (this%nHd > 0) then
+            call this%hdDictionary%destroy
+            deallocate(this%hdMap)
         endif
 
         
@@ -957,6 +962,14 @@ contains
                         this%genotypeMap(tmpGenotypeMapIndex) = pedCounter
                     endif
                 endif
+! Update hd map
+                if (this%nHd > 0) then
+                    tmpGenotypeMapIndex = this%hdDictionary%getValue(tmpIndNode%item%originalID)
+                    if (tmpGenotypeMapIndex /= DICT_NULL) then
+                        this%hdMap(tmpGenotypeMapIndex) = pedCounter
+                    endif
+                endif
+
 
                  newPed(pedCounter) = tmpIndNode%item
                  newPed(pedCounter)%id = pedCounter
@@ -1057,11 +1070,18 @@ contains
                  pedCounter = pedCounter +1
                  call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
 
-                 if (this%nGenotyped > 0) then
-                    !  update genotype map
+                 !  update genotype map
+                if (this%nGenotyped > 0) then
                     tmpGenotypeMapIndex = this%genotypeDictionary%getValue(tmpIndNode%item%originalID)
                     if (tmpGenotypeMapIndex /= DICT_NULL) then
                         this%genotypeMap(tmpGenotypeMapIndex) = pedCounter
+                    endif
+                endif
+                ! Update hd map
+                if (this%nHd > 0) then
+                    tmpGenotypeMapIndex = this%hdDictionary%getValue(tmpIndNode%item%originalID)
+                    if (tmpGenotypeMapIndex /= DICT_NULL) then
+                        this%hdMap(tmpGenotypeMapIndex) = pedCounter
                     endif
                 endif
                 
