@@ -76,6 +76,7 @@ type PedigreeHolder
         procedure :: getGenotypePercentage
         procedure :: writeOutGenotypes
         procedure :: createDummyAnimalAtEndOfPedigree
+	procedure :: addAnimalAtEndOfPedigree
         
 
 end type PedigreeHolder
@@ -239,6 +240,7 @@ contains
     !< @details Constructor builds pedigree, without any sorting being done. 
     !< If no pedigree file is supplied, all animals are founders
     !< If an animal is in the pedigree, but not in the genotypeFile, this animal is still created as a dummy!
+    !< If the animal is in the genotype file, but not in the pedigree, it is added!
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -328,7 +330,12 @@ contains
             endif
             if (present(pedFile)) then
                 j = pedStructure%dictionary%getValue(tmpID)
-                call pedStructure%setAnimalAsGenotyped(j,tmpGeno)
+		
+		if ( j == DICT_NULL) then
+		  call pedStructure%addAnimalAtEndOfPedigree(tmpID,tmpGeno)
+		else 
+		  call pedStructure%setAnimalAsGenotyped(j,tmpGeno)
+		endif
             else 
                 call pedStructure%dictionary%addKey(tmpId, i)
                 pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
@@ -1496,7 +1503,7 @@ contains
         class(pedigreeHolder) :: this
         integer, intent(in) :: individualIndex !< index of animal to get genotyped
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
-
+	
         if (this%nGenotyped == 0) then
             this%genotypeDictionary = DictStructure()
             allocate(this%genotypeMap(this%pedigreeSize))
@@ -1693,4 +1700,30 @@ contains
         endif
         dummyId = this%pedigreeSize
     end subroutine createDummyAnimalAtEndOfPedigree
+    
+    
+    
+      
+    !---------------------------------------------------------------------------
+    !> @brief creates a new animal at end of pedigree
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !---------------------------------------------------------------------------
+        subroutine addAnimalAtEndOfPedigree(this, originalID, genotype)
+        class(PedigreeHolder) :: this
+        character(len=IDLENGTH) ,intent(in):: OriginalId
+	integer(kind=1), dimension(:), intent(in) :: genotype
+
+        this%pedigreeSize = this%pedigreeSize+1
+        this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize)
+        call this%dictionary%addKey(OriginalId, this%pedigreeSize)
+        this%Pedigree(this%pedigreeSize)%isDummy = .false.
+        call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
+        this%Pedigree(this%pedigreeSize)%founder = .true.
+	call this%setAnimalAsGenotyped(this%pedigreeSize, genotype)
+	call this%setAnimalAsHD(this%pedigreeSize)
+       
+    end subroutine addAnimalAtEndOfPedigree
+    
 end module PedigreeModule
