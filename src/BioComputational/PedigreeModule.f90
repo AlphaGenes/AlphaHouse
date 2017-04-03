@@ -1710,10 +1710,10 @@ contains
     !> @date    October 26, 2016
     ! PARAMETERS:
     !---------------------------------------------------------------------------
-        subroutine addAnimalAtEndOfPedigree(this, originalID, genotype)
+        subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
         class(PedigreeHolder) :: this
         character(len=IDLENGTH) ,intent(in):: OriginalId
-	integer(kind=1), dimension(:), intent(in) :: genotype
+	integer(kind=1), dimension(:), intent(in) :: geno
 
         this%pedigreeSize = this%pedigreeSize+1
         this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize)
@@ -1721,7 +1721,7 @@ contains
         this%Pedigree(this%pedigreeSize)%isDummy = .false.
         call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
         this%Pedigree(this%pedigreeSize)%founder = .true.
-	call this%setAnimalAsGenotyped(this%pedigreeSize, genotype)
+	call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
 	call this%setAnimalAsHD(this%pedigreeSize)
        
     end subroutine addAnimalAtEndOfPedigree
