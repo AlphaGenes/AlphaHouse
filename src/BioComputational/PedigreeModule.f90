@@ -335,21 +335,18 @@ contains
 		  call pedStructure%addAnimalAtEndOfPedigree(tmpID,tmpGeno)
 		else 
 		  call pedStructure%setAnimalAsGenotyped(j,tmpGeno)
+		   call pedStructure%setAnimalAsHd(j)
 		endif
             else 
                 call pedStructure%dictionary%addKey(tmpId, i)
                 pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
                 call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
+		call pedStructure%setAnimalAsHd(i)
             endif
         enddo
         
-        
-
+      
         close(fileUnit)
-
-
-
-
     end function initPedigreeGenotypeFiles
 
     !---------------------------------------------------------------------------
@@ -1706,6 +1703,7 @@ contains
       
     !---------------------------------------------------------------------------
     !> @brief creates a new animal at end of pedigree
+    !> If genotype is supplied, animal is set to hd
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     ! PARAMETERS:
@@ -1713,7 +1711,7 @@ contains
         subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
         class(PedigreeHolder) :: this
         character(len=IDLENGTH) ,intent(in):: OriginalId
-	integer(kind=1), dimension(:), intent(in) :: geno
+	integer(kind=1), dimension(:), intent(in), optional :: geno
 
         this%pedigreeSize = this%pedigreeSize+1
         this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize)
@@ -1721,9 +1719,12 @@ contains
         this%Pedigree(this%pedigreeSize)%isDummy = .false.
         call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
         this%Pedigree(this%pedigreeSize)%founder = .true.
-	call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
-	call this%setAnimalAsHD(this%pedigreeSize)
-       
+	
+	if (present(geno)) then
+	  call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
+!	  TODO make sure animal is actually hd
+	  call this%setAnimalAsHD(this%pedigreeSize)
+	endif
     end subroutine addAnimalAtEndOfPedigree
     
 end module PedigreeModule
