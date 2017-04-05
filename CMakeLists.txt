@@ -47,6 +47,7 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 if (${RUN_TESTS})
   # file(GLOB testDeps "${SRC}/*.f90")
   SET(testDeps
+      ${SRC}/Utilities/ConstantModule.f90
       ${SRC}/Utilities/AlphaHouseMod.f90
       ${SRC}/Utilities/AlphaSystemMod.f90
       ${SRC}/BioComputational/AlphaStatMod.f90
