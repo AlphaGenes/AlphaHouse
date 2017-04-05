@@ -700,10 +700,6 @@ contains
             deallocate(this%hdMap)
         endif
 
-        
-            deallocate(this%pedigree)
-
-
     end subroutine destroyPedigree
 
 

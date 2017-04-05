@@ -13,7 +13,7 @@
         
 !         implicit none
 !         testIndiv1 = Individual("me","mum","dad",1)
-!         testIndiv2 = Individual("me2","mum2","dad2",2)
+!         ! testIndiv2 = Individual("me2","mum2","dad2",2)
         
 !     end subroutine
 
