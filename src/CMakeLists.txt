@@ -3,10 +3,10 @@ SET(ALPHAHOUSE_src
     Utilities/ConstantModule.f90
     Utilities/AlphaHouseMod.f90
     Utilities/AlphaSystemMod.f90
-    Utilities/AlphaStatMod.f90
     Utilities/OrderPackModule.f90
     Utilities/HashModule.f90
     Utilities/LinkedListModule.f90
+    BioComputational/AlphaStatMod.f90
     BioComputational/IndividualModule.f90
     BioComputational/IndividualLinkedListModule.f90
     BioComputational/IndividualHelperModule.f90

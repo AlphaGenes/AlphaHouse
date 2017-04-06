@@ -100,7 +100,7 @@ ADD_CUSTOM_TARGET(distclean
 )
 
 set(TESTFILES
-  #${TESTS}/TestAlphaStatMod.pf
+    ${TESTS}/TestAlphaStatMod.pf
     ${TESTS}/TestOrderPackModule.pf
     ${TESTS}/TestHashTable.pf
     ${TESTS}/TestIndividual.pf
