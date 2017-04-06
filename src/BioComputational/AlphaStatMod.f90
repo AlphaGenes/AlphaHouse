@@ -34,6 +34,7 @@
 module AlphaStatMod
 
   use ISO_Fortran_Env, STDIN=>input_unit, STDOUT=>output_unit, STDERR=>error_unit
+  use, intrinsic :: IEEE_Arithmetic
 
   implicit none
 
@@ -46,7 +47,7 @@ module AlphaStatMod
   public :: IsMissing, IsAnyMissingMatrix, RemoveMissing, RemoveAnyMissingMatrix
   public :: Mean, Var, StdDev
   public :: DescStat
-  public :: DescStatMatrix, DescStatSymMatrix, DescStatLowTriMatrix
+  public :: DescStatMatrix, DescStatLowTriMatrix
   public :: Cov, Cor
   public :: moment, pearsn
 
@@ -110,14 +111,9 @@ module AlphaStatMod
     real(real64)   :: Max
   end type
 
-  !> @brief DescStatSymMatrix interface
-  interface DescStatSymMatrix
-    module procedure DescStatSymMatrixI8, DescStatSymMatrixI32, DescStatSymMatrixR32, DescStatSymMatrixR64
-  end interface
-
   !> @brief DescStatLowTriMatrix interface
   interface DescStatLowTriMatrix
-    module procedure DescStatSymMatrixI8, DescStatSymMatrixI32, DescStatSymMatrixR32, DescStatSymMatrixR64
+    module procedure DescStatLowTriMatrixI8, DescStatLowTriMatrixI32, DescStatLowTriMatrixR32, DescStatLowTriMatrixR64
   end interface
 
   !> @brief DescStatMatrix interface
@@ -625,26 +621,10 @@ module AlphaStatMod
       real(real32)                       :: Res  !< @return mean
 
       ! Other
-      real(real32) :: SumW, xR32(size(x))
+      real(real32) :: xR32(size(x))
 
       xR32 = real(x, kind=real32)
-      if (.not. present(w)) then
-        Res = sum(xR32) / size(x)
-      else
-        if (any(w .lt. 0.0)) then
-          write(STDERR, "(a)") "ERROR: Weights must not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILONS) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        Res = sum(xR32 * w) / SumW
-      end if
+      Res = MeanR32(x=xR32, w=w)
       return
     end function
 
@@ -665,26 +645,10 @@ module AlphaStatMod
       real(real32)                       :: Res  !< @return mean
 
       ! Other
-      real(real32) :: SumW, xR32(size(x))
+      real(real32) :: xR32(size(x))
 
       xR32 = real(x, kind=real32)
-      if (.not. present(w)) then
-        Res = sum(xR32) / size(x)
-      else
-        if (any(w .lt. 0.0)) then
-          write(STDERR, "(a)") "ERROR: Weights must not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILONS) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        Res = sum(xR32 * w) / SumW
-      end if
+      Res = MeanR32(x=xR32, w=w)
       return
     end function
 
@@ -783,67 +747,9 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return variance
 
       ! Other
-      integer(int32) i, n
-      real(real32) :: MuIn, Dev, SumW, xR32(size(x))
-
-      n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for Var"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
+      real(real32) :: xR32(size(x))
       xR32 = real(x, kind=real32)
-
-      if (.not. present(Mu)) then
-        ! wType does not matter when computing mean
-        MuIn = Mean(xR32, w)
-      else
-        MuIn = Mu
-      end if
-
-      Res = 0.0
-      if (.not. present(w)) then
-        do i = 1, n
-          Dev = xR32(i) - MuIn
-          Res = Res + Dev * Dev
-        end do
-        Res = Res / (n - 1)
-      else
-        if (any(w .lt. 0)) then
-          write(STDERR, "(a)") "ERROR: Weights should not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILONS) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (.not.present(wType)) then
-          write(STDERR, "(a)") "ERROR: When weights are given, you must specify the type of weights (wType)"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (trim(wType) .ne. "count" .and. trim(wType) .ne. "freq") then
-          write(STDERR, "(a)") "ERROR: wType must be either count or freq"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        do i = 1, n
-          Dev = xR32(i) - MuIn
-          Res = Res + w(i) * Dev * Dev
-        end do
-        if (trim(wtype) .eq. "count") then
-          Res = Res / (SumW - 1.0)
-        end if
-        if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
-        end if
-      end if
-
+      Res = VarR32(x=xR32, Mu=Mu, w=w, wType=wType)
       return
     end function
 
@@ -866,67 +772,9 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return variance
 
       ! Other
-      integer(int32) i, n
-      real(real32) :: MuIn, Dev, SumW, xR32(size(x))
-
-      n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for Var"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
+      real(real32) :: xR32(size(x))
       xR32 = real(x, kind=real32)
-
-      if (.not. present(Mu)) then
-        ! wType does not matter when computing mean
-        MuIn = Mean(xR32, w)
-      else
-        MuIn = Mu
-      end if
-
-      Res = 0.0
-      if (.not. present(w)) then
-        do i = 1, n
-          Dev = xR32(i) - MuIn
-          Res = Res + Dev * Dev
-        end do
-        Res = Res / (n - 1)
-      else
-        if (any(w .lt. 0)) then
-          write(STDERR, "(a)") "ERROR: Weights should not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILONS) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (.not.present(wType)) then
-          write(STDERR, "(a)") "ERROR: When weights are given, you must specify the type of weights (wType)"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (trim(wType) .ne. "count" .and. trim(wType) .ne. "freq") then
-          write(STDERR, "(a)") "ERROR: wType must be either count or freq"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        do i = 1, n
-          Dev = xR32(i) - MuIn
-          Res = Res + w(i) * Dev * Dev
-        end do
-        if (trim(wtype) .eq. "count") then
-          Res = Res / (SumW - 1.0)
-        end if
-        if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
-        end if
-      end if
-
+      Res = VarR32(x=xR32, Mu=Mu, w=w, wType=wType)
       return
     end function
 
@@ -954,9 +802,8 @@ module AlphaStatMod
 
       n = size(x)
       if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for Var"
-        write(STDERR, "(a)") " "
-        stop 1
+        Res = IEEE_Value(x=Res, class=IEEE_Quiet_NaN)
+        return
       end if
 
       if (.not. present(Mu)) then
@@ -1035,9 +882,8 @@ module AlphaStatMod
 
       n = size(x)
       if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for Var"
-        write(STDERR, "(a)") " "
-        stop 1
+        Res = IEEE_Value(x=Res, class=IEEE_Quiet_NaN)
+        return
       end if
 
       if (.not. present(Mu)) then
@@ -1110,7 +956,7 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return standard deviation
       real(real32) :: xR32(size(x))
       xR32 = real(x, kind=real32)
-      Res = sqrt(Var(xR32, Mu, w, wType))
+      Res = sqrt(VarR32(x=xR32, Mu=Mu, w=w, wType=wType))
       return
     end function
 
@@ -1133,7 +979,7 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return standard deviation
       real(real32) :: xR32(size(x))
       xR32 = real(x, kind=real32)
-      Res = sqrt(Var(xR32, Mu, w, wType))
+      Res = sqrt(VarR32(x=xR32, Mu=Mu, w=w, wType=wType))
       return
     end function
 
@@ -1191,30 +1037,15 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      integer(int8), intent(in)              :: x(:)  !< values
-      real(real32), intent(in), optional     :: w(:)  !< weights
-      character(len=*), intent(in), optional :: wType !< type of weights (count, freq)
-      type(DescStatReal32)                   :: Res   !< @return descriptive statistics
+      integer(int8), intent(in)              :: x(:)    !< values
+      real(real32), intent(in), optional     :: w(:)    !< weights
+      character(len=*), intent(in), optional :: wType   !< type of weights (count, freq)
+      type(DescStatReal32)                   :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) :: n
       real(real32) :: xR32(size(x))
-
-      n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for DescStat"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
       xR32 = real(x, kind=real32)
-
-      Res%n    = n
-      Res%Mean = Mean(xR32, w)
-      Res%Var  = Var(xR32, Res%Mean, w, wType)
-      Res%SD   = sqrt(Res%Var)
-      Res%Min  = minval(xR32)
-      Res%Max  = maxval(xR32)
+      Res = DescStatR32(x=xR32, w=w, wType=wType)
       return
     end function
 
@@ -1230,30 +1061,15 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      integer(int32), intent(in)             :: x(:)  !< values
-      real(real32), intent(in), optional     :: w(:)  !< weights
-      character(len=*), intent(in), optional :: wType !< type of weights (count, freq)
-      type(DescStatReal32)                   :: Res   !< @return descriptive statistics
+      integer(int32), intent(in)             :: x(:)    !< values
+      real(real32), intent(in), optional     :: w(:)    !< weights
+      character(len=*), intent(in), optional :: wType   !< type of weights (count, freq)
+      type(DescStatReal32)                   :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) :: n
       real(real32) :: xR32(size(x))
-
-      n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for DescStat"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
       xR32 = real(x, kind=real32)
-
-      Res%n    = n
-      Res%Mean = Mean(xR32, w)
-      Res%Var  = Var(xR32, Res%Mean, w, wType)
-      Res%SD   = sqrt(Res%Var)
-      Res%Min  = minval(xR32)
-      Res%Max  = maxval(xR32)
+      Res = DescStatR32(x=xR32, w=w, wType=wType)
       return
     end function
 
@@ -1268,21 +1084,15 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      real(real32), intent(in)               :: x(:)  !< values
-      real(real32), intent(in), optional     :: w(:)  !< weights
-      character(len=*), intent(in), optional :: wType !< type of weights (count, freq)
-      type(DescStatReal32)                   :: Res   !< @return descriptive statistics
+      real(real32), intent(in)               :: x(:)    !< values
+      real(real32), intent(in), optional     :: w(:)    !< weights
+      character(len=*), intent(in), optional :: wType   !< type of weights (count, freq)
+      type(DescStatReal32)                   :: Res     !< @return descriptive statistics
 
       ! Other
       integer(int32) :: n
 
       n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for DescStat"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
       Res%n    = n
       Res%Mean = Mean(x, w)
       Res%Var  = Var(x, Res%Mean, w, wType)
@@ -1303,21 +1113,15 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      real(real64), intent(in)               :: x(:)  !< values
-      real(real64), intent(in), optional     :: w(:)  !< weights
-      character(len=*), intent(in), optional :: wType !< type of weights (count, freq)
-      type(DescStatReal64)                   :: Res   !< @return descriptive statistics
+      real(real64), intent(in)               :: x(:)    !< values
+      real(real64), intent(in), optional     :: w(:)    !< weights
+      character(len=*), intent(in), optional :: wType   !< type of weights (count, freq)
+      type(DescStatReal64)                   :: Res     !< @return descriptive statistics
 
       ! Other
       integer(int32) :: n
 
       n = size(x)
-      if (n .lt. 2) then
-        write(STDERR, "(a)") "ERROR: number of records must be at least 2 for DescStat"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
       Res%n    = n
       Res%Mean = Mean(x, w)
       Res%Var  = Var(x, Res%Mean, w, wType)
@@ -1330,12 +1134,12 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Descriptive statistics of a symetric matrix - int8
+    !> @brief   Descriptive statistics of a lower-triangle matrix - int8
     !> @details x is cast to real32
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 22, 2016
     !---------------------------------------------------------------------------
-    function DescStatSymMatrixI8(x, Diag) result(Res)
+    function DescStatLowTriMatrixI8(x, Diag) result(Res)
       implicit none
 
       ! Arguments
@@ -1344,63 +1148,23 @@ module AlphaStatMod
       type(DescStatMatrixReal32)    :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) i, j, k, n, p
-      real(real32), allocatable, dimension(:) :: DiagVal, OffDiagVal
       real(real32), allocatable, dimension(:, :) :: xR32
-      logical :: DiagInternal
 
-      n = size(x, 1)
-      p = size(x, 2)
-      if (n .ne. p) then
-        write(STDERR, "(a)") "ERROR: DescStatSymMatrix work only with symmetric matrices!"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
-      allocate(xR32(n, p))
+      allocate(xR32(size(x, 1), size(x, 2)))
       xR32 = real(x, kind=real32)
-
-      if (present(Diag)) then
-        DiagInternal = Diag
-      else
-        DiagInternal = .true.
-      end if
-
-      ! Diagonal
-      if (DiagInternal) then
-        allocate(DiagVal(n))
-        do i = 1, n
-          DiagVal(i) = xR32(i, i)
-        end do
-        Res%Diag = DescStat(DiagVal)
-      end if
-
-      ! Off-diagonal (lower-triangle only!!!)
-      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
-      k = 0
-      do j = 1, (p - 1)
-        do i = (j + 1), n
-          k = k + 1
-          OffDiagVal(k) = xR32(i, j)
-        end do
-      end do
-      Res%OffDiag = DescStat(OffDiagVal)
-
-      if (DiagInternal) then
-        Res%All = DescStat([DiagVal, OffDiagVal])
-      end if
+      Res = DescStatLowTriMatrixR32(x=xR32, Diag=Diag)
       return
     end function
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Descriptive statistics of a symetric matrix - int32
+    !> @brief   Descriptive statistics of a lower-triangle matrix - int32
     !> @details x is cast to real32
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 22, 2016
     !---------------------------------------------------------------------------
-    function DescStatSymMatrixI32(x, Diag) result(Res)
+    function DescStatLowTriMatrixI32(x, Diag) result(Res)
       implicit none
 
       ! Arguments
@@ -1409,62 +1173,21 @@ module AlphaStatMod
       type(DescStatMatrixReal32)    :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) i, j, k, n, p
-      real(real32), allocatable, dimension(:) :: DiagVal, OffDiagVal
       real(real32), allocatable, dimension(:, :) :: xR32
-      logical :: DiagInternal
-
-      n = size(x, 1)
-      p = size(x, 2)
-      if (n .ne. p) then
-        write(STDERR, "(a)") "ERROR: DescStatSymMatrix work only with symmetric matrices!"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
-
-      allocate(xR32(n, p))
+      allocate(xR32(size(x, 1), size(x, 2)))
       xR32 = real(x, kind=real32)
-
-      if (present(Diag)) then
-        DiagInternal = Diag
-      else
-        DiagInternal = .true.
-      end if
-
-      ! Diagonal
-      if (DiagInternal) then
-        allocate(DiagVal(n))
-        do i = 1, n
-          DiagVal(i) = xR32(i, i)
-        end do
-        Res%Diag = DescStat(DiagVal)
-      end if
-
-      ! Off-diagonal (lower-triangle only!!!)
-      allocate(OffDiagVal(nint(real(n*n)/2-real(n)/2))) ! n*n/2 is half of a matrix, n/2 removes half of diagonal
-      k = 0
-      do j = 1, (p - 1)
-        do i = (j + 1), n
-          k = k + 1
-          OffDiagVal(k) = xR32(i, j)
-        end do
-      end do
-      Res%OffDiag = DescStat(OffDiagVal)
-
-      if (DiagInternal) then
-        Res%All = DescStat([DiagVal, OffDiagVal])
-      end if
+      Res = DescStatLowTriMatrixR32(x=xR32, Diag=Diag)
       return
     end function
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Descriptive statistics of a symetric matrix - real32
+    !> @brief  Descriptive statistics of a lower-triangle matrix - real32
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   September 22, 2016
     !---------------------------------------------------------------------------
-    function DescStatSymMatrixR32(x, Diag) result(Res)
+    function DescStatLowTriMatrixR32(x, Diag) result(Res)
       implicit none
 
       ! Arguments
@@ -1479,11 +1202,6 @@ module AlphaStatMod
 
       n = size(x, 1)
       p = size(x, 2)
-      if (n .ne. p) then
-        write(STDERR, "(a)") "ERROR: DescStatSymMatrix work only with symmetric matrices!"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
 
       if (present(Diag)) then
         DiagInternal = Diag
@@ -1520,11 +1238,11 @@ module AlphaStatMod
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief  Descriptive statistics of a symetric matrix - real64
+    !> @brief  Descriptive statistics of a lower-triangle matrix - real64
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   September 22, 2016
     !---------------------------------------------------------------------------
-    function DescStatSymMatrixR64(x, Diag) result(Res)
+    function DescStatLowTriMatrixR64(x, Diag) result(Res)
       implicit none
 
       ! Arguments
@@ -1539,11 +1257,6 @@ module AlphaStatMod
 
       n = size(x, 1)
       p = size(x, 2)
-      if (n .ne. p) then
-        write(STDERR, "(a)") "ERROR: DescStatSymMatrix work only with symmetric matrices!"
-        write(STDERR, "(a)") " "
-        stop 1
-      end if
 
       if (present(Diag)) then
         DiagInternal = Diag
@@ -1589,41 +1302,14 @@ module AlphaStatMod
       implicit none
 
       ! Arguments
-      integer(int8), intent(in) :: x(:, :) !< matrix
-      type(DescStatMatrixReal32) :: Res    !< @return descriptive statistics
+      integer(int8), intent(in)  :: x(:, :) !< matrix
+      type(DescStatMatrixReal32) :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) :: i, j, k, l, n, p, MinNP
-      real(real32), allocatable, dimension(:) :: Diag, OffDiag
       real(real32), allocatable, dimension(:, :) :: xR32
-
-      n = size(x, 1)
-      p = size(x, 2)
-
-      allocate(xR32(n, p))
+      allocate(xR32(size(x, 1), size(x, 2)))
       xR32 = real(x, kind=real32)
-
-      MinNP = minval([n, p])
-      allocate(Diag(MinNP))
-      allocate(OffDiag(n*p-MinNP))
-
-      k = 0
-      l = 0
-      do j = 1, p
-        do i = 1, n
-          if (i .eq. j) then
-            k = k + 1
-            Diag(k) = xR32(i, j)
-          else
-            l = l + 1
-            OffDiag(l) = xR32(i, j)
-          end if
-        end do
-      end do
-
-      Res%Diag    = DescStat(Diag)
-      Res%OffDiag = DescStat(OffDiag)
-      Res%All     = DescStat([Diag, OffDiag])
+      Res = DescStatMatrixR32(x=xR32)
       return
     end function
 
@@ -1643,37 +1329,10 @@ module AlphaStatMod
       type(DescStatMatrixReal32) :: Res     !< @return descriptive statistics
 
       ! Other
-      integer(int32) :: i, j, k, l, n, p, MinNP
-      real(real32), allocatable, dimension(:) :: Diag, OffDiag
       real(real32), allocatable, dimension(:, :) :: xR32
-
-      n = size(x, 1)
-      p = size(x, 2)
-
-      allocate(xR32(n, p))
+      allocate(xR32(size(x, 1), size(x, 2)))
       xR32 = real(x, kind=real32)
-
-      MinNP = minval([n, p])
-      allocate(Diag(MinNP))
-      allocate(OffDiag(n*p-MinNP))
-
-      k = 0
-      l = 0
-      do j = 1, p
-        do i = 1, n
-          if (i .eq. j) then
-            k = k + 1
-            Diag(k) = xR32(i, j)
-          else
-            l = l + 1
-            OffDiag(l) = xR32(i, j)
-          end if
-        end do
-      end do
-
-      Res%Diag    = DescStat(Diag)
-      Res%OffDiag = DescStat(OffDiag)
-      Res%All     = DescStat([Diag, OffDiag])
+      Res = DescStatMatrixR32(x=xR32)
       return
     end function
 
@@ -1767,7 +1426,6 @@ module AlphaStatMod
       return
     end function
 
-
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -1788,65 +1446,11 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return covariance
 
       ! Other
-      integer(int32) :: i, n
-      real(real32) :: MuXIn, MuYIn, SumW, xR32(size(x)), yR32(size(y))
+      real(real32) :: xR32(size(x)), yR32(size(y))
 
       xR32 = real(x, kind=real32)
       yR32 = real(y, kind=real32)
-
-      n = size(xR32)
-
-      if (.not. present(MuX)) then
-        MuXIn = Mean(xR32, w)
-      else
-        MuXIn = MuX
-      end if
-      if (.not. present(MuY)) then
-        MuYIn = Mean(yR32, w)
-      else
-        MuYIn = MuY
-      end if
-
-      Res = 0.0
-      if (.not. present(w)) then
-        do i = 1, n
-          Res = Res + (xR32(i) - MuXIn) * (yR32(i) - MuYIn)
-        end do
-        Res = Res / (n - 1)
-      else
-        if (any(w .lt. 0)) then
-          write(STDERR, "(a)") "ERROR: Weights should not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILOND) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (.not. present(wType)) then
-          write(STDERR, "(a)") "ERROR: When weights are given, you must specify the type of weights (wType)"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (trim(wType) .ne. "count" .and. trim(wType) .ne. "freq") then
-          write(STDERR, "(a)") "ERROR: wType must be either count or freq"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        do i = 1, n
-          Res = Res + w(i) * (xR32(i) - MuXIn) * (yR32(i) - MuYIn)
-        end do
-        if (trim(wtype) .eq. "count") then
-          Res = Res / (SumW - 1.0)
-        end if
-        if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
-        end if
-      end if
-
+      Res = CovR32(x=xR32, y=yR32, MuX=MuX, MuY=MuY, w=w, wType=wType)
       return
     end function
 
@@ -1870,65 +1474,11 @@ module AlphaStatMod
       real(real32)                           :: Res   !< @return covariance
 
       ! Other
-      integer(int32) :: i, n
-      real(real32) :: MuXIn, MuYIn, SumW, xR32(size(x)), yR32(size(y))
+      real(real32) :: xR32(size(x)), yR32(size(y))
 
       xR32 = real(x, kind=real32)
       yR32 = real(y, kind=real32)
-
-      n = size(xR32)
-
-      if (.not. present(MuX)) then
-        MuXIn = Mean(xR32, w)
-      else
-        MuXIn = MuX
-      end if
-      if (.not. present(MuY)) then
-        MuYIn = Mean(yR32, w)
-      else
-        MuYIn = MuY
-      end if
-
-      Res = 0.0
-      if (.not. present(w)) then
-        do i = 1, n
-          Res = Res + (xR32(i) - MuXIn) * (yR32(i) - MuYIn)
-        end do
-        Res = Res / (n - 1)
-      else
-        if (any(w .lt. 0)) then
-          write(STDERR, "(a)") "ERROR: Weights should not be negative"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        SumW = sum(w)
-        if (SumW .lt. EPSILOND) then
-          write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (.not. present(wType)) then
-          write(STDERR, "(a)") "ERROR: When weights are given, you must specify the type of weights (wType)"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        if (trim(wType) .ne. "count" .and. trim(wType) .ne. "freq") then
-          write(STDERR, "(a)") "ERROR: wType must be either count or freq"
-          write(STDERR, "(a)") " "
-          stop 1
-        end if
-        ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        do i = 1, n
-          Res = Res + w(i) * (xR32(i) - MuXIn) * (yR32(i) - MuYIn)
-        end do
-        if (trim(wtype) .eq. "count") then
-          Res = Res / (SumW - 1.0)
-        end if
-        if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
-        end if
-      end if
-
+      Res = CovR32(x=xR32, y=yR32, MuX=MuX, MuY=MuY, w=w, wType=wType)
       return
     end function
 
@@ -2106,18 +1656,11 @@ module AlphaStatMod
       type(CorrelationReal32)                :: Res   !< @return correlation
 
       ! Other
-      real(real32) :: MuX, MuY, xR32(size(x)), yR32(size(y))
+      real(real32) :: xR32(size(x)), yR32(size(y))
 
       xR32 = real(x, kind=real32)
       yR32 = real(y, kind=real32)
-
-      MuX = Mean(xR32, w)
-      MuY = Mean(yR32, w)
-
-      Res%Var1 = Var(xR32, MuX, w, wType)
-      Res%Var2 = Var(yR32, MuY, w, wType)
-      Res%Cov  = Cov(xR32, yR32, MuX, MuY, w, wType)
-      Res%Cor  = Res%Cov / (sqrt(Res%Var1 * Res%Var2) + tiny(xR32))
+      Res = CorR32(x=xR32, y=yR32, w=w, wType=wType)
       return
     end function
 
@@ -2139,18 +1682,11 @@ module AlphaStatMod
       type(CorrelationReal32)                :: Res   !< @return correlation
 
       ! Other
-      real(real32) :: MuX, MuY, xR32(size(x)), yR32(size(y))
+      real(real32) :: xR32(size(x)), yR32(size(y))
 
       xR32 = real(x, kind=real32)
       yR32 = real(y, kind=real32)
-
-      MuX = Mean(xR32, w)
-      MuY = Mean(yR32, w)
-
-      Res%Var1 = Var(xR32, MuX, w, wType)
-      Res%Var2 = Var(yR32, MuY, w, wType)
-      Res%Cov  = Cov(xR32, yR32, MuX, MuY, w, wType)
-      Res%Cor  = Res%Cov / (sqrt(Res%Var1 * Res%Var2) + tiny(xR32))
+      Res = CorR32(x=xR32, y=yR32, w=w, wType=wType)
       return
     end function
 
