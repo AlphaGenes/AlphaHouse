@@ -236,7 +236,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    January 9, 2017
     !---------------------------------------------------------------------------
-    function Int82Char(i,fmt) result(Res)
+    pure function Int82Char(i,fmt) result(Res)
       implicit none
 
       integer(int8),intent(in)         :: i   !< integer
@@ -262,7 +262,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function Int322Char(i,fmt) result(Res)
+    pure function Int322Char(i,fmt) result(Res)
       implicit none
 
       integer(int32),intent(in)        :: i   !< integer
@@ -288,7 +288,7 @@ module AlphaHouseMod
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    October 28, 2016
     !---------------------------------------------------------------------------
-    function Int642Char(i,fmt) result(Res)
+    pure function Int642Char(i,fmt) result(Res)
       implicit none
 
       integer(int64),intent(in)        :: i   !< integer
