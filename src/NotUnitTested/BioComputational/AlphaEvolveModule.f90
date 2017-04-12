@@ -106,7 +106,7 @@ module AlphaEvolveModule
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt
-      real(real64) :: AcceptRate, OldBestSolObjective
+      real(real64) :: AcceptPct, OldBestSolObjective
       real(real64) :: Chrom(nParam)
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
@@ -255,11 +255,11 @@ module AlphaEvolveModule
         !!        The main reason would be to speed up the code as Evaluate() might take quite some time for larger problems
         !!         - some variables are local, say a, b, ...
         !!         - global variables are NewSol and OldSol?, but is indexed with i so this should not be a problem
-        !!         - AcceptRate needs to be in sync between the threads!!!
+        !!         - AcceptPct needs to be in sync between the threads!!!
         !!         - we relly on random_number a lot here and updating the RNG state for each thread can be slow
         !!           and I (GG) am also not sure if we should not have thread specific RNGs
         BestSolChanged = .false.
-        AcceptRate = 0.0d0
+        AcceptPct = 0.0d0
 
         ! call OMP_set_num_threads(1)
 
@@ -327,7 +327,7 @@ module AlphaEvolveModule
           if (TestSol%Objective >= OldSol(Sol)%Objective) then
             call NewSol(Sol)%Assign(TestSol)
             ! $OMP ATOMIC
-            AcceptRate = AcceptRate + 1.0d0
+            AcceptPct = AcceptPct + 1.0d0
           else
             ! Keep the old solution
             call NewSol(Sol)%Assign(OldSol(Sol))
@@ -335,7 +335,7 @@ module AlphaEvolveModule
         end do ! Sol
         ! $OMP END PARALLEL DO
 
-        AcceptRate = AcceptRate / nSol
+        AcceptPct = AcceptPct / nSol * 100.0d0
 
         ! --- Promote the new solutions into parental solutions ---
 
@@ -357,10 +357,10 @@ module AlphaEvolveModule
           if ((Iter == 1) .or. ((Iter - LastIterPrint) >= nIterPrint)) then
             LastIterPrint = Iter
             if (present(LogFile)) then
-              call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptRate=AcceptRate)
+              call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
             end if
             if (LogStdoutInternal) then
-              call BestSol%Log(Iteration=Iter, AcceptRate=AcceptRate)
+              call BestSol%Log(Iteration=Iter, AcceptPct=AcceptPct)
             end if
             if (LogPopInternal) then
               do Sol = 1, nSol
@@ -391,11 +391,11 @@ module AlphaEvolveModule
       ! --- The winner solution ---
 
       if (present(LogFile)) then
-        call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptRate=AcceptRate)
+        call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
         close(LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%Log(Iteration=Iter, AcceptRate=AcceptRate)
+        call BestSol%Log(Iteration=Iter, AcceptPct=AcceptPct)
       end if
       if (LogPopInternal) then
         close(LogPopUnit)
@@ -436,7 +436,7 @@ module AlphaEvolveModule
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
       ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
-      real(real64) :: RanNum, AcceptRate, OldBestSolObjective, BestSolObjective, Chrom(nParam)
+      real(real64) :: RanNum, AcceptPct, OldBestSolObjective, BestSolObjective, Chrom(nParam)
 
       logical :: ModeAvg, ModeMax, BestSolChanged, LogStdoutInternal
 
@@ -473,14 +473,14 @@ module AlphaEvolveModule
         OldBestSolObjective = 0.0d0
         BestSolObjective = 0.0d0
         BestSolChanged = .true.
-        AcceptRate = 1.0d0
+        AcceptPct = 100.0d0
       end if
 
       if (ModeMax) then
         OldBestSolObjective = -huge(RanNum)
         BestSolObjective = -huge(RanNum)
         BestSolChanged = .false.
-        AcceptRate = 0.0d0
+        AcceptPct = 0.0d0
       end if
 
       ! --- Printout log header ---
@@ -510,7 +510,7 @@ module AlphaEvolveModule
               call BestSol%Assign(TestSol)
               BestSolObjective = BestSol%Objective
               BestSolChanged = .true.
-              AcceptRate = AcceptRate + 1.0d0
+              AcceptPct = AcceptPct + 1.0d0
             end if
           end if
         end do
@@ -548,7 +548,7 @@ module AlphaEvolveModule
             call BestSol%Assign(TestSol)
             BestSolObjective = BestSol%Objective
             BestSolChanged = .true.
-            AcceptRate = AcceptRate + 1.0d0
+            AcceptPct = AcceptPct + 1.0d0
           end if
         end if
 
@@ -557,16 +557,16 @@ module AlphaEvolveModule
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
             if      (ModeAvg) then
-              call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptRate=AcceptRate)
+              call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
             else if (ModeMax) then
-              AcceptRate = AcceptRate / (Samp - LastSampPrint)
+              AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
               if (present(LogFile)) then
-                call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptRate=AcceptRate)
+                call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
               end if
               if (LogStdoutInternal) then
-                call BestSol%Log(Iteration=Samp, AcceptRate=AcceptRate)
+                call BestSol%Log(Iteration=Samp, AcceptPct=AcceptPct)
               end if
-              AcceptRate = 0.0d0
+              AcceptPct = 0.0d0
             end if
             LastSampPrint = Samp
           end if
@@ -593,14 +593,14 @@ module AlphaEvolveModule
       ! --- The winner solution ---
 
       if (ModeMax) then
-        AcceptRate = AcceptRate / (Samp - LastSampPrint)
+        AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
       end if
       if (present(LogFile)) then
-        call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptRate=AcceptRate)
+        call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
         close(LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%Log(Iteration=Samp, AcceptRate=AcceptRate)
+        call BestSol%Log(Iteration=Samp, AcceptPct=AcceptPct)
       end if
     end subroutine
 
@@ -742,11 +742,11 @@ module AlphaEvolveModule
       character(len=22) :: ColnameLogUnit(3)
       !                      123456789012
       ColnameLogStdout(1) = "   Iteration"
-      ColnameLogStdout(2) = "  AcceptRate"
+      ColnameLogStdout(2) = "   AcceptPct"
       ColnameLogStdout(3) = "   Objective"
       !                    1234567890123456789012
       ColnameLogUnit(1) = "             Iteration"
-      ColnameLogUnit(2) = "            AcceptRate"
+      ColnameLogUnit(2) = "             AcceptPct"
       ColnameLogUnit(3) = "             Objective"
       if (present(String)) then
         if (present(StringNum)) then
@@ -776,14 +776,14 @@ module AlphaEvolveModule
     !> @date    September 26, 2016
     !> @return  Print log to unit
     !---------------------------------------------------------------------------
-    subroutine LogAlphaEvolveSol(This, LogUnit, Iteration, AcceptRate, String, StringNum) ! not pure due to IO
+    subroutine LogAlphaEvolveSol(This, LogUnit, Iteration, AcceptPct, String, StringNum) ! not pure due to IO
       implicit none
-      class(AlphaEvolveSol), intent(in)      :: This       !< solution
-      integer(int32), intent(in), optional   :: LogUnit    !< log file unit (default STDOUT)
-      integer(int32), intent(in)             :: Iteration  !< generation/iteration
-      real(real64), intent(in)               :: AcceptRate !< acceptance rate
-      character(len=*), intent(in), optional :: String     !< additional string that will be written before the head
-      integer(int32), optional               :: StringNum  !< How much space is needed for the String
+      class(AlphaEvolveSol), intent(in)      :: This      !< solution
+      integer(int32), intent(in), optional   :: LogUnit   !< log file unit (default STDOUT)
+      integer(int32), intent(in)             :: Iteration !< generation/iteration
+      real(real64), intent(in)               :: AcceptPct !< acceptance rate
+      character(len=*), intent(in), optional :: String    !< additional string that will be written before the head
+      integer(int32), optional               :: StringNum !< How much space is needed for the String
       integer(int32) :: Unit
       character(len=20) :: Fmt, StringFmt
       if (present(LogUnit)) then
@@ -791,7 +791,7 @@ module AlphaEvolveModule
         Fmt = "(a22, 2(1x, es21.14))"
       else
         Unit = STDOUT
-        Fmt = "(a12, 2(1x, f11.5))"
+        Fmt = "(a12, 1x, f11.1, 1x, f11.5))"
       end if
       if (present(String)) then
         if (present(StringNum)) then
@@ -803,7 +803,7 @@ module AlphaEvolveModule
       if (present(String)) then
         write(Unit, StringFmt, Advance="No") String
       end if
-      write(Unit, Fmt) Iteration, AcceptRate, This%Objective
+      write(Unit, Fmt) Iteration, AcceptPct, This%Objective
     end subroutine
 
     !###########################################################################
