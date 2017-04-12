@@ -27,12 +27,15 @@ SET(ALPHAHOUSE_src
     # NotUnitTested/BioComputational/CoreIndexModule.f90
     NotUnitTested/Utilities/SortingModule.f90
     NotUnitTested/Utilities/ClusteringModule.f90
-    NotUnitTested/Utilities/par_zig_mod.f90
+    NotUnitTested/Utilities/par_zig_mod.f90 
     Utilities/LegacyRandom.f90
     NotUnitTested/BioComputational/AlphaEvolveModule.f90
     main.f90
 )
 
+if (USE_MPI)
+    set(ALPHAHOUSE_src ${ALPHAHOUSE_src} NotUnitTested/Utilities/MPIUtilities.f90)
+endif()
 
 if (ALPHAHOUSEEXE)
 	ADD_EXECUTABLE(${ALPHAHOUSEEXE} ${ALPHAHOUSE_src})
