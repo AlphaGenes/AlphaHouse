@@ -21,4 +21,7 @@ module ConstantModule
     character(len=3), parameter:: defaultNullVal = "NAN"
     character(len=1), parameter:: defaultType = "A", defaultDelim =","
     character(len=1), dimension(3), parameter:: types = (/"A", "I", "R"/) !A for alphanumeric, I for integer, R for real64 and L for logical
+    real, parameter :: PI = 4.0d0 * atan(1.0d0)
+    real, parameter :: RAD2DEG = 180.0d0 / PI
+    real, parameter :: DEG2RAD = PI / 180.0d0
 end Module ConstantModule
