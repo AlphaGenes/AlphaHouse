@@ -1246,7 +1246,7 @@ contains
 
           open(newUnit=fileUnit,file=filename,status="unknown")
           do i= 1, this%nGenotyped
-            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
+            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
           enddo
     end subroutine writeOutGenotypes
 
