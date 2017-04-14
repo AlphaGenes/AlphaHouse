@@ -130,15 +130,20 @@ module GenotypeModule
       
     end function newGenotypeHap
 
-    function genotypeToIntegerArray(g) result(array)
+    function genotypeToIntegerArray(g, nsnp) result(array)
         class(Genotype), intent(in) :: g
-
+        integer, intent(in),optional :: nsnp
         integer(kind=1), dimension(:), allocatable :: array
 
         integer :: i, cursection, curpos
 	
-        allocate(array(g%length))
+        if (present(nsnp)) then
+          allocate(array(nsnp))
+        else
+          allocate(array(g%length))
+        endif
 
+        array = MissingGenotypeCode
         cursection = 1
         curpos = 0
         do i = 1, g%length
