@@ -5,6 +5,27 @@ implicit none
 
 contains
 @test
+subroutine testAddLines()
+type(Line):: expected, gotten
+type(Line):: lineOne, lineTwo
+
+call lineOne%add("First")
+call lineOne%add("Second")
+
+call lineTwo%add("Third")
+call lineTwo%add("Forth")
+call expected%add("First")
+call expected%add("Second")
+
+call expected%add("Third")
+call expected%add("Forth")
+
+gotten = lineOne+lineTwo
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testAddLines
+
+@test
 subroutine testHasWithinWithOut()
 type(Line):: lineUsed
 integer:: usedNum, gotten

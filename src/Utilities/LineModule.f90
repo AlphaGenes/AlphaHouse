@@ -25,7 +25,7 @@ module LineModule
 
   private
 
-  public:: assignment(=), operator(==), Line
+  public:: assignment(=), operator(==), Line, operator(+)
   type :: Line
    type(String), allocatable, dimension(:):: words
     contains
@@ -65,7 +65,23 @@ module LineModule
   interface operator (==)
     module procedure compareLine
   end interface 
+
+  interface operator(+)
+    module procedure addTwoLines
+  end interface
   contains
+    function addTwoLines(lineOne, lineTwo) result (newLine)
+      type(Line), intent(in):: lineOne, lineTwo
+      type(Line):: newLine
+
+      allocate(newLine%words(lineOne%getNumWords()+lineTwo%getNumWords()))
+
+      newLine%words(1:lineOne%getNumWords()) = lineOne%words
+
+      newLine%words(lineOne%getNumWords()+1:) = lineTwo%words
+    end function addTwoLines
+
+
     !> @brief Checks to see if charecter is contained in Line
     !> @details Checks each string to see if it is the same as the character passed in.   If it is, then it returns the number of
     !>the string holding that character.   If it doesn't have the character it returns 0.   It has an optional logical parameter.
