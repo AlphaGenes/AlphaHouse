@@ -64,9 +64,9 @@ if (${RUN_TESTS})
       ${SRC}/Utilities/PageModule.f90
       ${SRC}/Utilities/IntegerLinkedListModule.f90
       ${SRC}/Utilities/Input.f90
-      ${SRC}/NotUnitTested/BioComputational/BitUtilities.f90
-      ${SRC}/NotUnitTested/BioComputational/HaplotypeModule.f90
-      ${SRC}/NotUnitTested/BioComputational/GenotypeModule.f90
+      ${SRC}/BioComputational/BitUtilities.f90
+      ${SRC}/BioComputational/HaplotypeModule.f90
+      ${SRC}/BioComputational/GenotypeModule.f90
 )
 
 endif (${RUN_TESTS})

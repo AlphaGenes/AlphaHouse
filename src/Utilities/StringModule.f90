@@ -6,7 +6,7 @@ Module stringModule
 
   private
 
-  public:: assignment(=), operator(==)
+  public:: operator(+), assignment(=), operator(==)
   public:: String
 
   type :: String
@@ -22,6 +22,8 @@ Module stringModule
     procedure:: getSize
     procedure:: split
     procedure:: getNumOccurances
+    procedure:: asChar
+!    procedure:: addStrings
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted)=> writeType
     generic:: read(formatted) => readType
@@ -36,7 +38,19 @@ Module stringModule
     module procedure compareString, compareCharacter
   end interface 
 
+  interface operator (+)
+    module procedure addStrings, addStringAndChar
+  end interface 
+
 contains
+
+  pure function asChar(self) result (charOut)
+    class(String), intent(in):: self
+    character(len=len(self%line)):: charOut
+
+    charOut = self%line
+
+  end function asChar
 
   pure function getNumOccurances(self, characterIn) result(numOccurances)
     class(String), intent(in):: self 
@@ -476,6 +490,23 @@ contains
     this%line = lineIn
   end subroutine setString
 
+  function addStrings(this, stringIn) result(stringOut)
+    type(String), intent(in):: this
+    type(String), intent(in):: stringIn
+    type(String):: stringOut
+
+    stringOut%line = this%line //stringIn%line
+  end function addStrings
+
+  function addStringAndChar(this, charIn) result (stringOut)
+    type(String), intent(in):: this
+    character(len=*), intent(in):: charIn
+
+    type(String):: stringOut
+
+    stringOut%line = this%line //charIn
+
+  end function addStringAndChar
 
 end Module stringModule
 
