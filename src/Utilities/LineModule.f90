@@ -70,7 +70,7 @@ module LineModule
     module procedure addTwoLines
   end interface
   contains
-    function addTwoLines(lineOne, lineTwo) result (newLine)
+    pure function addTwoLines(lineOne, lineTwo) result (newLine)
       type(Line), intent(in):: lineOne, lineTwo
       type(Line):: newLine
 
