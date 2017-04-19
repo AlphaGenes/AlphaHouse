@@ -97,6 +97,7 @@ end type
         module procedure initPedigreeArrays
         module procedure initEmptyPedigree
         module procedure initPedigreeGenotypeFiles
+        module procedure initPedigreeIntArrays
     end interface PedigreeHolder
 
     interface Sort !Sorts into generation list
@@ -440,6 +441,103 @@ contains
     write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
     end function initPedigreeArrays
 
+
+     !---------------------------------------------------------------------------
+    !< @brief Constructor for pedigree class
+    !< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals.
+    !< Takes Two arrays as inputs rather than files
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function initPedigreeIntArrays(pedArray, genderArray) result(pedStructure)
+        use iso_fortran_env
+        type(PedigreeHolder) :: pedStructure
+
+        integer, dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped([id, sireId, damId], index)
+        integer, dimension(:) ,optional , intent(in):: genderArray !< gender array corresponding to index in pedArray
+        integer(kind=int32) :: tmpSireNum, tmpDamNum
+        integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
+        integer :: tmpAnimalArrayCount
+        integer :: i
+        integer(kind=int64) :: sizeDict
+        character(len=IDLENGTH) :: tmpID,tmpSireId, tmpDamID
+
+        ! TODO convert to Strings
+        logical :: sireFound, damFound
+
+        pedStructure%nHd = 0
+        pedStructure%nGenotyped = 0
+        pedStructure%nDummys = 0
+        tmpAnimalArrayCount = 0
+
+        pedStructure%isSorted = .false. 
+        sizeDict = size(pedArray)
+        pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
+        allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+        pedStructure%pedigreeSize = size(pedArray)
+        pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+        allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+        pedStructure%maxGeneration = 0
+
+        do i=1,size(pedArray)
+
+            sireFound = .false.
+            damFound = .false.
+
+            write(tmpId,*) pedArray(1,i)
+            write(tmpSireId,*) pedArray(2,i)
+            write(tmpDamID,*) pedArray(3,i)
+            call pedStructure%dictionary%addKey(tmpId, i)
+
+            pedStructure%Pedigree(i) =  Individual(tmpId,tmpSireId,tmpDamID, i) !Make a new individual based on info from ped
+
+            if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
+                tmpSireNum = pedStructure%dictionary%getValue(tmpSireId)
+                if (tmpSireNum /= DICT_NULL) then
+                    sireFound = .true.
+                endif
+            endif
+
+            if (pedArray(i,3) /= EMPTY_PARENT) then
+                tmpDamNum = pedStructure%dictionary%getValue(tmpSireId)
+                if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree
+                    damFound = .true.
+                endif
+            endif
+            if (tmpSireId == EMPTY_PARENT .and. tmpDamID == EMPTY_PARENT) then !if animal is a founder
+                pedStructure%Pedigree(i)%founder = .true.
+                call pedStructure%Founders%list_add(pedStructure%Pedigree(i))
+
+            else if (sireFound == .false. .or. damFound == .false. ) then
+                tmpAnimalArrayCount = tmpAnimalArrayCount +1
+                tmpAnimalArray(tmpAnimalArrayCount) = i !Set this animals index to be checked later once all information has been read in
+            else ! if sire and dam are both found
+                pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
+                call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+
+                pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
+                call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+            endif
+        enddo
+
+
+        if (present(genderArray)) then
+
+            do i=1, size(genderArray)
+
+                if (genderArray(i) /=MISSINGGENDERCODE) then
+                    pedStructure%pedigree(i)%gender = genderArray(i)
+                endif
+            enddo
+        endif
+
+    call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
+
+    deallocate(tmpAnimalArray)
+    write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
+    end function initPedigreeIntArrays
 
     !---------------------------------------------------------------------------
     !< @brief Helper function to avoid code duplication
@@ -1148,7 +1246,7 @@ contains
 
           open(newUnit=fileUnit,file=filename,status="unknown")
           do i= 1, this%nGenotyped
-            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype
+            write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
           enddo
     end subroutine writeOutGenotypes
 
@@ -1291,7 +1389,7 @@ contains
     !---------------------------------------------------------------------------
     subroutine makeRecodedPedigreeArray(this, recPed)
         implicit none
-        class(pedigreeHolder), intent(inout) :: this      !< object to operate on
+        class(pedigreeHolder), intent(in) :: this      !< object to operate on
         type(recodedPedigreeArray), intent(out) :: recPed !< @return recoded pedigree array
         integer :: counter,i,h
         type(IndividualLinkedListNode), pointer :: tmpIndNode

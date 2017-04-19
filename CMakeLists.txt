@@ -104,7 +104,7 @@ set(TESTFILES
     ${TESTS}/TestOrderPackModule.pf
     ${TESTS}/TestHashTable.pf
     ${TESTS}/TestIndividual.pf
-    ${TESTS}/TestIntelRNGMod.pf
+    # ${TESTS}/TestIntelRNGMod.pf
     ${TESTS}/TestLinkedList.pf
     ${TESTS}/testAlphaHouseMod.pf
     ${TESTS}/testIndividualHelperModule.pf

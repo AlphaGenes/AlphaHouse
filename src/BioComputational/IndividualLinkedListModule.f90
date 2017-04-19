@@ -106,9 +106,7 @@ contains
 
             do while(associated(node))
                 call this%list_pop(tmp)
-                if (associated(tmp)) then
-                    deallocate(tmp)
-                endif
+                
 
                 node => this%first
             enddo
