@@ -34,7 +34,7 @@ SET(ALPHAHOUSE_src
 )
 
 if (USE_MPI)
-    set(ALPHAHOUSE_src ${ALPHAHOUSE_src} NotUnitTested/Utilities/MPIUtilities.f90)
+    set(ALPHAHOUSE_src ${ALPHAHOUSE_src} Utilities/MPIUtilities.f90)
 endif()
 
 if (ALPHAHOUSEEXE)
