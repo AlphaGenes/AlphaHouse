@@ -75,10 +75,13 @@ module LineModule
       type(Line):: newLine
 
       allocate(newLine%words(lineOne%getNumWords()+lineTwo%getNumWords()))
+      if (.not. lineOne%getNumWords() == 0) then
+        newLine%words(1:lineOne%getNumWords()) = lineOne%words
+      end if
 
-      newLine%words(1:lineOne%getNumWords()) = lineOne%words
-
-      newLine%words(lineOne%getNumWords()+1:) = lineTwo%words
+      if (.not. lineTwo%getNumWords() == 0) then
+        newLine%words(lineOne%getNumWords()+1:) = lineTwo%words
+      end if
     end function addTwoLines
 
 
