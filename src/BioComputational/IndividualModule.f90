@@ -55,7 +55,7 @@ module IndividualModule
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
 
         type(genotype) :: individualGenotype
-        integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
+        real , dimension(:,:), allocatable :: phase ! (nsnp,2)
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped

@@ -55,6 +55,7 @@ module IndividualLinkedListModule
             procedure :: destroyLinkedList
             procedure :: convertToArray
             procedure :: convertToArrayIDs
+            procedure :: getGenotypesAtPosition
             procedure :: destroyLinkedListFinal
             generic:: write(formatted)=> writeLinkedList
 
@@ -374,6 +375,27 @@ contains
             node => node%next
 
         enddo
-    end function convertToArrayIDs              
+    end function convertToArrayIDs           
+
+
+
+    function getGenotypesAtPosition(this, pos) result(res)
+        class(IndividualLinkedList), intent(in) :: this
+        integer, intent(in) :: pos 
+        integer, dimension(:), allocatable :: res
+        type(IndividualLinkedListNode), pointer :: ind
+        integer :: i
+        ind => this%first
+        allocate(res(this%length))
+
+
+
+        do i=1, this%length
+            res(i) = ind%item%individualGenotype%getGenotype(i)
+
+            ind => ind%next
+        enddo 
+
+    end function getGenotypesAtPosition   
 
 end Module IndividualLinkedListModule
