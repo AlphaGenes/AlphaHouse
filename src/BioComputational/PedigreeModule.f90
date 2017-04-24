@@ -51,7 +51,7 @@
         integer :: maxGeneration ! largest generation
         logical :: isSorted
 
-        type(IndividualLinkedList) :: sireList, damList
+        type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 
     contains
     procedure :: destroyPedigree
@@ -795,8 +795,10 @@
         enddo
         deallocate(this%generations)
     endif
-
+        call this%sireList%destroyLinkedList
+    call this%damList%destroyLinkedList
     call this%Founders%destroyLinkedListFinal
+
     call this%dictionary%destroy !destroy dictionary as we no longer need it
     if (this%nGenotyped > 0) then
         call this%genotypeDictionary%destroy
