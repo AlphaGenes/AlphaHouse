@@ -136,17 +136,23 @@ module GenotypeModule
         integer(kind=1), dimension(:), allocatable :: array
 
         integer :: i, cursection, curpos
+        integer :: iterator !< true number of snps
+
+
+      
 	
         if (present(nsnp)) then
           allocate(array(nsnp))
+          iterator = nsnp
         else
           allocate(array(g%length))
+          iterator = g%length
         endif
 
         array = MissingGenotypeCode
         cursection = 1
         curpos = 0
-        do i = 1, g%length
+        do i = 1, iterator
             if (btest(g%homo(cursection),curpos)) then
               if (btest(g%additional(cursection),curpos)) then
                 array(i) = 2
