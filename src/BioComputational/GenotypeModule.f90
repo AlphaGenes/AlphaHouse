@@ -142,8 +142,14 @@ module GenotypeModule
       
 	
         if (present(nsnp)) then
+
+          if (nsnp < g%length) then
+            iterator =  nsnp
+          else
+            iterator =  g%length
+          endif
           allocate(array(nsnp))
-          iterator = nsnp
+          
         else
           allocate(array(g%length))
           iterator = g%length
@@ -152,7 +158,7 @@ module GenotypeModule
         array = MissingGenotypeCode
         cursection = 1
         curpos = 0
-        do i = 1, g%length
+        do i = 1,iterator
             if (btest(g%homo(cursection),curpos)) then
               if (btest(g%additional(cursection),curpos)) then
                 array(i) = 2
