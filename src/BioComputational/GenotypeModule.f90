@@ -152,7 +152,7 @@ module GenotypeModule
         array = MissingGenotypeCode
         cursection = 1
         curpos = 0
-        do i = 1, iterator
+        do i = 1, g%length
             if (btest(g%homo(cursection),curpos)) then
               if (btest(g%additional(cursection),curpos)) then
                 array(i) = 2
