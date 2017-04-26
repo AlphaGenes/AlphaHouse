@@ -75,7 +75,7 @@ module AlphaEvolveModule
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
       LogFile, LogStdout, LogPop, LogPopFile, &
-      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
+      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol, Status) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -99,11 +99,11 @@ module AlphaEvolveModule
       real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
       class(AlphaEvolveSol), intent(inout)   :: BestSol       !< The best evolved solution
+      logical                                :: Status        !< .true. if algorithm finished properly, .false. otherwise
 
       ! Other
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
       integer(int32) :: Sol, a, b, c
-      ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt
       real(real64) :: AcceptPct, OldBestSolObjective
@@ -111,7 +111,7 @@ module AlphaEvolveModule
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
-      class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:), TestSol
+      class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:)
 
       ! --- Trap errors ---
 
@@ -125,7 +125,6 @@ module AlphaEvolveModule
 
       allocate(OldSol(nSol), source=BestSol)
       allocate(NewSol(nSol), source=BestSol)
-      allocate(TestSol,      source=BestSol)
 
       LastIterPrint = 0
       BestSol%Objective = -huge(BestSol%Objective)
@@ -251,22 +250,13 @@ module AlphaEvolveModule
 
         ! --- Generate competitors ---
 
-        !> @todo: Paralelize this loop?
-        !!        The main reason would be to speed up the code as Evaluate() might take quite some time for larger problems
-        !!         - some variables are local, say a, b, ...
-        !!         - global variables are NewSol and OldSol?, but is indexed with i so this should not be a problem
-        !!         - AcceptPct needs to be in sync between the threads!!!
-        !!         - we relly on random_number a lot here and updating the RNG state for each thread can be slow
-        !!           and I (GG) am also not sure if we should not have thread specific RNGs
+        !> @todo: Paralelize this loop? Need parallel RNG streams (random_number
+        !!        uses the system seed variable so the threads need to wait each other)
         BestSolChanged = .false.
         AcceptPct = 0.0d0
 
-        ! call OMP_set_num_threads(1)
-
-        ! $OMP PARALLEL DO DEFAULT(PRIVATE)
+        ! $OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom)
         do Sol = 1, nSol
-
-          ! print *, "#Threads: ", OMP_get_num_threads(), "Thread; ", OMP_get_thread_num()+1, ", Solution: ", Sol
 
           ! --- Mutate and recombine ---
 
@@ -322,11 +312,9 @@ module AlphaEvolveModule
           ! --- Evaluate and Select ---
 
           ! Merit of competitor
-          call TestSol%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
+          call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
           ! If competitor is better or equal, keep it ("equal" to force evolution)
-          if (TestSol%Objective >= OldSol(Sol)%Objective) then
-            call NewSol(Sol)%Assign(TestSol)
-            ! $OMP ATOMIC
+          if (NewSol(Sol)%Objective >= OldSol(Sol)%Objective) then
             AcceptPct = AcceptPct + 1.0d0
           else
             ! Keep the old solution
@@ -400,6 +388,13 @@ module AlphaEvolveModule
       if (LogPopInternal) then
         close(LogPopUnit)
       end if
+
+      if (AcceptPct .gt. 0.0d0) then
+        Status = .true.
+      else
+        Status = .false.
+      end if
+
     end subroutine
 
     !###########################################################################
@@ -434,7 +429,6 @@ module AlphaEvolveModule
 
       ! Other
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
-      ! integer(int32) :: OMP_get_num_threads,OMP_get_thread_num
 
       real(real64) :: RanNum, AcceptPct, OldBestSolObjective, BestSolObjective, Chrom(nParam)
 
