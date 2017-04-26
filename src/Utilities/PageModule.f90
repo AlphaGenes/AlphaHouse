@@ -17,6 +17,7 @@ module pageModule
       procedure, private :: initPageWithPage
       procedure, private :: readInInputFile
       procedure, public  :: getLine
+      procedure, public  :: getLineAsLine
       procedure, public  :: getWord => getPageWord
       procedure, public  :: set => readInInputFile
       procedure, public  :: getWithStackTrace
@@ -40,6 +41,13 @@ module pageModule
   end interface 
   contains
 
+    function getLineAsLine(self, lineNumberIn) result(lineOut)
+      class(Page), intent(in):: self
+      integer, intent(in):: lineNumberIn
+      type(Line)::lineOut
+
+      lineOut = self%lines(lineNumberIn)
+    endfunction getLineAsLine
 
     !> @brief Subroutine that will take in a line and append it to the current Page
     !> @details Takes in a line.   Assumes that if the position isn't given then the line is to be appended onto the end of the
@@ -52,7 +60,12 @@ module pageModule
       type(Line), dimension(:), allocatable:: tempLine1, tempLine2
       integer:: totalSize
 
-        totalSize = self%getNumLines()
+      if (.not. allocated(self%lines)) then
+        allocate(self%lines(1))
+        self%Lines(1) = lineIn
+        return
+      end if
+      totalSize = self%getNumLines()
       if (present(position)) then
         tempLine1 = self%lines(1:position-1)
         tempLine2 = self%lines(position:)

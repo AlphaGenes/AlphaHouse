@@ -1,3 +1,56 @@
+Module testString
+use pFUnit_mod
+use StringModule
+
+contains
+@test
+subroutine testAddWithChar()
+character(len=5):: testChar
+type(String):: expected, gotten
+testChar = "OTHER"
+
+expected = "GOTTENOTHER"
+
+gotten = "GOTTEN"
+
+gotten = gotten+testChar
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testAddWithChar
+
+
+@test
+subroutine testAddWithString()
+use pFUnit_mod
+use StringModule
+type(String):: expected, gotten
+
+expected = "EXPECTED" // "OTHER"
+
+gotten = ""
+
+gotten = gotten+expected
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testAddWithString
+@test
+subroutine testAsChar()
+use pFUnit_mod
+use StringModule
+type(String):: stringUsed
+character(len=10):: expected, gotten
+
+expected = "Thisisexp"
+
+StringUsed = expected
+
+gotten = stringUsed%asChar()
+
+@assertEqual(expected, gotten)
+
+end subroutine testAsChar
+
 @test
 subroutine testGetOccurancesWithMoreThanOneOccuranceTogether()
 use pFUnit_mod
@@ -276,3 +329,4 @@ outputString = inputString%split(delim)
 @assertEqualUserDefined(outputString(4), expectedOutputString(4))
 @assertEqualUserDefined(outputString(5), expectedOutputString(5))
 end subroutine testWithNonDefaults
+end module testString
