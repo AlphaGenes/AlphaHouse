@@ -41,6 +41,8 @@
         integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
         integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
 
+        integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree
+
         integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID
         type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
         integer(kind=int32) :: nGenotyped ! number of animals that are genotyped
@@ -161,6 +163,9 @@
     pedStructure%pedigreeSize = nIndividuals
     pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
     allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+
+    allocate(pedStructure%inputMap(nIndividuals))
+
     pedStructure%maxGeneration = 0
     open(newUnit=fileUnit, file=fileIn, status="old")
 
@@ -173,6 +178,7 @@
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
+        pedStructure%inputMap(i) = i
         if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
             if (tmpSireNum /= DICT_NULL) then
@@ -272,7 +278,7 @@
     integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
     allocate(tmpGeno(nsnp))
-
+    
     pedStructure%isSorted = .false.
     pedStructure%nHd = 0
     pedStructure%nGenotyped = 0
@@ -298,6 +304,7 @@
         pedStructure%pedigreeSize = nIndividuals
         pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
         allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+        allocate(pedStructure%inputMap(nIndividuals))
         pedStructure%maxGeneration = 0
     endif
 
@@ -345,6 +352,7 @@
         else
             call pedStructure%dictionary%addKey(tmpId, i)
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+            pedStructure%inputMap(i) = i
             call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
             call pedStructure%setAnimalAsHd(i)
         endif
@@ -385,6 +393,7 @@
     pedStructure%pedigreeSize = size(pedArray)
     pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
     allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+    allocate(pedStructure%inputMap(size(pedArray)))
     pedStructure%maxGeneration = 0
 
     do i=1,size(pedArray)
@@ -395,7 +404,7 @@
         call pedStructure%dictionary%addKey(pedArray(1,i), i)
 
         pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i) !Make a new individual based on info from ped
-
+        pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(pedArray(2,i))
             if (tmpSireNum /= DICT_NULL) then
@@ -485,6 +494,7 @@
     pedStructure%pedigreeSize = size(pedArray)
     pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
     allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+    allocate(pedStructure%inputMap(size(pedArray)))
     pedStructure%maxGeneration = 0
 
     do i=1,size(pedArray)
@@ -498,7 +508,7 @@
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(tmpId,tmpSireId,tmpDamID, i) !Make a new individual based on info from ped
-
+        pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(tmpSireId)
             if (tmpSireNum /= DICT_NULL) then
@@ -829,7 +839,8 @@
         call this%sireList%destroyLinkedList
     call this%damList%destroyLinkedList
     call this%Founders%destroyLinkedListFinal
-
+    
+    deallocate(this%inputMap)
     call this%dictionary%destroy !destroy dictionary as we no longer need it
     if (this%nGenotyped > 0) then
         call this%genotypeDictionary%destroy
@@ -1075,6 +1086,8 @@
 
     call this%dictionary%destroy()
     call this%founders%destroyLinkedList()
+    call this%sireList%destroyLinkedList()
+    call this%damList%destroyLinkedList()
     sizeDict  =this%pedigreeSize
     allocate(newPed(this%maxPedigreeSize))
     this%dictionary = DictStructure(sizeDict)
@@ -1113,6 +1126,9 @@
 
 
             newPed(pedCounter) = tmpIndNode%item
+            
+            ! take the original id, and update it
+            this%inputMap(newPed(pedCounter)%id) = pedCounter
             newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
             if (associated(newPed(pedCounter)%sirePointer)) then
@@ -1120,6 +1136,9 @@
                 if (tmpID /= DICT_NULL) then
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
                     newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                    if (newPed(tmpId)%nOffs == 1) then
+                        call this%sireList%list_add(newPed(tmpId))
+                    endif
                 endif
             endif
 
@@ -1129,6 +1148,9 @@
                 if (tmpID /= DICT_NULL) then
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
                     newPed(pedCounter)%damPointer=> newPed(tmpId)
+                     if (newPed(tmpId)%nOffs == 1) then
+                       call this%damList%list_add(newPed(tmpId))
+                    endif
                 endif
             endif
 
@@ -1159,8 +1181,14 @@
             call newPed(pedCounter)%addOffspring(newPed(tmpID))
             if(trim(tmpIndNode%item%offsprings(h)%p%sireId) == trim(newPed(pedCounter)%originalID)) then
                 newPed(tmpId)%sirePointer => newPed(pedCounter)
+                if (newPed(pedCounter)%nOffs == 1) then
+                    call this%sireList%list_add(newPed(pedCounter))
+                endif
             else
                 newPed(tmpId)%damPointer => newPed(pedCounter)
+                if (newPed(pedCounter)%nOffs == 1) then
+                    call this%damList%list_add(newPed(pedCounter))
+                endif
             endif
         enddo
         call  this%founders%list_add(newPed(pedCounter))
@@ -1201,6 +1229,8 @@
     pedCounter = 0
     call this%dictionary%destroy()
     call this%founders%destroyLinkedList()
+    call this%sireList%destroyLinkedList()
+    call this%damList%destroyLinkedList()
     sizeDict  =this%pedigreeSize
     allocate(newPed(this%maxPedigreeSize))
     this%dictionary = DictStructure(sizeDict)
@@ -1227,6 +1257,10 @@
             endif
 
             newPed(pedCounter) = tmpIndNode%item
+            if (.not. newPed(pedCounter)%isDummy) then
+                ! take the original id, and update it - we don't want dummies in this list
+                this%inputMap(newPed(pedCounter)%id) = pedCounter
+            endif
             newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
 
@@ -1237,6 +1271,11 @@
                 if (tmpID /= DICT_NULL) then
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
                     newPed(pedCounter)%sirePointer=> newPed(tmpId)
+                    if (newPed(tmpId)%nOffs == 1) then
+                        call this%sireList%list_add(newPed(tmpId))
+                    endif
+
+                    
                 endif
             endif
 
@@ -1245,6 +1284,9 @@
                 if (tmpID /= DICT_NULL) then
                     call newPed(tmpId)%addOffspring(newPed(pedCounter))
                     newPed(pedCounter)%damPointer=> newPed(tmpId)
+                    if (newPed(tmpId)%nOffs == 1) then
+                        call this%damList%list_add(newPed(tmpId))
+                    endif
                 endif
             endif
             if (i ==0 ) then !if object is afounder add to founder array
