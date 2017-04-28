@@ -140,7 +140,6 @@ module AlphaHouseMod
         nLines=nLines+1
         if (f /= 0) then
           nLines=nLines-1
-          write(*,*) f
           exit
         end if
       end do
@@ -173,7 +172,6 @@ module AlphaHouseMod
         nLines=nLines+1
         if (f /= 0) then
           nLines=nLines-1
-          write(*,*) f
           exit
         end if
       end do
