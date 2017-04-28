@@ -116,9 +116,40 @@ module AlphaHouseMod
      Inquire(file = filename, exist = fileExists)
    end function checkFileExists
 
+    !---------------------------------------------------------------------------
+    !> @brief   Count number of lines in a file including blank lines
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    function CountLinesWithBlankLines(FileName) result(nLines)
+      implicit none
+
+      ! Arguments
+      character(len=*),intent(in) :: FileName !< file
+      integer(int32)              :: nLines   !< @return number of lines in a file
+
+      ! Other
+      integer(int32) :: f,Unit
+
+
+      nLines=0
+      f=0
+      open(newunit=Unit,file=trim(FileName),status="old")
+      do
+        read(Unit,*,iostat=f)
+        nLines=nLines+1
+        if (f /= 0) then
+          nLines=nLines-1
+          write(*,*) f
+          exit
+        end if
+      end do
+      close(Unit)
+      return
+    end function
 
     !---------------------------------------------------------------------------
-    !> @brief   Count number of lines in a file
+    !> @brief   Count number of lines in a file excluding blank lines
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
@@ -135,12 +166,14 @@ module AlphaHouseMod
       character(len=300) :: DumC
 
       nLines=0
+      f=0
       open(newunit=Unit,file=trim(FileName),status="old")
       do
         read(Unit,*,iostat=f) DumC
         nLines=nLines+1
         if (f /= 0) then
           nLines=nLines-1
+          write(*,*) f
           exit
         end if
       end do

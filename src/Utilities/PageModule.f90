@@ -151,10 +151,12 @@ module pageModule
 
       integer:: i
 
-      res = ""
+      res = " "
+
       do i = 1, this%getNumWords(numLine)
         res = res // this%getWord(numLine, i)
       end do
+
     end function getLine
 
     function getPageTypeNumWords(this, i) result(numWords)
@@ -332,6 +334,7 @@ module pageModule
 !---------------------------------------------------------------------------
   subroutine readInInputFile(this, inputFileName, commentCharacterIn, delimiters)
     use AlphaHouseMod, only: CountLines
+    use ConstantModule, only: defaultComment
     class(Page), intent(inout):: this
     type(String), dimension(:), allocatable:: tempArray 
     type(Line), dimension(:), allocatable:: tempLine
@@ -347,7 +350,7 @@ module pageModule
     if (present(commentCharacterIn)) then
       write(commentCharacter, "(A)")  commentCharacterIn
     else
-      write(commentCharacter, "(A)")  "#"
+      write(commentCharacter, "(A)")  DEFAULTCOMMENT
     end if
 
     numLines =  CountLines(inputFileName)
@@ -373,8 +376,10 @@ module pageModule
     end do
     this = tempLine
     this%pageName = inputFileName
+
     deallocate(tempArray)
     deallocate(tempLine)
+
 
   end subroutine readInInputFile
   end module pageModule

@@ -146,23 +146,27 @@ end function dict_create_val
   !> @date       October 25, 2016
   !
   !-------------------------------------------
-subroutine destroy(this)
-    class(DictStructure) :: this
+  subroutine destroy(this)
+  class(DictStructure) :: this
 
     integer(kind=int64) :: i
 
-    do i = 1,this%hash_size
+    if (associated(this%table)) then
+      do i = 1,this%hash_size
         if ( associated( this%table(i)%list ) ) then
-            call list_destroy( this%table(i)%list )
+          call list_destroy( this%table(i)%list )
 
-            ! if (associated(this%table(i)%list)) then
-            !     deallocate(this%table(i)%list)
-            ! endif
+          ! if (associated(this%table(i)%list)) then
+          !     deallocate(this%table(i)%list)
+          ! endif
         endif
-    enddo
-    deallocate(this%table )
+      enddo
+      
+      deallocate(this%table )
+      this%table => null()
+    end if
 
-end subroutine destroy
+  end subroutine destroy
 
 
   !---------------------------------------------------------------------------
