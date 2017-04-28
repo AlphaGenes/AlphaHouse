@@ -47,7 +47,6 @@ module TestHashTable
         empty = DictStructure()
 
         call empty%destroy()
-
     end subroutine testDestroyEmpty
 
     @test

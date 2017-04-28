@@ -151,16 +151,19 @@ subroutine destroy(this)
 
     integer(kind=int64) :: i
 
-    do i = 1,this%hash_size
-        if ( associated( this%table(i)%list ) ) then
-            call list_destroy( this%table(i)%list )
 
-            ! if (associated(this%table(i)%list)) then
-            !     deallocate(this%table(i)%list)
-            ! endif
-        endif
-    enddo
-    deallocate(this%table )
+    if (associated(this%table)) then
+        do i = 1,this%hash_size
+            if ( associated( this%table(i)%list ) ) then
+                call list_destroy( this%table(i)%list )
+
+                ! if (associated(this%table(i)%list)) then
+                !     deallocate(this%table(i)%list)
+                ! endif
+            endif
+        enddo
+        deallocate(this%table )
+    endif
 
 end subroutine destroy
 
