@@ -69,6 +69,19 @@ module TestPedigreeModule
          @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
     end subroutine testReadAndSort
 
+
+
+    @test
+    subroutine testDestroyEmpty
+        implicit none
+           type(pedigreeHOlder) :: empty
+
+        empty = PedigreeHolder()
+
+        call empty%destroyPedigree()
+    end subroutine testDestroyEmpty
+
+
     @test
     subroutine testDummys
         implicit none

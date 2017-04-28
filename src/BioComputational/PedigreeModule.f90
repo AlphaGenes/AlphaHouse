@@ -840,7 +840,9 @@
     call this%damList%destroyLinkedList
     call this%Founders%destroyLinkedListFinal
     
-    deallocate(this%inputMap)
+    if (allocated(this%inputMap)) then
+        deallocate(this%inputMap)
+    endif
     call this%dictionary%destroy !destroy dictionary as we no longer need it
     if (this%nGenotyped > 0) then
         call this%genotypeDictionary%destroy

@@ -40,6 +40,14 @@ module TestHashTable
 
     end subroutine testHasKey
 
+    @test
+    subroutine testDestroyEmpty
+        type(DictStructure) :: empty
+
+        empty = DictStructure()
+
+        call empty%destroy()
+    end subroutine testDestroyEmpty
 
     @test
     subroutine testDelete
