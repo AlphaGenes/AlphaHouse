@@ -33,7 +33,7 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
+  public :: Append, CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
   public :: isDelim, PrintElapsedTime, intToChar, SetSeed
