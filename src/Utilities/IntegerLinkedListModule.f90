@@ -201,7 +201,7 @@ contains
           node => this%first
 
           do
-            if (associated(node%item,in)) then
+            if (node%item == in) then
                 contains = .true.
                 return
             else if (.not.associated(node%next)) then
@@ -230,7 +230,7 @@ contains
         type(IntegerLinkedListNode),pointer :: node
         if (associated(this%first)) then
             node => this%first
-            if (associated(node%item,item)) then
+            if (node%item == item) then
                 this%first => this%first%next
                 this%length = this%length - 1 
                 if (.not. associated(this%first)) then
