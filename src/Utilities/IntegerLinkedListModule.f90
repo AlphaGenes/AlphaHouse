@@ -47,7 +47,7 @@ module IntegerLinkedListModule
     end type IntegerLinkedList
 
     type :: IntegerLinkedListNode
-            integer, pointer :: item
+            integer :: item
             type(IntegerLinkedListNode),pointer :: next =>null()
             type(IntegerLinkedListNode),pointer :: previous =>null()
     end type IntegerLinkedListNode
@@ -113,7 +113,7 @@ contains
     !---------------------------------------------------------------------------
     subroutine list_add(this,item)
         class(IntegerLinkedList),intent(inout) :: this
-        integer,intent(in), target :: item !< item to add
+        integer,intent(in) :: item !< item to add
 
         if (.not.associated(this%last)) then
         allocate(this%first)
@@ -124,7 +124,7 @@ contains
             this%last%next%previous => this%last
             this%last => this%last%next
         endif
-        this%last%item => item
+        this%last%item = item
         this%length = this%length + 1
     end subroutine list_add
 
@@ -137,9 +137,9 @@ contains
     !---------------------------------------------------------------------------
     subroutine list_pop(this, item)
         class(IntegerLinkedList),intent(inout) :: this
-        integer,pointer,intent(out) :: item !< item at the end of the list
+        integer,intent(out) :: item !< item at the end of the list
         if (associated(this%last)) then
-            item => this%last%item         
+            item = this%last%item         
             this%last => this%last%previous
             if (associated(this%last)) then
                 deallocate(this%last%next)
@@ -148,7 +148,7 @@ contains
             end if
             this%length = this%length - 1
         else
-            item => null()
+            item = DICT_NULL
         end if
     end subroutine list_pop
 
