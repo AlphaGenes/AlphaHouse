@@ -225,7 +225,7 @@ contains
     !---------------------------------------------------------------------------
     subroutine list_remove(this,item)
         class(IntegerLinkedList),intent(inout) :: this
-        integer,pointer, intent(in) :: item !< item to remove
+        integer, intent(in) :: item !< item to remove
         integer, pointer :: tmpItem
         type(IntegerLinkedListNode),pointer :: node
         if (associated(this%first)) then
@@ -243,7 +243,7 @@ contains
                 do while (associated(node%next))
                     tmpItem => node%next%item
                     ! print *,"loop"
-                    if(associated(tmpItem,item)) then
+                    if(tmpItem == item) then
                         if(associated(node%next%next)) then
                             deallocate(node%next%next%previous)
                             node%next%next%previous => node
