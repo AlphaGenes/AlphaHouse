@@ -290,6 +290,7 @@ contains
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
     end function getParentGenderBasedOnIndex
+
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -720,6 +721,13 @@ contains
 
     end function hasDummyParentsOrGranparents
 
+
+      
+    !---------------------------------------------------------------------------
+    !> @brief Resets the offspring information for a given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine resetOffspringInformation(this)
         class(Individual) :: this
     
@@ -806,6 +814,11 @@ contains
     end subroutine setGenotypeArray
 
 
+    !---------------------------------------------------------------------------
+    !> @brief initialises an individual phases arrays given the number of snps
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine initPhaseArrays(this, nsnp)
         class(Individual) :: this
         integer, intent(in) :: nsnp
