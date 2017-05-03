@@ -1,3 +1,32 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     GenotypeModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module cotaining logic of dealing with Genotypes
+!
+!> @details  currently only contains integer and real heap sort procedures 
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 dmoney - initial version
+! 2017-04-28 dwilso18 - revision with comments
+!
+!-------------------------------------------------------------------------------
+
+
+
+
 module GenotypeModule
 
     use constantModule, only : MissingGenotypeCode
@@ -58,6 +87,12 @@ module GenotypeModule
 
       contains
 
+
+        !---------------------------------------------------------------------------
+    !> @brief constructs a new genotype from a integer array
+    !> @date    November 26, 2016
+    !> @return new genotype object 
+    !---------------------------------------------------------------------------
       pure function newGenotypeInt(geno) result (g)
         integer(kind=1), dimension(:), intent(in) :: geno
 
@@ -96,6 +131,11 @@ module GenotypeModule
         end do
     end function newGenotypeInt
     
+    !---------------------------------------------------------------------------
+    !> @brief constructs a new genotype from two haplotype objects
+    !> @date    November 26, 2016
+    !> @return new genotype object 
+    !---------------------------------------------------------------------------
     function newGenotypeHap(h1, h2) result (g)
       use HaplotypeModule
       type(Haplotype) :: h1, h2
@@ -130,6 +170,12 @@ module GenotypeModule
       
     end function newGenotypeHap
 
+
+    !---------------------------------------------------------------------------
+    !> @brief converts genotype to integer array
+    !> @date    November 26, 2016
+    !> @return integer(kind=1) array 
+    !---------------------------------------------------------------------------
     function genotypeToIntegerArray(g, nsnp) result(array)
         class(Genotype), intent(in) :: g
         integer, intent(in),optional :: nsnp
@@ -181,6 +227,12 @@ module GenotypeModule
 	end do
     end function genotypeToIntegerArray
 
+
+  !---------------------------------------------------------------------------
+  !> @brief comparator for the genotypes
+  !> @date    November 26, 2016
+  !> @return .true. if genotypes are equal, false otherwise
+  !---------------------------------------------------------------------------
 function compareGenotype(g1, g2) result(same)
     class(Genotype), intent(in) :: g1, g2
 
@@ -198,9 +250,14 @@ function compareGenotype(g1, g2) result(same)
     end if
 end function compareGenotype
 
+
+  !---------------------------------------------------------------------------
+  !> @brief returns the snp at given position
+  !> @date    November 26, 2016
+  !---------------------------------------------------------------------------
 function getGenotype(g, pos) result (genotype)
     class(Genotype), intent(in) :: g
-    integer, intent(in) :: pos
+    integer, intent(in) :: pos !< snp 
 
     integer :: genotype
 
@@ -224,7 +281,10 @@ function getGenotype(g, pos) result (genotype)
     end if
 end function getGenotype
 
-
+  !---------------------------------------------------------------------------
+  !> @brief sets value at given snp 
+  !> @date    November 26, 2016
+  !---------------------------------------------------------------------------
 subroutine setGenotype(g, pos, val)
     class(Genotype), intent(inout) :: g
     integer, intent(in) :: val
@@ -249,6 +309,11 @@ subroutine setGenotype(g, pos, val)
 
 end subroutine setGenotype
 
+
+  !---------------------------------------------------------------------------
+  !> @brief returns the number of opposing snps between two genotypes
+  !> @date    November 26, 2016
+  !---------------------------------------------------------------------------
 function numOppose(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2
 
@@ -262,6 +327,10 @@ function numOppose(g1, g2) result(num)
     end do
 end function numOppose
 
+  !---------------------------------------------------------------------------
+  !> @brief returns the number of snps in common between two genotypes
+  !> @date    November 26, 2016
+  !---------------------------------------------------------------------------
 function numIncommon(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2
 
