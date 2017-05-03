@@ -801,6 +801,7 @@ contains
         this%individualGenotype = Genotype(Geno)
         if (.not. allocated(this%phaseInfo)) then
             allocate(this%phaseInfo(size(geno),2))
+            this%phaseInfo = MissingPhaseCode
         endif
     end subroutine setGenotypeArray
 
@@ -814,7 +815,7 @@ contains
         endif
 
         allocate(this%phaseInfo(nsnp,2))
-
+        this%phaseInfo = MissingPhaseCode
     end subroutine initPhaseArrays
 
     !---------------------------------------------------------------------------
