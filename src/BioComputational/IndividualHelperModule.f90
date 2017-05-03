@@ -481,16 +481,15 @@ end function calcGenDistance
 
 
       !---------------------------------------------------------------------------
-    !> @brief gets array of *individual* objects that are this individuals offspring
+    !> @brief returns a Individual Linked list of all of an animals offspring
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
-    !> @return array of pointers of individuals which are offspring of this parent
     !---------------------------------------------------------------------------
     function GetOffspringsAsLinkedList(ind) result(res)
         use IndividualLinkedListModule
 
         class(Individual), intent(in) :: ind
-        type(IndividualLinkedList) :: res
+        type(IndividualLinkedList) :: res !< linked list of given individuals offspring
         integer :: i
 
         do i =1, ind%nOffs
@@ -498,8 +497,6 @@ end function calcGenDistance
             call res%list_add(ind%offsprings(i)%p)
 
         enddo
-
-
     end function GetOffspringsAsLinkedList
 
 end module IndividualHelperModule

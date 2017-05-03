@@ -801,6 +801,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine setGenotypeArray(this, geno)
+        use constantModule
+        
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
         this%Genotyped = .true.
@@ -820,6 +822,7 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine initPhaseArrays(this, nsnp)
+        use constantModule
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
