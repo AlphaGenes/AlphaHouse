@@ -29,7 +29,8 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestor,getOnlyHalfSibsGenotyped
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors,getOnlyHalfSibsGenotyped
+    public :: GetOffspringsAsLinkedList
 
     contains
 
@@ -198,7 +199,6 @@ module IndividualHelperModule
 
         if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
             ! loop through sire offsprings
-
             tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
             dict = DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
@@ -477,6 +477,30 @@ integer function calcGenDistance(ind1, ind2)
 
 
 end function calcGenDistance
+
+
+
+      !---------------------------------------------------------------------------
+    !> @brief gets array of *individual* objects that are this individuals offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !> @return array of pointers of individuals which are offspring of this parent
+    !---------------------------------------------------------------------------
+    function GetOffspringsAsLinkedList(ind) result(res)
+        use IndividualLinkedListModule
+
+        class(Individual), intent(in) :: ind
+        type(IndividualLinkedList) :: res
+        integer :: i
+
+        do i =1, ind%nOffs
+
+            call res%list_add(ind%offsprings(i)%p)
+
+        enddo
+
+
+    end function GetOffspringsAsLinkedList
 
 end module IndividualHelperModule
 
