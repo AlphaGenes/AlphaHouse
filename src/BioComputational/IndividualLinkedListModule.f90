@@ -391,7 +391,7 @@ contains
 
 
         do i=1, this%length
-            res(i) = ind%item%individualGenotype%getGenotype(i)
+            res(i) = ind%item%individualGenotype%getGenotype(pos)
 
             ind => ind%next
         enddo 
