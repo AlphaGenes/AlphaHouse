@@ -57,6 +57,7 @@ module IndividualLinkedListModule
             procedure :: convertToArrayIDs
             procedure :: getGenotypesAtPosition
             procedure :: destroyLinkedListFinal
+            procedure :: removeIndividualsBasedOnThreshold
             generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
