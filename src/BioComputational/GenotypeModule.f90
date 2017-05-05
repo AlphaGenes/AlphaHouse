@@ -70,6 +70,8 @@ module GenotypeModule
   procedure :: numberErrorsSingle
   procedure :: getErrorsSingle
   procedure :: subset
+  procedure :: setFromHaplotypesIfMissing
+  procedure :: setFromOtherIfMissing
   procedure :: readFormattedGenotype
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
@@ -734,7 +736,38 @@ function isHomo(g, pos) result (two)
       sub%additional(sub%sections) = ibclr(sub%additional(sub%sections), i)
     end do
   end function subset
-
+  
+  subroutine setFromHaplotypesIfMissing(g,h1,h2)
+    use HaplotypeModule
+    class(Genotype) :: g
+    type(Haplotype), intent(in) :: h1, h2
+    
+    type(Genotype) :: gFromH
+    
+    gFromH = Genotype(h1,h2)
+    call g%setFromOtherIfMissing(gFromH)
+    
+  end subroutine setFromHaplotypesIfMissing
+  
+  subroutine setFromOtherIfMissing(g, o)
+    class(Genotype) :: g
+    type(Genotype), intent(in) :: o
+    
+    integer :: i
+    
+    do i = 1, g%sections
+      g%homo(i) = IOR( &
+		    ! g is not missing, use g
+		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
+		    ! g is missing use o
+		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+      g%additional(i) = IOR( &
+		    ! g is not missing, use g
+		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
+		    ! g is missing use o
+		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+    end do
+  end subroutine setFromOtherIfMissing
 
     subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
       class(Genotype), intent(in) :: dtv         ! Object to write.
