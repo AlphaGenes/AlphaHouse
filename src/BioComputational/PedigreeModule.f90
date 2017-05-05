@@ -39,6 +39,7 @@
         type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
         type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
         integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
+        integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
         integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
 
         integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree
@@ -614,8 +615,8 @@
                     if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
-                        ! TODO do a move alloc here to avoid this hack
                     endif
+                    ! TODO potential issue here regarding dummy being the same as the pedigreeCounter
                     pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
                     call pedStructure%dictionary%addKey("dum"//trim(tmpSire), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
@@ -699,6 +700,11 @@
                 endif
                 pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+                if (tmpDam == EMPTY_PARENT) then
+                    pedStructure%unknownDummys = pedStructure%unknownDummys+1
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
+                endif
+
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
                 call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to dam list
                 pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
@@ -720,6 +726,10 @@
                     stop
                 endif
                 pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                 if (tmpSire == EMPTY_PARENT) then
+                    pedStructure%unknownDummys = pedStructure%unknownDummys+1
+                    pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
+                endif
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
                 call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to dam list
@@ -1069,10 +1079,11 @@
     !---------------------------------------------------------------------------
     !< @brief Sorts pedigree, and overwrites all fields to new values
     !< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
+    !< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine sortPedigreeAndOverwrite(this)
+    subroutine sortPedigreeAndOverwrite(this, unknownDummysAtEnd)
     use iso_fortran_env, only : output_unit, int64
     class(PedigreeHolder) :: this
     integer :: i,h, pedCounter, tmpId,tmpGenotypeMapIndex
@@ -1081,6 +1092,8 @@
     type(Individual), pointer, dimension(:) :: newPed
     type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
     type(IndividualLinkedList) :: dummyList
+    integer, intent(in) , optional :: unknownDummysAtEnd !< if this option is specified, then only unknown dummies are put at end
+
     if (.not. allocated(this%generations)) then
         call this%setPedigreeGenerationsAndBuildArrays
     endif
@@ -1098,10 +1111,18 @@
         tmpIndNode => this%generations(i)%first
         do h=1, this%generations(i)%length
 
-            if (tmpIndNode%item%isDummy) then
-                call dummyList%list_add(tmpIndNode%item)
-                tmpIndNode => tmpIndNode%next
-                cycle
+            if (present(unknownDummysAtEnd)) then
+                if (tmpIndNode%item%isUnknownDummy) then
+                    call dummyList%list_add(tmpIndNode%item)
+                    tmpIndNode => tmpIndNode%next
+                    cycle
+                endif
+            else  
+                if (tmpIndNode%item%isDummy) then
+                    call dummyList%list_add(tmpIndNode%item)
+                    tmpIndNode => tmpIndNode%next
+                    cycle
+                endif
             endif
 
 

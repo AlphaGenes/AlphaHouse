@@ -56,7 +56,7 @@ module IndividualModule
         logical :: Genotyped   = .false.
         logical :: HD          = .false.
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
-
+        logical :: isUnknownDummy = .false.
         type(genotype) :: individualGenotype
         contains
             procedure :: getSireDamByIndex
