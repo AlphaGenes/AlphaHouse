@@ -691,7 +691,7 @@
 
             if (.not. damFound) then
                 tmpCounter =  tmpCounter + 1
-                write(tmpCounterStr, '(I3.3)') tmpCounter
+                write(tmpCounterStr, '(a,I3.3)') "alphahouse",tmpCounter
                 pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                 pedStructure%nDummys = pedStructure%nDummys + 1
                 if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
@@ -718,7 +718,7 @@
             endif
             if (.not. sireFound) then
                 tmpCounter =  tmpCounter + 1
-                write(tmpCounterStr, '(I3.3)') tmpCounter
+                write(tmpCounterStr, '(a,I3.3)')  "alphahouse",tmpCounter
                 pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                 pedStructure%nDummys = pedStructure%nDummys + 1
                 if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
