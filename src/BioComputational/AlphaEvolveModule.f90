@@ -75,7 +75,7 @@ module AlphaEvolveModule
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
       LogFile, LogStdout, LogPop, LogPopFile, &
-      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol, Status) ! not pure due to IO & RNG
+      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -99,7 +99,6 @@ module AlphaEvolveModule
       real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
       class(AlphaEvolveSol), intent(inout)   :: BestSol       !< The best evolved solution
-      logical                                :: Status        !< .true. if algorithm finished properly, .false. otherwise
 
       ! Other
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
@@ -387,12 +386,6 @@ module AlphaEvolveModule
       end if
       if (LogPopInternal) then
         close(LogPopUnit)
-      end if
-
-      if (AcceptPct .gt. 0.0d0) then
-        Status = .true.
-      else
-        Status = .false.
       end if
 
     end subroutine

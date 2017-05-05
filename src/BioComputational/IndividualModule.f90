@@ -40,7 +40,7 @@ module IndividualModule
     type Individual
 
 
-        real , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
+        integer(kind=1) , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
 
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
@@ -290,6 +290,7 @@ contains
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
     end function getParentGenderBasedOnIndex
+
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -720,6 +721,13 @@ contains
 
     end function hasDummyParentsOrGranparents
 
+
+      
+    !---------------------------------------------------------------------------
+    !> @brief Resets the offspring information for a given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine resetOffspringInformation(this)
         class(Individual) :: this
     
@@ -793,6 +801,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine setGenotypeArray(this, geno)
+        use constantModule
+        
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
         this%Genotyped = .true.
@@ -801,11 +811,18 @@ contains
         this%individualGenotype = Genotype(Geno)
         if (.not. allocated(this%phaseInfo)) then
             allocate(this%phaseInfo(size(geno),2))
+            this%phaseInfo = MissingPhaseCode
         endif
     end subroutine setGenotypeArray
 
 
+    !---------------------------------------------------------------------------
+    !> @brief initialises an individual phases arrays given the number of snps
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine initPhaseArrays(this, nsnp)
+        use constantModule
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
@@ -814,7 +831,7 @@ contains
         endif
 
         allocate(this%phaseInfo(nsnp,2))
-
+        this%phaseInfo = MissingPhaseCode
     end subroutine initPhaseArrays
 
     !---------------------------------------------------------------------------
@@ -886,6 +903,9 @@ contains
         Offsprings = this%Offsprings
 
     end subroutine GetOffsprings
+
+
+  
 
     !---------------------------------------------------------------------------
     !> @brief Sets gender info of individual. 1 signifies male, 2 female. 

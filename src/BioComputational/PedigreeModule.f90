@@ -1499,11 +1499,6 @@
     end subroutine makeRecodedPedigreeArray
 
 
-
-    ! TODO get (unique) list of mates. Sorted by Generation.
-
-    ! function should return offspringlist (=recID) and listOfParents(2, nMatingPairs))
-
     !---------------------------------------------------------------------------
     !< @brief returns list of mates and offspring for those mate pairs for given pedigree
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -1534,7 +1529,12 @@
     end function getAllGenotypesAtPosition
 
 
-
+    !---------------------------------------------------------------------------
+    !< @brief returns array of what percentages an animal has been genotyped
+    !<
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     function getGenotypePercentage(this) result(res)
     use constantModule, only : MISSINGPHASECODE
     class(pedigreeHolder) :: this
@@ -1783,8 +1783,6 @@
     else
         this%pedigree(indId)%hd = .true.
     endif
-
-
 
     end subroutine setAnimalAsHD
 

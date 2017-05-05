@@ -57,6 +57,7 @@ module IndividualLinkedListModule
             procedure :: convertToArrayIDs
             procedure :: getGenotypesAtPosition
             procedure :: destroyLinkedListFinal
+            procedure :: removeIndividualsBasedOnThreshold
             generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
@@ -391,11 +392,83 @@ contains
 
 
         do i=1, this%length
-            res(i) = ind%item%individualGenotype%getGenotype(i)
+            res(i) = ind%item%individualGenotype%getGenotype(pos)
 
             ind => ind%next
         enddo 
 
     end function getGenotypesAtPosition   
+
+
+    subroutine removeIndividualsBasedOnThreshold(this, nOffsThresh, genotyped, hd)
+
+        class(IndividualLinkedList), intent(inout) :: this
+        integer, intent(in),optional :: nOffsThresh
+        logical, intent(in), optional :: genotyped,hd
+        type(IndividualLinkedListNode), pointer :: ind
+
+        ind => this%first
+        do while(associated(ind))
+            
+            if (present(nOffsThresh)) then
+                if(ind%item%nOffs < nOffsThresh) then
+                    if (associated(this%first, ind)) then
+                        this%first => ind%next
+                        ind%next%previous => null()
+
+                    else if  (associated(this%last, ind)) then
+                        this%last => ind%previous
+                        this%last%next => null()
+                    else
+                        ind%previous%next => ind%next
+                        ind%next%previous => ind%previous
+                    endif
+                    deallocate(ind)
+                    this%length = this%length -1
+                    cycle
+                endif
+            endif
+
+             if (present(genotyped)) then
+                if(.not. ind%item%Genotyped) then
+                    if (associated(this%first, ind)) then
+                        this%first => ind%next
+                        ind%next%previous => null()
+
+                    else if  (associated(this%last, ind)) then
+                        this%last => ind%previous
+                        this%last%next => null()
+                    else
+                        ind%previous%next => ind%next
+                        ind%next%previous => ind%previous
+                    endif
+                    deallocate(ind)
+                    this%length = this%length -1
+                    cycle
+                endif
+            endif
+
+            if (present(hd)) then
+                if(.not. ind%item%hd) then
+                    if (associated(this%first, ind)) then
+                        this%first => ind%next
+                        ind%next%previous => null()
+
+                    else if  (associated(this%last, ind)) then
+                        this%last => ind%previous
+                        this%last%next => null()
+                    else
+                        ind%previous%next => ind%next
+                        ind%next%previous => ind%previous
+                    endif
+                    deallocate(ind)
+                    this%length = this%length -1
+                    cycle
+                endif
+            endif
+
+            ind => ind%next
+        enddo
+    end subroutine removeIndividualsBasedOnThreshold
 
 end Module IndividualLinkedListModule

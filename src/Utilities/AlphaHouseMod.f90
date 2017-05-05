@@ -33,7 +33,7 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
+  public :: Append, CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
   public :: isDelim, PrintElapsedTime, intToChar, SetSeed
@@ -68,6 +68,10 @@ module AlphaHouseMod
     module procedure MatchC, MatchI, MatchS, MatchD
   end interface
 
+  interface Append
+    module procedure AppendReal64, AppendChar
+  end interface
+
   contains
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
@@ -84,7 +88,6 @@ module AlphaHouseMod
   !> @param[in] delimiters(character(len=1), dimension(:)) delimiters to be checked agains
   !> @param[out] logical - true if same as a delimiter, otherwise false
   !---------------------------------------------------------------------------
-
   function isDelim(charIn, delimiters)
     character(len=*):: charIn
     character(len = *), dimension(:):: delimiters
@@ -96,6 +99,7 @@ module AlphaHouseMod
       isDelim = isDelim .or. charIn==delimiters(i)
     end do
   end function isDelim
+
    !---------------------------------------------------------------------------
    ! DESCRIPTION:
    !> @brief      Check if a fileName exists
@@ -932,11 +936,10 @@ module AlphaHouseMod
 
     !###########################################################################
 
-
     !---------------------------------------------------------------------------
     !> @brief   szudzik pairing function in fortran
     !> @details Generates a unique pairing based on two integers
-     !> If input is (N,M) space, output will be (N*M) space.
+    !> If input is (N,M) space, output will be (N*M) space.
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
     function generatePairing(xin,yin) result(res)
@@ -963,7 +966,7 @@ module AlphaHouseMod
 
     end function generatePairing
 
-     !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief   szudzik unpairing function in fortran
     !> @details returns two integers that generated unique number based on pair
     !> If using tuples, will overflow very quickly.
@@ -996,8 +999,67 @@ module AlphaHouseMod
       endif
     end subroutine unPair
 
+    !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief  Append value y at the end of a vector x - real64
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   May 1, 2017
+    !---------------------------------------------------------------------------
+    pure subroutine AppendReal64(x, y)
+      implicit none
+      real(real64), intent(inout), allocatable :: x(:) !< @return Appended vector
+      real(real64), intent(in)                 :: y    !< Value
+      integer(int32) :: n
+      real(real64), allocatable :: Tmp(:)
+      if (allocated(x)) then
+        n = size(x)
+        allocate(Tmp(n))
+        Tmp = x
+        deallocate(x)
+        allocate(x(n + 1))
+        x(1:n) = Tmp
+        n = n + 1
+        x(n) = y
+      else
+        n = 1
+        allocate(x(n))
+        x(n) = y
+      end if
+    end subroutine
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Append value y at the end of a vector x - char
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   May 1, 2017
+    !> @todo   Can we get rid of Len?
+    !---------------------------------------------------------------------------
+    pure subroutine AppendChar(x, y, len)
+      implicit none
+      character(len=len), intent(inout), allocatable :: x(:) !< @return Appended vector
+      character(len=*),   intent(in)                 :: y    !< Value
+      integer(int32), intent(in)                     :: Len  !< Length of character value
+      integer(int32) :: n
+      character(len=len), allocatable :: Tmp(:)
+      if (allocated(x)) then
+        n = size(x)
+        allocate(Tmp(n))
+        Tmp = x
+        deallocate(x)
+        allocate(x(n + 1))
+        x(1:n) = Tmp
+        n = n + 1
+        x(n) = y
+      else
+        n = 1
+        allocate(x(n))
+        x(n) = y
+      end if
+    end subroutine
+
+    !###########################################################################
 
 end module
 
