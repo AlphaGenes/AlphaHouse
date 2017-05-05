@@ -40,7 +40,7 @@ module IndividualModule
     type Individual
 
 
-        real , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
+        integer(kind=1) , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
 
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
