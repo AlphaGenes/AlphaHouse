@@ -39,6 +39,7 @@ module AlphaHouseMod
   public :: isDelim, PrintElapsedTime, intToChar, SetSeed
 
   public :: generatePairing, unPair
+  public :: CountLinesWithBlankLines
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
