@@ -19,6 +19,7 @@ module ConstantModule
     integer, parameter :: DICT_MULTIPLIER = 17
     integer, parameter :: MAXINT32 = 2147483647
     character(len=3), parameter:: defaultNullVal = "NAN"
+    character(len=5), parameter:: dummyAnimalPrepre = "DUMAL"
     character(len=1), parameter:: defaultType = "A", defaultDelim =","
     character(len=1), dimension(3), parameter:: types = (/"A", "I", "R"/) !A for alphanumeric, I for integer, R for real64 and L for logical
     character(len=1), parameter:: DEFAULTCOMMENT="#"

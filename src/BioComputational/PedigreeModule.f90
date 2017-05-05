@@ -608,7 +608,7 @@
                 ! check that we've not already defined the parent above
             else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
                 ! check if the tmp animal has already been created
-                tmpSireNum = pedStructure%dictionary%getValue("dum"//trim(tmpSire))
+                tmpSireNum = pedStructure%dictionary%getValue(dummyAnimalPrepre//trim(tmpSire))
                 if (tmpSireNum == DICT_NULL) then
                     pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                     pedStructure%nDummys = pedStructure%nDummys + 1
@@ -617,8 +617,8 @@
                         stop
                     endif
                     ! TODO potential issue here regarding dummy being the same as the pedigreeCounter
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
-                    call pedStructure%dictionary%addKey("dum"//trim(tmpSire), pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                    call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpSire), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
@@ -653,7 +653,7 @@
                 ! check that we've not already defined the parent above
             else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
                 ! Check for defined animals that have nit been set in pedigree
-                tmpDamNum = pedStructure%dictionary%getValue("dum"//trim(tmpDam))
+                tmpDamNum = pedStructure%dictionary%getValue(dummyAnimalPrepre//trim(tmpDam))
                 if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
                     pedStructure%nDummys = pedStructure%nDummys + 1
                     pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
@@ -661,8 +661,8 @@
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
                     endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
-                    call pedStructure%dictionary%addKey("dum"//trim(tmpDam), pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                    call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpDam), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
@@ -698,7 +698,7 @@
                     write(error_unit,*) "ERROR: too many undefined animals"
                     stop
                 endif
-                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                 if (tmpDam == EMPTY_PARENT) then
                     pedStructure%unknownDummys = pedStructure%unknownDummys+1
@@ -725,7 +725,7 @@
                     write(error_unit,*) "ERROR: too many undefined animals"
                     stop
                 endif
-                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual("dum"//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
                  if (tmpSire == EMPTY_PARENT) then
                     pedStructure%unknownDummys = pedStructure%unknownDummys+1
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
@@ -1875,8 +1875,8 @@
     this%pedigreeSize = this%pedigreeSize+1
     this%nDummys = this%nDummys + 1
     write(tmpCounterStr, '(I3.3)') this%nDummys
-    this%Pedigree(this%pedigreeSize) =  Individual("dum"//tmpCounterStr ,'0','0', this%pedigreeSize)
-    call this%dictionary%addKey("dum"//tmpCounterStr, this%pedigreeSize)
+    this%Pedigree(this%pedigreeSize) =  Individual(dummyAnimalPrepre//tmpCounterStr ,'0','0', this%pedigreeSize)
+    call this%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, this%pedigreeSize)
     this%Pedigree(this%pedigreeSize)%isDummy = .true.
     call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
     this%Pedigree(this%pedigreeSize)%founder = .true.
