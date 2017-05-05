@@ -1151,7 +1151,9 @@
             newPed(pedCounter) = tmpIndNode%item
             
             ! take the original id, and update it
-            this%inputMap(newPed(pedCounter)%id) = pedCounter
+            if(.not. newPed(pedCounter)%isDummy) then
+                this%inputMap(newPed(pedCounter)%id) = pedCounter
+            endif
             newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
             if (associated(newPed(pedCounter)%sirePointer)) then
