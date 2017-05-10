@@ -32,6 +32,19 @@ module TestHashTable
         @assertEqual(dictionary%getValue("hi"), 5)
     end subroutine testAdd
 
+
+       @test
+    subroutine testGetKeys
+        use ConstantModule
+        implicit none
+
+        character(len=IDLENGTH), dimension(:), allocatable :: t
+        call dictionary%addKey("hi", 5)
+        call dictionary%addKey("there", 5)
+        t = dictionary%getAllKeys()
+        @assertEqual(size(t), 2)
+    end subroutine testGetKeys
+
     @test
     subroutine testHasKey
         implicit none

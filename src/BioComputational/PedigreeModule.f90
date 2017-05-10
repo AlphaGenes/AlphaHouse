@@ -952,7 +952,7 @@
     integer(KIND=1), allocatable, dimension(:) :: tmp, ref, alt
     integer(KIND=1), allocatable, dimension(:,:) :: genoEst
     integer, allocatable, dimension(:,:,:), intent(out), optional :: sequenceData
-    integer :: unit, tmpID,i, j
+    integer :: unit, tmpID,i
     character(len=IDLENGTH) :: seqid !placeholder variables
     real(kind=real64) :: err, p, q, pf
 
