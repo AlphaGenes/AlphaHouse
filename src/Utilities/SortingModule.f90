@@ -48,8 +48,8 @@ module SortingModule
 	            marker = left
 	        endif
 	 
-	        call QSort(A(:marker-1),marker-1)
-	        call QSort(A(marker:),nA-marker+1)
+	        call QSortNew(A(:marker-1),marker-1)
+	        call QSortNew(A(marker:),nA-marker+1)
 	 
 	    endif
 	 
