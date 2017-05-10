@@ -83,7 +83,7 @@
     procedure :: writeOutGenotypes
     procedure :: createDummyAnimalAtEndOfPedigree
     procedure :: addAnimalAtEndOfPedigree
-
+    procedure :: addSequenceFromFile
 
     end type PedigreeHolder
 
@@ -691,7 +691,7 @@
 
             if (.not. damFound) then
                 tmpCounter =  tmpCounter + 1
-                write(tmpCounterStr, '(I3.3)') tmpCounter
+                write(tmpCounterStr, '(a,I3.3)') "alphahouse",tmpCounter
                 pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                 pedStructure%nDummys = pedStructure%nDummys + 1
                 if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
@@ -718,7 +718,7 @@
             endif
             if (.not. sireFound) then
                 tmpCounter =  tmpCounter + 1
-                write(tmpCounterStr, '(I3.3)') tmpCounter
+                write(tmpCounterStr, '(a,I3.3)')  "alphahouse",tmpCounter
                 pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                 pedStructure%nDummys = pedStructure%nDummys + 1
                 if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
@@ -936,6 +936,83 @@
 
 
     end subroutine addGenotypeInformationFromFile
+
+
+    subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn, sequenceData)
+
+    use AlphaHouseMod, only : countLines
+    use ConstantModule, only : IDLENGTH,DICT_NULL
+    implicit none
+    class(PedigreeHolder) :: this
+    character(len=*) :: seqFile
+    integer,intent(in) :: nsnps
+    integer,intent(in),optional :: nAnisGIn 
+    integer :: nanisG
+    ! type(Pedigreeholder), intent(inout) :: genotype
+    integer(KIND=1), allocatable, dimension(:) :: tmp, ref, alt
+    integer(KIND=1), allocatable, dimension(:,:) :: genoEst
+    integer, allocatable, dimension(:,:,:), intent(out), optional :: sequenceData
+    integer :: unit, tmpID,i, j
+    character(len=IDLENGTH) :: seqid !placeholder variables
+    real(kind=real64) :: err, p, q, pf
+
+
+    if (.not. Present(nAnisGIn)) then
+        NanisG = countLines(seqFile)
+    else 
+
+        nanisG = nAnisGIn
+    endif
+
+    if (present(sequenceData)) then
+        allocate(sequenceData(nsnps, 2, nAnisG))    
+        sequenceData = 0
+
+    endif
+
+
+    open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
+
+    ! allocate(res(input%nGenotypedAnimals,input%endSnp-input%startSnp+1))
+    ! nsnps = input%endSnp-input%startSnp+1
+    allocate(ref(nsnps))
+    allocate(alt(nsnps))
+    allocate(genoEst(nsnps, 3))
+    allocate(tmp(nsnps))
+
+    err = 0.01
+    p = log(err)
+    q = log(1-err)
+    pf = log(.5)
+
+    ! tmp = 9
+    do i=1,nAnisG
+        read (unit,*) seqid, ref(:)
+        read (unit,*) seqid, alt(:)
+
+        tmpID = this%dictionary%getValue(seqid)
+
+        if (present(sequenceData)) then
+            sequenceData(:, 1, tmpId) = ref(:)
+            sequenceData(:, 2, tmpId) = alt(:)
+        endif
+        
+        genoEst(:, 1) = p*ref + q*alt
+        genoEst(:, 2) = pf*ref + pf*alt
+        genoEst(:, 3) = q*ref + p*alt
+
+        tmp = maxloc(genoEst, dim=2) - 1
+        where(ref+alt < 15) tmp = 9
+
+        if (tmpID /= DICT_NULL) then
+            call this%setAnimalAsGenotyped(tmpID,tmp)
+        endif
+    end do
+
+    close(unit)
+    end subroutine addSequenceFromFile
+
+    
 
     !---------------------------------------------------------------------------
     !< @brief builds correct generation information by looking at founders

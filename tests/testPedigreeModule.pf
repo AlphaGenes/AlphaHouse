@@ -138,7 +138,7 @@ module TestPedigreeModule
 
       call pedigree%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigree%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"001", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"alphahouse001", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
       expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
@@ -155,7 +155,7 @@ module TestPedigreeModule
 
       call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "bbb", dummyAnimalPrepre//"aaa", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"001", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "bbb", dummyAnimalPrepre//"aaa", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"alphahouse001", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
       expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]
