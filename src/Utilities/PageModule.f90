@@ -333,7 +333,7 @@ module pageModule
 !> @return inputFile Allocatable character array where each element of the array corresponds to a single line from the input
 !---------------------------------------------------------------------------
   subroutine readInInputFile(this, inputFileName, commentCharacterIn, delimiters)
-    use AlphaHouseMod, only: CountLines
+    use AlphaHouseMod, only: CountLinesWithBlankLines
     use ConstantModule, only: defaultComment
     class(Page), intent(inout):: this
     type(String), dimension(:), allocatable:: tempArray 
@@ -353,7 +353,7 @@ module pageModule
       write(commentCharacter, "(A)")  DEFAULTCOMMENT
     end if
 
-    numLines =  CountLines(inputFileName)
+    numLines =  CountLinesWithBlankLines(inputFileName)
 
     allocate(tempArray(numLines))
     allocate(tempLine(numLines))
