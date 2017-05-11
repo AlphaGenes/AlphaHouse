@@ -46,6 +46,7 @@ type DictStructure
     procedure :: hasKey
     procedure :: getElement
     procedure :: getSize
+    procedure :: getAllKeys
     procedure :: hashKey
 end type DictStructure
 
@@ -83,6 +84,34 @@ class(DictStructure) :: this
 
 end function getSize
 
+
+function getAllKeys(this) result(res)
+    use CharacterLinkedListModule
+
+    class(DictStructure) :: this
+    character(len=IDLENGTH), dimension(:), allocatable :: res !< output array
+    type(CharacterLinkedList) :: list
+    type(LinkedList), pointer :: tmp
+    integer :: i
+
+
+    do i=1,this%hash_size
+
+        tmp => this%table(i)%list
+
+        do while (associated(tmp))
+         call list%list_add(tmp%data%key)
+            tmp => tmp%next
+
+        end do
+
+
+    enddo
+
+    res = list%convertToArray()
+
+
+end function getAllKeys
 
    !---------------------------------------------------------------------------
   !> @brief Constructor for dictionary

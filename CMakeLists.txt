@@ -63,6 +63,7 @@ if (${RUN_TESTS})
       ${SRC}/Utilities/LineModule.f90
       ${SRC}/Utilities/PageModule.f90
       ${SRC}/Utilities/IntegerLinkedListModule.f90
+      ${SRC}/Utilities/CharacterLinkedListModule.f90
       ${SRC}/Utilities/Input.f90
       ${SRC}/BioComputational/BitUtilities.f90
       ${SRC}/BioComputational/HaplotypeModule.f90
