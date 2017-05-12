@@ -23,6 +23,7 @@ Module stringModule
     procedure:: split
     procedure:: getNumOccurances
     procedure:: asChar
+    procedure:: prepend
     !    procedure:: addStrings
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted)=> writeType
@@ -43,6 +44,14 @@ Module stringModule
   end interface
 
 contains
+
+  pure subroutine prepend(self, charIn)
+    class(String), intent(inout):: self
+    character(len=*), intent(in):: charIn
+
+    self%line = charIn//self%line
+
+  end subroutine prepend
 
   pure function asChar(self) result (charOut)
     class(String), intent(in):: self
@@ -249,6 +258,7 @@ contains
   class(String), intent(in):: self
     character(len=*):: charIn
     integer(int32):: position
+
     position = index(self%line, charIn)
   end function getPosition
 

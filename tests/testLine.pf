@@ -54,6 +54,20 @@ gotten = lineOne+lineTwo
 @assertEqualUserDefined(expected, gotten)
 end subroutine testAddLines
 
+@test
+subroutine testPrependForLine()
+type(Line):: expected, gotten
+integer:: i
+do i = 1, 5
+  call expected%add("THISGOTTEN")
+  call gotten%add("GOTTEN")
+end do
+
+call gotten%prepend("THIS")
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testPrependForLine
 !##################################################################################################################################
 ! Test hasWithin
 !##################################################################################################################################

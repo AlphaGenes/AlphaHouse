@@ -49,6 +49,7 @@ module LineModule
       procedure, private:: readLineType
       procedure, private:: readUnformattedLineType
       procedure:: removeAll
+      procedure:: prepend
       generic:: write(formatted)=> writeFormattedLineType
       generic:: write(unformatted)=> writeUnformattedLineType
       generic:: read(formatted) => readLineType
@@ -70,6 +71,16 @@ module LineModule
     module procedure addTwoLines
   end interface
   contains
+    pure subroutine prepend(self, charIn)
+      class(Line), intent(inout):: self
+      character(len=*), intent(in):: charIn
+      integer:: i
+
+      do i =1, size(self%words)
+        call self%words(i)%prepend(charIn)
+
+      end do
+    end subroutine prepend
     pure function addTwoLines(lineOne, lineTwo) result (newLine)
       type(Line), intent(in):: lineOne, lineTwo
       type(Line):: newLine

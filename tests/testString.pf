@@ -4,6 +4,18 @@ use StringModule
 
 contains
 @test
+subroutine testPrepend
+type(String):: expected, gotten
+
+expected = "THISGOTTEN"
+gotten = "GOTTEN"
+
+call gotten%prepend("THIS")
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testPrepend
+@test
 subroutine testAddWithChar()
 character(len=5):: testChar
 type(String):: expected, gotten
