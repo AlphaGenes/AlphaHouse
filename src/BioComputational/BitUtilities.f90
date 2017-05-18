@@ -50,7 +50,7 @@ module BitUtilities
     allocate(array(size(b) * 64))
     
     cursection = 1
-    curpos = 1
+    curpos = 0
     do i = 1, size(b) * 64
       if (btest(b(cursection),curpos)) then
 	array(i) = 1
@@ -59,8 +59,8 @@ module BitUtilities
       end if
       
       curpos = curpos + 1
-      if (curpos == 65) then
-	curpos = 1
+      if (curpos == 64) then
+	curpos = 0
 	cursection = cursection + 1
       end if
     end do
