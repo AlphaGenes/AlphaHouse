@@ -933,7 +933,7 @@
         else
             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
             ! TODO - this will overwrite animals that aren't genotyped
-            this%pedigree(tmpIdNum)%originalPosition = i
+            ! this%pedigree(tmpIdNum)%originalPosition = i
         endif
     enddo
 
