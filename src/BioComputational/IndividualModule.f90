@@ -47,6 +47,7 @@ module IndividualModule
         character(len=:), allocatable :: damID
         integer :: generation
         integer :: id
+        integer :: originalPosition
         integer(kind=1) :: gender 
         type(individual), pointer :: sirePointer
         type(individual), pointer :: damPointer
