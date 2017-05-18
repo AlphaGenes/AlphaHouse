@@ -179,6 +179,7 @@
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i)%originalPosition = i
         pedStructure%inputMap(i) = i
         if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
@@ -353,6 +354,7 @@
         else
             call pedStructure%dictionary%addKey(tmpId, i)
             pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+            pedStructure%Pedigree(i)%originalPosition = i
             pedStructure%inputMap(i) = i
             call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
             call pedStructure%setAnimalAsHd(i)
@@ -405,6 +407,7 @@
         call pedStructure%dictionary%addKey(pedArray(1,i), i)
 
         pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i)%originalPosition = i 
         pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(pedArray(2,i))
@@ -509,6 +512,7 @@
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(tmpId,tmpSireId,tmpDamID, i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i)%originalPosition = i
         pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
             tmpSireNum = pedStructure%dictionary%getValue(tmpSireId)
@@ -928,6 +932,8 @@
             write(error_unit, *) "ERROR: Genotype info for non existing animal:",tmpId
         else
             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
+            ! TODO - this will overwrite animals that aren't genotyped
+            this%pedigree(tmpIdNum)%originalPosition = i
         endif
     enddo
 
@@ -1229,7 +1235,7 @@
             
             ! take the original id, and update it
             if(.not. newPed(pedCounter)%isDummy) then
-                this%inputMap(newPed(pedCounter)%id) = pedCounter
+                this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
             endif
             newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
@@ -1361,7 +1367,7 @@
             newPed(pedCounter) = tmpIndNode%item
             if (.not. newPed(pedCounter)%isDummy) then
                 ! take the original id, and update it - we don't want dummies in this list
-                this%inputMap(newPed(pedCounter)%id) = pedCounter
+                this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
             endif
             newPed(pedCounter)%id = pedCounter
             call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
