@@ -942,7 +942,7 @@ module AlphaHouseMod
     !> If input is (N,M) space, output will be (N*M) space.
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
-    function generatePairing(xin,yin) result(res)
+    elemental function generatePairing(xin,yin) result(res)
 
       integer(int32), intent(in) :: xin, yin
       integer(int32) :: x, y
