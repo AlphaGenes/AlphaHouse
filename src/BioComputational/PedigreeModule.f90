@@ -1680,10 +1680,10 @@
     integer :: i
 
 
-    allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
-    res(0,:) = 9
+    allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+    res = 9
     do i=1, this%nGenotyped
-        res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+        res(this%genotypeMap(i),:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
     enddo
 
     end function getGenotypesAsArray
