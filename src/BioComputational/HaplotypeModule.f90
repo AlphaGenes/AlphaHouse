@@ -46,6 +46,7 @@ module HaplotypeModule
     procedure :: subset
     procedure :: setSubset
     procedure :: equalHap
+    procedure :: isSubset
     procedure :: readUnformattedHaplotype
     procedure :: readFormattedHaplotype
     procedure :: writeFormattedHaplotype
@@ -691,6 +692,22 @@ contains
       equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
     end do
   end function equalHap
+  
+  function isSubset(h1, h2) result(is)
+    class(Haplotype) :: h1, h2
+    
+    logical :: is
+    
+    integer :: i
+    
+    is = .true.
+    do i = 1, h1%sections
+      if (h1%missing(i) .and. .not.(h2%missing(i))) then
+	is = .false.
+	exit
+      end if
+    end do
+  end function isSubset
 
 
   subroutine writeFormattedHaplotype(dtv, unit, iotype, v_list, iostat, iomsg)
