@@ -929,15 +929,13 @@
         enddo
         tmpIdNum = this%dictionary%getValue(tmpId)
         if (tmpIdNum == DICT_NULL) then
-            write(error_unit, *) "ERROR: Genotype info for non existing animal:",tmpId
+            write(error_unit, *) "ERROR: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
         else
             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
-            ! TODO - this will overwrite animals that aren't genotyped
-            ! this%pedigree(tmpIdNum)%originalPosition = i
         endif
     enddo
 
-    !write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
+    write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
 
 
@@ -1874,6 +1872,7 @@
     endif
     if (.not. this%pedigree(indId)%genotyped) then
         write(error_unit, *) "warning - setAnimalAsHD was given an index of animal that was not genotyped"
+        write(error_unit, *) "animal has ID:", trim(this%pedigree(indId)%originalID), " and recoded ID:", indid
     endif
     if (this%nHd == 0) then
         this%hdDictionary = DictStructure()
