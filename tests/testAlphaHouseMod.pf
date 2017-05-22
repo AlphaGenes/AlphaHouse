@@ -124,7 +124,7 @@ thresh = 1e-16
  @test
  subroutine testPairing()
     integer(int32) :: x,xout, yout, y
-    integer(int64) :: result1, result2
+    integer(int64) :: result1, result2, result3(2)
 
     x = 2
     y = 1
@@ -147,6 +147,9 @@ thresh = 1e-16
 
     result2 = generatePairing(32767,32767)
     @assertEqual(result2, 1073741823)
+
+    result3 = generatePairing(xin=[2, 1], yin=[1, 2])
+    @assertEqual(result3(1), result3(2))
   end subroutine testPairing
 
   @test
