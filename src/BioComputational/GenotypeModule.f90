@@ -173,7 +173,7 @@ module GenotypeModule
       
     end function newGenotypeHap
     
-  function newHaplotypeMissing(length) result(g)
+  function newGenotypeMissing(length) result(g)
     integer, intent(in) :: length
     
     type(Genotype) :: g
@@ -190,11 +190,11 @@ module GenotypeModule
     g%additional = NOT(g%additional)
 
     
-    do i = 64 - h%overhang, 63
+    do i = 64 - g%overhang, 63
         g%homo(g%sections) = ibclr(g%homo(g%sections), i)
         g%additional(g%sections) = ibclr(g%additional(g%sections), i)
     end do
-  end function newHaplotypeMissing
+  end function newGenotypeMissing
 
 
     !---------------------------------------------------------------------------
