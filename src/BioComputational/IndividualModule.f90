@@ -119,7 +119,7 @@ contains
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
-        integer, intent(in) :: nsnps
+        integer, intent(in), Optional :: nsnps !< number of snps to initialise default genotype class
         integer(kind=1), intent(in), Optional :: gender
 
 

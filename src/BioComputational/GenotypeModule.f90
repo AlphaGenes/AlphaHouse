@@ -180,6 +180,7 @@ module GenotypeModule
     
     integer :: i
     
+    print *, "missing genotype created"
     g%length = length
     g%sections = g%length / 64 + 1
     g%overhang = 64 - (g%length - (g%sections - 1) * 64)

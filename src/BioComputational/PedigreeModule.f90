@@ -114,7 +114,7 @@
     contains
 
 
-    function initEmptyPedigree(nsnps) result(pedStructure,nsnps)
+    function initEmptyPedigree(nsnps) result(pedStructure)
     use iso_fortran_env
     type(PedigreeHolder) :: pedStructure
     integer, optional :: nsnps
@@ -145,14 +145,13 @@
     character(len=*),intent(in) :: fileIn !< path of pedigree file
     character(len=*), intent(in),optional :: genderFile !< path to gender file
     integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
-    integer, optionalm intent(in) :: nsnps !< number of snps for the population
+    integer, optional, intent(in) :: nsnps !< number of snps for the population
 
     character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
     integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
     integer(kind=int64) :: nIndividuals
     integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
-    integer :: tmpAnimalArrayCount
-    integer :: 
+    integer :: tmpAnimalArrayCount,i
     integer(kind=int64) :: sizeDict
     logical :: sireFound, damFound
 
@@ -1981,7 +1980,7 @@
     this%pedigreeSize = this%pedigreeSize+1
     this%nDummys = this%nDummys + 1
     write(tmpCounterStr, '(I3.3)') this%nDummys
-    this%Pedigree(this%pedigreeSize) =  Individual(dummyAnimalPrepre//tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+    this%Pedigree(this%pedigreeSize) =  Individual(dummyAnimalPrepre//tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
     call this%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, this%pedigreeSize)
     this%Pedigree(this%pedigreeSize)%isDummy = .true.
     call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
@@ -2022,7 +2021,7 @@
     integer(kind=1), dimension(:), intent(in), optional :: geno
 
     this%pedigreeSize = this%pedigreeSize+1
-    this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+    this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
     call this%dictionary%addKey(OriginalId, this%pedigreeSize)
     this%Pedigree(this%pedigreeSize)%isDummy = .false.
     call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
