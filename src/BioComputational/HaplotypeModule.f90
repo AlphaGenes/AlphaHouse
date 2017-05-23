@@ -24,6 +24,7 @@ module HaplotypeModule
     procedure :: setPhaseMod
     procedure :: overlapMod
     procedure :: mismatchesMod
+    procedure :: noMismatches
     procedure :: compatibleMod
     procedure :: mergeMod
     procedure :: numberMissing
@@ -327,6 +328,23 @@ contains
         IXOR(h1%phase(i), h2%phase(i)) ))
     end do
   end function mismatchesMod
+  
+  function noMismatches(h1, h2) result (noMiss)
+    class(Haplotype), intent(in) :: h1, h2
+    
+    logical :: noMiss
+    
+    integer :: i
+    
+    noMiss = .true.
+    do i = 1, h1%sections
+      if ((IAND( IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
+        IXOR(h1%phase(i), h2%phase(i)) )) /= 0) then
+	noMiss = .false.
+	exit
+      end if
+    end do
+  end function noMismatches
   
   function compatibleMod(h1, h2, allowedMismatches, minOverlap) result(c)
     class(Haplotype), intent(in) :: h1, h2

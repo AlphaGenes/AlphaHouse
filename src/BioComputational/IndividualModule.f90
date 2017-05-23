@@ -975,29 +975,36 @@ contains
         class(individual ) :: this
         type(individual) :: offspring
         integer :: i,h
+        logical :: found
+        found =.false.
 
         do i=1, this%nOffs
-
 
             if (compareIndividual(this%offsprings(i)%p, offspring)) then
 
                 if (compareIndividual(this%offsprings(i)%p%sirePointer, this)) then
                     this%offsprings(i)%p%sirePointer => null() 
+                    do h=i, this%nOffs-1
+                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    enddo
+                    this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
                 else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
                     this%offsprings(i)%p%damPointer => null() 
                     do h=i, this%nOffs-1
                         this%offsprings(i)%p => this%offsprings(i+1)%p
                     enddo
                     this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
                 else
                     write(error_unit,*) "ERROR: offspring isn't present"
                 endif
                 return
             endif
         enddo
-
     end subroutine removeOffspring
-
 
 end module IndividualModule
 

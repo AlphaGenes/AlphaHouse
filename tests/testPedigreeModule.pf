@@ -91,6 +91,20 @@ module TestPedigreeModule
          @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
 
+
+
+    @test
+    subroutine testRemoveOffspring
+        implicit none
+        integer :: tmp,i, tmp2, tmp3
+        tmp = pedigree%dictionary%getValue("aaa")
+        tmp2 = pedigree%dictionary%getValue("ddd")
+        tmp3 = pedigree%dictionary%getValue("ccc")
+        call pedigree%pedigree(tmp)%removeOffspring(pedigree%pedigree(tmp2))
+         @assertEqual(1,pedigree%pedigree(tmp)%nOffs)
+          @assertEqualUserDefined(pedigree%pedigree(tmp)%Offsprings(1)%p,pedigree%pedigree(tmp3))
+    end subroutine testRemoveOffspring
+
      @test
     subroutine testGenos
         implicit none
