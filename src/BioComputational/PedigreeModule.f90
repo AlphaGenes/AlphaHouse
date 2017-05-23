@@ -230,7 +230,7 @@
             if (tmpIdNum /= DICT_NULL) then
                 pedStructure%Pedigree(i)%gender = int(tmpGender)
             else
-                write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
+                write(error_unit, *) "WARNING: Gender  defined for an animal that does not exist in Pedigree!"
                 write(error_unit, *) "Amimal:",tmpId
             endif
         end do
@@ -929,7 +929,7 @@
         enddo
         tmpIdNum = this%dictionary%getValue(tmpId)
         if (tmpIdNum == DICT_NULL) then
-            write(error_unit, *) "ERROR: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
+            write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
         else
             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
         endif

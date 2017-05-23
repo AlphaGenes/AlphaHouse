@@ -974,36 +974,49 @@ contains
         use iso_fortran_env
         class(individual ) :: this
         type(individual) :: offspring
-        integer :: i,h
+        integer :: i,h, old
         logical :: found
         found =.false.
 
+        if (this%id == 275) then
         do i=1, this%nOffs
-
+            print *, "here: ",this%offsprings(i)%p%originalID
+        enddo
+        ! stop
+        endif
+        do i=1, this%nOffs
+            
             if (compareIndividual(this%offsprings(i)%p, offspring)) then
 
                 if (compareIndividual(this%offsprings(i)%p%sirePointer, this)) then
                     this%offsprings(i)%p%sirePointer => null() 
-                    do h=i, this%nOffs-1
-                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    old = this%nOffs-1
+                    do h=i, old 
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
                     enddo
                     this%nOffs = this%nOffs - 1
                     found = .true.
                     exit
                 else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
                     this%offsprings(i)%p%damPointer => null() 
-                    do h=i, this%nOffs-1
-                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    old = this%nOffs-1
+                    do h=i, old
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
                     enddo
                     this%nOffs = this%nOffs - 1
                     found = .true.
                     exit
                 else
-                    write(error_unit,*) "ERROR: offspring isn't present"
+                    write(error_unit,*) "WARNING: parent isn't present in offspring to remove"
                 endif
                 return
             endif
         enddo
+
+
+        if (.not. found) then
+            write(error_unit,*) "WARNING: unknown offspring trying to be removed from parent"
+        endif
     end subroutine removeOffspring
 
 end module IndividualModule
