@@ -85,6 +85,7 @@ module GenotypeModule
   interface Genotype
     module procedure newGenotypeInt
     module procedure newGenotypeHap
+    module procedure newGenotypeMissing
   end interface Genotype
 
       contains
@@ -171,6 +172,29 @@ module GenotypeModule
       end do
       
     end function newGenotypeHap
+    
+  function newHaplotypeMissing(length) result(g)
+    integer, intent(in) :: length
+    
+    type(Genotype) :: g
+    
+    integer :: i
+    
+    g%length = length
+    g%sections = g%length / 64 + 1
+    g%overhang = 64 - (g%length - (g%sections - 1) * 64)
+    allocate(g%homo(g%sections))
+    allocate(g%additional(g%sections))
+    g%homo = 0
+    g%additional = 0
+    g%additional = NOT(g%additional)
+
+    
+    do i = 64 - h%overhang, 63
+        g%homo(g%sections) = ibclr(g%homo(g%sections), i)
+        g%additional(g%sections) = ibclr(g%additional(g%sections), i)
+    end do
+  end function newHaplotypeMissing
 
 
     !---------------------------------------------------------------------------
