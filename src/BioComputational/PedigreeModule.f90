@@ -1784,7 +1784,7 @@
 
     class(pedigreeHolder) :: this
     integer, intent(in) :: individualIndex !< index of animal to get genotyped
-    integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+    integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
 
     if (this%nGenotyped == 0) then
         this%genotypeDictionary = DictStructure()
@@ -1795,14 +1795,17 @@
         write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
     else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
         ! if animal has already been genotyped, overwrite array, but don't increment
-
-        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        if (present(geno)) then
+            call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        endif
         return
     endif
 
     this%nGenotyped = this%nGenotyped+1
     call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)
-    call this%pedigree(individualIndex)%setGenotypeArray(geno)
+    if (present(geno)) then
+        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+    endif
     this%genotypeMap(this%nGenotyped) = individualIndex
 
     end subroutine setAnimalAsGenotyped
