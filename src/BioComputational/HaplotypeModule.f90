@@ -30,6 +30,7 @@ module HaplotypeModule
     procedure :: numberMissing
     procedure :: numberMissingOrError
     procedure :: numberNotMissing
+    procedure :: numberNotMissingOrError
     procedure :: numberError
     procedure :: compareHaplotype
     procedure :: numberSame
@@ -446,6 +447,14 @@ contains
     
     num = h%length - h%numberMissing()
   end function numberNotMissing
+  
+  function numberNotMissingOrError(h) result(num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    num = h%length - h%numberMissingOrError()
+  end function numberNotMissingOrError
   
   function numberSame(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
