@@ -978,12 +978,6 @@ contains
         logical :: found
         found =.false.
 
-        if (this%id == 275) then
-        do i=1, this%nOffs
-            print *, "here: ",this%offsprings(i)%p%originalID
-        enddo
-        ! stop
-        endif
         do i=1, this%nOffs
             
             if (compareIndividual(this%offsprings(i)%p, offspring)) then
