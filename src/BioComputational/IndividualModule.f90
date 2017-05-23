@@ -114,11 +114,12 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps) result (this)
         type(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
+        integer, intent(in) :: nsnps
         integer(kind=1), intent(in), Optional :: gender
 
 
@@ -140,6 +141,11 @@ contains
             this%gender = gender
         endif
 
+        if (present(nsnps)) then
+            if (nsnps /= 0) then
+                this%individualGenotype = newGenotypeMissing(nsnps)
+            endif
+        endif
     end function initIndividual
 
      !---------------------------------------------------------------------------
