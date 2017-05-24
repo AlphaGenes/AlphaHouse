@@ -45,14 +45,15 @@ module AlphaEvolveModule
       procedure :: UpdateMean => UpdateMeanAlphaEvolveSol
       procedure :: Evaluate   => EvaluateAlphaEvolveSol
       procedure :: Write      => WriteAlphaEvolveSol
-      procedure :: LogHead    => LogHeadAlphaEvolveSol
       procedure :: Log        => LogAlphaEvolveSol
-      procedure :: LogPopHead => LogPopHeadAlphaEvolveSol
       procedure :: LogPop     => LogPopAlphaEvolveSol
   end type
 
   !> @brief Specifications passed to evolutionary algorithm
   type, abstract :: AlphaEvolveSpec
+    contains
+      procedure :: LogHead    => LogHeadAlphaEvolveSpec
+      procedure :: LogPopHead => LogPopHeadAlphaEvolveSpec
   end type
 
   !> @brief Data passed to evolutionary algorithm
@@ -153,14 +154,14 @@ module AlphaEvolveModule
 
       if (present(LogFile)) then
         open(newunit=LogUnit, file=trim(LogFile), status="unknown")
-        call BestSol%LogHead(LogUnit=LogUnit)
+        call Spec%LogHead(LogUnit=LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%LogHead
+        call Spec%LogHead
       end if
       if (LogPopInternal) then
         open(newunit=LogPopUnit, file=trim(LogPopFile), status="unknown")
-        call BestSol%LogPopHead(LogPopUnit=LogPopUnit)
+        call Spec%LogPopHead(LogPopUnit=LogPopUnit)
       end if
 
       ! --- Set parameters ---
@@ -344,14 +345,14 @@ module AlphaEvolveModule
           if ((Iter == 1) .or. ((Iter - LastIterPrint) >= nIterPrint)) then
             LastIterPrint = Iter
             if (present(LogFile)) then
-              call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
+              call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
             end if
             if (LogStdoutInternal) then
-              call BestSol%Log(Iteration=Iter, AcceptPct=AcceptPct)
+              call BestSol%Log(Spec=Spec, Iteration=Iter, AcceptPct=AcceptPct)
             end if
             if (LogPopInternal) then
               do Sol = 1, nSol
-                call NewSol(Sol)%LogPop(LogPopUnit=LogPopUnit, Iteration=Iter, i=Sol)
+                call NewSol(Sol)%LogPop(Spec=Spec, LogPopUnit=LogPopUnit, Iteration=Iter, i=Sol)
               end do
             end if
           end if
@@ -378,11 +379,11 @@ module AlphaEvolveModule
       ! --- The winner solution ---
 
       if (present(LogFile)) then
-        call BestSol%Log(LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
+        call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Iter, AcceptPct=AcceptPct)
         close(LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%Log(Iteration=Iter, AcceptPct=AcceptPct)
+        call BestSol%Log(Spec=Spec, Iteration=Iter, AcceptPct=AcceptPct)
       end if
       if (LogPopInternal) then
         close(LogPopUnit)
@@ -474,10 +475,10 @@ module AlphaEvolveModule
 
       if (present(LogFile)) then
         open(newunit=LogUnit, file=trim(LogFile), status="unknown")
-        call BestSol%LogHead(LogUnit=LogUnit)
+        call Spec%LogHead(LogUnit=LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%LogHead
+        call Spec%LogHead
       end if
 
       ! --- Initialise with the provided solutions ---
@@ -544,14 +545,14 @@ module AlphaEvolveModule
         if (BestSolChanged) then
           if ((Samp == 1) .or. ((Samp - LastSampPrint) >= nSampPrint)) then
             if      (ModeAvg) then
-              call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
+              call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
             else if (ModeMax) then
               AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
               if (present(LogFile)) then
-                call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
+                call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
               end if
               if (LogStdoutInternal) then
-                call BestSol%Log(Iteration=Samp, AcceptPct=AcceptPct)
+                call BestSol%Log(Spec=Spec, Iteration=Samp, AcceptPct=AcceptPct)
               end if
               AcceptPct = 0.0d0
             end if
@@ -583,11 +584,11 @@ module AlphaEvolveModule
         AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
       end if
       if (present(LogFile)) then
-        call BestSol%Log(LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
+        call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
         close(LogUnit)
       end if
       if (LogStdoutInternal) then
-        call BestSol%Log(Iteration=Samp, AcceptPct=AcceptPct)
+        call BestSol%Log(Spec=Spec, Iteration=Samp, AcceptPct=AcceptPct)
       end if
     end subroutine
 
@@ -718,9 +719,9 @@ module AlphaEvolveModule
     !> @date    September 26, 2016
     !> @return  Print log head to unit
     !---------------------------------------------------------------------------
-    subroutine LogHeadAlphaEvolveSol(This, LogUnit, String, StringNum) ! This used in future methods; not pure due to IO
+    subroutine LogHeadAlphaEvolveSpec(This, LogUnit, String, StringNum) ! This used in future methods; not pure due to IO
       implicit none
-      class(AlphaEvolveSol), intent(in)      :: This      !< Solution
+      class(AlphaEvolveSpec), intent(in)     :: This      !< Spec holder
       integer(int32), intent(in), optional   :: LogUnit   !< log file unit (default STDOUT)
       character(len=*), intent(in), optional :: String    !< additional string that will be written before the head
       integer(int32), optional               :: StringNum !< How much space is needed for the String
@@ -763,16 +764,19 @@ module AlphaEvolveModule
     !> @date    September 26, 2016
     !> @return  Print log to unit
     !---------------------------------------------------------------------------
-    subroutine LogAlphaEvolveSol(This, LogUnit, Iteration, AcceptPct, String, StringNum) ! not pure due to IO
+    subroutine LogAlphaEvolveSol(This, Spec, LogUnit, Iteration, AcceptPct, String, StringNum) ! Spec used in future methods; not pure due to IO
       implicit none
       class(AlphaEvolveSol), intent(in)      :: This      !< solution
+      class(AlphaEvolveSpec), intent(in)     :: Spec      !< spec holder
       integer(int32), intent(in), optional   :: LogUnit   !< log file unit (default STDOUT)
       integer(int32), intent(in)             :: Iteration !< generation/iteration
       real(real64), intent(in)               :: AcceptPct !< acceptance rate
       character(len=*), intent(in), optional :: String    !< additional string that will be written before the head
       integer(int32), optional               :: StringNum !< How much space is needed for the String
+
       integer(int32) :: Unit
       character(len=20) :: Fmt, StringFmt
+
       if (present(LogUnit)) then
         Unit = LogUnit
         Fmt = "(a22, 2(1x, es21.14))"
@@ -798,14 +802,14 @@ module AlphaEvolveModule
     !---------------------------------------------------------------------------
     !> @brief   Print population log head
     !> @details This is meant to log all the evaluated solutions (the population)
-    !!          and not just the best one as LogHeadAlphaEvolveSol does
+    !!          and not just the best one as LogHeadAlphaEvolveSpec does
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !> @return  Print population log head to unit
     !---------------------------------------------------------------------------
-    subroutine LogPopHeadAlphaEvolveSol(This, LogPopUnit) ! This used in future methods; not pure due to IO
+    subroutine LogPopHeadAlphaEvolveSpec(This, LogPopUnit) ! This used in future methods; not pure due to IO
       implicit none
-      class(AlphaEvolveSol), intent(in)    :: This       !< solution
+      class(AlphaEvolveSpec), intent(in)   :: This       !< spec
       integer(int32), intent(in), optional :: LogPopUnit !< log file unit (default STDOUT)
       integer(int32) :: Unit
       character(len=22) :: ColnameLogPopUnit(3)
@@ -831,9 +835,10 @@ module AlphaEvolveModule
     !> @date    September 26, 2016
     !> @return  Print population log to unit
     !---------------------------------------------------------------------------
-    subroutine LogPopAlphaEvolveSol(This, LogPopUnit, Iteration, i) ! not pure due to IO
+    subroutine LogPopAlphaEvolveSol(This, Spec, LogPopUnit, Iteration, i) ! Spec used in future methods; not pure due to IO
       implicit none
       class(AlphaEvolveSol), intent(in)    :: This       !< solution
+      class(AlphaEvolveSpec), intent(in)   :: Spec       !< spec
       integer(int32), intent(in), optional :: LogPopUnit !< population log file unit (default STDOUT)
       integer(int32), intent(in)           :: Iteration  !< generation/iteration
       integer(int32), intent(in)           :: i          !< solution id
