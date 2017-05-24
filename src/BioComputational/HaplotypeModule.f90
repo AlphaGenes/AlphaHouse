@@ -49,6 +49,7 @@ module HaplotypeModule
     procedure :: setSubset
     procedure :: equalHap
     procedure :: isSubset
+    procedure :: setErrorToMissing
     procedure :: readUnformattedHaplotype
     procedure :: readFormattedHaplotype
     procedure :: writeFormattedHaplotype
@@ -735,6 +736,16 @@ contains
       end if
     end do
   end function isSubset
+  
+  subroutine setErrorToMissing(h)
+    class(Haplotype) :: h
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%phase(i) = IAND(NOT(h%missing(i)), h%phase(i))
+    end do
+  end subroutine setErrorToMissing
 
 
   subroutine writeFormattedHaplotype(dtv, unit, iotype, v_list, iostat, iomsg)
