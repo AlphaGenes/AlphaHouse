@@ -114,11 +114,12 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps) result (this)
         type(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
+        integer, intent(in), Optional :: nsnps !< number of snps to initialise default genotype class
         integer(kind=1), intent(in), Optional :: gender
 
 
@@ -140,6 +141,11 @@ contains
             this%gender = gender
         endif
 
+        if (present(nsnps)) then
+            if (nsnps /= 0) then
+                this%individualGenotype = newGenotypeMissing(nsnps)
+            endif
+        endif
     end function initIndividual
 
      !---------------------------------------------------------------------------
@@ -974,30 +980,44 @@ contains
         use iso_fortran_env
         class(individual ) :: this
         type(individual) :: offspring
-        integer :: i,h
+        integer :: i,h, old
+        logical :: found
+        found =.false.
 
         do i=1, this%nOffs
-
-
+            
             if (compareIndividual(this%offsprings(i)%p, offspring)) then
 
                 if (compareIndividual(this%offsprings(i)%p%sirePointer, this)) then
                     this%offsprings(i)%p%sirePointer => null() 
-                else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
-                    this%offsprings(i)%p%damPointer => null() 
-                    do h=i, this%nOffs-1
-                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    old = this%nOffs-1
+                    do h=i, old 
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
                     enddo
                     this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
+                else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
+                    this%offsprings(i)%p%damPointer => null() 
+                    old = this%nOffs-1
+                    do h=i, old
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
+                    enddo
+                    this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
                 else
-                    write(error_unit,*) "ERROR: offspring isn't present"
+                    write(error_unit,*) "WARNING: parent isn't present in offspring to remove"
                 endif
                 return
             endif
         enddo
 
-    end subroutine removeOffspring
 
+        if (.not. found) then
+            write(error_unit,*) "WARNING: unknown offspring trying to be removed from parent"
+        endif
+    end subroutine removeOffspring
 
 end module IndividualModule
 

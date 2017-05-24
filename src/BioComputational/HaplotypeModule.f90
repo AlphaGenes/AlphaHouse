@@ -24,11 +24,13 @@ module HaplotypeModule
     procedure :: setPhaseMod
     procedure :: overlapMod
     procedure :: mismatchesMod
+    procedure :: noMismatches
     procedure :: compatibleMod
     procedure :: mergeMod
     procedure :: numberMissing
     procedure :: numberMissingOrError
     procedure :: numberNotMissing
+    procedure :: numberNotMissingOrError
     procedure :: numberError
     procedure :: compareHaplotype
     procedure :: numberSame
@@ -46,6 +48,8 @@ module HaplotypeModule
     procedure :: subset
     procedure :: setSubset
     procedure :: equalHap
+    procedure :: isSubset
+    procedure :: setErrorToMissing
     procedure :: readUnformattedHaplotype
     procedure :: readFormattedHaplotype
     procedure :: writeFormattedHaplotype
@@ -327,6 +331,23 @@ contains
     end do
   end function mismatchesMod
   
+  function noMismatches(h1, h2) result (noMiss)
+    class(Haplotype), intent(in) :: h1, h2
+    
+    logical :: noMiss
+    
+    integer :: i
+    
+    noMiss = .true.
+    do i = 1, h1%sections
+      if ((IAND( IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
+        IXOR(h1%phase(i), h2%phase(i)) )) /= 0) then
+	noMiss = .false.
+	exit
+      end if
+    end do
+  end function noMismatches
+  
   function compatibleMod(h1, h2, allowedMismatches, minOverlap) result(c)
     class(Haplotype), intent(in) :: h1, h2
     integer, intent(in) :: allowedMismatches, minOverlap
@@ -427,6 +448,14 @@ contains
     
     num = h%length - h%numberMissing()
   end function numberNotMissing
+  
+  function numberNotMissingOrError(h) result(num)
+    class(Haplotype), intent(in) :: h
+        
+    integer :: num
+    
+    num = h%length - h%numberMissingOrError()
+  end function numberNotMissingOrError
   
   function numberSame(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
@@ -691,6 +720,32 @@ contains
       equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
     end do
   end function equalHap
+  
+  function isSubset(h1, h2) result(is)
+    class(Haplotype) :: h1, h2
+    
+    logical :: is
+    
+    integer :: i
+    
+    is = .true.
+    do i = 1, h1%sections
+      if (h1%missing(i) .and. .not.(h2%missing(i))) then
+	is = .false.
+	exit
+      end if
+    end do
+  end function isSubset
+  
+  subroutine setErrorToMissing(h)
+    class(Haplotype) :: h
+    
+    integer :: i
+    
+    do i = 1, h%sections
+      h%phase(i) = IAND(NOT(h%missing(i)), h%phase(i))
+    end do
+  end subroutine setErrorToMissing
 
 
   subroutine writeFormattedHaplotype(dtv, unit, iotype, v_list, iostat, iomsg)

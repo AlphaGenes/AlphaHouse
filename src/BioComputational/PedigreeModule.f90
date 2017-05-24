@@ -52,6 +52,8 @@
         type(DictStructure) :: hdDictionary ! maps id to location in genotype map
         integer(kind=int32) :: nHd ! number of animals that are genotyped hd
         integer :: maxGeneration ! largest generation
+
+        integer :: nsnpsPopulation ! number of snps for 
         logical :: isSorted
 
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
@@ -112,9 +114,10 @@
     contains
 
 
-    function initEmptyPedigree() result(pedStructure)
+    function initEmptyPedigree(nsnps) result(pedStructure)
     use iso_fortran_env
     type(PedigreeHolder) :: pedStructure
+    integer, optional :: nsnps
 
     pedStructure%dictionary = DictStructure()
     pedStructure%pedigreeSize = 0
@@ -122,6 +125,11 @@
     pedStructure%nGenotyped = 0
     pedStructure%nHd = 0
     pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+    pedStructure%nsnpsPopulation = 0
+
+    if (present(nsnps)) then
+        pedStructure%nsnpsPopulation = nsnps
+    endif
     end function initEmptyPedigree
 
     !---------------------------------------------------------------------------
@@ -130,20 +138,20 @@
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initPedigree(fileIn, numberInFile, genderFile) result(pedStructure)
+    function initPedigree(fileIn, numberInFile, genderFile, nsnps) result(pedStructure)
     use AlphaHouseMod, only : countLines
     use iso_fortran_env
     type(PedigreeHolder) :: pedStructure
     character(len=*),intent(in) :: fileIn !< path of pedigree file
     character(len=*), intent(in),optional :: genderFile !< path to gender file
     integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
+    integer, optional, intent(in) :: nsnps !< number of snps for the population
 
     character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
     integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
     integer(kind=int64) :: nIndividuals
     integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
-    integer :: tmpAnimalArrayCount
-    integer :: i
+    integer :: tmpAnimalArrayCount,i
     integer(kind=int64) :: sizeDict
     logical :: sireFound, damFound
 
@@ -152,7 +160,11 @@
     pedStructure%nHd = 0
     tmpAnimalArrayCount = 0
     pedStructure%nGenotyped = 0
+    pedStructure%nsnpsPopulation = 0
 
+    if (present(nsnps)) then
+        pedStructure%nsnpsPopulation = nsnps
+    endif
     if (present(numberInFile)) then
         nIndividuals = numberInFile
     else
@@ -178,7 +190,7 @@
         read(fileUnit,*) tmpId,tmpSire,tmpDam
         call pedStructure%dictionary%addKey(tmpId, i)
 
-        pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
         pedStructure%Pedigree(i)%originalPosition = i
         pedStructure%inputMap(i) = i
         if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -230,7 +242,7 @@
             if (tmpIdNum /= DICT_NULL) then
                 pedStructure%Pedigree(i)%gender = int(tmpGender)
             else
-                write(error_unit, *) "ERROR: Gender  defined for an animal that does not exist in Pedigree!"
+                write(error_unit, *) "WARNING: Gender  defined for an animal that does not exist in Pedigree!"
                 write(error_unit, *) "Amimal:",tmpId
             endif
         end do
@@ -284,6 +296,8 @@
     pedStructure%isSorted = .false.
     pedStructure%nHd = 0
     pedStructure%nGenotyped = 0
+
+    pedStructure%nsnpsPopulation = nsnp
 
     if (present(numberInFile)) then
         nIndividuals = numberInFile
@@ -353,7 +367,7 @@
             endif
         else
             call pedStructure%dictionary%addKey(tmpId, i)
-            pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i) !Make a new individual based on info from ped
+            pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
             pedStructure%Pedigree(i)%originalPosition = i
             pedStructure%inputMap(i) = i
             call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
@@ -371,12 +385,13 @@
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initPedigreeArrays(pedArray, genderArray) result(pedStructure)
+    function initPedigreeArrays(pedArray, genderArray, nsnps) result(pedStructure)
     use iso_fortran_env
     type(PedigreeHolder) :: pedStructure
 
     character(len=IDLENGTH), dimension(:,:), intent(in) :: pedArray !< array detailing pedigree of format ped([id, sireId, damId], index)
     integer, dimension(:) ,optional , intent(in):: genderArray !< gender array corresponding to index in pedArray
+    integer ,optional , intent(in):: nsnps !< number of snps to initialse to 
     integer(kind=int32) :: tmpSireNum, tmpDamNum
     integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
     integer :: tmpAnimalArrayCount
@@ -388,6 +403,11 @@
     pedStructure%nGenotyped = 0
     pedStructure%nDummys = 0
     tmpAnimalArrayCount = 0
+    pedStructure%nsnpsPopulation = 0
+
+    if (present(nsnps)) then
+        pedStructure%nsnpsPopulation = nsnps
+    endif
 
     pedStructure%isSorted = .false.
     sizeDict = size(pedArray)
@@ -406,7 +426,7 @@
 
         call pedStructure%dictionary%addKey(pedArray(1,i), i)
 
-        pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
         pedStructure%Pedigree(i)%originalPosition = i 
         pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -511,7 +531,7 @@
         write(tmpDamID,*) pedArray(3,i)
         call pedStructure%dictionary%addKey(tmpId, i)
 
-        pedStructure%Pedigree(i) =  Individual(tmpId,tmpSireId,tmpDamID, i) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i) =  Individual(tmpId,tmpSireId,tmpDamID, i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
         pedStructure%Pedigree(i)%originalPosition = i
         pedStructure%inputMap(i) = i
         if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -621,7 +641,7 @@
                         stop
                     endif
                     ! TODO potential issue here regarding dummy being the same as the pedigreeCounter
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpSire),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
                     call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpSire), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
@@ -665,7 +685,7 @@
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
                     endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpDam),'0','0', pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
                     call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpDam), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
@@ -702,7 +722,7 @@
                     write(error_unit,*) "ERROR: too many undefined animals"
                     stop
                 endif
-                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                 if (tmpDam == EMPTY_PARENT) then
                     pedStructure%unknownDummys = pedStructure%unknownDummys+1
@@ -729,7 +749,7 @@
                     write(error_unit,*) "ERROR: too many undefined animals"
                     stop
                 endif
-                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize)
+                pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
                  if (tmpSire == EMPTY_PARENT) then
                     pedStructure%unknownDummys = pedStructure%unknownDummys+1
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
@@ -929,15 +949,13 @@
         enddo
         tmpIdNum = this%dictionary%getValue(tmpId)
         if (tmpIdNum == DICT_NULL) then
-            write(error_unit, *) "ERROR: Genotype info for non existing animal:",tmpId
+            write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
         else
             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
-            ! TODO - this will overwrite animals that aren't genotyped
-            ! this%pedigree(tmpIdNum)%originalPosition = i
         endif
     enddo
 
-    !write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
+    write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
 
 
@@ -1680,10 +1698,10 @@
     integer :: i
 
 
-    allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
-    res(0,:) = 9
+    allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+    res = 9
     do i=1, this%nGenotyped
-        res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+        res(this%genotypeMap(i),:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
     enddo
 
     end function getGenotypesAsArray
@@ -1786,7 +1804,7 @@
 
     class(pedigreeHolder) :: this
     integer, intent(in) :: individualIndex !< index of animal to get genotyped
-    integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+    integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
 
     if (this%nGenotyped == 0) then
         this%genotypeDictionary = DictStructure()
@@ -1797,14 +1815,17 @@
         write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
     else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
         ! if animal has already been genotyped, overwrite array, but don't increment
-
-        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        if (present(geno)) then
+            call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        endif
         return
     endif
 
     this%nGenotyped = this%nGenotyped+1
     call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)
-    call this%pedigree(individualIndex)%setGenotypeArray(geno)
+    if (present(geno)) then
+        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+    endif
     this%genotypeMap(this%nGenotyped) = individualIndex
 
     end subroutine setAnimalAsGenotyped
@@ -1874,6 +1895,7 @@
     endif
     if (.not. this%pedigree(indId)%genotyped) then
         write(error_unit, *) "warning - setAnimalAsHD was given an index of animal that was not genotyped"
+        write(error_unit, *) "animal has ID:", trim(this%pedigree(indId)%originalID), " and recoded ID:", indid
     endif
     if (this%nHd == 0) then
         this%hdDictionary = DictStructure()
@@ -1958,7 +1980,7 @@
     this%pedigreeSize = this%pedigreeSize+1
     this%nDummys = this%nDummys + 1
     write(tmpCounterStr, '(I3.3)') this%nDummys
-    this%Pedigree(this%pedigreeSize) =  Individual(dummyAnimalPrepre//tmpCounterStr ,'0','0', this%pedigreeSize)
+    this%Pedigree(this%pedigreeSize) =  Individual(dummyAnimalPrepre//tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
     call this%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, this%pedigreeSize)
     this%Pedigree(this%pedigreeSize)%isDummy = .true.
     call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
@@ -1999,7 +2021,7 @@
     integer(kind=1), dimension(:), intent(in), optional :: geno
 
     this%pedigreeSize = this%pedigreeSize+1
-    this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize)
+    this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
     call this%dictionary%addKey(OriginalId, this%pedigreeSize)
     this%Pedigree(this%pedigreeSize)%isDummy = .false.
     call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
