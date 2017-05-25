@@ -1,3 +1,33 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     HaplotypeModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module cotaining a type representing a Haplotype and associated
+!>	     procedures
+!
+!> @details  currently only contains integer and real heap sort procedures 
+!
+!> @author   Daniel Money, daniel.money@roslin.ed.ac.uk
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 dmoney - initial version
+! 2017-05-25 dwilso18 - revision with comments
+!
+!-------------------------------------------------------------------------------
+
+
+
 module HaplotypeModule
   
     use constantModule, only: MissingPhaseCode,ErrorPhaseCode
@@ -5,6 +35,7 @@ module HaplotypeModule
     
     
     type :: Haplotype
+      !Reminder as to how the data is stored...
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Phase       Phase   Missing !
       ! 0           0       0       !
@@ -20,13 +51,13 @@ module HaplotypeModule
     contains
     procedure :: toIntegerArray => haplotypeToIntegerArray
     procedure :: toIntegerArrayWithErrors
-    procedure :: getPhaseMod
-    procedure :: setPhaseMod
-    procedure :: overlapMod
-    procedure :: mismatchesMod
+    procedure :: getPhase
+    procedure :: setPhase
+    procedure :: overlap
+    procedure :: mismatches
     procedure :: noMismatches
-    procedure :: compatibleMod
-    procedure :: mergeMod
+    procedure :: compatible
+    procedure :: merge
     procedure :: numberMissing
     procedure :: numberMissingOrError
     procedure :: numberNotMissing
@@ -70,6 +101,11 @@ module HaplotypeModule
   
 contains
 
+    !---------------------------------------------------------------------------
+    !> @brief	Constructs a new Haplotype from a integer array
+    !> @date    May 25, 2017
+    !> @return	New haplotype object 
+    !---------------------------------------------------------------------------
   pure function newHaplotypeInt(hap) result(h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
@@ -107,7 +143,12 @@ contains
         end if
     end do
   end function newHaplotypeInt
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Constructs a new Haplotype from bit arrays
+    !> @date    May 25, 2017
+    !> @return	New haplotype object 
+    !---------------------------------------------------------------------------
   function newHaplotypeBits(phase, missing, length) result(h)
     integer(kind=8), dimension(:), allocatable, intent(in) :: phase, missing
     integer :: length
@@ -131,7 +172,12 @@ contains
     end do
     
   end function newHaplotypeBits
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Constructs a new Haplotype as  a copy of another Haplotype
+    !> @date    May 25, 2017
+    !> @return	New haplotype object 
+    !---------------------------------------------------------------------------  
   function newHaplotypeHaplotype(oh) result(h)
     class(Haplotype) :: oh
     
@@ -140,6 +186,12 @@ contains
     h = Haplotype(oh%phase, oh%missing, oh%length)
   end function newHaplotypeHaplotype
   
+  
+    !---------------------------------------------------------------------------
+    !> @brief	Constructs a new Haplotype with all positions set to missing
+    !> @date    May 25, 2017
+    !> @return	New haplotype object 
+    !---------------------------------------------------------------------------      
   function newHaplotypeMissing(length) result(h)
     integer, intent(in) :: length
     
@@ -163,6 +215,13 @@ contains
     end do
   end function newHaplotypeMissing
   
+  
+    !---------------------------------------------------------------------------
+    !> @brief	Converts a Haplotype to an integer array
+    !> @detail	Error states are coded as missing (i.e. 9)
+    !> @date    May 25, 2017
+    !> @return	Integer array representing the haplotype
+    !---------------------------------------------------------------------------  
   function haplotypeToIntegerArray(h) result(array)
     class(Haplotype), intent(in) :: h
     
@@ -195,8 +254,14 @@ contains
         cursection = cursection + 1
       end if
     end do
-  end function haplotypeToIntegerArray
+  end function haplotypeToIntegerArray  
   
+    !---------------------------------------------------------------------------
+    !> @brief	Converts a Haplotype to an integer array
+    !> @detail	Error states are coded diffeerent to missing (i.e. as -1)
+    !> @date    May 25, 2017
+    !> @return	Integer array representing the haplotype
+    !---------------------------------------------------------------------------   
   function toIntegerArrayWithErrors(h) result(array)
     class(Haplotype), intent(in) :: h
     
@@ -230,7 +295,12 @@ contains
       end if
     end do
   end function toIntegerArrayWithErrors
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Compares two haplotypes
+    !> @date    May 25, 2017
+    !> @return	Whether the two haplotypes are identical
+    !---------------------------------------------------------------------------   
   function compareHaplotype(h1, h2) result(same)
     class(Haplotype), intent(in) :: h1, h2
     
@@ -248,7 +318,13 @@ contains
     end if
   end function compareHaplotype
   
-  function getPhaseMod(h, pos) result (phase)
+  
+    !---------------------------------------------------------------------------
+    !> @brief	Gets the phase of a snp at the given position
+    !> @date    May 25, 2017
+    !> @return	The phase
+    !---------------------------------------------------------------------------   
+  function getPhase(h, pos) result (phase)
     class(Haplotype), intent(in) :: h
     integer, intent(in) :: pos
     
@@ -272,9 +348,13 @@ contains
             phase = 0
         end if
     end if
-  end function getPhaseMod
+  end function getPhase
   
-  subroutine setPhaseMod(h, pos, phase)
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the phase of a snp at the given position
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------   
+  subroutine setPhase(h, pos, phase)
     class(Haplotype) :: h
     integer, intent(in) :: pos
     integer(kind=1) :: phase
@@ -298,9 +378,16 @@ contains
     h%phase(cursection) = ibset(h%phase(cursection), curpos)
     h%missing(cursection) = ibset(h%missing(cursection), curpos)
     end select
-  end subroutine setPhaseMod
+  end subroutine setPhase
   
-  function overlapMod(h1, h2) result (num)
+    !---------------------------------------------------------------------------
+    !> @brief	Counts the overlap between two haplotypes
+    !> @detail  Counts the number of snps where both haplotypes are present
+    !>		  (i.e. not missing and not error)
+    !> @date    May 25, 2017
+    !> @return	The overlap between the two haplotypes
+    !---------------------------------------------------------------------------   
+  function overlap(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
         
     integer :: num
@@ -314,9 +401,14 @@ contains
     end do
     
     num = num - h1%overhang
-  end function overlapMod
-  
-  function mismatchesMod(h1, h2) result (num)
+  end function overlap
+
+    !---------------------------------------------------------------------------
+    !> @brief	Counts the mismatches (i.e. opposing homozygotes) between two haplotypes
+    !> @date    May 25, 2017
+    !> @return	The number of mismatches between the two haplotypes
+    !---------------------------------------------------------------------------  
+  function mismatches(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
     
     integer :: num
@@ -329,8 +421,13 @@ contains
       num = num + POPCNT(IAND( IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
         IXOR(h1%phase(i), h2%phase(i)) ))
     end do
-  end function mismatchesMod
+  end function mismatches
   
+    !---------------------------------------------------------------------------
+    !> @brief	Tests whether there's any mismatches (i.e. opposing homozygotes) between two haplotypes
+    !> @date    May 25, 2017
+    !> @return	Whether there are any mismathes (true if there are none)
+    !---------------------------------------------------------------------------  
   function noMismatches(h1, h2) result (noMiss)
     class(Haplotype), intent(in) :: h1, h2
     
@@ -348,16 +445,35 @@ contains
     end do
   end function noMismatches
   
-  function compatibleMod(h1, h2, allowedMismatches, minOverlap) result(c)
+    !---------------------------------------------------------------------------
+    !> @brief	Returns whether two haplotypes are compatible
+    !> @detail  Returns true if the number of mismatches is less than the given
+    !>		  threshold and the overlap is greater than or equal to the given
+    !>		  threshold.
+    !> @date    May 25, 2017
+    !> @return	The overlap between the two haplotypes
+    !---------------------------------------------------------------------------  
+  function compatible(h1, h2, allowedMismatches, minOverlap) result(c)
     class(Haplotype), intent(in) :: h1, h2
     integer, intent(in) :: allowedMismatches, minOverlap
     
     logical :: c
     
     c = ((mismatchesMod(h1,h2) <= allowedMismatches) .and. (overlapMod(h1,h2) >= minOverlap))
-  end function compatibleMod
+  end function compatible
   
-  function mergeMod(h1,h2) result(h)
+    !---------------------------------------------------------------------------
+    !> @brief	Merges two haplotypes
+    !> @detail  Merges two haplotypes.  Uses the following rules per snp:
+    !>		  1) Either haplotype is error then error
+    !>		  2) Both haplotypes are missing then missing
+    !>		  3) One haplotype is missing the other phased then that phase
+    !>		  4) Both haplotypes phased the same then that phase
+    !>		  5) Both haplotypes phased but opposing then error
+    !> @date    May 25, 2017
+    !> @return	The merged haplotype
+    !---------------------------------------------------------------------------  
+  function merge(h1,h2) result(h)
     class(Haplotype), intent(in) :: h1, h2
     
     type(Haplotype) :: h
@@ -380,8 +496,13 @@ contains
 	IAND(IAND(NOT(h1%missing(i)),NOT(h2%missing(i))), IXOR(h1%phase(i), h2%phase(i))))
       h%phase(i) = IOR(h1%phase(i), h2%phase(i))
     end do
-  end function mergeMod
+  end function merge
   
+    !---------------------------------------------------------------------------
+    !> @brief	Tests whether the haplotypes is fully phased
+    !> @date    May 25, 2017
+    !> @return	Whether the haplotype is fully phased
+    !---------------------------------------------------------------------------    
   function fullyPhased(h) result(fully)
     class(Haplotype) :: h
     
@@ -396,6 +517,12 @@ contains
     end do
   end function fullyPhased
   
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of missing snps in the haplotype
+    !> @detail	Error snps are NOT missing for this function
+    !> @date    May 25, 2017
+    !> @return	The number of missing snps
+    !--------------------------------------------------------------------------- 
   function numberMissing(h) result (num)
     class(Haplotype), intent(in) :: h
         
@@ -411,6 +538,11 @@ contains
     
   end function numberMissing
   
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of missing or error snps in the haplotype
+    !> @date    May 25, 2017
+    !> @return	The number of missing or error snps
+    !--------------------------------------------------------------------------- 
   function numberMissingOrError(h) result (num)
     class(Haplotype), intent(in) :: h
         
@@ -425,7 +557,12 @@ contains
     end do
     
   end function numberMissingOrError
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of error snps in the haplotype
+    !> @date    May 25, 2017
+    !> @return	The number of error snps
+    !---------------------------------------------------------------------------   
   function numberError(h) result (num)
     class(Haplotype), intent(in) :: h
         
@@ -441,6 +578,12 @@ contains
     
   end function numberError
   
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of not missing snps
+    !> @detail	Error snps are NOT missing for this function
+    !> @date    May 25, 2017
+    !> @return	The number of not missing snps
+    !---------------------------------------------------------------------------     
   function numberNotMissing(h) result(num)
     class(Haplotype), intent(in) :: h
         
@@ -448,7 +591,12 @@ contains
     
     num = h%length - h%numberMissing()
   end function numberNotMissing
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of snps not missing or error (i.e. phased)
+    !> @date    May 25, 2017
+    !> @return	The number of phased snps
+    !---------------------------------------------------------------------------      
   function numberNotMissingOrError(h) result(num)
     class(Haplotype), intent(in) :: h
         
@@ -457,6 +605,11 @@ contains
     num = h%length - h%numberMissingOrError()
   end function numberNotMissingOrError
   
+    !---------------------------------------------------------------------------
+    !> @brief	Returns the number of snps that are the same in both haplotypes
+    !> @date    May 25, 2017
+    !> @return	The number of similar snps
+    !---------------------------------------------------------------------------    
   function numberSame(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
     
@@ -474,6 +627,10 @@ contains
     num = num - h1%overhang
   end function numberSame
   
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the whole haplotype to be unphased
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------
   subroutine setUnphased(h)
     class(Haplotype) :: h
     
@@ -489,13 +646,23 @@ contains
     end do
   end subroutine setUnphased
   
+    !---------------------------------------------------------------------------
+    !> @brief	Gets the length of the haplotype
+    !> @date    May 25, 2017
+    !> @return	The length of the haplotype
+    !---------------------------------------------------------------------------  
   function getLength(h) result(l)
     class(Haplotype), intent(in) :: h
     integer :: l
     
     l = h%length
   end function getLength
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Tests whether the given snp is missing
+    !> @date    May 25, 2017
+    !> @return	Whether the given snp is missing
+    !---------------------------------------------------------------------------    
   function isMissing(h, pos) result (missing)
    class(Haplotype), intent(in) :: h
    integer, intent(in) :: pos
@@ -511,6 +678,13 @@ contains
    missing = BTEST(h%missing(cursection), curpos)
   end function isMissing
   
+    !---------------------------------------------------------------------------
+    !> @brief	Counts the number of snps that are present in both haplotypes
+    !> @detail	Error snps are counted as missing for this function. (This
+    !>		  may need to change
+    !> @date    May 25, 2017
+    !> @return	The number of snps present in both haplotypes
+    !---------------------------------------------------------------------------    
   function numberBothNotMissing(h1, h2) result (num)
     class(Haplotype), intent(in) :: h1, h2
         
@@ -526,7 +700,17 @@ contains
     
     num = num - h1%overhang
   end function numberBothNotMissing
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Sets one haplotypes from another
+    !> @detail  Uses the following rules per snp:
+    !>		  1) If haplotype 2 is phased then return that phase
+    !>		  2) If haplotype 1 is phased but haplotype 2 is missing then
+    !>			return that phase
+    !>		  3) If both are unphased and either error then error
+    !>		  4) If both are missing then missing
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setFromOther(h, oh)
     class(Haplotype) :: h
     type(Haplotype) :: oh
@@ -539,6 +723,17 @@ contains
     end do
   end subroutine setFromOther
   
+    !---------------------------------------------------------------------------
+    !> @brief	Sets one haplotypes from another if the first is missing
+    !> @detail  Uses the following rules per snp:
+    !>		  1) If haplotype 1 is phased then return that phase
+    !>		  2) If haplotype 1 is missing but haplotype 2 is phased then
+    !>			return that phase
+    !>		  3) If both are unphased and both error then error
+    !>		  TODO point 3 oddness
+    !>		  4) If both are missing then missing
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setFromOtherIfMissing(h, oh)
     class(Haplotype) :: h
     type(Haplotype) :: oh
@@ -550,7 +745,12 @@ contains
       h%missing(i) = IAND(h%missing(i), oh%missing(i))      
     end do
   end subroutine setFromOtherIfMissing
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the snps in a haplotype to one
+    !> @detail  Sets a snp to be one if the same position in the bit array is set
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setOneBits(h, array)
     class(Haplotype) :: h
     integer(kind=8), dimension(:), intent(in) :: array
@@ -563,6 +763,11 @@ contains
     end do
   end subroutine setOneBits
   
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the snps in a haplotype to zero
+    !> @detail  Sets a snp to be zero if the same position in the bit array is set
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setZeroBits(h, array)
     class(Haplotype) :: h
     integer(kind=8), dimension(:), intent(in) :: array
@@ -575,6 +780,10 @@ contains
     end do
   end subroutine setZeroBits
   
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the snps in the given position to zero
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setZero(h, pos)
     class(Haplotype) :: h
     integer, intent(in) :: pos
@@ -587,7 +796,11 @@ contains
     h%phase(cursection) = ibclr(h%phase(cursection), curpos)
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
   end subroutine setZero
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Sets the snps in the given position to one
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
   subroutine setOne(h, pos)
     class(Haplotype) :: h
     integer, intent(in) :: pos
@@ -601,6 +814,11 @@ contains
     h%missing(cursection) = ibclr(h%missing(cursection), curpos)
   end subroutine setOne
   
+    !---------------------------------------------------------------------------
+    !> @brief	Returns a new haplotype that is a subset of the given one
+    !> @date    May 25, 2017
+    !> @return  The subset haplotype
+    !---------------------------------------------------------------------------  
   function subset(h,start,finish) result (sub)
     class(Haplotype), intent(in) :: h
     integer, intent(in) :: start, finish
@@ -645,7 +863,13 @@ contains
       sub%missing(sub%sections) = ibclr(sub%missing(sub%sections), i)
     end do
   end function subset
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Sets a subset of the  current haplotype 
+    !> to be the same as another haplotype
+    !> @date    May 25, 2017
+    !> @return  The subset haplotype
+    !---------------------------------------------------------------------------   
   subroutine setSubset(h, sub, start)
     class(Haplotype) :: h
     class(Haplotype), intent(in) :: sub
@@ -716,11 +940,9 @@ contains
     
     integer :: i
     
-    equal = .true.
-    do i = 1, h1%sections
-      equal = equal .and. (h1%phase(i) == h2%phase(i)) .and. (h1%missing(i) == h2%missing(i))
-    end do
+    equal = h1%compareHaplotype(h2)
   end function equalHap
+
   
   function isSubset(h1, h2) result(is)
     class(Haplotype) :: h1, h2
@@ -737,7 +959,11 @@ contains
       end if
     end do
   end function isSubset
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Sets and errors in the haplotype to be missing 
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------     
   subroutine setErrorToMissing(h)
     class(Haplotype) :: h
     
