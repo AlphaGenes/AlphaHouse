@@ -1797,6 +1797,8 @@
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual to be genotyped.
+    !> If geno array is not given, animal will still be set to genotyped. It is up to the callee
+    !> if the animal has enough snps set to actually genotyped
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
