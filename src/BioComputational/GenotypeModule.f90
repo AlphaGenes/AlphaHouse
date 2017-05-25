@@ -381,7 +381,7 @@ function complement(g,h) result(c)
     type(Haplotype) :: c
 
     integer :: i
-    integer(kind=8), dimension(:), pointer :: phase, missing
+    integer(kind=8), dimension(:), allocatable :: phase, missing
 
     allocate(phase(g%sections))
     allocate(missing(g%sections))
@@ -396,6 +396,8 @@ function complement(g,h) result(c)
     end do
 
     c = Haplotype(phase,missing,g%length)
+    deallocate(phase)
+    deallocate(missing)
 end function complement
 
 function compatibleHaplotypes(g, h1, h2, threshold) result(c)
@@ -520,7 +522,7 @@ end function numMissing
 subroutine setHaplotypeFromGenotype(g, h)
     use HaplotypeModule
 
-    class(Haplotype), intent(in) :: h
+    class(Haplotype) :: h
     class(Genotype), intent(in) :: g
 
     integer :: i
@@ -540,7 +542,7 @@ end subroutine setHaplotypeFromGenotype
 
     type(Haplotype), intent(in), pointer :: h
     class(Genotype), intent(in) :: g
-    integer(kind=8), intent(in), dimension(:), pointer :: errors
+    integer(kind=8), intent(in), dimension(:) :: errors
 
     integer :: i
 
@@ -557,7 +559,7 @@ end subroutine setHaplotypeFromGenotype
   subroutine setHaplotypeFromGenotypeIfMissing(g, h)
     use HaplotypeModule
 
-    type(Haplotype), intent(in) :: h
+    type(Haplotype) :: h
     class(Genotype), intent(in) :: g
 
     integer :: i
@@ -679,7 +681,7 @@ function isHomo(g, pos) result (two)
     class(Genotype) :: g
     class(Haplotype) :: h1, h2
 
-    integer(kind=8), dimension(:), pointer :: errors
+    integer(kind=8), dimension(:), allocatable :: errors
 
     integer :: i
 

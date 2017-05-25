@@ -12,8 +12,8 @@ module HaplotypeModule
       ! Missing     0       1       !
       ! Error       1       1       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      integer(kind=8), dimension(:), pointer :: phase
-      integer(kind=8), dimension(:), pointer :: missing
+      integer(kind=8), dimension(:), allocatable :: phase
+      integer(kind=8), dimension(:), allocatable :: missing
       integer :: sections
       integer :: overhang
       integer :: length
@@ -69,7 +69,7 @@ module HaplotypeModule
   end interface Haplotype
   
 contains
-  
+
   pure function newHaplotypeInt(hap) result(h)
     integer(kind=1), dimension(:), intent(in) :: hap
     
@@ -109,7 +109,7 @@ contains
   end function newHaplotypeInt
   
   function newHaplotypeBits(phase, missing, length) result(h)
-    integer(kind=8), dimension(:), pointer, intent(in) :: phase, missing
+    integer(kind=8), dimension(:), allocatable, intent(in) :: phase, missing
     integer :: length
     
     type(Haplotype) :: h
@@ -275,7 +275,7 @@ contains
   end function getPhaseMod
   
   subroutine setPhaseMod(h, pos, phase)
-    class(Haplotype), intent(in) :: h
+    class(Haplotype) :: h
     integer, intent(in) :: pos
     integer(kind=1) :: phase
 
@@ -576,7 +576,7 @@ contains
   end subroutine setZeroBits
   
   subroutine setZero(h, pos)
-    class(Haplotype), intent(in) :: h
+    class(Haplotype) :: h
     integer, intent(in) :: pos
     
     integer :: cursection, curpos
@@ -589,7 +589,7 @@ contains
   end subroutine setZero
   
   subroutine setOne(h, pos)
-    class(Haplotype), intent(in) :: h
+    class(Haplotype) :: h
     integer, intent(in) :: pos
     
     integer :: cursection, curpos
@@ -647,7 +647,8 @@ contains
   end function subset
   
   subroutine setSubset(h, sub, start)
-    class(Haplotype), intent(in) :: h, sub
+    class(Haplotype) :: h
+    class(Haplotype), intent(in) :: sub
     integer, intent(in) :: start
     
     integer(kind=8) :: mask, startmask, endmask, shifted   
