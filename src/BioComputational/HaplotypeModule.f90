@@ -459,7 +459,7 @@ contains
     
     logical :: c
     
-    c = ((mismatchesMod(h1,h2) <= allowedMismatches) .and. (overlapMod(h1,h2) >= minOverlap))
+    c = ((mismatches(h1,h2) <= allowedMismatches) .and. (overlap(h1,h2) >= minOverlap))
   end function compatible
   
     !---------------------------------------------------------------------------
