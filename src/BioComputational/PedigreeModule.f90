@@ -72,6 +72,7 @@
     procedure :: printPedigree
     procedure :: getMatePairsAndOffspring
     procedure :: getAllGenotypesAtPosition
+    procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
     procedure :: getNumGenotypesMissing
@@ -1605,29 +1606,53 @@
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     function getAllGenotypesAtPosition(this, position) result(res)
-    use constantModule, only : MISSINGPHASECODE
-    class(pedigreeHolder) :: this
-    integer, intent(in) :: position
-    integer(KIND=1), allocatable, dimension(:) :: res
-    integer :: counter, i
-    allocate(res(this%pedigreeSize))
-    res = MISSINGPHASECODE
-    counter = 0
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%nGenotyped))
+        res = MISSINGPHASECODE
+        counter = 0
 
-    do i=1, this%pedigreeSize
+        do i=1, this%nGenotyped
 
-        if (this%pedigree(i)%isGenotyped()) then
             counter = counter +1
-            res(counter) = this%pedigree(i)%individualGenotype%getGenotype(position)
+            res(counter) = this%pedigree(this%genotypeMap(i))%individualGenotype%getGenotype(position)
             if (res(counter) /= 0 .and. res(counter) /= 1 .and. res(counter) /= 2 .and. res(counter) /= MISSINGPHASECODE) then
                 res(counter) = MISSINGPHASECODE
             endif
-        endif
 
-    enddo
+        enddo
 
     end function getAllGenotypesAtPosition
 
+
+
+        !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getAllGenotypesAtPositionWithUngenotypedAnimals(this, position) result(res)
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
+        res = MISSINGPHASECODE
+
+        do i=1, this%pedigreeSize
+
+            res(i) = this%pedigree(i)%individualGenotype%getGenotype(position)
+            if (res(i) /= 0 .and. res(i) /= 1 .and. res(i) /= 2 .and. res(i) /= MISSINGPHASECODE) then
+                res(i) = MISSINGPHASECODE
+            endif
+
+        enddo
+
+    end function getAllGenotypesAtPositionWithUngenotypedAnimals
 
     !---------------------------------------------------------------------------
     !< @brief returns array of what percentages an animal has been genotyped
