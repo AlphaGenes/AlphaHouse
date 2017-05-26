@@ -11,8 +11,6 @@
 !> @brief    Module cotaining a type representing a Haplotype and associated
 !>	     procedures
 !
-!> @details  currently only contains integer and real heap sort procedures 
-!
 !> @author   Daniel Money, daniel.money@roslin.ed.ac.uk
 !> @author   David Wilson, david.wilson@roslin.ed.ac.uk
 !
@@ -33,7 +31,11 @@ module HaplotypeModule
     use constantModule, only: MissingPhaseCode,ErrorPhaseCode
     implicit none
     
-    
+    !---------------------------------------------------------------------------
+    !> @brief   Represents genotypes.  
+    !> @detail	Stored as bit arrays for computational efficiency.
+    !> @date    May 27, 2017
+    !---------------------------------------------------------------------------    
     type :: Haplotype
       !Reminder as to how the data is stored...
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -866,7 +868,7 @@ contains
 
     !---------------------------------------------------------------------------
     !> @brief	Sets a subset of the  current haplotype 
-    !> to be the same as another haplotype
+    !>		  to be the same as another haplotype
     !> @date    May 25, 2017
     !> @return  The subset haplotype
     !---------------------------------------------------------------------------   
