@@ -933,6 +933,11 @@ contains
     
   end subroutine setSubset
   
+    !---------------------------------------------------------------------------
+    !> @brief	Tests whether two haplotypes are the same. 
+    !> @date    May 25, 2017
+    !> @return  Whether the two haplotypes are the same
+    !---------------------------------------------------------------------------  
   function equalHap(h1, h2) result (equal)
     class(Haplotype) :: h1, h2
     
@@ -943,7 +948,13 @@ contains
     equal = h1%compareHaplotype(h2)
   end function equalHap
 
-  
+    !---------------------------------------------------------------------------
+    !> @brief	Tests whether one haplotype is a "subset" of another.
+    !> @detail	Tests whether all non-missing snps in h2 are also non-missing
+    !>		    in h1
+    !> @date    May 25, 2017
+    !> @return  Whether h2 is a "subset" of h1
+    !---------------------------------------------------------------------------  
   function isSubset(h1, h2) result(is)
     class(Haplotype) :: h1, h2
     
@@ -961,7 +972,7 @@ contains
   end function isSubset
 
     !---------------------------------------------------------------------------
-    !> @brief	Sets and errors in the haplotype to be missing 
+    !> @brief	Sets any errors in the haplotype to be missing 
     !> @date    May 25, 2017
     !---------------------------------------------------------------------------     
   subroutine setErrorToMissing(h)
