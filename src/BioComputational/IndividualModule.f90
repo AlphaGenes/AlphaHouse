@@ -59,6 +59,7 @@ module IndividualModule
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical :: isUnknownDummy = .false.
         type(genotype) :: individualGenotype
+        integer,dimension(:), allocatable :: referAllele, AlterAllele
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
