@@ -5,6 +5,45 @@ implicit none
 
 contains
 !##################################################################################################################################
+! Test getting Line as character
+!##################################################################################################################################
+@test
+subroutine testGetAsCharacterWithSeperator()
+type(Line):: temp
+character(len=1000):: expected, gotten
+
+expected = "One:Two:Three:Four:Five"
+
+call temp%add("One")
+call temp%add("Two")
+call temp%add("Three")
+call temp%add("Four")
+call temp%add("Five")
+
+gotten = temp%getAsCharacter(":")
+
+@assertEqual(trim(expected), trim(gotten))
+end subroutine testGetAsCharacterWithSeperator
+
+@test
+subroutine testGetAsCharacter()
+
+type(Line):: temp
+character(len=1000):: expected, gotten
+
+expected = "OneTwoThreeFourFive"
+
+call temp%add("One")
+call temp%add("Two")
+call temp%add("Three")
+call temp%add("Four")
+call temp%add("Five")
+
+gotten = temp%getAsCharacter()
+
+@assertEqual(trim(expected), trim(gotten))
+end subroutine testGetAsCharacter
+!##################################################################################################################################
 ! Testing adding Lines together
 !##################################################################################################################################
 @test
