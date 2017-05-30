@@ -1713,6 +1713,26 @@
     end function getGenotypesAsArray
 
 
+       !---------------------------------------------------------------------------
+    !< @brief returns array of genotype information as is used by alphaimpute in format (0:nGenotyped, nSnp)
+    !<
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getGenotypesAsArrayWitHMissing(this) result(res)
+
+    class(pedigreeHolder) :: this
+    integer(kind=1) ,dimension(:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+    integer :: i
+
+
+    allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+    do i=1, this%pedigreeSize
+        res(i,:) = this%pedigree(i)%individualGenotype%toIntegerArray()
+    enddo
+
+    end function getGenotypesAsArrayWitHMissing
+
     !---------------------------------------------------------------------------
     !< @brief returns integer value of number of missing genotypes accross all genotypes
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
