@@ -77,6 +77,7 @@
     procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
+    procedure :: getGenotypesAsArrayWitHMissing
     procedure :: getNumGenotypesMissing
     procedure :: getGenotypedFounders
     procedure :: getSireDamGenotypeIDByIndex
@@ -1714,8 +1715,8 @@
 
 
        !---------------------------------------------------------------------------
-    !< @brief returns array of genotype information as is used by alphaimpute in format (0:nGenotyped, nSnp)
-    !<
+    !< @brief returns array of genotype information as is used by alphaimpute in format (0:pedSized, nSnp)
+    !< This takes the genotype info even if an animal is not genotyped
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
