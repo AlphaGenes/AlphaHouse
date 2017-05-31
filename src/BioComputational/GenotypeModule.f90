@@ -337,13 +337,17 @@ subroutine setGenotype(g, pos, val)
     select case (val)
       case (0)
           g%homo(cursection) = ibset(g%homo(cursection), curpos)
+          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
       case (1)
-          ! Nothing to do due to defaults
+          ! Nothing to do due to default
+          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
+          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
       case (2)
           g%homo(cursection) = ibset(g%homo(cursection), curpos)
           g%additional(cursection) = ibset(g%additional(cursection), curpos)
       case default
           g%additional(cursection) = ibset(g%additional(cursection), curpos)
+          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
     end select 
 
 end subroutine setGenotype
