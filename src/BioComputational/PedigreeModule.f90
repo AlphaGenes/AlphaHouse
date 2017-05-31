@@ -191,6 +191,13 @@
         damFound = .false.
 
         read(fileUnit,*) tmpId,tmpSire,tmpDam
+
+
+        if (trim(tmpId) == trim(tmpsire) .or. trim(tmpDam) == trim(tmpId)) then
+
+            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this."
+            stop
+        endif
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
