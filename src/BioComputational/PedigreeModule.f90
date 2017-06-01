@@ -1316,7 +1316,7 @@
 
     call dummyList%destroyLinkedList()
 
-    this%pedigree = newPed
+    this%pedigree => newPed
     do i = 0, this%maxGeneration
         call this%generations(i)%destroyLinkedList
     enddo
@@ -1417,7 +1417,7 @@
         call this%generations(i)%destroyLinkedList
     enddo
 
-    this%pedigree = newPed
+    this%pedigree => newPed
     this%generations = newGenerationList
     this%isSorted = .true.
     end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop

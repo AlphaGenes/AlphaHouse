@@ -865,7 +865,7 @@ contains
         this%HD = .true.
     end subroutine SetHD
 
-    !---------------------------------------------------------------------------
+    !------------------------\---------------------------------------------------
     !> @brief Adds an individual as offspring
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
