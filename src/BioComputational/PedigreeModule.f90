@@ -1845,7 +1845,8 @@
     if (this%nGenotyped == 0) then
         this%genotypeDictionary = DictStructure()
         allocate(this%genotypeMap(this%pedigreeSize))
-
+        this%genotypeMap = 0
+        
     else if (this%nGenotyped > this%pedigreeSize) then
         ! Following error should never appear
         write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
@@ -1977,6 +1978,7 @@
     if (this%nHd == 0) then
         this%hdDictionary = DictStructure()
         allocate(this%hdMap(this%pedigreeSize))
+        this%hdMap = 0
     endif
 
     if (this%hdDictionary%getValue(this%pedigree(indId)%originalId) ==DICT_NULL) then
