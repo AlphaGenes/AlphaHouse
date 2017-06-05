@@ -40,6 +40,7 @@ module AlphaHouseMod
 
   public :: generatePairing, unPair
   public :: CountLinesWithBlankLines
+  public:: countColumns
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -72,7 +73,96 @@ module AlphaHouseMod
     module procedure AppendReal64, AppendChar
   end interface
 
+  interface countColumns
+    module procedure countColumnsMultiDelim, countColumnsSingleDelim
+  end interface
+
   contains
+  !> @brief A function that counts how many colums in a file
+!> Counts the number of times that a delimiter occurs in a file.   
+
+  integer function countColumnsMultiDelim(fileNameIn, delimiterIn) result (numColumnsOut)
+    character(len=*), intent(in):: fileNameIn
+    character(len=1), dimension(:):: delimiterIn
+
+    character(len=:), allocatable:: tempChar
+
+    integer:: fileSize, fileUnit, filePosition, fileSizeLeft
+    integer:: IOStatus, i
+    logical:: fileExists, lineEnd, previousIsDelim
+
+    numColumnsOut = 0
+    Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
+
+    if (fileSize<1000) then
+      allocate(character(len=fileSize):: tempChar)
+    else
+      allocate(character(len=1000):: tempChar)
+    end if
+
+    ioStatus = 0
+    filePosition = 1
+
+    if (fileExists) then
+      open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
+      read(fileUnit, pos=1) tempChar
+
+      if (any(delimiterIn==tempChar(1:1))) then
+        previousIsDelim = .true.
+      else
+        previousIsDelim = .false.
+        numColumnsOut = numColumnsOut+1
+      end if
+        
+      readLoop: do while (ioStatus==0)
+        filePosition = filePosition+len(tempChar)
+        do i = 1, len(tempChar)
+          if (any(delimiterIn == tempChar(i:i))) then
+            if (.not. previousIsDelim) then
+              numColumnsOut = numColumnsOut+1
+              previousIsDelim =.true.
+            end if
+          else
+            previousIsDelim = .false.
+          end if
+          if (tempChar(i:i) == new_line("a")) then
+            exit readLoop
+          end if
+        end do
+        fileSizeLeft = fileSize-filePosition
+        write(*,*) fileSizeLeft, fileSize, filePosition
+        if (filePosition>=fileSize) then
+          exit readLoop
+        end if
+        if (fileSizeLeft< len(tempChar)) then
+          deallocate(tempChar)
+          allocate(character(len=fileSizeLeft):: tempChar)
+        end if
+        read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
+      end do readLoop
+      if (any(delimiterIn==tempChar(len(tempChar):len(tempChar)))) then
+        numColumnsOut = numColumnsOut-1
+      else
+      end if
+      close(fileUnit)
+    else
+      numColumnsOut = -1
+    end if
+
+  end function countColumnsMultiDelim
+
+
+  integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
+    character(len=*), intent(in):: fileNameIn
+    character(len=1), intent(in):: delimiterIn
+
+    character(len=len(delimiterIn)), dimension(1):: delimiterUsed
+
+    delimiterUsed(1) = delimiterIn
+
+    numColumnsOut = countColumns(fileNameIn, delimiterUsed)
+
+  end function countColumnsSingleDelim
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
   !> @brief      Checks to see if the character passed in is the same as the delimiters
