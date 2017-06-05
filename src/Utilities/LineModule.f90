@@ -225,7 +225,7 @@ module LineModule
 
     end subroutine removeByIndex
 
-    subroutine addAWordWithChar(self, charIn)
+    pure subroutine addAWordWithChar(self, charIn)
       class(Line), intent(inout):: self
       character(len=*), intent(in):: charIn
 
@@ -251,7 +251,7 @@ module LineModule
 
     !> @brief Add a string to the end of the line
     !> @author Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
-    subroutine addAWordWithString(self, stringIn)
+    pure subroutine addAWordWithString(self, stringIn)
       type(String), intent(in):: stringIn
       class(Line), intent(inout):: self
 

@@ -493,7 +493,7 @@ contains
     write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%line
   end subroutine writeType
 
-  subroutine setString(this,  lineIn)
+  pure subroutine setString(this,  lineIn)
     type(String), intent(inout) :: this
     character(len=*), intent(in):: lineIn
 
