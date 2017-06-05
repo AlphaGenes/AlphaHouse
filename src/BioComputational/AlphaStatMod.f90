@@ -175,11 +175,11 @@ module AlphaStatMod
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
-    pure function IsMissingI8(x, MissingValue) result(Res)
+    pure elemental function IsMissingI8(x, MissingValue) result(Res)
       implicit none
-      integer(int8), intent(in) :: x(:)         !< values
+      integer(int8), intent(in) :: x         !< values
       integer(int8), intent(in) :: MissingValue !< missing value representation
-      logical                   :: Res(size(x)) !< @return test for missingness
+      logical                   :: Res !< @return test for missingness
       Res = x .eq. MissingValue
     end function
 
@@ -190,11 +190,11 @@ module AlphaStatMod
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
-    pure function IsMissingI32(x, MissingValue) result(Res)
+    pure elemental function IsMissingI32(x, MissingValue) result(Res)
       implicit none
-      integer(int32), intent(in) :: x(:)         !< values
+      integer(int32), intent(in) :: x         !< values
       integer(int32), intent(in) :: MissingValue !< missing value representation
-      logical                    :: Res(size(x)) !< @return test for missingness
+      logical                    :: Res !< @return test for missingness
       Res = x .eq. MissingValue
     end function
 
@@ -205,11 +205,11 @@ module AlphaStatMod
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
-    pure function IsMissingR32(x, MissingValue) result(Res)
+    pure elemental function IsMissingR32(x, MissingValue) result(Res)
       implicit none
-      real(real32), intent(in) :: x(:)         !< values
+      real(real32), intent(in) :: x        !< values
       real(real32), intent(in) :: MissingValue !< missing value representation
-      logical                  :: Res(size(x)) !< @return test for missingness
+      logical                  :: Res !< @return test for missingness
       Res = x .eq. MissingValue
     end function
 
@@ -220,11 +220,11 @@ module AlphaStatMod
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   January 17, 2017
     !---------------------------------------------------------------------------
-    pure function IsMissingR64(x, MissingValue) result(Res)
+    pure elemental function IsMissingR64(x, MissingValue) result(Res)
       implicit none
-      real(real64), intent(in) :: x(:)         !< values
+      real(real64), intent(in) :: x         !< values
       real(real64), intent(in) :: MissingValue !< missing value representation
-      logical                  :: Res(size(x)) !< @return test for missingness
+      logical                  :: Res !< @return test for missingness
       Res = x .eq. MissingValue
     end function
 

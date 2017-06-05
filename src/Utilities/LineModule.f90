@@ -50,6 +50,7 @@ module LineModule
       procedure, private:: readUnformattedLineType
       procedure:: removeAll
       procedure:: prepend
+      procedure:: getAsCharacter
       generic:: write(formatted)=> writeFormattedLineType
       generic:: write(unformatted)=> writeUnformattedLineType
       generic:: read(formatted) => readLineType
@@ -71,6 +72,23 @@ module LineModule
     module procedure addTwoLines
   end interface
   contains
+    pure function getAsCharacter(self, seperator) result (iOut)
+      class(Line), intent(in):: self
+      character(len=:), allocatable:: iOut
+      character(len=1), intent(in), optional:: seperator
+
+      integer:: i
+
+      iOut = ''
+      do i = 1, self%getNumWords()-1
+        iOut = iOut//self%words(i)%asChar()
+        if (present(seperator)) then
+          iOut = iOut//seperator
+        end if
+      end do
+      iOut = iOut//self%words(self%getNumWords())%asChar()
+    end function getAsCharacter
+
     pure subroutine prepend(self, charIn)
       class(Line), intent(inout):: self
       character(len=*), intent(in):: charIn

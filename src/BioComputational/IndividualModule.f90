@@ -26,6 +26,7 @@
 module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     use genotypeModule
+    use iso_fortran_env
     implicit none
 
     public :: Individual,individualPointerContainer,operator ( == ),compareIndividual
@@ -59,6 +60,7 @@ module IndividualModule
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical :: isUnknownDummy = .false.
         type(genotype) :: individualGenotype
+        integer,dimension(:), allocatable :: referAllele, AlterAllele
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -863,7 +865,7 @@ contains
         this%HD = .true.
     end subroutine SetHD
 
-    !---------------------------------------------------------------------------
+    !------------------------\---------------------------------------------------
     !> @brief Adds an individual as offspring
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
@@ -872,8 +874,17 @@ contains
         class(Individual), intent(inout) :: this
         class(Individual),target, intent(in) :: offspringToAdd
         type(individualPointerContainer), allocatable :: tmp(:)
+        integer :: motherId, fatherId
         this%nOffs = this%nOffs + 1
         
+        motherId = this%getSireDamNewIDByIndexNoDummy(3)
+        fatherId = this%getSireDamNewIDByIndexNoDummy(2)
+        if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
+
+            write(error_unit,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd, " as both parent and offspring"
+            stop
+        
+        endif
         if (this%nOffs > OFFSPRINGTHRESHOLD) then
             allocate(tmp(this%nOffs))
             tmp(1:size(this%Offsprings)) = this%Offsprings

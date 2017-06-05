@@ -74,8 +74,10 @@
     procedure :: printPedigree
     procedure :: getMatePairsAndOffspring
     procedure :: getAllGenotypesAtPosition
+    procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
+    procedure :: getGenotypesAsArrayWitHMissing
     procedure :: getNumGenotypesMissing
     procedure :: getGenotypedFounders
     procedure :: getSireDamGenotypeIDByIndex
@@ -86,6 +88,7 @@
     procedure :: createDummyAnimalAtEndOfPedigree
     procedure :: addAnimalAtEndOfPedigree
     procedure :: addSequenceFromFile
+    procedure :: setAnimalAsGenotypedSequence
 
     end type PedigreeHolder
 
@@ -188,6 +191,13 @@
         damFound = .false.
 
         read(fileUnit,*) tmpId,tmpSire,tmpDam
+
+
+        if (trim(tmpId) == trim(tmpsire) .or. trim(tmpDam) == trim(tmpId)) then
+
+            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this."
+            stop
+        endif
         call pedStructure%dictionary%addKey(tmpId, i)
 
         pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
@@ -962,7 +972,7 @@
     end subroutine addGenotypeInformationFromFile
 
 
-    subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn, sequenceData)
+    subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads)
 
     use AlphaHouseMod, only : countLines
     use ConstantModule, only : IDLENGTH,DICT_NULL
@@ -970,15 +980,14 @@
     class(PedigreeHolder) :: this
     character(len=*) :: seqFile
     integer,intent(in) :: nsnps
+    integer, intent(in), optional :: maximumReads
     integer,intent(in),optional :: nAnisGIn 
     integer :: nanisG
     ! type(Pedigreeholder), intent(inout) :: genotype
-    integer(KIND=1), allocatable, dimension(:) :: tmp, ref, alt
-    integer(KIND=1), allocatable, dimension(:,:) :: genoEst
-    integer, allocatable, dimension(:,:,:), intent(out), optional :: sequenceData
-    integer :: unit, tmpID,i
+    integer(KIND=1), allocatable, dimension(:) :: tmp
+    integer,allocatable, dimension(:) :: ref, alt
+    integer :: unit, tmpID,i,j
     character(len=IDLENGTH) :: seqid !placeholder variables
-    real(kind=real64) :: err, p, q, pf
 
 
     if (.not. Present(nAnisGIn)) then
@@ -988,12 +997,6 @@
         nanisG = nAnisGIn
     endif
 
-    if (present(sequenceData)) then
-        allocate(sequenceData(nsnps, 2, nAnisG))    
-        sequenceData = 0
-
-    endif
-
 
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
@@ -1001,14 +1004,6 @@
     ! nsnps = input%endSnp-input%startSnp+1
     allocate(ref(nsnps))
     allocate(alt(nsnps))
-    allocate(genoEst(nsnps, 3))
-    allocate(tmp(nsnps))
-
-    err = 0.01
-    p = log(err)
-    q = log(1-err)
-    pf = log(.5)
-
     ! tmp = 9
     do i=1,nAnisG
         read (unit,*) seqid, ref(:)
@@ -1016,20 +1011,15 @@
 
         tmpID = this%dictionary%getValue(seqid)
 
-        if (present(sequenceData)) then
-            sequenceData(:, 1, tmpId) = ref(:)
-            sequenceData(:, 2, tmpId) = alt(:)
+        if (present(maximumReads)) then
+            do j=1,nsnps
+                if (ref(j)>=maximumReads) ref(j)=maximumReads-1
+                if (alt(j)>=maximumReads) alt(j)=maximumReads-1
+            enddo
         endif
-        
-        genoEst(:, 1) = p*ref + q*alt
-        genoEst(:, 2) = pf*ref + pf*alt
-        genoEst(:, 3) = q*ref + p*alt
-
-        tmp = maxloc(genoEst, dim=2) - 1
-        where(ref+alt < 15) tmp = 9
 
         if (tmpID /= DICT_NULL) then
-            call this%setAnimalAsGenotyped(tmpID,tmp)
+            call this%setAnimalAsGenotypedSequence(tmpID,tmp,ref,alt)
         endif
     end do
 
@@ -1326,7 +1316,7 @@
 
     call dummyList%destroyLinkedList()
 
-    this%pedigree = newPed
+    this%pedigree => newPed
     do i = 0, this%maxGeneration
         call this%generations(i)%destroyLinkedList
     enddo
@@ -1427,7 +1417,7 @@
         call this%generations(i)%destroyLinkedList
     enddo
 
-    this%pedigree = newPed
+    this%pedigree => newPed
     this%generations = newGenerationList
     this%isSorted = .true.
     end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
@@ -1629,29 +1619,53 @@
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
     function getAllGenotypesAtPosition(this, position) result(res)
-    use constantModule, only : MISSINGPHASECODE
-    class(pedigreeHolder) :: this
-    integer, intent(in) :: position
-    integer(KIND=1), allocatable, dimension(:) :: res
-    integer :: counter, i
-    allocate(res(this%pedigreeSize))
-    res = MISSINGPHASECODE
-    counter = 0
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%nGenotyped))
+        res = MISSINGPHASECODE
+        counter = 0
 
-    do i=1, this%pedigreeSize
+        do i=1, this%nGenotyped
 
-        if (this%pedigree(i)%isGenotyped()) then
             counter = counter +1
-            res(counter) = this%pedigree(i)%individualGenotype%getGenotype(position)
+            res(counter) = this%pedigree(this%genotypeMap(i))%individualGenotype%getGenotype(position)
             if (res(counter) /= 0 .and. res(counter) /= 1 .and. res(counter) /= 2 .and. res(counter) /= MISSINGPHASECODE) then
                 res(counter) = MISSINGPHASECODE
             endif
-        endif
 
-    enddo
+        enddo
 
     end function getAllGenotypesAtPosition
 
+
+
+        !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getAllGenotypesAtPositionWithUngenotypedAnimals(this, position) result(res)
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
+        res = MISSINGPHASECODE
+
+        do i=1, this%pedigreeSize
+
+            res(i) = this%pedigree(i)%individualGenotype%getGenotype(position)
+            if (res(i) /= 0 .and. res(i) /= 1 .and. res(i) /= 2 .and. res(i) /= MISSINGPHASECODE) then
+                res(i) = MISSINGPHASECODE
+            endif
+
+        enddo
+
+    end function getAllGenotypesAtPositionWithUngenotypedAnimals
 
     !---------------------------------------------------------------------------
     !< @brief returns array of what percentages an animal has been genotyped
@@ -1706,6 +1720,26 @@
 
     end function getGenotypesAsArray
 
+
+       !---------------------------------------------------------------------------
+    !< @brief returns array of genotype information as is used by alphaimpute in format (0:pedSized, nSnp)
+    !< This takes the genotype info even if an animal is not genotyped
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getGenotypesAsArrayWitHMissing(this) result(res)
+
+    class(pedigreeHolder) :: this
+    integer(kind=1) ,dimension(:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+    integer :: i
+
+
+    allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+    do i=1, this%pedigreeSize
+        res(i,:) = this%pedigree(i)%individualGenotype%toIntegerArray()
+    enddo
+
+    end function getGenotypesAsArrayWitHMissing
 
     !---------------------------------------------------------------------------
     !< @brief returns integer value of number of missing genotypes accross all genotypes
@@ -1797,6 +1831,8 @@
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual to be genotyped.
+    !> If geno array is not given, animal will still be set to genotyped. It is up to the callee
+    !> if the animal has enough snps set to actually genotyped
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -1809,7 +1845,8 @@
     if (this%nGenotyped == 0) then
         this%genotypeDictionary = DictStructure()
         allocate(this%genotypeMap(this%pedigreeSize))
-
+        this%genotypeMap = 0
+        
     else if (this%nGenotyped > this%pedigreeSize) then
         ! Following error should never appear
         write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
@@ -1831,6 +1868,47 @@
     end subroutine setAnimalAsGenotyped
 
 
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> If geno array is not given, animal will still be set to genotyped. It is up to the callee
+    !> if the animal has enough snps set to actually genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setAnimalAsGenotypedSequence(this, individualIndex, geno, referAllele, alterAllele)
+
+    class(pedigreeHolder) :: this
+    integer, intent(in) :: individualIndex !< index of animal to get genotyped
+    integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
+    integer, dimension(:), intent(in) :: referAllele, alterAllele
+    if (this%nGenotyped == 0) then
+        this%genotypeDictionary = DictStructure()
+        allocate(this%genotypeMap(this%pedigreeSize))
+
+    else if (this%nGenotyped > this%pedigreeSize) then
+        ! Following error should never appear
+        write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
+    else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
+        ! if animal has already been genotyped, overwrite array, but don't increment
+        if (present(geno)) then
+            call this%pedigree(individualIndex)%setGenotypeArray(geno)
+        endif
+        return
+    endif
+
+    this%nGenotyped = this%nGenotyped+1
+    call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)
+    if (present(geno)) then
+        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+    endif
+
+    this%pedigree(individualIndex)%referAllele = referAllele
+    this%pedigree(individualIndex)%alterAllele = alterAllele
+
+    this%genotypeMap(this%nGenotyped) = individualIndex
+
+    end subroutine setAnimalAsGenotypedSequence
     !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
     !> which index is passed.
@@ -1900,6 +1978,7 @@
     if (this%nHd == 0) then
         this%hdDictionary = DictStructure()
         allocate(this%hdMap(this%pedigreeSize))
+        this%hdMap = 0
     endif
 
     if (this%hdDictionary%getValue(this%pedigree(indId)%originalId) ==DICT_NULL) then
