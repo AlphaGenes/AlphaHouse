@@ -79,11 +79,15 @@ module AlphaHouseMod
 
   contains
   !> @brief A function that counts how many colums in a file
-!> Counts the number of times that a delimiter occurs in a file.   
-
+  !> Counts the number of times that a columns in a file.   Assumes that repeated delimiters are all a single delimiter, (i.e. a,,,a
+  !!> would have two colums, with the delimiter being ,).   If the first character of the line is a delimiter, then that delimiter
+  !> isn't counted as having a column associated with it, with the same thing being true for the final character (i.e. all of 
+  !> ",A, A" and "A, A,", ",A,A," and "A, A" have two columns).  This combines with the repeated delimiters being the same (i.e.
+  !> ",,,A,A,,,," has two columns).
+  !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
   integer function countColumnsMultiDelim(fileNameIn, delimiterIn) result (numColumnsOut)
-    character(len=*), intent(in):: fileNameIn
-    character(len=1), dimension(:):: delimiterIn
+    character(len=*), intent(in):: fileNameIn !< File to count columns 
+    character(len=1), dimension(:):: delimiterIn !< List of delimiters to use
 
     character(len=:), allocatable:: tempChar
 
@@ -130,7 +134,6 @@ module AlphaHouseMod
           end if
         end do
         fileSizeLeft = fileSize-filePosition
-        write(*,*) fileSizeLeft, fileSize, filePosition
         if (filePosition>=fileSize) then
           exit readLoop
         end if
@@ -151,6 +154,10 @@ module AlphaHouseMod
 
   end function countColumnsMultiDelim
 
+
+  !> @brief get the number of columns for a single delimiter
+  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter
+  !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 
   integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
     character(len=*), intent(in):: fileNameIn
