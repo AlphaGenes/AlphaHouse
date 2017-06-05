@@ -31,8 +31,6 @@ module TestPedigreeModule
         write (genUnit,'(a20,4i2)') "fff", 1, 1, 1, 1
         close(pedUnit)
 
-        
-       
         ! An unsorted pedigree with two parents (aaa and d1) not given as individuals
         open(newunit=pedUnit, file="testPedUnsorted.txt", status="unknown")
         write(pedUnit, "(a)") "ccc aaa bbb"
