@@ -23,6 +23,8 @@ SET(ALPHAHOUSE_src
     Utilities/CharacterLinkedListModule.f90
     BioComputational/GenotypeModule.f90
     BioComputational/HaplotypeModule.f90
+    BioComputational/CoreModule.f90
+    BioComputational/HaplotypeLibraryModule.f90
     BioComputational/BitUtilities.f90
     BioComputational/FilterModule.f90
     # BioComputational/CoreIndexModule.f90
