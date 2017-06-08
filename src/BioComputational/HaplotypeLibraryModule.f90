@@ -752,16 +752,14 @@ contains
     res = trim(tmp)
   end function
   
-  function rationalise(library, percThreshold, c) result(newlib)
-    use CoreModule
-    
-    class(HaplotypeLibrary), intent(in) :: library
+  function rationalise(library, percThreshold) result(newIDs)
+    class(HaplotypeLibrary), intent(inout) :: library
     double precision, intent(in) :: percThreshold
-    type(Core), optional :: c
-    type(HaplotypeLibrary) :: newlib
-    
-    integer :: threshold, i
     integer, dimension(library%size) :: newIDs
+
+    type(HaplotypeLibrary) :: newlib    
+    integer :: threshold, i
+
     
     newlib = HaplotypeLibrary(library%nSnps,library%size,library%stepsize)
     
@@ -776,17 +774,9 @@ contains
 	newIDs(i) = newlib%size
       end if
     end do
-    
-    if (present(c)) then
-      do i = 1, size(c%hapAnis,1)
-	if (c%hapAnis(i,1) /= MissingHaplotypeCode) then
-	  c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
-	end if
-	if (c%hapAnis(i,2) /= MissingHaplotypeCode) then
-	  c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
-	end if
-      end do
-    end if
+    library%size = newlib%size
+    library%newstore = newlib%newStore
+    library%hapfreq = newlib%hapfreq
   end function rationalise
   
   subroutine removeHap(library, id)
