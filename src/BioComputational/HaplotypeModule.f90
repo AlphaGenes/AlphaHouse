@@ -88,6 +88,9 @@ module HaplotypeModule
     procedure :: readFormattedHaplotype
     procedure :: writeFormattedHaplotype
     procedure :: writeunFormattedHaplotype
+    procedure :: compareHaplotypeToArrayNoMiss
+    procedure :: allPresent
+    procedure :: allMissingOrError
 
     generic:: write(formatted)=> writeFormattedHaplotype
     generic:: write(unformatted)=> writeunFormattedHaplotype
@@ -104,6 +107,46 @@ module HaplotypeModule
   
 contains
 
+
+
+pure function allPresent(hap) result(log)
+    type(Haplotype), intent(in) :: hap
+
+    logical :: log
+
+
+    if (all(hap%missing == 0)) then
+        log = .true.
+    else
+        log = .false.
+    endif
+
+end function allPresent
+
+
+pure function allMissingOrError(hap) result(log)
+    type(Haplotype), intent(in) :: hap
+
+    logical :: log
+    integer(kind=int64) :: tmp
+    integer :: i
+
+    log = .true.
+    if (.not. all(hap%missing(1:hap%sections-1) == -1)) then
+        log = .false.
+    endif
+
+    tmp = 0
+
+    do i = 64 - hap%overhang, 63
+        tmp = ibset(tmp, i)
+    enddo
+
+    if (.not. IOR(hap%missing(hap%sections),tmp) == -1) then
+        log =.false.
+    endif
+
+end function allMissingOrError
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Haplotype from a integer array
     !> @date    May 25, 2017
@@ -320,6 +363,53 @@ contains
         end do
     end if
   end function compareHaplotype
+
+
+
+      !---------------------------------------------------------------------------
+    !> @brief	Compares two haplotypes
+    !> @date    May 25, 2017
+    !> @return	Whether the two haplotypes are identical
+    !---------------------------------------------------------------------------   
+  function compareHaplotypeToArrayNoMiss(h, array) result(same)
+    class(Haplotype), intent(in) :: h
+    integer(kind=1), dimension(:), intent(in) :: array
+    
+    logical :: same
+    
+    integer :: i
+    integer :: cursection, curpos
+    
+    if (h%length /= size(array)) then
+        same = .false.
+    else
+        same = .true.
+
+        do i =1, size(array)
+            if (array(i) /= 9) then
+                cursection = (i-1) / 64 + 1
+                curpos = i - (cursection - 1) * 64 - 1
+    
+                if (btest(h%missing(cursection),curpos)) then
+                ! means value is missing or error -not correct
+                    same =.false.
+                    return
+                else
+                    if (array(i) == 1) then
+                        if (.not. btest(h%phase(cursection),curpos)) then
+                            same = .false.
+                            return
+                        endif
+                    else
+                        if (btest(h%phase(cursection),curpos)) then
+                            same = .false.
+                        endif
+                    end if
+                end if
+            endif
+        enddo
+    endif
+  end function compareHaplotypeToArrayNoMiss
   
   
     !---------------------------------------------------------------------------
