@@ -110,7 +110,7 @@ contains
 
 
 pure function allPresent(hap) result(log)
-    type(Haplotype), intent(in) :: hap
+    class(Haplotype), intent(in) :: hap
 
     logical :: log
 
@@ -125,7 +125,7 @@ end function allPresent
 
 
 pure function allMissingOrError(hap) result(log)
-    type(Haplotype), intent(in) :: hap
+    class(Haplotype), intent(in) :: hap
 
     logical :: log
     integer(kind=int64) :: tmp
