@@ -82,6 +82,7 @@ module GenotypeModule
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
   procedure :: writeunFormattedGenotype
+  ! final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
   generic:: write(unformatted)=> writeunFormattedGenotype
   generic:: read(formatted) => readFormattedGenotype
@@ -97,6 +98,13 @@ module GenotypeModule
       contains
 
 
+      subroutine destroyGenotype(g)
+        type(Genotype) :: g
+        if (allocated(g%homo)) then
+          deallocate(g%homo)
+          deallocate(g%additional)
+        endif
+    end subroutine destroyGenotype
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Genotype from a integer array
     !> @date    November 26, 2016

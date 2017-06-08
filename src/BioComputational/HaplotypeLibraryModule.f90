@@ -42,7 +42,8 @@ module HaplotypeLibraryModule
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
-    final :: destroyHaplotypeLibrary
+    procedure :: destroyHaplotypeLibrary
+    ! final :: destroyHaplotypeLibrary
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -52,7 +53,7 @@ module HaplotypeLibraryModule
 
 contains
   subroutine destroyHaplotypeLibrary(library)
-    type(HaplotypeLibrary) :: library
+    class(HaplotypeLibrary) :: library
     
     if (allocated(library%newstore)) then
       deallocate(library%newstore)
