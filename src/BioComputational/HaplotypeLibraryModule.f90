@@ -43,6 +43,7 @@ module HaplotypeLibraryModule
     procedure :: removeHap
     procedure :: updateHap
     procedure :: destroyHaplotypeLibrary
+    procedure :: getConsensusHap
     ! final :: destroyHaplotypeLibrary
   end type HaplotypeLibrary
 
@@ -828,5 +829,28 @@ contains
       end if
     end do
   end function numberPercentPhased
+
+  function getConsensusHap(library, candHaps) result (libhap)
+    use HaplotypeLibraryModule
+    use HaplotypeModule
+    
+    class(HaplotypeLibrary), intent(in) :: library
+    integer, dimension(:), intent(in) :: candHaps
+    
+    type(Haplotype) :: libhap
+    
+    libhap = newHaplotypeMissing(library%nSnps)
+    
+    ! Here for speed!
+    if (size(CandHaps) == 1) then
+      libhap = library%newstore(CandHaps(1))
+    end if
+    
+    if (size(CandHaps) > 1) then
+      call libhap%setZeroBits(library%oneZeroNoOnes(candHaps))
+      call libhap%setOneBits(library%oneOneNoZeros(candHaps))
+    end if
+    
+  end function getConsensusHap    
 
 end module HaplotypeLibraryModule
