@@ -911,7 +911,7 @@ contains
 	h%missing(i) = IOR(ISHFT(sub%missing(i-starti), offset - 64), ISHFT(sub%missing(i-starti+1), offset))
       end do
       
-      if (endi > 1) then
+      if (endi /= starti) then
 	endmask = 0
 	if (offset - sub%overhang > 0) then
 	  do i = 1, offset - sub%overhang
