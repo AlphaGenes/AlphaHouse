@@ -338,6 +338,8 @@ contains
     if (pos > h%length) then
 
         write(error_unit,*) "error - GetPhase has been given position longer than haplotype"
+            write(error_unit,*) pos, " vs length:", h%length
+        stop
     endif
     cursection = (pos-1) / 64 + 1
     curpos = pos - (cursection - 1) * 64 - 1
