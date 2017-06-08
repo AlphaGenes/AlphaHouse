@@ -831,7 +831,6 @@ contains
   end function numberPercentPhased
 
   function getConsensusHap(library, candHaps) result (libhap)
-    use HaplotypeLibraryModule
     use HaplotypeModule
     
     class(HaplotypeLibrary), intent(in) :: library
