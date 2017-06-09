@@ -107,46 +107,6 @@ module HaplotypeModule
   
 contains
 
-
-
-pure function allPresent(hap) result(log)
-    class(Haplotype), intent(in) :: hap
-
-    logical :: log
-
-
-    if (all(hap%missing == 0)) then
-        log = .true.
-    else
-        log = .false.
-    endif
-
-end function allPresent
-
-
-pure function allMissingOrError(hap) result(log)
-    class(Haplotype), intent(in) :: hap
-
-    logical :: log
-    integer(kind=int64) :: tmp
-    integer :: i
-
-    log = .true.
-    if (.not. all(hap%missing(1:hap%sections-1) == -1)) then
-        log = .false.
-    endif
-
-    tmp = 0
-
-    do i = 64 - hap%overhang, 63
-        tmp = ibset(tmp, i)
-    enddo
-
-    if (.not. IOR(hap%missing(hap%sections),tmp) == -1) then
-        log =.false.
-    endif
-
-end function allMissingOrError
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Haplotype from a integer array
     !> @date    May 25, 2017
@@ -161,7 +121,7 @@ end function allMissingOrError
     
     h%length = size(hap,1)
     
-    h%sections = h%length / 64 + 1
+    h%sections = (h%length - 1) / 64 + 1
     h%overhang = 64 - (h%length - (h%sections - 1) * 64)
     
     allocate(h%phase(h%sections))
@@ -246,7 +206,7 @@ end function allMissingOrError
     integer :: i
     
     h%length = length
-    h%sections = h%length / 64 + 1
+    h%sections = (h%length - 1) / 64 + 1
     h%overhang = 64 - (h%length - (h%sections - 1) * 64)
     allocate(h%phase(h%sections))
     allocate(h%missing(h%sections))
@@ -1152,6 +1112,46 @@ end function allMissingOrError
 
       call wrapper(dtv, array)
     end subroutine readFormattedHaplotype
+
+
+    pure function allPresent(hap) result(log)
+        class(Haplotype), intent(in) :: hap
+
+        logical :: log
+
+
+        if (all(hap%missing == 0)) then
+            log = .true.
+        else
+            log = .false.
+        endif
+
+    end function allPresent
+
+
+    pure function allMissingOrError(hap) result(log)
+        class(Haplotype), intent(in) :: hap
+
+        logical :: log
+        integer(kind=int64) :: tmp
+        integer :: i
+
+        log = .true.
+        if (.not. all(hap%missing(1:hap%sections-1) == -1)) then
+            log = .false.
+        endif
+
+        tmp = 0
+
+        do i = 64 - hap%overhang, 63
+            tmp = ibset(tmp, i)
+        enddo
+
+        if (.not. IOR(hap%missing(hap%sections),tmp) == -1) then
+            log =.false.
+        endif
+
+    end function allMissingOrError
 
     
 end module HaplotypeModule
