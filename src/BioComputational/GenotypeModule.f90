@@ -82,6 +82,7 @@ module GenotypeModule
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
   procedure :: writeunFormattedGenotype
+  ! final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
   generic:: write(unformatted)=> writeunFormattedGenotype
   generic:: read(formatted) => readFormattedGenotype
@@ -97,6 +98,13 @@ module GenotypeModule
       contains
 
 
+      subroutine destroyGenotype(g)
+        type(Genotype) :: g
+        if (allocated(g%homo)) then
+          deallocate(g%homo)
+          deallocate(g%additional)
+        endif
+    end subroutine destroyGenotype
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Genotype from a integer array
     !> @date    November 26, 2016
@@ -111,7 +119,7 @@ module GenotypeModule
 
         g%length = size(geno,1)
 
-        g%sections = g%length / 64 + 1
+        g%sections = (g%length - 1) / 64 + 1
         g%overhang = 64 - (g%length - (g%sections - 1) * 64)
 
         allocate(g%homo(g%sections))
@@ -193,7 +201,7 @@ module GenotypeModule
     integer :: i
     
     g%length = length
-    g%sections = g%length / 64 + 1
+    g%sections = (g%length - 1) / 64 + 1
     g%overhang = 64 - (g%length - (g%sections - 1) * 64)
     allocate(g%homo(g%sections))
     allocate(g%additional(g%sections))

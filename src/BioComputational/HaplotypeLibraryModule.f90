@@ -42,7 +42,9 @@ module HaplotypeLibraryModule
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
-    final :: destroyHaplotypeLibrary
+    procedure :: destroyHaplotypeLibrary
+    procedure :: getConsensusHap
+    ! final :: destroyHaplotypeLibrary
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -52,7 +54,7 @@ module HaplotypeLibraryModule
 
 contains
   subroutine destroyHaplotypeLibrary(library)
-    type(HaplotypeLibrary) :: library
+    class(HaplotypeLibrary) :: library
     
     if (allocated(library%newstore)) then
       deallocate(library%newstore)
@@ -750,16 +752,14 @@ contains
     res = trim(tmp)
   end function
   
-  function rationalise(library, percThreshold, c) result(newlib)
-    use CoreModule
-    
-    class(HaplotypeLibrary), intent(in) :: library
+  function rationalise(library, percThreshold) result(newIDs)
+    class(HaplotypeLibrary), intent(inout) :: library
     double precision, intent(in) :: percThreshold
-    type(Core), optional :: c
-    type(HaplotypeLibrary) :: newlib
-    
-    integer :: threshold, i
     integer, dimension(library%size) :: newIDs
+
+    type(HaplotypeLibrary) :: newlib    
+    integer :: threshold, i
+
     
     newlib = HaplotypeLibrary(library%nSnps,library%size,library%stepsize)
     
@@ -774,17 +774,9 @@ contains
 	newIDs(i) = newlib%size
       end if
     end do
-    
-    if (present(c)) then
-      do i = 1, size(c%hapAnis,1)
-	if (c%hapAnis(i,1) /= MissingHaplotypeCode) then
-	  c%hapAnis(i,1) = newIDs(c%hapAnis(i,1))
-	end if
-	if (c%hapAnis(i,2) /= MissingHaplotypeCode) then
-	  c%hapAnis(i,2) = newIDs(c%hapAnis(i,2))
-	end if
-      end do
-    end if
+    library%size = newlib%size
+    library%newstore = newlib%newStore
+    library%hapfreq = newlib%hapfreq
   end function rationalise
   
   subroutine removeHap(library, id)
@@ -827,5 +819,27 @@ contains
       end if
     end do
   end function numberPercentPhased
+
+  function getConsensusHap(library, candHaps) result (libhap)
+    use HaplotypeModule
+    
+    class(HaplotypeLibrary), intent(in) :: library
+    integer, dimension(:), intent(in) :: candHaps
+    
+    type(Haplotype) :: libhap
+    
+    libhap = newHaplotypeMissing(library%nSnps)
+    
+    ! Here for speed!
+    if (size(CandHaps) == 1) then
+      libhap = library%newstore(CandHaps(1))
+    end if
+    
+    if (size(CandHaps) > 1) then
+      call libhap%setZeroBits(library%oneZeroNoOnes(candHaps))
+      call libhap%setOneBits(library%oneOneNoZeros(candHaps))
+    end if
+    
+  end function getConsensusHap    
 
 end module HaplotypeLibraryModule

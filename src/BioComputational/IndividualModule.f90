@@ -26,6 +26,7 @@
 module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     use genotypeModule
+    use HaplotypeModule
     use iso_fortran_env
     implicit none
 
@@ -60,6 +61,7 @@ module IndividualModule
         logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical :: isUnknownDummy = .false.
         type(genotype) :: individualGenotype
+        type(Haplotype) :: individualPhase(2)
         integer,dimension(:), allocatable :: referAllele, AlterAllele
         contains
             procedure :: getSireDamByIndex
@@ -146,6 +148,8 @@ contains
         if (present(nsnps)) then
             if (nsnps /= 0) then
                 this%individualGenotype = newGenotypeMissing(nsnps)
+                this%individualPhase(1) = newHaplotypeMissing(nsnps)
+                this%individualPhase(2) = newHaplotypeMissing(nsnps)
             endif
         endif
     end function initIndividual

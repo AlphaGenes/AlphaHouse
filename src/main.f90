@@ -1,24 +1,10 @@
 program test
 
-  use HashModule
+  use iso_fortran_env
   implicit none
 
-  type(DictStructure) :: t
-  character(len=100000)  :: f
-  integer :: i
-
-    t = DictStructure()
-    do i = 1, 100000
-    write(f, '(a2,i)') "hi",i
-      call t%addKey(f, i)
-    enddo
-    call t%destroy()
-
-
-    t = DictStructure()
-    do i = 1, 100000
-    write(f, '(a2,i)') "hi",i
-      call t%addKey(f, i)
-    enddo
-    call t%destroy()
+  integer(kind=int64) :: t
+  
+  t = 0 
+  print *, not(t) 
   end program test
