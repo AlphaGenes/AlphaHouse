@@ -100,6 +100,7 @@ module IndividualModule
             procedure :: removeOffspring
             procedure :: writeIndividual
             procedure :: initPhaseArrays
+            procedure :: hasGenotypedAnsestors
             generic:: write(formatted)=> writeIndividual
     end type Individual
 
@@ -186,6 +187,50 @@ contains
 
         return
     end function compareIndividual
+
+        !---------------------------------------------------------------------------
+    !< @brief returns true if individual has genotyped ancestors up to certrain gen, false otherwise
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    recursive function hasGenotypedAnsestors(ind,count) result(res)
+    class(individual) ,intent(in) :: ind !< individual to check ancestors of
+    integer, intent(in) :: count !< how many generations should we look for
+    logical :: res
+
+    if (count == 0) then
+        res = .false.
+        return
+    endif
+
+    if (associated(ind%damPointer)) then
+
+        if (ind%damPointer%isGenotypedNonMissing()) then
+            res= .true.
+            return
+        endif
+    endif
+    if (associated(ind%sirePointer)) then
+
+        if (ind%sirePointer%isGenotypedNonMissing()) then
+            res= .true.
+            return
+        endif
+        res = hasGenotypedAnsestors(ind%sirePointer, count -1)
+        if (res) then
+            return
+        endif
+    endif
+
+    ! This is done to insure no recursion is done if it is not neccessary, as recursion is more expensive than the branch, which can be trivially optimised
+    if (associated(ind%damPointer)) then
+        res = hasGenotypedAnsestors(ind%damPointer, count -1)
+        if (res) then
+            return
+        endif
+    endif
+
+    end function hasGenotypedAnsestors
 
          !---------------------------------------------------------------------------
     !> @brief output for individual

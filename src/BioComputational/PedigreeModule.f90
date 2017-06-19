@@ -78,6 +78,8 @@
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
     procedure :: getGenotypesAsArrayWitHMissing
+    procedure :: setPhaseFromArray
+    procedure :: setGenotypeFromArray
     procedure :: getNumGenotypesMissing
     procedure :: getGenotypedFounders
     procedure :: getSireDamGenotypeIDByIndex
@@ -117,6 +119,12 @@
     contains
 
 
+    !---------------------------------------------------------------------------
+    !< @brief constructor for creating an empty pedgiree
+    !< @details Constructs an empty pedigree 
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
     function initEmptyPedigree(nsnps) result(pedStructure)
     use iso_fortran_env
     type(PedigreeHolder) :: pedStructure
@@ -134,6 +142,43 @@
         pedStructure%nsnpsPopulation = nsnps
     endif
     end function initEmptyPedigree
+
+
+    !---------------------------------------------------------------------------
+    !< @brief Sets phase information from an array
+    !< @details sets phase objects for animal when given an array
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    pure subroutine setPhaseFromArray(this, array)
+
+        use HaplotypeModule
+
+        class(PedigreeHolder), intent(out) :: this
+        integer(kind=1),dimension(:,:,:),intent(in) :: array !< array should be of format (recodedindId, snp, allele )
+
+        do i=1, size(array,1)
+
+            this%pedigree(i)%individualPhase(1) = newHaplotypeInt(array(i,:,1))
+            this%pedigree(i)%individualPhase(2) = newHaplotypeInt(array(i,:,2))
+        enddo
+
+    end subroutine setPhaseFromArray
+
+    subroutine setGenotypeFromArray(this, array)
+        
+        
+        use GenotypeModule
+
+        class(PedigreeHolder), intent(out)  :: this
+        integer(kind=1),dimension(:,:) :: array !< array should be of format (recodedindId, snp)
+
+        do i=1, size(array,1)
+            this%pedigree(i)%individualGenotype = newGenotypeInt(array(i,:))
+        enddo
+
+    end subroutine setGenotypeFromArray
+
 
     !---------------------------------------------------------------------------
     !< @brief Constructor for pedigree class
@@ -804,7 +849,7 @@
 
             if (this%pedigree(i)%founder) then
                 call genotypedFounders%list_add(this%pedigree(i))
-            else if (.not. hasGenotypedAnsestors(this%pedigree(i),numberOfGenerations)) then !< this checks if ancestors are not genotyped given a number
+            else if (.not. this%pedigree(i)%hasGenotypedAnsestors(numberOfGenerations)) then !< this checks if ancestors are not genotyped given a number
                 call genotypedFounders%list_add(this%pedigree(i))
             endif
 
@@ -816,49 +861,6 @@
     end function getGenotypedFounders
 
 
-    !---------------------------------------------------------------------------
-    !< @brief returns true if individual has genotyped ancestors up to certrain gen, false otherwise
-    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !< @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    recursive function hasGenotypedAnsestors(ind,count) result(res)
-    type(individual) ,intent(in) :: ind !< individual to check ancestors of
-    integer, intent(in) :: count !< how many generations should we look for
-    logical :: res
-
-    if (count == 0) then
-        res = .false.
-        return
-    endif
-
-    if (associated(ind%damPointer)) then
-
-        if (ind%damPointer%isGenotypedNonMissing()) then
-            res= .true.
-            return
-        endif
-    endif
-    if (associated(ind%sirePointer)) then
-
-        if (ind%sirePointer%isGenotypedNonMissing()) then
-            res= .true.
-            return
-        endif
-        res = hasGenotypedAnsestors(ind%sirePointer, count -1)
-        if (res) then
-            return
-        endif
-    endif
-
-    ! This is done to insure no recursion is done if it is not neccessary, as recursion is more expensive than the branch, which can be trivially optimised
-    if (associated(ind%damPointer)) then
-        res = hasGenotypedAnsestors(ind%damPointer, count -1)
-        if (res) then
-            return
-        endif
-    endif
-
-    end function hasGenotypedAnsestors
 
     !---------------------------------------------------------------------------
     !< @brief distructor for pedigree class
