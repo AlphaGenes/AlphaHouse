@@ -68,6 +68,7 @@ module IndividualModule
             procedure :: isGenotyped
             procedure :: isGenotypedNonMissing
             procedure :: setGenotypeArray
+            procedure :: setPhaseArray
             procedure :: isHD
             procedure :: SetHD
             procedure :: getSireId
@@ -872,6 +873,22 @@ contains
             this%phaseInfo = MissingPhaseCode
         endif
     end subroutine setGenotypeArray
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual's phase.
+    !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
+    !> @date    June 19, 2017
+    !---------------------------------------------------------------------------
+    subroutine setPhaseArray(this, hap, phase)
+        use constantModule
+        
+        class(Individual), intent(inout) :: this
+        integer, intent(in) :: hap
+        integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of genotype information
+
+        !Should we be checking that genotype is set and if not set it to missing?
+        this%individualPhase(hap) = Haplotype(phase)
+    end subroutine setPhaseArray
 
 
     !---------------------------------------------------------------------------

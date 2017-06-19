@@ -975,6 +975,52 @@
 
     end subroutine addGenotypeInformationFromFile
 
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !> @brief     Adds phase information to pedigree from a file
+    !
+    !> @author    Daniel Money, daniel.money@roslin.ed.ac.uk
+    !
+    !> @date       June 19, 2017
+    !--------------------------------------------------------------------------
+    subroutine addPhaseInformationFromFile(this, phaseFile, nsnps, nAnnisG)
+
+    use AlphaHouseMod, only : countLines
+    implicit none
+    class(PedigreeHolder) :: this
+    character(len=*) :: phaseFile
+    character(len=IDLENGTH) :: tmpID
+    integer,intent(in) :: nsnps
+    integer,intent(in),optional :: nAnnisG
+    integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
+    integer :: i, j, h, fileUnit, nAnnis,tmpIdNum
+
+
+    if (present(nAnnisG)) then
+        nAnnis = nAnnisG
+    else
+        nAnnis = countLines(phaseFile)
+    endif
+
+    allocate(tmpSnpArray(nsnps))
+    open(newUnit=fileUnit, file=phaseFile, status="old")
+    do i=1, nAnnis
+        do h = 1, 2
+            read (fileUnit,*) tmpId,tmpSnpArray(:)
+            do j=1,nsnps
+                if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>1)) tmpSnpArray(j)=9
+            enddo
+            tmpIdNum = this%dictionary%getValue(tmpId)
+            if (tmpIdNum == DICT_NULL) then
+                write(error_unit, *) "WARNING: Phase info for non existing animal here:",trim(tmpId), " file:", trim(phaseFile), " line:",i
+            else
+                call this%pedigree(tmpIdNum)%setPhaseArray(h, tmpSnpArray)
+            endif
+        end do
+    enddo
+
+    end subroutine addPhaseInformationFromFile
+
 
     subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads)
 
