@@ -64,6 +64,7 @@
     procedure :: outputSortedPedigree
     procedure :: setOffspringGeneration
     procedure :: addGenotypeInformationFromFile
+    procedure :: addPhaseInformationFromFile
     procedure :: addGenotypeInformationFromArray
     generic :: addGenotypeInformation => addGenotypeInformationFromArray, addGenotypeInformationFromFile
     procedure :: outputSortedPedigreeInAlphaImputeFormat
