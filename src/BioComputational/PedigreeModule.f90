@@ -77,6 +77,7 @@
     procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
+    procedure :: getPhaseAsArray
     procedure :: getGenotypesAsArrayWitHMissing
     procedure :: setPhaseFromArray
     procedure :: setGenotypeFromArray
@@ -173,6 +174,7 @@
 
         class(PedigreeHolder), intent(out)  :: this
         integer(kind=1),dimension(:,:) :: array !< array should be of format (recodedindId, snp)
+
         integer :: i
 
         do i=1, size(array,1)
@@ -247,7 +249,7 @@
         endif
         call pedStructure%dictionary%addKey(tmpId, i)
 
-        pedStructure%Pedigree(i) =  Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+        pedStructure%Pedigree(i) = Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
         pedStructure%Pedigree(i)%originalPosition = i
         pedStructure%inputMap(i) = i
         if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -364,9 +366,9 @@
 
     if  (present(pedFile)) then
         if (present(genderFile)) then
-            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile, nSnps=nsnp)
+            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
         else
-            pedStructure = PedigreeHolder(pedFile, nSnps=nsnp)
+            pedStructure = PedigreeHolder(pedFile)
         endif
     else
         pedStructure%nDummys = 0
@@ -1723,6 +1725,23 @@
     enddo
 
     end function getGenotypesAsArray
+
+
+     function getPhaseAsArray(this) result(res)
+
+    class(pedigreeHolder) :: this
+    integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+    integer :: i
+
+
+    allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+    res = 9
+    do i=1, this%nGenotyped
+        res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+        res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+    enddo
+
+    end function getPhaseAsArray
 
 
        !---------------------------------------------------------------------------
