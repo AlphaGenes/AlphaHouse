@@ -75,11 +75,13 @@
     procedure :: getMatePairsAndOffspring
     procedure :: getAllGenotypesAtPosition
     procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
+    procedure :: getPhaseAtPosition
+    procedure :: getPhaseAtPositionUngenotypedAnimals
     procedure :: setAnimalAsGenotyped
     procedure :: getGenotypesAsArray
     procedure :: getPhaseAsArray
     procedure :: getGenotypesAsArrayWitHMissing
-    procedure :: setPhaseFromArray
+    procedure :: countMissingGenotypesNoDummys  
     procedure :: setGenotypeFromArray
     procedure :: getNumGenotypesMissing
     procedure :: getGenotypedFounders
@@ -1666,7 +1668,7 @@
 
 
     !---------------------------------------------------------------------------
-    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @brief returns array of genotypes for all animals 
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !< @date    October 26, 2016
     !---------------------------------------------------------------------------
@@ -1684,13 +1686,68 @@
 
             counter = counter +1
             res(counter) = this%pedigree(this%genotypeMap(i))%individualGenotype%getGenotype(position)
+            if (res(counter) /= 0 .and. res(counter) /= 1 .and. res(counter) /= 2 .and. res(counter) /= MISSINGGENOTYPECODE) then
+                res(counter) = MISSINGGENOTYPECODE
+            endif
+
+        enddo
+
+    end function getAllGenotypesAtPosition
+
+
+
+
+    !---------------------------------------------------------------------------
+    !< @brief returns list of mates and offspring for those mate pairs for given pedigree
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function getPhaseAtPosition(this, position, allele) result(res)
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer, intent(in) :: allele
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%nGenotyped))
+        res = MISSINGPHASECODE
+        counter = 0
+
+        do i=1, this%nGenotyped
+
+            counter = counter +1
+            res(counter) = this%pedigree(this%genotypeMap(i))%individualPhase(allele)%getPhase(position)
             if (res(counter) /= 0 .and. res(counter) /= 1 .and. res(counter) /= 2 .and. res(counter) /= MISSINGPHASECODE) then
                 res(counter) = MISSINGPHASECODE
             endif
 
         enddo
 
-    end function getAllGenotypesAtPosition
+    end function getPhaseAtPosition
+
+
+        function getPhaseAtPositionUngenotypedAnimals(this, position, allele) result(res)
+        use constantModule, only : MISSINGPHASECODE
+        class(pedigreeHolder) :: this
+        integer, intent(in) :: position
+        integer, intent(in) :: allele
+        integer(KIND=1), allocatable, dimension(:) :: res
+        integer :: counter, i
+        allocate(res(this%pedigreeSize))
+        res = MISSINGPHASECODE
+        counter = 0
+
+        do i=1, this%nGenotyped
+
+            counter = counter +1
+            res(this%genotypeMap(i)) = this%pedigree(this%genotypeMap(i))%individualPhase(allele)%getPhase(position)
+            if (res(this%genotypeMap(i)) /= 0 .and. res(this%genotypeMap(i)) /= 1 .and. res(this%genotypeMap(i)) /= 2 .and. res(this%genotypeMap(i)) /= MISSINGPHASECODE) then
+                res(this%genotypeMap(i)) = MISSINGPHASECODE
+            endif
+
+        enddo
+
+    end function getPhaseAtPositionUngenotypedAnimals
 
 
 
@@ -2161,7 +2218,6 @@
     !> If genotype is supplied, animal is set to hd
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
-    ! PARAMETERS:
     !---------------------------------------------------------------------------
     subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
     class(PedigreeHolder) :: this
@@ -2181,5 +2237,27 @@
         call this%setAnimalAsHD(this%pedigreeSize)
     endif
     end subroutine addAnimalAtEndOfPedigree
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief  counts missing snps across all animals at every snp
+    !> Returns a count of missing snps across all animals at every snp
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function countMissingGenotypesNoDummys(this) result(res)
+        integer :: res
+        integer :: i
+        class(PedigreeHolder) :: this
+
+        res = 0
+        do i=1, this%pedigreeSize
+
+            if (this%pedigree(i)%isDummy) cycle
+
+            res = res + this%pedigree(i)%individualGenotype%numMissing()
+        end do
+    end function countMissingGenotypesNoDummys
 
     end module PedigreeModule
