@@ -156,6 +156,7 @@
 
         class(PedigreeHolder), intent(out) :: this
         integer(kind=1),dimension(:,:,:),intent(in) :: array !< array should be of format (recodedindId, snp, allele )
+        integer :: i
 
         do i=1, size(array,1)
 
@@ -172,6 +173,7 @@
 
         class(PedigreeHolder), intent(out)  :: this
         integer(kind=1),dimension(:,:) :: array !< array should be of format (recodedindId, snp)
+        integer :: i
 
         do i=1, size(array,1)
             this%pedigree(i)%individualGenotype = newGenotypeInt(array(i,:))
@@ -362,9 +364,9 @@
 
     if  (present(pedFile)) then
         if (present(genderFile)) then
-            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
+            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile, nSnps=nsnp)
         else
-            pedStructure = PedigreeHolder(pedFile)
+            pedStructure = PedigreeHolder(pedFile, nSnps=nsnp)
         endif
     else
         pedStructure%nDummys = 0
@@ -1654,7 +1656,7 @@
         class(pedigreeHolder) :: this
         integer, intent(in) :: position
         integer(KIND=1), allocatable, dimension(:) :: res
-        integer :: counter, i
+        integer :: i
         allocate(res(this%pedigreeSize))
         res = MISSINGPHASECODE
 
