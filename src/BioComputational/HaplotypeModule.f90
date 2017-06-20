@@ -573,6 +573,7 @@ contains
     
     do i = 1, h%sections
         fully = fully .and. (h%missing(i) == 0)
+        if (.not. fully) exit
     end do
   end function fullyPhased
   
