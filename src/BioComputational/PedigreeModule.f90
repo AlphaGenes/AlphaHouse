@@ -95,6 +95,7 @@
     procedure :: addAnimalAtEndOfPedigree
     procedure :: addSequenceFromFile
     procedure :: setAnimalAsGenotypedSequence
+    procedure :: convertSequenceDataToArray
 
     end type PedigreeHolder
 
@@ -2036,6 +2037,34 @@
     this%genotypeMap(this%nGenotyped) = individualIndex
 
     end subroutine setAnimalAsGenotypedSequence
+
+
+     !---------------------------------------------------------------------------
+    !> @brief  Converts the sequence data counts to a 3D array (similar to phase) of size of pedigree
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function convertSequenceDataToArray(this) result(res)
+
+    class(PedigreeHolder), intent(in) :: this
+    integer, dimension(:,:,:),allocatable :: res
+    integer :: i
+    
+    res = 0
+    do i =1, this%pedigreeSize
+
+        if (.not. allocated(this%pedigree(i)%referAllele)) cycle
+
+        if(.not. allocated(res)) then
+                allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
+        endif
+
+        res(i,:,1) = this%pedigree(i)%referAllele
+        res(i,:,2) = this%pedigree(i)%alterAllele
+    enddo
+
+    end function convertSequenceDataToArray
+
     !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
     !> which index is passed.
