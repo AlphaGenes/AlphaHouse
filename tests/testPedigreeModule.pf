@@ -62,6 +62,76 @@ module TestPedigreeModule
     end subroutine
 
     @test
+    subroutine testGetCorrelationNoInbreeding()
+    real(real64), dimension(9,9):: expected
+    real(real64), dimension(9,9):: gotten
+    integer:: i
+
+    !The pedigree is
+    ! ID, sire, dam
+    ! 9 0 0
+    ! 1 0 0 
+    ! 2 0 0
+    ! 3 1 2 
+    ! 4 1 0
+    ! 5 4 2
+    ! 6 4 2
+    ! 7 0 9
+    ! 8 0 9
+
+    expected = 0
+    !The expected correlation (with no inbreeding) is as follows
+    expected(1,1) = 2.0_real64+ .25_real64+1.0_real64/3_real64
+    expected(1,2) = 0.25_real64
+    expected(1,4) = -0.5_real64
+    expected(1,5) = -2.0_real64/3.0_real64
+
+    expected(2,1) = 0.25_real64
+    expected(2,2) = 2.0+0.75
+    expected(2,4) =-0.5_real64
+    expected(2,5) =0.5_real64
+    expected(2,8) = -0.5_real64
+    expected(2,9) = -0.5_real64
+
+    expected(4,1) = -0.5_real64
+    expected(4,2) = -0.5_real64
+    expected(4,4) = 1.0_real64
+    
+    expected(5,1) = -2.0_real64/3.0_real64
+    expected(5,2) = 0.5_real64
+    expected(5,5) = 4.0_real64/3.0 +0.5_real64 
+    expected(5,8) = -0.5_real64
+    expected(5,9) = -0.5_real64
+
+    expected(8,2) = -0.5_real64
+    expected(8,5) = -0.5_real64
+    expected(8,8) = 1.0_real64
+
+    expected(9,2) = -0.5_real64
+    expected(9,5) = -0.5_real64
+    expected(9,9) = 1.0_real64
+
+    expected(6,6) = 4.0_real64/3.0_real64
+    expected(6,3) = -2.0_real64/3.0_real64
+    
+    expected(7,7) = 4.0_real64/3.0_real64
+    expected(7,3) = -2.0_real64/3.0_real64
+    
+    expected(3,6) = -2.0_real64/3.0_real64
+    expected(3,7) = -2.0_real64/3.0_real64
+    expected(3,3) = 8.0_real64/3.0_real64
+
+
+
+    call pedigree%sortPedigreeAndOverwrite(1)
+
+    gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
+
+    @assertEqual(expected, gotten, 1E-14_real64)
+
+    end subroutine testGetCorrelationNoInbreeding
+
+    @test
     subroutine testReadAndSort
         implicit none
          @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
@@ -84,7 +154,7 @@ module TestPedigreeModule
     subroutine testDummys
         implicit none
         integer :: tmp,i
-        tmp = pedigree%dictionary%getValue(dummyAnimalPrepre//"d1")
+        tmp = pedigree%dictionary%getValue("d1")
          @assertFalse(tmp == DICT_NULL)
          @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
@@ -150,7 +220,7 @@ module TestPedigreeModule
 
       call pedigree%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigree%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"alphahouse001", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"alphahouse001", "d1", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
       expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
@@ -167,7 +237,7 @@ module TestPedigreeModule
 
       call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
       call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "bbb", dummyAnimalPrepre//"aaa", dummyAnimalPrepre//"d1", dummyAnimalPrepre//"alphahouse001", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
+      expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"alphahouse001", dummyAnimalPrepre//"alphahouse002", dummyAnimalPrepre//"alphahouse003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
       expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
       expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
       expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]

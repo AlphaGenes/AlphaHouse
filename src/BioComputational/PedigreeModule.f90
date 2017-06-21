@@ -29,6 +29,7 @@
     use HashModule
     use constantModule
     use AlphaHouseMod, only : Int2Char
+    implicit none
 
     implicit none
 
@@ -61,6 +62,7 @@
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 
     contains
+      procedure:: calculatePedigreeCorrelationNoInbreeding
     procedure :: destroyPedigree
     procedure :: setPedigreeGenerationsAndBuildArrays
     procedure :: outputSortedPedigree
@@ -174,6 +176,73 @@
 
     end subroutine setPhaseFromArray
 
+    !> @brief Calculate correlation between pedigree 
+    !> Calculates the correlation between individuals in the pedigree, assuming no inbreeding.   Will also handle groups - just give
+    !> the group parents a unique ID.   It assumes that the pedigree has been sorted such that the unknown dummies are at the end
+    !> (sortPedigreeAndOverwrite(1)).
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+
+  function calculatePedigreeCorrelationNoInbreeding(pedigreeIn, additiveVarianceIn) result(valuesOut)
+    class(PedigreeHolder), intent(in):: pedigreeIn
+    real(real64), dimension(:,:), allocatable:: valuesOut
+    real(real64), intent(in), optional:: additiveVarianceIn
+    integer:: damKnown, sireKnown
+    integer::numLevels, ID, sireID, damID
+    integer:: i
+    real(real64):: D
+
+    numLevels = pedigreeIn%pedigreeSize-pedigreeIn%UnknownDummys
+
+    allocate(valuesOut(numLevels, numLevels))
+    valuesOut = 0_real64
+
+    do i = 1,numLevels
+      damKnown = 0
+      sireKnown = 0
+      damID=0
+      sireID=0
+      ID = pedigreeIn%pedigree(i)%ID
+      if (associated(pedigreeIn%pedigree(i)%sirePointer)) then
+        if (.not. pedigreeIn%pedigree(i)%sirePointer%isUnknownDummy) then
+          sireKnown = 1
+          sireID = pedigreeIn%pedigree(i)%sirePointer%ID
+        end if
+      end if
+
+      if (associated(pedigreeIn%pedigree(i)%damPointer)) then
+        if (.not. pedigreeIn%pedigree(i)%damPointer%isUnknownDummy) then
+          damKnown = 1
+          damID = pedigreeIn%pedigree(i)%damPointer%ID
+        end if
+      end if
+
+      D = 4.0_real64/(2.0_real64+damKnown+sireKnown) !If both are known, then this is set to be 2,if only 1 is known this is 4.0/3.0
+
+      valuesOut(ID, ID) = valuesOut(ID,ID)+D
+
+      if (sireKnown .ne. 0) then
+        valuesOut(sireID, ID) = valuesOut(sireID, ID) -0.5*D
+        valuesOut(ID, sireID) = valuesOut(ID, sireID) - 0.5*D
+        valuesOut(sireID, sireID) = valuesOut(sireId, sireID) +0.25*D
+      end if
+
+      if (damKnown .ne. 0) then
+        valuesOut(damID, ID) = valuesOut(damID, ID) -0.5*D
+        valuesOut(ID, damID) = valuesOut(ID, damID) -0.5*D
+        valuesOut(damID, damID) = valuesOut(damId, damID) +0.25*D
+      end if
+
+      if ((sireKnown .ne. 0) .and. (damKnown.ne.0)) then
+        valuesOut(sireID, damID) = valuesOut(sireID, damID) + 0.25*D
+        valuesOut(damID, sireID) = valuesOut(damID, sireID) +0.25*D
+      end if
+    end do
+
+    if (present(additiveVarianceIn)) then
+      valuesOut = valuesOut*additiveVarianceIn
+    end if
+
+  end function calculatePedigreeCorrelationNoInbreeding
     subroutine setGenotypeFromArray(this, array)
         
         
@@ -705,7 +774,7 @@
                 ! check that we've not already defined the parent above
             else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
                 ! check if the tmp animal has already been created
-                tmpSireNum = pedStructure%dictionary%getValue(dummyAnimalPrepre//trim(tmpSire))
+                tmpSireNum = pedStructure%dictionary%getValue(trim(tmpSire))
                 if (tmpSireNum == DICT_NULL) then
                     pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
                     pedStructure%nDummys = pedStructure%nDummys + 1
@@ -714,8 +783,8 @@
                         stop
                     endif
                     ! TODO potential issue here regarding dummy being the same as the pedigreeCounter
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-                    call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpSire), pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+                    call pedStructure%dictionary%addKey(trim(tmpSire), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
@@ -752,7 +821,7 @@
                 ! check that we've not already defined the parent above
             else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
                 ! Check for defined animals that have nit been set in pedigree
-                tmpDamNum = pedStructure%dictionary%getValue(dummyAnimalPrepre//trim(tmpDam))
+                tmpDamNum = pedStructure%dictionary%getValue(trim(tmpDam))
                 if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
                     pedStructure%nDummys = pedStructure%nDummys + 1
                     pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
@@ -760,8 +829,8 @@
                         write(error_unit,*) "ERROR: too many undefined animals"
                         stop
                     endif
-                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(dummyAnimalPrepre//trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-                    call pedStructure%dictionary%addKey(dummyAnimalPrepre//trim(tmpDam), pedStructure%pedigreeSize)
+                    pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+                    call pedStructure%dictionary%addKey(trim(tmpDam), pedStructure%pedigreeSize)
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
@@ -1359,12 +1428,12 @@
         call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
         newPed(pedCounter) = tmpIndNode%item
         newPed(pedCounter)%id = pedCounter
-        call newPed(pedCounter)%resetOffspringInformation ! reset offsprings
+        call newPed(pedCounter)%resetOffspringInformation() ! reset offsprings
 
         do h=1, tmpIndNode%item%nOffs
             tmpId =  this%dictionary%getValue(tmpIndNode%item%offsprings(h)%p%originalID)
             call newPed(pedCounter)%addOffspring(newPed(tmpID))
-            if(trim(tmpIndNode%item%offsprings(h)%p%sireId) == trim(newPed(pedCounter)%originalID)) then
+            if(associated(tmpIndNode%item%offsprings(h)%p%sirePointer, tmpIndNode%item)) then
                 newPed(tmpId)%sirePointer => newPed(pedCounter)
                 if (newPed(pedCounter)%nOffs == 1) then
                     call this%sireList%list_add(newPed(pedCounter))

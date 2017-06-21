@@ -246,7 +246,7 @@ contains
         integer, intent(out) :: iostat      !< non zero on error, etc.
         character(*), intent(inout) :: iomsg  !< define if iostat non zero.
 
-        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID
+        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID 
 
     end subroutine writeIndividual
 
@@ -267,13 +267,23 @@ contains
         class(Individual), intent(in) :: this
         integer, intent(in) :: index !< index of value to return (1 for thisID, 2 for sireID, 3 for damID)
         character(:),allocatable :: v
+          
         select case (index)
             case(1)
                 v = this%originalID
             case(2)
-                v = this%sireID
+                if (associated(this%sirePointer)) then
+                  v = this%sirePointer%originalId
+                else
+                  v = "0"
+                endif
+
             case(3)
-                v = this%damID
+                if (associated(this%damPointer)) then
+              v = this%damPointer%originalId
+              else
+                  v = "0"
+            endif
             case default
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
