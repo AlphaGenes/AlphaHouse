@@ -404,7 +404,7 @@ contains
 
         class(IndividualLinkedList), intent(inout) :: this
         integer, intent(in),optional :: nOffsThresh
-        logical, intent(in), optional :: genotyped,hd
+        integer, intent(in), optional :: genotyped,hd !, if either of these are present, then, these are effectively true
         type(IndividualLinkedListNode), pointer :: ind
 
         ind => this%first
@@ -425,6 +425,7 @@ contains
                     endif
                     deallocate(ind)
                     this%length = this%length -1
+                    ind => ind%next
                     cycle
                 endif
             endif
@@ -444,6 +445,7 @@ contains
                     endif
                     deallocate(ind)
                     this%length = this%length -1
+                    ind => ind%next
                     cycle
                 endif
             endif
@@ -463,11 +465,12 @@ contains
                     endif
                     deallocate(ind)
                     this%length = this%length -1
+                    ind => ind%next
                     cycle
                 endif
             endif
-
             ind => ind%next
+            
         enddo
     end subroutine removeIndividualsBasedOnThreshold
 
