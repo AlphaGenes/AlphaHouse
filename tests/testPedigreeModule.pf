@@ -127,10 +127,6 @@ module TestPedigreeModule
 
     gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
 
-    do i = 1, 9
-      write(*,"(9e15.6)") gotten(i,:)
-    end do
-
     @assertEqual(expected, gotten, 1E-14_real64)
 
     end subroutine testGetCorrelationNoInbreeding

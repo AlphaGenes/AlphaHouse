@@ -194,7 +194,6 @@
     valuesOut = 0_real64
 
     do i = 1,numLevels
-      write(*,*) pedigreeIn%pedigree(i)%ID, pedigreeIn%pedigree(i)%originalId
       damKnown = 0
       sireKnown = 0
       damID=0
@@ -216,7 +215,6 @@
 
       D = 4.0_real64/(2.0_real64+damKnown+sireKnown) !If both are known, then this is set to be 2,if only 1 is known this is 4.0/3.0
 
-      write(*,"(5I)") ID, sireKnown, damKnown, damID, sireID
       valuesOut(ID, ID) = valuesOut(ID,ID)+D
 
       if (sireKnown .ne. 0) then
