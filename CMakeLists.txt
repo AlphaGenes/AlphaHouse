@@ -12,7 +12,7 @@ INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
 
 
 OPTION(RUN_TESTS "Run and compile tests"
-  ON)
+  OFF)
 OPTION(USE_HDF5 "Use hdf"
        OFF)
 
@@ -40,7 +40,7 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
 # Set some options the user may choose
 # Uncomment the below if you want the user to choose a parallelization library
-OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
+OPTION(USE_MPI "Use the MPI library for parallelization" ON)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 
 # Files below are fortran files that tests link to
