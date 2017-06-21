@@ -31,8 +31,7 @@
     use AlphaHouseMod, only : Int2Char
     implicit none
 
-    implicit none
-
+    
     private addOffspringsAfterReadIn
 
     type PedigreeHolder
