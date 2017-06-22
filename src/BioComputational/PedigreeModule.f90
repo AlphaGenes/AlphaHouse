@@ -319,7 +319,7 @@
 
         if (trim(tmpId) == trim(tmpsire) .or. trim(tmpDam) == trim(tmpId)) then
 
-            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this."
+            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this. Error on line:",i
             stop
         endif
         call pedStructure%dictionary%addKey(tmpId, i)

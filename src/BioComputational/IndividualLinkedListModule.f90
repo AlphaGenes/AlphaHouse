@@ -380,10 +380,16 @@ contains
 
 
 
+
+            !---------------------------------------------------------------------------
+    !> @brief Across a list of individuals, return all the genotypes at a given position
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !--------------------------------------------------------------------------- 
     function getGenotypesAtPosition(this, pos) result(res)
         class(IndividualLinkedList), intent(in) :: this
-        integer, intent(in) :: pos 
-        integer, dimension(:), allocatable :: res
+        integer, intent(in) :: pos !< snp position
+        integer(kind=1), dimension(:), allocatable :: res !< result of all the genotyps
         type(IndividualLinkedListNode), pointer :: ind
         integer :: i
         ind => this%first
@@ -400,32 +406,58 @@ contains
     end function getGenotypesAtPosition   
 
 
-    subroutine removeIndividualsBasedOnThreshold(this, nOffsThresh, genotyped, hd)
+
+
+            !---------------------------------------------------------------------------
+    !> @brief Across a list of individuals, return all the genotypes at a given position
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !--------------------------------------------------------------------------- 
+    subroutine removeIndividualsBasedOnThreshold(this, nOffsThresh, genotyped, hd, genotypedOffspring)
 
         class(IndividualLinkedList), intent(inout) :: this
-        integer, intent(in),optional :: nOffsThresh
+        integer, intent(in),optional :: nOffsThresh !< threshold of number of offspring. If less than this these offsprings will be removed
         integer, intent(in), optional :: genotyped,hd !, if either of these are present, then, these are effectively true
-        type(IndividualLinkedListNode), pointer :: ind
+        integer, intent(in), optional :: genotypedOffspring !, if present, only care about offspring that are genotpyed
+        type(IndividualLinkedListNode), pointer :: ind, tmp
+        integer :: offspringCount,i
 
         ind => this%first
         do while(associated(ind))
             
             if (present(nOffsThresh)) then
+
+                if (present(genotypedOffspring)) then
+                    offspringCount = 0
+                    do i=1,ind%item%nOffs
+
+                        if (ind%item%offsprings(i)%p%genotyped) then
+                            offspringCount = offspringCount + 1
+                        endif
+                    enddo
+                else 
+                    offspringCount = ind%item%nOffs
+                endif
                 if(ind%item%nOffs < nOffsThresh) then
+
+                    ! if its the first element
                     if (associated(this%first, ind)) then
                         this%first => ind%next
+                        tmp => ind%next
                         ind%next%previous => null()
 
                     else if  (associated(this%last, ind)) then
                         this%last => ind%previous
                         this%last%next => null()
+                        tmp => null()
                     else
                         ind%previous%next => ind%next
+                        tmp => ind%next
                         ind%next%previous => ind%previous
                     endif
                     deallocate(ind)
                     this%length = this%length -1
-                    ind => ind%next
+                    ind => tmp
                     cycle
                 endif
             endif
@@ -434,18 +466,21 @@ contains
                 if(.not. ind%item%Genotyped) then
                     if (associated(this%first, ind)) then
                         this%first => ind%next
+                        tmp => ind%next
                         ind%next%previous => null()
 
                     else if  (associated(this%last, ind)) then
                         this%last => ind%previous
                         this%last%next => null()
+                        tmp => null()
                     else
                         ind%previous%next => ind%next
+                        tmp => ind%next
                         ind%next%previous => ind%previous
                     endif
                     deallocate(ind)
                     this%length = this%length -1
-                    ind => ind%next
+                    ind => tmp
                     cycle
                 endif
             endif
@@ -454,18 +489,21 @@ contains
                 if(.not. ind%item%hd) then
                     if (associated(this%first, ind)) then
                         this%first => ind%next
+                        tmp => ind%next
                         ind%next%previous => null()
 
                     else if  (associated(this%last, ind)) then
                         this%last => ind%previous
+                        tmp => null()
                         this%last%next => null()
                     else
                         ind%previous%next => ind%next
+                        tmp => ind%next
                         ind%next%previous => ind%previous
                     endif
                     deallocate(ind)
                     this%length = this%length -1
-                    ind => ind%next
+                    ind => tmp
                     cycle
                 endif
             endif
