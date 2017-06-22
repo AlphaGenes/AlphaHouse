@@ -43,8 +43,6 @@ module IndividualModule
     type Individual
 
 
-        integer(kind=1) , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
-
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
         character(len=:), allocatable :: damID
@@ -169,9 +167,6 @@ contains
         deallocate(this%originalID)
         deallocate(this%sireID)
         deallocate(this%damID)
-        if (allocated(this%phaseInfo)) then
-            deallocate(this%phaseInfo)
-        endif
     end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
@@ -915,10 +910,6 @@ contains
         !TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         this%individualGenotype = Genotype(Geno)
-        if (.not. allocated(this%phaseInfo)) then
-            allocate(this%phaseInfo(size(geno),2))
-            this%phaseInfo = MissingPhaseCode
-        endif
     end subroutine setGenotypeArray
 
     !---------------------------------------------------------------------------
@@ -933,7 +924,7 @@ contains
         integer, intent(in) :: hap
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of genotype information
 
-        !Should we be checking that genotype is set and if not set it to missing?
+        !TODO: Should we be checking that genotype is set and if not set it to missing?
         this%individualPhase(hap) = Haplotype(phase)
     end subroutine setPhaseArray
 
@@ -948,12 +939,8 @@ contains
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
-        if (allocated(this%phaseInfo)) then
-            deallocate(this%phaseInfo)
-        endif
-
-        allocate(this%phaseInfo(nsnp,2))
-        this%phaseInfo = MissingPhaseCode
+        this%individualPhase(1) = Haplotype(nSnp)
+        this%individualPhase(2) = Haplotype(nSnp)
     end subroutine initPhaseArrays
 
     !---------------------------------------------------------------------------
