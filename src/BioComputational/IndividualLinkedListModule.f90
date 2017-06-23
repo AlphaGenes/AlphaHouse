@@ -438,73 +438,22 @@ contains
                 else 
                     offspringCount = ind%item%nOffs
                 endif
-                if(ind%item%nOffs < nOffsThresh) then
 
-                    ! if its the first element
-                    if (associated(this%first, ind)) then
-                        this%first => ind%next
-                        tmp => ind%next
-                        ind%next%previous => null()
-
-                    else if  (associated(this%last, ind)) then
-                        this%last => ind%previous
-                        this%last%next => null()
-                        tmp => null()
-                    else
-                        ind%previous%next => ind%next
-                        tmp => ind%next
-                        ind%next%previous => ind%previous
-                    endif
-                    deallocate(ind)
-                    this%length = this%length -1
-                    ind => tmp
-                    cycle
+                
+                if(offspringCount < nOffsThresh) then
+                   call this%list_remove(ind%item)
                 endif
             endif
 
              if (present(genotyped)) then
                 if(.not. ind%item%Genotyped) then
-                    if (associated(this%first, ind)) then
-                        this%first => ind%next
-                        tmp => ind%next
-                        ind%next%previous => null()
-
-                    else if  (associated(this%last, ind)) then
-                        this%last => ind%previous
-                        this%last%next => null()
-                        tmp => null()
-                    else
-                        ind%previous%next => ind%next
-                        tmp => ind%next
-                        ind%next%previous => ind%previous
-                    endif
-                    deallocate(ind)
-                    this%length = this%length -1
-                    ind => tmp
-                    cycle
+                    call this%list_remove(ind%item)
                 endif
             endif
 
             if (present(hd)) then
                 if(.not. ind%item%hd) then
-                    if (associated(this%first, ind)) then
-                        this%first => ind%next
-                        tmp => ind%next
-                        ind%next%previous => null()
-
-                    else if  (associated(this%last, ind)) then
-                        this%last => ind%previous
-                        tmp => null()
-                        this%last%next => null()
-                    else
-                        ind%previous%next => ind%next
-                        tmp => ind%next
-                        ind%next%previous => ind%previous
-                    endif
-                    deallocate(ind)
-                    this%length = this%length -1
-                    ind => tmp
-                    cycle
+                  call this%list_remove(ind%item)
                 endif
             endif
             ind => ind%next
