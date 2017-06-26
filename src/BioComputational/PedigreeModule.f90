@@ -163,7 +163,7 @@
 
         use HaplotypeModule
 
-        class(PedigreeHolder), intent(out) :: this
+        class(PedigreeHolder), intent(inout) :: this
         integer(kind=1),dimension(:,:,:),intent(in) :: array !< array should be of format (recodedindId, snp, allele )
         integer :: i
 
@@ -242,12 +242,14 @@
     end if
 
   end function calculatePedigreeCorrelationNoInbreeding
+
+
     subroutine setGenotypeFromArray(this, array)
         
         
         use GenotypeModule
 
-        class(PedigreeHolder), intent(out)  :: this
+        class(PedigreeHolder), intent(inout)  :: this
         integer(kind=1),dimension(:,:) :: array !< array should be of format (recodedindId, snp)
 
         integer :: i
