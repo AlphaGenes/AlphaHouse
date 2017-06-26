@@ -92,7 +92,7 @@ module AlphaHouseMod
     character(len=:), allocatable:: tempChar
 
     integer:: fileSize, fileUnit, filePosition, fileSizeLeft
-    integer:: IOStatus, i
+    integer:: IOStatus, i, finalLetter
     logical:: fileExists, lineEnd, previousIsDelim
 
     numColumnsOut = 0
@@ -110,12 +110,12 @@ module AlphaHouseMod
     if (fileExists) then
       open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
       read(fileUnit, pos=1) tempChar
+      finalLetter = len(tempChar)
 
       if (any(delimiterIn==tempChar(1:1))) then
         previousIsDelim = .true.
       else
         previousIsDelim = .false.
-        numColumnsOut = numColumnsOut+1
       end if
         
       readLoop: do while (ioStatus==0)
@@ -130,22 +130,22 @@ module AlphaHouseMod
             previousIsDelim = .false.
           end if
           if (tempChar(i:i) == new_line("a")) then
+            finalLetter = i-1
             exit readLoop
           end if
         end do
         fileSizeLeft = fileSize-filePosition
-        if (filePosition>=fileSize) then
-          exit readLoop
-        end if
+
         if (fileSizeLeft< len(tempChar)) then
           deallocate(tempChar)
           allocate(character(len=fileSizeLeft):: tempChar)
+          finalLetter = fileSizeLeft
         end if
         read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
       end do readLoop
-      if (any(delimiterIn==tempChar(len(tempChar):len(tempChar)))) then
-        numColumnsOut = numColumnsOut-1
-      else
+
+      if (.not. any(delimiterIn==tempChar(finalLetter:finalLetter))) then
+        numColumnsOut = numColumnsOut+1
       end if
       close(fileUnit)
     else
