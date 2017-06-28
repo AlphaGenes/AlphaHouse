@@ -100,6 +100,7 @@
     procedure :: addSequenceFromFile
     procedure :: setAnimalAsGenotypedSequence
     procedure :: convertSequenceDataToArray
+    procedure :: getSequenceAsArrayWithMissing
 
     end type PedigreeHolder
 
@@ -883,7 +884,10 @@
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
                     call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
+
+                ! add dummy animal to correct lists and dictionaries
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                call pedStructure%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, pedStructure%pedigreeSize)
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
             endif
             if (.not. sireFound) then
@@ -909,8 +913,11 @@
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
                     call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
+
+                ! add animals to correct lists and dictinoaries
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+                call pedStructure%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, pedStructure%pedigreeSize)
             endif
 
         endif
@@ -2129,24 +2136,45 @@
     !---------------------------------------------------------------------------
     function convertSequenceDataToArray(this) result(res)
 
-    class(PedigreeHolder), intent(in) :: this
-    integer, dimension(:,:,:),allocatable :: res
-    integer :: i
-    
-    res = 0
-    do i =1, this%pedigreeSize
+        class(PedigreeHolder), intent(in) :: this
+        integer, dimension(:,:,:),allocatable :: res
+        integer :: i
+        
+        do i =1, this%pedigreeSize
 
-        if (.not. allocated(this%pedigree(i)%referAllele)) cycle
+            if (.not. allocated(this%pedigree(i)%referAllele)) cycle
 
-        if(.not. allocated(res)) then
-                allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
-        endif
+            if(.not. allocated(res)) then
+                    allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
+                    res = 0
+            endif
 
-        res(i,:,1) = this%pedigree(i)%referAllele
-        res(i,:,2) = this%pedigree(i)%alterAllele
-    enddo
+            res(i,:,1) = this%pedigree(i)%referAllele
+            res(i,:,2) = this%pedigree(i)%alterAllele
+        enddo
 
     end function convertSequenceDataToArray
+
+    function getSequenceAsArrayWithMissing(this, index) result(res)
+
+        class(PedigreeHolder), intent(in) :: this
+        integer, dimension(:,:),allocatable :: res
+        integer :: i, index
+    
+        if(.not. allocated(res)) then
+                allocate(res(this%pedigreesize,2))
+        endif
+
+        res = 0
+        do i =1, this%pedigreeSize
+
+            if (.not. allocated(this%pedigree(i)%referAllele)) cycle
+
+            res(i,1) = this%pedigree(i)%referAllele(index)
+            res(i,2) = this%pedigree(i)%alterAllele(index)
+        enddo
+
+    end function getSequenceAsArrayWithMissing
 
     !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
