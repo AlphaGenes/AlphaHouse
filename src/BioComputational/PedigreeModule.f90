@@ -95,6 +95,7 @@
     procedure :: getSireDamHDIDByIndex
     procedure :: getGenotypePercentage
     procedure :: writeOutGenotypes
+    procedure :: WriteoutPhase
     procedure :: createDummyAnimalAtEndOfPedigree
     procedure :: addAnimalAtEndOfPedigree
     procedure :: addSequenceFromFile
@@ -1586,10 +1587,30 @@
 
     open(newUnit=fileUnit,file=filename,status="unknown")
     do i= 1, this%nGenotyped
-        write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
     enddo
+    close(fileUnit)
     end subroutine writeOutGenotypes
 
+
+
+        !---------------------------------------------------------------------------
+    !< @brief Output phase to file
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine WriteoutPhase(this, filename)
+    class(PedigreeHolder) :: this
+    character(*), intent(in) :: filename
+    integer ::i, fileUnit
+
+    open(newUnit=fileUnit,file=filename,status="unknown")
+    do i= 1, this%pedigreeSize
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+    enddo
+    close(fileUnit)
+    end subroutine WriteoutPhase
 
     !---------------------------------------------------------------------------
     !< @brief Sets generation of an individual and his children recursively
@@ -2133,13 +2154,14 @@
     integer, dimension(:,:,:),allocatable :: res
     integer :: i
     
-    res = 0
+    
     do i =1, this%pedigreeSize
 
         if (.not. allocated(this%pedigree(i)%referAllele)) cycle
 
         if(.not. allocated(res)) then
                 allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
+                res = 0
         endif
 
         res(i,:,1) = this%pedigree(i)%referAllele
