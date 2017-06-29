@@ -439,9 +439,9 @@
 
     if  (present(pedFile)) then
         if (present(genderFile)) then
-            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile)
+            pedStructure = PedigreeHolder(pedFile, genderFile=genderFile, nSnps=pedStructure%nSnpsPopulation)
         else
-            pedStructure = PedigreeHolder(pedFile)
+            pedStructure = PedigreeHolder(pedFile, nSnps = pedStructure%nSnpsPopulation)
         endif
     else
         pedStructure%nDummys = 0
