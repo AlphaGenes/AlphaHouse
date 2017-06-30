@@ -907,8 +907,8 @@ function isHomo(g, pos) result (two)
       end do
       
       if (sub%sections + starti - 1 == g%sections) then
-	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),offset)
-	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),offset)
+	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),-offset)
+	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),-offset)
       else
 	sub%homo(sub%sections) = IOR(ISHFT(g%homo(sub%sections + starti - 1),-offset), ISHFT(g%homo(sub%sections + starti), 64 - offset))
 	sub%additional(sub%sections) = IOR(ISHFT(g%additional(sub%sections + starti - 1),-offset), ISHFT(g%additional(sub%sections + starti), 64 - offset))
