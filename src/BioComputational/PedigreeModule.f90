@@ -95,11 +95,13 @@
     procedure :: getSireDamHDIDByIndex
     procedure :: getGenotypePercentage
     procedure :: writeOutGenotypes
+    procedure :: WriteoutPhase
     procedure :: createDummyAnimalAtEndOfPedigree
     procedure :: addAnimalAtEndOfPedigree
     procedure :: addSequenceFromFile
     procedure :: setAnimalAsGenotypedSequence
     procedure :: convertSequenceDataToArray
+    procedure :: getSequenceAsArrayWithMissing
 
     end type PedigreeHolder
 
@@ -163,7 +165,7 @@
 
         use HaplotypeModule
 
-        class(PedigreeHolder), intent(out) :: this
+        class(PedigreeHolder), intent(inout) :: this
         integer(kind=1),dimension(:,:,:),intent(in) :: array !< array should be of format (recodedindId, snp, allele )
         integer :: i
 
@@ -242,12 +244,14 @@
     end if
 
   end function calculatePedigreeCorrelationNoInbreeding
+
+
     subroutine setGenotypeFromArray(this, array)
         
         
         use GenotypeModule
 
-        class(PedigreeHolder), intent(out)  :: this
+        class(PedigreeHolder), intent(inout)  :: this
         integer(kind=1),dimension(:,:) :: array !< array should be of format (recodedindId, snp)
 
         integer :: i
@@ -881,7 +885,10 @@
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
                     call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
+
+                ! add dummy animal to correct lists and dictionaries
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+                call pedStructure%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, pedStructure%pedigreeSize)
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
             endif
             if (.not. sireFound) then
@@ -907,8 +914,11 @@
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
                     call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
+
+                ! add animals to correct lists and dictinoaries
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+                call pedStructure%dictionary%addKey(dummyAnimalPrepre//tmpCounterStr, pedStructure%pedigreeSize)
             endif
 
         endif
@@ -1584,10 +1594,30 @@
 
     open(newUnit=fileUnit,file=filename,status="unknown")
     do i= 1, this%nGenotyped
-        write(fileUnit,*)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
     enddo
+    close(fileUnit)
     end subroutine writeOutGenotypes
 
+
+
+        !---------------------------------------------------------------------------
+    !< @brief Output phase to file
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine WriteoutPhase(this, filename)
+    class(PedigreeHolder) :: this
+    character(*), intent(in) :: filename
+    integer ::i, fileUnit
+
+    open(newUnit=fileUnit,file=filename,status="unknown")
+    do i= 1, this%pedigreeSize
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+    enddo
+    close(fileUnit)
+    end subroutine WriteoutPhase
 
     !---------------------------------------------------------------------------
     !< @brief Sets generation of an individual and his children recursively
@@ -2127,24 +2157,45 @@
     !---------------------------------------------------------------------------
     function convertSequenceDataToArray(this) result(res)
 
-    class(PedigreeHolder), intent(in) :: this
-    integer, dimension(:,:,:),allocatable :: res
-    integer :: i
-    
-    res = 0
-    do i =1, this%pedigreeSize
+        class(PedigreeHolder), intent(in) :: this
+        integer, dimension(:,:,:),allocatable :: res
+        integer :: i
+        
+        do i =1, this%pedigreeSize
 
-        if (.not. allocated(this%pedigree(i)%referAllele)) cycle
+            if (.not. allocated(this%pedigree(i)%referAllele)) cycle
 
-        if(.not. allocated(res)) then
-                allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
-        endif
+            if(.not. allocated(res)) then
+                    allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
+                    res = 0
+            endif
 
-        res(i,:,1) = this%pedigree(i)%referAllele
-        res(i,:,2) = this%pedigree(i)%alterAllele
-    enddo
+            res(i,:,1) = this%pedigree(i)%referAllele
+            res(i,:,2) = this%pedigree(i)%alterAllele
+        enddo
 
     end function convertSequenceDataToArray
+
+    function getSequenceAsArrayWithMissing(this, index) result(res)
+
+        class(PedigreeHolder), intent(in) :: this
+        integer, dimension(:,:),allocatable :: res
+        integer :: i, index
+    
+        if(.not. allocated(res)) then
+                allocate(res(this%pedigreesize,2))
+        endif
+
+        res = 0
+        do i =1, this%pedigreeSize
+
+            if (.not. allocated(this%pedigree(i)%referAllele)) cycle
+
+            res(i,1) = this%pedigree(i)%referAllele(index)
+            res(i,2) = this%pedigree(i)%alterAllele(index)
+        enddo
+
+    end function getSequenceAsArrayWithMissing
 
     !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on

@@ -955,9 +955,9 @@ function isHomo(g, pos) result (two)
 		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
       g%additional(i) = IOR( &
 		    ! g is not missing, use g
-		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
+		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%additional(i)), &
 		    ! g is missing use o
-		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%additional(i)) )
     end do
   end subroutine setFromOtherIfMissing
 
