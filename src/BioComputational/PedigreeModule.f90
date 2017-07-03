@@ -2299,7 +2299,7 @@ module PedigreeModule
                                 this%pedigreeSize = this%pedigreeSize+1
                                 this%nDummys = this%nDummys + 1
 
-                                this%sorted = .false.
+                                this%isSorted = 0
 
                                 write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,this%nDummys
                                 this%Pedigree(this%pedigreeSize) =  Individual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
@@ -2343,7 +2343,7 @@ module PedigreeModule
 
                                 ! change pedigree to no longer be sorted
 
-                                this%sorted = .false.
+                                this%issorted = 0
 
                                 this%pedigreeSize = this%pedigreeSize+1
                                 this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
