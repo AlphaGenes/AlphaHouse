@@ -1520,7 +1520,7 @@ module PedigreeModule
 
                                 this%pedigree => newPed
                                 this%generations = newGenerationList
-                                this%isSorted = .true.
+                                this%isSorted = 3
                             end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
                             !---------------------------------------------------------------------------
