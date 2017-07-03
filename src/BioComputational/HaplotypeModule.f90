@@ -59,6 +59,7 @@ module HaplotypeModule
         procedure :: overlap
         procedure :: mismatches
         procedure :: noMismatches
+        procedure :: numPresentNotMatched
         procedure :: compatible
         procedure :: merge
         procedure :: numberMissing
@@ -480,6 +481,27 @@ contains
                 IXOR(h1%phase(i), h2%phase(i)) ))
         end do
     end function mismatches
+
+    !---------------------------------------------------------------------------
+    !> @brief   Counts the number of times the first haplotype is present
+    !>          and the second is different
+    !> @date    May 25, 2017
+    !> @return  The number of differences between the two haplotypes
+    !---------------------------------------------------------------------------  
+    function numPresentNotMatched(h1, h2) result (num)
+        class(Haplotype), intent(in) :: h1, h2
+
+        integer :: num
+
+        integer :: i
+
+        num = 0
+
+        do i = 1, h1%sections
+            num = num + POPCNT(IAND (NOT(h1%missing(i)), &
+                IOR(IXOR(h1%phase(i),h2%phase(i)), IXOR(h1%missing(i),h2%missing(i)))))
+        end do 
+    end function numPresentNotMatched
 
     !---------------------------------------------------------------------------
     !> @brief   Tests whether there's any mismatches (i.e. opposing homozygotes) between two haplotypes
