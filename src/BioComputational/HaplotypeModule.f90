@@ -931,8 +931,8 @@ contains
             end do
 
             if (sub%sections + starti - 1 == h%sections) then
-                sub%phase(sub%sections) = ISHFT(h%phase(sub%sections + starti - 1),offset)
-                sub%missing(sub%sections) = ISHFT(h%missing(sub%sections + starti - 1),offset)
+                sub%phase(sub%sections) = ISHFT(h%phase(sub%sections + starti - 1),-offset)
+                sub%missing(sub%sections) = ISHFT(h%missing(sub%sections + starti - 1),-offset)
             else
                 sub%phase(sub%sections) = IOR(ISHFT(h%phase(sub%sections + starti - 1),-offset), ISHFT(h%phase(sub%sections + starti), 64 - offset))
                 sub%missing(sub%sections) = IOR(ISHFT(h%missing(sub%sections + starti - 1),-offset), ISHFT(h%missing(sub%sections + starti), 64 - offset))
