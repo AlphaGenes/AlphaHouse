@@ -183,8 +183,7 @@ module GenotypeModule
       
       do i = 64 - g%overhang, 63
 	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
-      end do
-      
+      end do 
     end function newGenotypeHap
 
     
@@ -946,18 +945,22 @@ function isHomo(g, pos) result (two)
     type(Genotype), intent(in) :: o
     
     integer :: i
+    integer(kind=int64) :: origHomo
     
     do i = 1, g%sections
+    origHomo = g%%homo(i)
       g%homo(i) = IOR( &
 		    ! g is not missing, use g
 		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
 		    ! g is missing use o
 		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+
+
       g%additional(i) = IOR( &
 		    ! g is not missing, use g
-		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%additional(i)), &
+		    IAND(IOR(origHomo, NOT(g%additional(i))), g%additional(i)), &
 		    ! g is missing use o
-		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%additional(i)) )
+		    IAND(IAND(NOT(origHomo, g%additional(i)), o%additional(i)) )
     end do
   end subroutine setFromOtherIfMissing
 
