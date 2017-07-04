@@ -945,10 +945,10 @@ function isHomo(g, pos) result (two)
     type(Genotype), intent(in) :: o
     
     integer :: i
-    integer(kind=int64) :: origHomo
+    integer(kind=8) :: origHomo
     
     do i = 1, g%sections
-    origHomo = g%%homo(i)
+    origHomo = g%homo(i)
       g%homo(i) = IOR( &
 		    ! g is not missing, use g
 		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
@@ -960,7 +960,7 @@ function isHomo(g, pos) result (two)
 		    ! g is not missing, use g
 		    IAND(IOR(origHomo, NOT(g%additional(i))), g%additional(i)), &
 		    ! g is missing use o
-		    IAND(IAND(NOT(origHomo, g%additional(i)), o%additional(i)) )
+		    IAND(IAND(NOT(origHomo), g%additional(i)), o%additional(i)) )
     end do
   end subroutine setFromOtherIfMissing
 
