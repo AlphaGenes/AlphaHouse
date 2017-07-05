@@ -89,6 +89,9 @@ module TestIndividualHelperModule
         @assertTrue(ret%contains(tmp3))
         @assertTrue(ret%contains(tmp4))
 
+        open(1,file="out.txt", action="readwrite", status="old")
+        close(1, status="delete")
+
     end subroutine testGetAllSibs
 
 
