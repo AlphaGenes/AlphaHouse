@@ -46,8 +46,8 @@ module HaplotypeModule
         ! Missing     0       1       !
         ! Error       1       1       !
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        integer(kind=8), dimension(:), allocatable :: phase
-        integer(kind=8), dimension(:), allocatable :: missing
+        integer(kind=int64), dimension(:), allocatable :: phase
+        integer(kind=int64), dimension(:), allocatable :: missing
         integer :: sections
         integer :: overhang
         integer :: length
@@ -156,7 +156,7 @@ contains
     !> @return  New haplotype object 
     !---------------------------------------------------------------------------
     function newHaplotypeBits(phase, missing, length) result(h)
-        integer(kind=8), dimension(:), allocatable, intent(in) :: phase, missing
+        integer(kind=int64), dimension(:), allocatable, intent(in) :: phase, missing
         integer :: length
 
         type(Haplotype) :: h
@@ -834,7 +834,7 @@ contains
     !---------------------------------------------------------------------------  
     subroutine setOneBits(h, array)
         class(Haplotype) :: h
-        integer(kind=8), dimension(:), intent(in) :: array
+        integer(kind=int64), dimension(:), intent(in) :: array
 
         integer :: i
 
@@ -851,7 +851,7 @@ contains
     !---------------------------------------------------------------------------  
     subroutine setZeroBits(h, array)
         class(Haplotype) :: h
-        integer(kind=8), dimension(:), intent(in) :: array
+        integer(kind=int64), dimension(:), intent(in) :: array
 
         integer :: i
 
@@ -956,7 +956,7 @@ contains
         class(Haplotype), intent(in) :: sub
         integer, intent(in) :: start
 
-        integer(kind=8) :: mask, startmask, endmask, shifted   
+        integer(kind=int64) :: mask, startmask, endmask, shifted   
         integer :: starti, endi, offset
         integer :: i
 

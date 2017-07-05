@@ -1,6 +1,7 @@
 module HaplotypeLibraryModule
   use ConstantModule
   use HaplotypeModule
+  use iso_fortran_env
   implicit none
 
   type :: HaplotypeLibrary
@@ -567,7 +568,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
@@ -594,7 +595,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections, overhang
     type(Haplotype) :: hap
@@ -626,7 +627,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
@@ -653,7 +654,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections, overhang
     type(Haplotype) :: hap
@@ -685,7 +686,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all
 
     integer :: i, j, sections
     type(Haplotype) :: hap
@@ -710,7 +711,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all, azm, am
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all, azm, am
 
     integer :: i, sections
 
@@ -729,7 +730,7 @@ contains
     class(HaplotypeLibrary) :: library
     integer, dimension(:), intent(in) :: ids
 
-    integer(kind=8), dimension(library%nSnps/64 + 1) :: all, aom, am
+    integer(kind=int64), dimension(library%nSnps/64 + 1) :: all, aom, am
 
     integer :: i, sections
 

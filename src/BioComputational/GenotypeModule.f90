@@ -30,6 +30,7 @@
 module GenotypeModule
 
     use constantModule, only : MissingGenotypeCode
+    use iso_fortran_env
   implicit none
 
     !---------------------------------------------------------------------------
@@ -46,8 +47,8 @@ module GenotypeModule
   ! 2           1       1          !
   ! Missing     0       1          !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  integer(kind=8), allocatable, dimension(:) :: homo
-  integer(kind=8), allocatable, dimension(:) :: additional
+  integer(kind=int64), allocatable, dimension(:) :: homo
+  integer(kind=int64), allocatable, dimension(:) :: additional
   integer :: sections
   integer :: overhang
   integer :: length
@@ -417,7 +418,7 @@ function complement(g,h) result(c)
     type(Haplotype) :: c
 
     integer :: i
-    integer(kind=8), dimension(:), allocatable :: phase, missing
+    integer(kind=int64), dimension(:), allocatable :: phase, missing
 
     allocate(phase(g%sections))
     allocate(missing(g%sections))
@@ -630,7 +631,7 @@ end subroutine setHaplotypeFromGenotype
 
     type(Haplotype), intent(in), pointer :: h
     class(Genotype), intent(in) :: g
-    integer(kind=8), intent(in), dimension(:) :: errors
+    integer(kind=int64), intent(in), dimension(:) :: errors
 
     integer :: i
 
@@ -765,11 +766,11 @@ function isHomo(g, pos) result (two)
     class(Genotype) :: g
     class(Haplotype) :: h
 
-    integer(kind=8), dimension(:), pointer :: errors
+    integer(kind=int64), dimension(:), pointer :: errors
 
     integer :: i
 
-    integer(kind=8) :: allnotmissing, zeroerror, twoerror
+    integer(kind=int64) :: allnotmissing, zeroerror, twoerror
 
     allocate(errors(g%sections))
 
@@ -824,11 +825,11 @@ function isHomo(g, pos) result (two)
     class(Genotype) :: g
     class(Haplotype) :: h1, h2
 
-    integer(kind=8), dimension(:), allocatable :: errors
+    integer(kind=int64), dimension(:), allocatable :: errors
 
     integer :: i
 
-    integer(kind=8) :: allnotmissing, zeroerror, oneerror, twoerror
+    integer(kind=int64) :: allnotmissing, zeroerror, oneerror, twoerror
 
     allocate(errors(g%sections))
 
@@ -945,7 +946,7 @@ function isHomo(g, pos) result (two)
     type(Genotype), intent(in) :: o
     
     integer :: i
-    integer(kind=8) :: origHomo
+    integer(kind=int64) :: origHomo
     
     do i = 1, g%sections
     origHomo = g%homo(i)
