@@ -1005,7 +1005,7 @@ module PedigreeModule
                             !
                             !<@date       October 25, 2016
                             !--------------------------------------------------------------------------
-                            subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG)
+                            subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp)
 
                                 use AlphaHouseMod, only : countLines
                                 implicit none
@@ -1014,8 +1014,14 @@ module PedigreeModule
                                 character(len=IDLENGTH) :: tmpID
                                 integer,intent(in) :: nsnps
                                 integer,intent(in),optional :: nAnnisG
-                                integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
+                                integer, intent(in),optional :: startSnp, endSnp
+                                
+                                integer :: totalSnps
+                                integer(kind=1), allocatable, dimension(:) :: tmpSnpArray, smallArray 
                                 integer :: i, j,fileUnit, nAnnis,tmpIdNum
+                                integer :: count
+                                
+                                
 
                                 if (present(nAnnisG)) then
                                     nAnnis = nAnnisG
@@ -1027,13 +1033,30 @@ module PedigreeModule
                                 do i=1, nAnnis
                                     read (fileUnit,*) tmpId,tmpSnpArray(:)
                                     do j=1,nsnps
-                                        if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) tmpSnpArray(j)=9
+                                        if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) then
+                                            tmpSnpArray(j)=9
+                                        endif    
                                     enddo
+
                                     tmpIdNum = this%dictionary%getValue(tmpId)
                                     if (tmpIdNum == DICT_NULL) then
                                         write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
                                     else
+
+                                    if (present(startSnp)) then
+                                        count = 0
+                                        allocate(smallArray(endSnp-startSnp))
+                                        
+                                        do j=startSnp,endSnp
+                                            count = count + 1
+                                            smallArray(count) = tmpSnpArray(j)
+                                        enddo
+                                        call this%setAnimalAsGenotyped(tmpIdNum, smallArray)
+
+
+                                    else 
                                         call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
+                                    endif
                                     endif
                                 enddo
                                 write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped

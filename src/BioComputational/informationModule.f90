@@ -20,7 +20,7 @@ module informationModule
 
 
 
-    function calculateArracyPerAnimal(ped, trueFile, outputPerAnimalPath) result(meanAccuracy)
+    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath) result(meanAccuracy)
         
         type(PedigreeHolder) :: ped
         character(len=*),intent(in) :: trueFile
@@ -70,7 +70,7 @@ module informationModule
         meanAccuracy = sum(accuracies) / lines
             
 
-    end function calculateArracyPerAnimal
+    end function calculateAccuracyPerAnimal
 
 
 
