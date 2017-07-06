@@ -1051,8 +1051,9 @@ module PedigreeModule
                                             count = count + 1
                                             smallArray(count) = tmpSnpArray(j)
                                         enddo
+                                        !can this just by, smallArray=tmpSnpArray(startSnp:endSnp)?
                                         call this%setAnimalAsGenotyped(tmpIdNum, smallArray)
-
+                                        deallocate(smallArray)
 
                                     else 
                                         call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
