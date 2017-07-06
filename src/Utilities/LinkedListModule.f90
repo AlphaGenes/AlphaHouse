@@ -8,6 +8,10 @@ type LIST_DATA
     character(len=:), allocatable :: key
     ! class(*)                :: value
     integer :: value
+
+    contains
+
+        procedure :: clearData
 end type LIST_DATA
 
 type LinkedList
@@ -31,6 +35,15 @@ logical function LIST_DATAEquals(l, r)
 
 end function LIST_DATAEquals
 
+
+
+subroutine clearData(d)
+    class(LIST_DATA):: d
+
+    if (allocated(d%key)) then
+        deallocate(d%key)
+    endif
+end subroutine clearData
 ! list_create --
 !     Create and initialise a list
 ! Arguments:
@@ -69,7 +82,8 @@ subroutine list_destroy( list )
 
     current => list
     if (.not. associated(current%next)) then
-        deallocate( current%data%key )
+        ! deallocate( current%data%key )
+        call current%data%clearData()
         deallocate(current)
     
 
@@ -77,7 +91,8 @@ subroutine list_destroy( list )
 
         do while ( associated(current%next) )
             next => current%next
-            deallocate( current%data%key )
+            ! deallocate( current%data%key )
+            call current%data%clearData()
             deallocate( current )
             current => next
         enddo

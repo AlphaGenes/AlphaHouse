@@ -83,7 +83,7 @@ module GenotypeModule
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
   procedure :: writeunFormattedGenotype
-  ! final :: destroyGenotype
+  final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
   generic:: write(unformatted)=> writeunFormattedGenotype
   generic:: read(formatted) => readFormattedGenotype

@@ -163,10 +163,19 @@ contains
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
         class(Individual) :: this
-        deallocate(this%offsprings)
-        deallocate(this%originalID)
-        deallocate(this%sireID)
-        deallocate(this%damID)
+        if (allocated(this%offsprings)) then
+            deallocate(this%offsprings)
+        endif
+
+        if (allocated(this%originalId)) then
+            deallocate(this%originalID)
+            deallocate(this%sireID)
+            deallocate(this%damID)
+        endif
+        if (allocated(this%referAllele)) then
+            deallocate(this%referAllele)
+            deallocate(this%alterAllele)
+        endif
     end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise

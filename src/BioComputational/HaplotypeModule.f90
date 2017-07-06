@@ -91,6 +91,7 @@ module HaplotypeModule
         procedure :: writeunFormattedHaplotype
         procedure :: compareHaplotypeToArrayNoMiss
         procedure :: allMissingOrError
+        final :: destroyHaplotype
 
         generic:: write(formatted)=> writeFormattedHaplotype
         generic:: write(unformatted)=> writeunFormattedHaplotype
@@ -106,6 +107,17 @@ module HaplotypeModule
     end interface Haplotype
 
 contains
+
+
+    subroutine destroyHaplotype(this)
+        type(Haplotype), intent(inout) :: this
+
+        if (allocated(this%phase)) then
+            deallocate(this%phase)
+            deallocate(this%missing)
+        endif
+
+    end subroutine destroyHaplotype
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype from a integer array

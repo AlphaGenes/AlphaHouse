@@ -43,9 +43,9 @@ module HaplotypeLibraryModule
     procedure :: rationalise
     procedure :: removeHap
     procedure :: updateHap
-    procedure :: destroyHaplotypeLibrary
+    ! procedure :: destroyHaplotypeLibrary
     procedure :: getConsensusHap
-    ! final :: destroyHaplotypeLibrary
+    final :: destroyHaplotypeLibrary
   end type HaplotypeLibrary
 
   interface HaplotypeLibrary
@@ -55,7 +55,7 @@ module HaplotypeLibraryModule
 
 contains
   subroutine destroyHaplotypeLibrary(library)
-    class(HaplotypeLibrary) :: library
+    type(HaplotypeLibrary) :: library
     
     if (allocated(library%newstore)) then
       deallocate(library%newstore)
@@ -231,7 +231,7 @@ contains
     class(HaplotypeLibrary) :: library
     type(Haplotype), intent(in) :: hap
     integer, intent(in) :: allowedError
-    integer, dimension(:), pointer :: matches
+    integer, dimension(:), allocatable :: matches
 
     integer, dimension(:), allocatable :: tempMatches
     integer :: i, e, num, invalid
