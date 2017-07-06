@@ -1021,8 +1021,6 @@ module PedigreeModule
                                 integer :: i, j,fileUnit, nAnnis,tmpIdNum
                                 integer :: count, end
                                 
-                                
-
                                 if (present(nAnnisG)) then
                                     nAnnis = nAnnisG
                                 else
@@ -1051,23 +1049,10 @@ module PedigreeModule
                                             else 
                                                 end = nsnps
                                             endif
-                                            allocate(smallArray(end-startSnp))
-                                            
-                                            do j=startSnp,end
-                                                count = count + 1
-                                                smallArray(count) = tmpSnpArray(j)
-                                            enddo
-                                            call this%setAnimalAsGenotyped(tmpIdNum, smallArray)
-
+                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(startSnp:endSnp))
                                         else if (present(endSnp)) then
                                             count = 0
-                                            allocate(smallArray(endsnp))
-                                            
-                                            do j=1,endsnp
-                                                count = count + 1
-                                                smallArray(count) = tmpSnpArray(j)
-                                            enddo
-                                            call this%setAnimalAsGenotyped(tmpIdNum, smallArray)
+                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(1:endsnp))
                                         else 
                                             call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
                                         endif
@@ -1137,8 +1122,8 @@ module PedigreeModule
                                 integer :: nanisG, end
                                 ! type(Pedigreeholder), intent(inout) :: genotype
                                 integer(KIND=1), allocatable, dimension(:) :: tmp
-                                integer,allocatable, dimension(:) :: ref, alt, refTmp, altTmp
-                                integer :: unit, tmpID,i,j,count
+                                integer,allocatable, dimension(:) :: ref, alt
+                                integer :: unit, tmpID,i,j
                                 character(len=IDLENGTH) :: seqid !placeholder variables
 
                                 if (.not. Present(nAnisGIn)) then
@@ -1172,26 +1157,9 @@ module PedigreeModule
                                             else
                                                 end = nsnps
                                             endif
-
-                                            allocate(refTmp(end-startSnp))
-                                            allocate(altTmp(end-startSnp))
-                                            count = 0
-                                            do j=startSnp, end
-                                                count = count +1
-                                                refTmp(count) = ref(j)
-                                                altTmp(count) = alt(j)
-                                            enddo
-                                            call this%setAnimalAsGenotypedSequence(tmpID,tmp,refTmp,altTmp)
+                                            call this%setAnimalAsGenotypedSequence(tmpID,tmp,ref(startSnp:end),alt(startSnp:end))
                                         else if (present(endSnp)) then
-                                            count =  0
-                                            allocate(refTmp(endSnp))
-                                            allocate(altTmp(endSnp))
-                                            do j=1, endSnp
-                                                count = count +1
-                                                refTmp(count) = ref(j)
-                                                altTmp(count) = alt(j)
-                                                call this%setAnimalAsGenotypedSequence(tmpID,tmp,refTmp,altTmp)
-                                            enddo
+                                            call this%setAnimalAsGenotypedSequence(tmpID,tmp,ref(1:endsnp),alt(1:endSnp))
                                         else
                                             call this%setAnimalAsGenotypedSequence(tmpID,tmp,ref,alt)
                                         endif
