@@ -82,22 +82,16 @@ subroutine list_destroy( list )
 
     current => list
     if (.not. associated(current%next)) then
-        ! deallocate( current%data%key )
         call current%data%clearData()
         deallocate(current)
-    
-
     else 
-
-        do while ( associated(current%next) )
+        do while ( associated(current) )
             next => current%next
-            ! deallocate( current%data%key )
             call current%data%clearData()
             deallocate( current )
             current => next
         enddo
     endif
-    ! deallocate(list)
     
 end subroutine list_destroy
 
