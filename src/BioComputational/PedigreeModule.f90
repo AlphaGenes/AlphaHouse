@@ -76,6 +76,7 @@ module PedigreeModule
     procedure :: sortPedigreeAndOverwriteWithDummyAtTheTop
     procedure :: makeRecodedPedigreeArray
     procedure :: printPedigree
+    procedure :: printPedigreeOriginalFormat
     procedure :: getMatePairsAndOffspring
     procedure :: getAllGenotypesAtPosition
     procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
@@ -102,7 +103,8 @@ module PedigreeModule
     procedure :: setAnimalAsGenotypedSequence
     procedure :: convertSequenceDataToArray
     procedure :: getSequenceAsArrayWithMissing
-
+    procedure :: writeOutGenders
+    procedure :: readInGenders
   end type PedigreeHolder
 
   type RecodedPedigreeArray
@@ -122,6 +124,7 @@ module PedigreeModule
     module procedure initEmptyPedigree
     module procedure initPedigreeGenotypeFiles
     module procedure initPedigreeIntArrays
+    ! initPedigreeFromOutputFileFolder initialiser from file
   end interface PedigreeHolder
 
   interface Sort !Sorts into generation list
@@ -391,6 +394,89 @@ contains
     !  write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
 
   end function initPedigree
+
+
+!---------------------------------------------------------------------------
+  !< @brief Constructor for pedigree class taking in files that have been written out
+  !< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
+  !---------------------------------------------------------------------------
+  function initPedigreeFromOutputFile(pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps) result(pedStructure)
+
+        character(len=*), intent(in) :: pedigreeFile
+        character(len=*), intent(in), optional :: genderFile, pedGenotypeFile, phaseFile
+        integer, intent(in) :: nsnps
+        type(PedigreeHolder) :: pedStructure
+
+
+        if (present(genderFile)) then
+            pedStructure = initPedigree(pedigreeFile, nsnps=nsnps, genderFile=genderFile)
+        else 
+            pedStructure = initPedigree(pedigreeFile, nsnps=nsnps)
+        
+        endif
+
+        if (present(pedGenotypeFile)) then
+            call pedStructure%addGenotypeInformationFromFile(pedGenotypeFile, nsnps)
+        endif
+
+        if (present(phaseFile)) then
+            call pedStructure%addPhaseInformationFromFile(phaseFile, nsnps)
+        endif
+
+
+  end function initPedigreeFromOutputFile
+
+
+  !---------------------------------------------------------------------------
+  !< @brief creates a pedigree object from input folder
+  !< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
+  !---------------------------------------------------------------------------
+    function initPedigreeFromOutputFileFolder(folder, nsnps) result(pedStructure)
+
+        character(len=*), intent(in) :: folder !< input folder
+        integer, intent(in) :: nsnps
+        type(PedigreeHolder) :: pedStructure
+        character(len=:), allocatable :: pedigreeFile, genotypeFile, phaseFile,genderFile
+
+
+        pedigreeFile = "pedigree.txt"
+        genotypeFile = "genotypes.txt"
+        phaseFile = "phase.txt"
+        genderFile = "gender.txt"
+        pedStructure = initPedigree(folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
+        call pedStructure%addGenotypeInformationFromFile(folder//genotypeFile, nsnps)
+        call pedStructure%addPhaseInformationFromFile(folder//phaseFile, nsnps)
+
+
+  end function initPedigreeFromOutputFileFolder
+
+
+    !---------------------------------------------------------------------------
+  !< @brief writes out the pedigree to predefined filess
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !---------------------------------------------------------------------------
+  subroutine writeOutPedigree(this,pedigreeFolder)
+    class(PedigreeHolder) :: this
+    character(len=*), intent(in), optional :: pedigreeFolder
+    character(len=:), allocatable :: pedigreeFile, genotypeFile, phaseFile,genderFile
+
+
+    pedigreeFile = "pedigree.txt"
+    genotypeFile = "genotypes.txt"
+    phaseFile = "phase.txt"
+    genderFile = "gender.txt"
+
+
+    call this%printPedigreeOriginalFormat(pedigreeFolder//pedigreeFile)
+    call this%WriteoutPhase(pedigreeFolder//phaseFile)
+    call this%writeOutGenotypes(pedigreeFolder//genotypeFile) !< just output genotype information for animals that are set to genotpyyed
+    call this%writeOutGenders(pedigreeFolder//genderFile)
+
+end subroutine writeOutPedigree
 
 
 
@@ -1567,12 +1653,77 @@ contains
     class(PedigreeHolder) :: this
     integer ::i
     do i= 1, this%pedigreeSize
-      print *, this%pedigree(i)%id, this%pedigree(i)%getIntegerVectorOfRecodedIds()
+      print *, this%pedigree(i)%originalId, this%pedigree(i)%getIntegerVectorOfRecodedIds()
     enddo
   end subroutine printPedigree
 
+
+    !---------------------------------------------------------------------------
+  !< @brief Output pedigree to stdout in the format originalID,sireId,damId
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
-  !< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+  subroutine printPedigreeOriginalFormat(this, filePath)
+    class(PedigreeHolder) :: this
+    character(len=*), optional :: filePath
+    integer ::i,unit
+
+    if(present(filepath)) then
+        open(newunit=unit, file=filePath, status="unknown")
+    else
+        unit = output_unit
+    endif 
+    do i= 1, this%pedigreeSize
+      write(unit,*)  this%pedigree(i)%originalId, this%pedigree(i)%sireId, this%pedigree(i)%damId
+    enddo
+  end subroutine printPedigreeOriginalFormat
+
+
+      !---------------------------------------------------------------------------
+  !< @brief Output genders to file
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
+  !---------------------------------------------------------------------------
+  subroutine writeOutGenders(this, filepath)
+    class(PedigreeHolder) :: this
+    character(len=*), intent(in) :: filepath
+    integer ::i, unit
+
+    open(newunit= unit, file= filepath, status="new")
+    do i= 1, this%pedigreeSize
+        write(unit,*) this%pedigree(i)%originalId, this%pedigree(i)%gender
+    enddo
+
+    close(unit)
+  end subroutine writeOutGenders
+
+
+      !---------------------------------------------------------------------------
+  !< @brief read in gender information
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
+  !---------------------------------------------------------------------------
+  subroutine readInGenders(this, filepath)
+    class(PedigreeHolder) :: this
+    character(len=*), intent(in) :: filepath
+
+    integer ::i, tmpGender,tmp
+    character(len=IDLENGTH) :: tmpID
+    do i= 1, this%pedigreeSize
+      read(*,*) tmpId, tmpGender
+      tmp = this%dictionary%getValue(tmpId)
+        if (tmp/=DICT_NULL) then
+            this%pedigree(tmp)%gender = tmpGender
+        else
+            write(error_unit,*) "WARNING: Gender info exists for animal not in the pedigree" 
+        endif
+    enddo
+  end subroutine readInGenders
+
+
+
+  !---------------------------------------------------------------------------
+  !< @brief Output  of animals that are genotyped
   !< @author  David Wilson david.wilson@roslin.ed.ac.uk
   !< @date    October 26, 2016
   !---------------------------------------------------------------------------
@@ -1583,15 +1734,34 @@ contains
 
     open(newUnit=fileUnit,file=filename,status="unknown")
     do i= 1, this%nGenotyped
-      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
     enddo
     close(fileUnit)
   end subroutine writeOutGenotypes
 
 
+    !---------------------------------------------------------------------------
+  !< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+  !< for all animals not just the ones that are genotyped\
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
+  !---------------------------------------------------------------------------
+    subroutine writeOutGenotypesAll(this, filename)
+    class(PedigreeHolder) :: this
+    character(*), intent(in) :: filename
+    integer ::i, fileUnit
+
+    open(newUnit=fileUnit,file=filename,status="unknown")
+    do i= 1, this%pedigreeSize
+      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+    enddo
+    close(fileUnit)
+  end subroutine writeOutGenotypesAll
+
+
 
   !---------------------------------------------------------------------------
-  !< @brief Output phase to file
+  !< @brief Outputs phase to file
   !< @author  David Wilson david.wilson@roslin.ed.ac.uk
   !< @date    October 26, 2016
   !---------------------------------------------------------------------------
@@ -1607,6 +1777,8 @@ contains
     enddo
     close(fileUnit)
   end subroutine WriteoutPhase
+
+
 
   !---------------------------------------------------------------------------
   !< @brief Sets generation of an individual and his children recursively
