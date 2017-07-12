@@ -5,6 +5,146 @@
  implicit none
 
 contains
+!##################################################################################################################################
+! Test Count Colums
+!##################################################################################################################################
+@test
+subroutine testCountColumnsSingleDelimiter
+integer:: expected, gotten
+
+logical:: fileExists
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, "(A)") " One Two three Four Five "
+
+close(100)
+
+expected = 5
+
+Inquire(file="testFileToUse", exist=fileExists)
+gotten = countColumns("testFileToUse", " ")
+
+Inquire(file="testFileToUse", exist=fileExists)
+
+open(100, file="testFileToUse", action="read", status="old")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsSingleDelimiter
+
+@test
+subroutine testCountColumnsMultipleLines()
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, "(A)") " First second, third, fourth, fifth   "
+write(100, "(A)") " First second, third, fourth, fifth   "
+write(100, "(A)") " First second, third, fourth, fifth   "
+
+close(100)
+
+expected = 5
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine
+@test
+subroutine testCountColumnsWithMultipleDelimitersNoColumns
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, "(A)") "    "
+
+close(100)
+
+expected = 0
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithMultipleDelimitersNoColumns
+@test
+subroutine testCountColumnsWithMultipleDelimitersNoDelimStartOrEnd
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, "(A)") "One ,Two ,three ,Four Five"
+
+close(100)
+
+expected = 5
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithMultipleDelimitersNoDelimStartOrEnd
+
+@test
+subroutine testCountColumnsWithMultipleDelimitersNoDelimStart
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, *) "One ,Two ,three ,Four Five "
+
+close(100)
+
+expected = 5
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithMultipleDelimitersNoDelimStart
+
+@test
+subroutine testCountColumnsWithMultipleDelimiters
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, *) " One ,Two ,three ,Four Five "
+
+close(100)
+
+expected = 5
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithMultipleDelimiters
+
+!##################################################################################################################################
 @test
 subroutine testint642CharArray()
 integer(int64), dimension(5):: intIn

@@ -8,11 +8,11 @@
 !> @file     GenotypeModule.f90
 !
 ! DESCRIPTION:
-!> @brief    Module cotaining logic of dealing with Genotypes
-!
-!> @details  currently only contains integer and real heap sort procedures 
+!> @brief    Module cotaining a type representing a Genotype and associated
+!>	     procedures
 !
 !> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!> @author   Daniel Money, daniel.money@roslin.ed.ac.uk
 !
 !> @date     September 26, 2016
 !
@@ -30,9 +30,16 @@
 module GenotypeModule
 
     use constantModule, only : MissingGenotypeCode
+    use iso_fortran_env
   implicit none
 
+    !---------------------------------------------------------------------------
+    !> @brief   Represents genotypes.  
+    !> @detail	Stored as bit arrays for computational efficiency.
+    !> @date    May 27, 2017
+    !---------------------------------------------------------------------------
   type :: Genotype
+  !Reminder as to how the data is stored...
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Genotype    Homo    Additional !
   ! 0           1       0          !
@@ -40,8 +47,8 @@ module GenotypeModule
   ! 2           1       1          !
   ! Missing     0       1          !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  integer(kind=8), allocatable, dimension(:) :: homo
-  integer(kind=8), allocatable, dimension(:) :: additional
+  integer(kind=int64), allocatable, dimension(:) :: homo
+  integer(kind=int64), allocatable, dimension(:) :: additional
   integer :: sections
   integer :: overhang
   integer :: length
@@ -76,6 +83,7 @@ module GenotypeModule
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
   procedure :: writeunFormattedGenotype
+  final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
   generic:: write(unformatted)=> writeunFormattedGenotype
   generic:: read(formatted) => readFormattedGenotype
@@ -85,15 +93,23 @@ module GenotypeModule
   interface Genotype
     module procedure newGenotypeInt
     module procedure newGenotypeHap
+    module procedure newGenotypeMissing
   end interface Genotype
 
       contains
 
 
-        !---------------------------------------------------------------------------
-    !> @brief constructs a new genotype from a integer array
+      subroutine destroyGenotype(g)
+        type(Genotype) :: g
+        if (allocated(g%homo)) then
+          deallocate(g%homo)
+          deallocate(g%additional)
+        endif
+    end subroutine destroyGenotype
+    !---------------------------------------------------------------------------
+    !> @brief	Constructs a new Genotype from a integer array
     !> @date    November 26, 2016
-    !> @return new genotype object 
+    !> @return	New genotype object 
     !---------------------------------------------------------------------------
       pure function newGenotypeInt(geno) result (g)
         integer(kind=1), dimension(:), intent(in) :: geno
@@ -104,7 +120,7 @@ module GenotypeModule
 
         g%length = size(geno,1)
 
-        g%sections = g%length / 64 + 1
+        g%sections = (g%length - 1) / 64 + 1
         g%overhang = 64 - (g%length - (g%sections - 1) * 64)
 
         allocate(g%homo(g%sections))
@@ -134,9 +150,9 @@ module GenotypeModule
     end function newGenotypeInt
     
     !---------------------------------------------------------------------------
-    !> @brief constructs a new genotype from two haplotype objects
+    !> @brief	Constructs a new genotype from two haplotype objects
     !> @date    November 26, 2016
-    !> @return new genotype object 
+    !> @return	New genotype object 
     !---------------------------------------------------------------------------
     function newGenotypeHap(h1, h2) result (g)
       use HaplotypeModule
@@ -168,16 +184,45 @@ module GenotypeModule
       
       do i = 64 - g%overhang, 63
 	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
-      end do
-      
+      end do 
     end function newGenotypeHap
 
+    
+  !---------------------------------------------------------------------------
+  !> @brief   Constructs a new Genotype with all positions set to missing
+  !> @date    May 25, 2017
+  !> @return  New haplotype object 
+  !--------------------------------------------------------------------------- 
+  function newGenotypeMissing(length) result(g)
+    integer, intent(in) :: length
+    
+    type(Genotype) :: g
+    
+    integer :: i
+    
+    g%length = length
+    g%sections = (g%length - 1) / 64 + 1
+    g%overhang = 64 - (g%length - (g%sections - 1) * 64)
+    allocate(g%homo(g%sections))
+    allocate(g%additional(g%sections))
+    g%homo = 0
+    g%additional = 0
+    g%additional = NOT(g%additional)
 
+    
+    do i = 64 - g%overhang, 63
+        g%homo(g%sections) = ibclr(g%homo(g%sections), i)
+        g%additional(g%sections) = ibclr(g%additional(g%sections), i)
+    end do
+  end function newGenotypeMissing
+
+  
     !---------------------------------------------------------------------------
-    !> @brief converts genotype to integer array
+    !> @brief	Converts a Genotype to an integer array
+    !> @detail	Error states are coded as missing (i.e. 9)
     !> @date    November 26, 2016
-    !> @return integer(kind=1) array 
-    !---------------------------------------------------------------------------
+    !> @return	Integer array representing the genotype
+    !---------------------------------------------------------------------------  
     function genotypeToIntegerArray(g, nsnp) result(array)
         class(Genotype), intent(in) :: g
         integer, intent(in),optional :: nsnp
@@ -229,12 +274,11 @@ module GenotypeModule
 	end do
     end function genotypeToIntegerArray
 
-
   !---------------------------------------------------------------------------
-  !> @brief comparator for the genotypes
-  !> @date    November 26, 2016
-  !> @return .true. if genotypes are equal, false otherwise
-  !---------------------------------------------------------------------------
+  !> @brief	Compares two genotypes
+  !> @date	November 26, 2016
+  !> @return	Whether the two genotypes are identical
+  !---------------------------------------------------------------------------   
 function compareGenotype(g1, g2) result(same)
     class(Genotype), intent(in) :: g1, g2
 
@@ -254,9 +298,10 @@ end function compareGenotype
 
 
   !---------------------------------------------------------------------------
-  !> @brief returns the snp at given position
-  !> @date    November 26, 2016
-  !---------------------------------------------------------------------------
+  !> @brief	Gets the genotype of a snp at the given position
+  !> @date	November 26, 2016
+  !> @return	The genotype
+  !---------------------------------------------------------------------------  
 function getGenotype(g, pos) result (genotype)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos !< snp 
@@ -284,8 +329,8 @@ function getGenotype(g, pos) result (genotype)
 end function getGenotype
 
   !---------------------------------------------------------------------------
-  !> @brief sets value at given snp 
-  !> @date    November 26, 2016
+  !> @brief	Sets the genotype of a snp at the given position
+  !> @date	November 26, 2016
   !---------------------------------------------------------------------------
 subroutine setGenotype(g, pos, val)
     class(Genotype), intent(inout) :: g
@@ -300,21 +345,26 @@ subroutine setGenotype(g, pos, val)
     select case (val)
       case (0)
           g%homo(cursection) = ibset(g%homo(cursection), curpos)
+          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
       case (1)
-          ! Nothing to do due to defaults
+          ! Nothing to do due to default
+          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
+          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
       case (2)
           g%homo(cursection) = ibset(g%homo(cursection), curpos)
           g%additional(cursection) = ibset(g%additional(cursection), curpos)
       case default
           g%additional(cursection) = ibset(g%additional(cursection), curpos)
+          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
     end select 
 
 end subroutine setGenotype
 
 
   !---------------------------------------------------------------------------
-  !> @brief returns the number of opposing snps between two genotypes
+  !> @brief   Returns the number of opposing homozygotes between two genotypes
   !> @date    November 26, 2016
+  !> @return  The number of opposing homozygotes
   !---------------------------------------------------------------------------
 function numOppose(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2
@@ -330,8 +380,9 @@ function numOppose(g1, g2) result(num)
 end function numOppose
 
   !---------------------------------------------------------------------------
-  !> @brief returns the number of snps in common between two genotypes
+  !> @brief   Returns the number of snps that are non-misisng in both genotypes
   !> @date    November 26, 2016
+  !> @return  The number of snps in common
   !---------------------------------------------------------------------------
 function numIncommon(g1, g2) result(num)
     class(Genotype), intent(in) :: g1, g2
@@ -349,6 +400,16 @@ function numIncommon(g1, g2) result(num)
     num = num - g1%overhang
 end function numIncommon
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the complement of a haplotype given a genotype
+  !> @detail  Calculates what the other haplotype must be given the genotype
+  !>		and one haplotype.  Returns error if the genotype and haplotype
+  !>		are incompatible or if the haplotype is error. Returns missing 
+  !>            if either the genotype or haplotype are missing.  Else returns
+  !>		the appropriate phase
+  !> @date    May 26, 2017
+  !> @return  The complement haplotype
+  !---------------------------------------------------------------------------
 function complement(g,h) result(c)
     use HaplotypeModule
     class(Genotype), intent(in) :: g
@@ -357,7 +418,7 @@ function complement(g,h) result(c)
     type(Haplotype) :: c
 
     integer :: i
-    integer(kind=8), dimension(:), pointer :: phase, missing
+    integer(kind=int64), dimension(:), allocatable :: phase, missing
 
     allocate(phase(g%sections))
     allocate(missing(g%sections))
@@ -372,8 +433,20 @@ function complement(g,h) result(c)
     end do
 
     c = Haplotype(phase,missing,g%length)
+    deallocate(phase)
+    deallocate(missing)
 end function complement
 
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether two haplotypes are compatible with a genotype
+  !> @detail  Allows threhold amount of error.  An error is where genotype is 0,
+  !>		either phase is 1 or genotype is 2, either phase is 0.  Genotype
+  !>		is one but both haplotypes are the same phase is also an error.
+  !>		If the total number of errors is less than or equal to threshold
+  !>		return true.
+  !> @date    May 26, 2017
+  !> @return  Whether the haplotypes are compatible with the genotype
+  !---------------------------------------------------------------------------
 function compatibleHaplotypes(g, h1, h2, threshold) result(c)
     use HaplotypeModule
     class(Genotype), intent(in) :: g
@@ -417,8 +490,16 @@ function compatibleHaplotypes(g, h1, h2, threshold) result(c)
   c = num <= threshold
 end function compatibleHaplotypes
 
-!! THIS WILL NEED MIN OVERLAP AT SOME POINT !!
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether a haplotype is compatible with a genotype
+  !> @detail  Allows threhold amount of error.  An error is where genotype is 0,
+  !>		phase is 1 or genotype is 2, phase is 0.  If the total number of
+  !>		errors is less than or equal to threshold return true.
+  !> @date    May 26, 2017
+  !> @return  Whether the haplotype is compatible with the genotype
+  !---------------------------------------------------------------------------
 function compatibleHaplotype(g, h, threshold) result(c)
+!! THIS WILL NEED MIN OVERLAP AT SOME POINT !!
     use HaplotypeModule
     class(Genotype), intent(in) :: g
     class(Haplotype), intent(in) :: h
@@ -450,6 +531,13 @@ function compatibleHaplotype(g, h, threshold) result(c)
   c = num <= threshold
 end function compatibleHaplotype
 
+
+  !---------------------------------------------------------------------------
+  !> @brief   Counts the number of mismatches (opposing homozygotes) between
+  !>		two genotypes.
+  !> @date    May 26, 2017
+  !> @return  The number of opposing homozygotes
+  !---------------------------------------------------------------------------
 function mismatches(g1, g2) result(c)
     class(Genotype), intent(in) :: g1, g2
     integer :: c
@@ -463,13 +551,25 @@ function mismatches(g1, g2) result(c)
     end do
 end function mismatches
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the length of the genotype
+  !> @date    May 26, 2017
+  !> @return  The length of the genotype
+  !---------------------------------------------------------------------------
 function getLength(g) result(l)
+  ! THIS SHOULD PROBABLY DISAPPEAR AT SOME POINT AS WE DON'T NORMALLY USE GETTERS
+  ! BUT IT'S BEING USED...
     class(Genotype), intent(in) :: g
     integer :: l
 
     l = g%length
 end function getLength
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the number of not missing snps in the genotype
+  !> @date    May 26, 2017
+  !> @return  The number of not missing snps
+  !---------------------------------------------------------------------------
 function numNotMissing(g) result(c)
     class(Genotype), intent(in) :: g
 
@@ -483,6 +583,11 @@ function numNotMissing(g) result(c)
   end do
 end function numNotMissing
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the number of missing snps in the genotype
+  !> @date    May 26, 2017
+  !> @return  The number of missing snps
+  !---------------------------------------------------------------------------
 function numMissing(g) result(c)
     class(Genotype), intent(in) :: g
 
@@ -491,12 +596,16 @@ function numMissing(g) result(c)
     c = g%length - g%numNotMissing()
 end function numMissing
 
-
-
+  !---------------------------------------------------------------------------
+  !> @brief   Sets the Haplotype from the Genotype
+  !> @detail  If the genotypes means the phase is known set the phase in the
+  !>		haplotype, else set it to missing
+  !> @date    May 26, 2017
+  !---------------------------------------------------------------------------
 subroutine setHaplotypeFromGenotype(g, h)
     use HaplotypeModule
 
-    class(Haplotype), intent(in) :: h
+    class(Haplotype) :: h
     class(Genotype), intent(in) :: g
 
     integer :: i
@@ -511,12 +620,18 @@ subroutine setHaplotypeFromGenotype(g, h)
     end do
 end subroutine setHaplotypeFromGenotype
 
+  !---------------------------------------------------------------------------
+  !> @brief   Sets the Haplotype from the Genotype if error is set true for that snp.
+  !> @detail  If error is true and the genotypes means the phase is known
+  !>		set the phase in the haplotype, else set it to missing
+  !> @date    May 26, 2017
+  !---------------------------------------------------------------------------
   subroutine setHaplotypeFromGenotypeIfError(g, h, errors)
     use HaplotypeModule
 
     type(Haplotype), intent(in), pointer :: h
     class(Genotype), intent(in) :: g
-    integer(kind=8), intent(in), dimension(:), pointer :: errors
+    integer(kind=int64), intent(in), dimension(:) :: errors
 
     integer :: i
 
@@ -530,10 +645,19 @@ end subroutine setHaplotypeFromGenotype
     end do
   end subroutine setHaplotypeFromGenotypeIfError
 
+  !---------------------------------------------------------------------------
+  !> @brief   Sets the Haplotype from the Genotype if the Haplotype is missing
+  !>		or error
+  !> @detail  If the phase is misisng or error and the genotypes means the 
+  !>		phase is known set the phase in the haplotype, else set it to
+  !>		missing
+  !> @date    May 26, 2017
+  !---------------------------------------------------------------------------
   subroutine setHaplotypeFromGenotypeIfMissing(g, h)
+    ! NOT SURE THIS DEALS WITH ERRORS SENSIBLY
     use HaplotypeModule
 
-    type(Haplotype), intent(in) :: h
+    type(Haplotype) :: h
     class(Genotype), intent(in) :: g
 
     integer :: i
@@ -547,6 +671,11 @@ end subroutine setHaplotypeFromGenotype
     end do
   end subroutine setHaplotypeFromGenotypeIfMissing
 
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether the given snp has a zero genotype
+  !> @date    May 26, 2017
+  !> @return  Whether the given snp has a zero genotype
+  !---------------------------------------------------------------------------	
   function isZero(g, pos) result (zero)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos
@@ -562,6 +691,11 @@ end subroutine setHaplotypeFromGenotype
     zero = BTEST(IAND(g%homo(cursection),NOT(g%additional(cursection))), curpos)
 end function isZero
 
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether the given snp has a two genotype
+  !> @date    May 26, 2017
+  !> @return  Whether the given snp has a two genotype
+  !---------------------------------------------------------------------------	
 function isTwo(g, pos) result (two)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos
@@ -577,6 +711,11 @@ function isTwo(g, pos) result (two)
     two = BTEST(IAND(g%homo(cursection),g%additional(cursection)), curpos)
 end function isTwo
 
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether the given snp is set missing
+  !> @date    May 26, 2017
+  !> @return  Whether the given snp is set missing
+  !---------------------------------------------------------------------------	
 function isMissing(g, pos) result (two)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos
@@ -592,6 +731,11 @@ function isMissing(g, pos) result (two)
     two = BTEST(IAND(NOT(g%homo(cursection)),g%additional(cursection)), curpos)
 end function isMissing
 
+  !---------------------------------------------------------------------------
+  !> @brief   Tests whether the given snp is a homozygote
+  !> @date    May 26, 2017
+  !> @return  Whether the given snp is a homozygote
+  !---------------------------------------------------------------------------	
 function isHomo(g, pos) result (two)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: pos
@@ -606,18 +750,27 @@ function isHomo(g, pos) result (two)
 
     two = BTEST(g%homo(cursection), curpos)
   end function isHomo
-
+  
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the location of errors between a genotype and a
+  !>		haplotypes.
+  !> @detail  An error is where the haplotypes and the genotype are
+  !>		inconsistent.  Only snps which are non-missing in the 
+  !>		haplotypes and the genotype are tested.
+  !> @date    May 26, 2017
+  !> @return  The location of errors as a bit array
+  !--------------------------------------------------------------------------- 
   function getErrorsSingle(g,h) result(errors)
     use HaplotypeModule
 
     class(Genotype) :: g
     class(Haplotype) :: h
 
-    integer(kind=8), dimension(:), pointer :: errors
+    integer(kind=int64), dimension(:), pointer :: errors
 
     integer :: i
 
-    integer(kind=8) :: allnotmissing, zeroerror, twoerror
+    integer(kind=int64) :: allnotmissing, zeroerror, twoerror
 
     allocate(errors(g%sections))
 
@@ -635,6 +788,15 @@ function isHomo(g, pos) result (two)
     end do
   end function getErrorsSingle
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the number of errors between a genotype and a
+  !>		haplotype.
+  !> @detail  An error is where the haplotype and the genotype are
+  !>		inconsistent.  Only snps which are non-missing in both 
+  !>		haplotype and the genotype are tested.
+  !> @date    May 26, 2017
+  !> @return  The number of errors
+  !--------------------------------------------------------------------------- 
   function numberErrorsSingle(g,h) result(c)
     use HaplotypeModule
     use BitUtilities
@@ -648,18 +810,26 @@ function isHomo(g, pos) result (two)
 
   end function numberErrorsSingle
 
-
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the location of errors between a genotype and two
+  !>		haplotypes.
+  !> @detail  An error is where the two haplotypes and the genotype are
+  !>		inconsistent.  Only snps which are non-missing in both 
+  !>		haplotypes and the genotype are tested.
+  !> @date    May 26, 2017
+  !> @return  The location of errors as a bit array
+  !--------------------------------------------------------------------------- 
   function getErrors(g,h1,h2) result(errors)
     use HaplotypeModule
 
     class(Genotype) :: g
     class(Haplotype) :: h1, h2
 
-    integer(kind=8), dimension(:), pointer :: errors
+    integer(kind=int64), dimension(:), allocatable :: errors
 
     integer :: i
 
-    integer(kind=8) :: allnotmissing, zeroerror, oneerror, twoerror
+    integer(kind=int64) :: allnotmissing, zeroerror, oneerror, twoerror
 
     allocate(errors(g%sections))
 
@@ -679,6 +849,15 @@ function isHomo(g, pos) result (two)
 
   end function getErrors
 
+  !---------------------------------------------------------------------------
+  !> @brief   Returns the number of errors between a genotype and two
+  !>		haplotypes.
+  !> @detail  An error is where the two haplotypes and the genotype are
+  !>		inconsistent.  Only snps which are non-missing in both 
+  !>		haplotypes and the genotype are tested.
+  !> @date    May 26, 2017
+  !> @return  The number of errors
+  !--------------------------------------------------------------------------- 
   function numberErrors(g,h1,h2) result(c)
     use HaplotypeModule
     use BitUtilities
@@ -691,7 +870,12 @@ function isHomo(g, pos) result (two)
     c = bitCount(g%getErrors(h1,h2))
 
   end function numberErrors
-  
+
+    !---------------------------------------------------------------------------
+    !> @brief	Returns a new genotype that is a subset of the given one
+    !> @date    May 26, 2017
+    !> @return  The subset genootype
+    !---------------------------------------------------------------------------  
   function subset(g,start,finish) result (sub)
     class(Genotype), intent(in) :: g
     integer, intent(in) :: start, finish
@@ -723,8 +907,8 @@ function isHomo(g, pos) result (two)
       end do
       
       if (sub%sections + starti - 1 == g%sections) then
-	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),offset)
-	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),offset)
+	sub%homo(sub%sections) = ISHFT(g%homo(sub%sections + starti - 1),-offset)
+	sub%additional(sub%sections) = ISHFT(g%additional(sub%sections + starti - 1),-offset)
       else
 	sub%homo(sub%sections) = IOR(ISHFT(g%homo(sub%sections + starti - 1),-offset), ISHFT(g%homo(sub%sections + starti), 64 - offset))
 	sub%additional(sub%sections) = IOR(ISHFT(g%additional(sub%sections + starti - 1),-offset), ISHFT(g%additional(sub%sections + starti), 64 - offset))
@@ -737,6 +921,10 @@ function isHomo(g, pos) result (two)
     end do
   end function subset
   
+  !---------------------------------------------------------------------------
+  !> @brief   Sets the genotype from the two haplotypes if the genotype is missing
+  !> @date    May 26, 2017
+  !--------------------------------------------------------------------------- 
   subroutine setFromHaplotypesIfMissing(g,h1,h2)
     use HaplotypeModule
     class(Genotype) :: g
@@ -748,24 +936,32 @@ function isHomo(g, pos) result (two)
     call g%setFromOtherIfMissing(gFromH)
     
   end subroutine setFromHaplotypesIfMissing
-  
+
+  !---------------------------------------------------------------------------
+  !> @brief   Sets the genotype from another genotype if the genotype is missing
+  !> @date    May 26, 2017
+  !---------------------------------------------------------------------------   
   subroutine setFromOtherIfMissing(g, o)
     class(Genotype) :: g
     type(Genotype), intent(in) :: o
     
     integer :: i
+    integer(kind=int64) :: origHomo
     
     do i = 1, g%sections
+    origHomo = g%homo(i)
       g%homo(i) = IOR( &
 		    ! g is not missing, use g
 		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
 		    ! g is missing use o
 		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+
+
       g%additional(i) = IOR( &
 		    ! g is not missing, use g
-		    IAND(IOR(g%homo(i), NOT(g%additional(i))), g%homo(i)), &
+		    IAND(IOR(origHomo, NOT(g%additional(i))), g%additional(i)), &
 		    ! g is missing use o
-		    IAND(IAND(NOT(g%homo(i)), g%additional(i)), o%homo(i)) )
+		    IAND(IAND(NOT(origHomo), g%additional(i)), o%additional(i)) )
     end do
   end subroutine setFromOtherIfMissing
 

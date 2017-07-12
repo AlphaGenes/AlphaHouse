@@ -24,6 +24,7 @@ Module stringModule
     procedure:: getNumOccurances
     procedure:: asChar
     procedure:: prepend
+    final:: deallocateString
     !    procedure:: addStrings
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted)=> writeType
@@ -44,6 +45,15 @@ Module stringModule
   end interface
 
 contains
+
+  subroutine deallocateString(self)
+    type(String), intent(inout):: self
+
+    if (allocated(self%line)) then
+      deallocate(self%line)
+    end if
+
+  end subroutine deallocateString
 
   pure subroutine prepend(self, charIn)
     class(String), intent(inout):: self
@@ -493,7 +503,7 @@ contains
     write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%line
   end subroutine writeType
 
-  subroutine setString(this,  lineIn)
+  pure subroutine setString(this,  lineIn)
     type(String), intent(inout) :: this
     character(len=*), intent(in):: lineIn
 

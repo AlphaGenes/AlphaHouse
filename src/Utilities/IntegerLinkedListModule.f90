@@ -26,6 +26,7 @@
 module IntegerLinkedListModule
     use iso_fortran_env
     use ConstantModule
+    implicit none
 
     type :: IntegerLinkedList
         type(IntegerLinkedListNode),pointer :: first => null()
