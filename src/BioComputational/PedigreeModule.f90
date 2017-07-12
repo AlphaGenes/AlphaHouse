@@ -158,6 +158,49 @@ contains
   end function initEmptyPedigree
 
 
+
+! subroutine findMendelianInconsistencies(ped)
+!     implicit none
+!     type(pedigreeHolder) :: ped
+!     integer :: sireG, damG
+!     type(individual),pointer :: sire, dam
+
+
+
+
+!     do i=1,ped%pedigreeSize
+
+
+!      if (associated(ped%pedigree(i)%sirePointer)) then
+        
+
+
+!         sire => ped%pedigree(i)%sirePointer
+!         dam => ped%pedigree(i)%damPointer
+
+
+!         do j=1,ped%pedigree(i)%individualGenotype%length
+!           g = ped%pedigree(i)%individualGenotype%getGenotype(j)
+!           sireG = sire%individualGenotype%getGenotype(j)
+!           damG = 
+!           select case(j)
+
+
+!           case(0)
+
+
+!             if (sire%individualGenotype)
+
+
+!           case(1)
+
+!           case(2)
+
+
+!     enddo
+    
+! end subroutine findMendelianInconsistencies
+
   !---------------------------------------------------------------------------
   !< @brief Sets phase information from an array
   !< @details sets phase objects for animal when given an array
