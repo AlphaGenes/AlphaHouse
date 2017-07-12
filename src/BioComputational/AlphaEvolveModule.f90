@@ -75,7 +75,7 @@ module AlphaEvolveModule
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
       LogFile, LogStdout, LogPop, LogPopFile, &
-      CRBurnIn, CRLate, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
+      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -94,7 +94,8 @@ module AlphaEvolveModule
       logical, intent(in), optional          :: LogPop        !< Save all evaluated solutions to a file
       character(len=*), intent(in), optional :: LogPopFile    !< File for the evaluated solutions
       real(real64), intent(in), optional     :: CRBurnIn      !< Crossover rate for nIterBurnIn
-      real(real64), intent(in), optional     :: CRLate        !< Crossover rate
+      real(real64), intent(in), optional     :: CRLate1       !< Crossover rate (for common small moves)
+      real(real64), intent(in), optional     :: CRLate2       !< Crossover rate (for rare large moves)
       real(real64), intent(in), optional     :: FBase         !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
@@ -104,7 +105,7 @@ module AlphaEvolveModule
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
       integer(int32) :: Sol, a, b, c
 
-      real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt
+      real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
       real(real64) :: AcceptPct, OldBestSolObjective
       real(real64) :: Chrom(nParam)
 
@@ -166,21 +167,28 @@ module AlphaEvolveModule
       ! --- Set parameters ---
 
       ! Crossover rate
-      ! ... for later climbs
-      if (present(CRLate)) then
-        CRLateInt = CRLate
-      else
-        CRLateInt = 0.1d0
-      end if
+      ! Between 0 and 1, good values are 0.1 (common slow moves) and 0.9 (rare large moves)
       ! ... for first few generations (burn-in)
       if (present(CRBurnIn)) then
         CRBurnInInt = CRBurnIn
       else
-        CRBurnInInt = 2.0d0 * CRLateInt
+        CRBurnInInt = 0.9d0
+      end if
+      ! ... for later climbs (common slow moves)
+      if (present(CRLate1)) then
+        CRLateInt1 = CRLate1
+      else
+        CRLateInt1 = 0.1d0
+      end if
+      ! ...                  (rare large moves)
+      if (present(CRLate2)) then
+        CRLateInt2 = CRLate2
+      else
+        CRLateInt2 = 0.9d0
       end if
 
       ! F is multiplier of difference used to mutate
-      ! Typically between 0.2 and 2.0
+      ! Typically between 0.2 and 1.2 (even up to 2.0)
       ! (if alleles should be integer, keep F as integer)
       ! ... conservative moves
       if (present(FBase)) then
@@ -231,7 +239,12 @@ module AlphaEvolveModule
         if (Iter < nIterBurnIn) then
           CRInt = CRBurnInInt
         else
-          CRInt = CRLateInt
+          ! Vary crossover rate every few generations
+          if (mod(Iter, 5) == 0) then
+            CRInt = CRLateInt2
+          else
+            CRInt = CRLateInt1
+          end if
         end if
 
         ! Vary mutation rate every few generations
@@ -240,7 +253,6 @@ module AlphaEvolveModule
         else
           FInt = FBaseInt
         end if
-
         if (mod(Iter, 7) == 0) then
           FInt = FHigh2Int
         else
@@ -257,7 +269,7 @@ module AlphaEvolveModule
         ! $OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom)
         do Sol = 1, nSol
 
-          ! --- Mutate and recombine ---
+          ! --- Mutate and crossover ---
 
           ! Get three different solutions
           a = Sol
@@ -282,7 +294,7 @@ module AlphaEvolveModule
           do ParamLoc = 1, nParam
             call random_number(RanNum)
             if ((RanNum < CRInt) .or. (ParamLoc == nParam)) then
-              ! Recombine
+              ! Crossover
               call random_number(RanNum)
               if ((RanNum < 0.8d0) .or. DiffOnly) then
                 ! Differential mutation (with prob 0.8 or 1)
@@ -299,7 +311,7 @@ module AlphaEvolveModule
                 end if
               end if
             else
-              ! Do not recombine
+              ! Do not crossover
               Chrom(Param) = OldSol(Sol)%Chrom(Param)
             end if
             Param = Param + 1
