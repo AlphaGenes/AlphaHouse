@@ -100,7 +100,9 @@ subroutine copyHashTable(res, this)
   allocate( res%table(res%hash_size) )
 
   do i = 1,res%hash_size
-      res%table(i)%list = copyLinkedList(this%table(i)%list)
+      if (associated(res%table(i)%list)) then
+        res%table(i)%list = copyLinkedList(this%table(i)%list)
+      endif
   enddo
 
 
