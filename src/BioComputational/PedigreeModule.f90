@@ -265,7 +265,9 @@ module PedigreeModule
                     call  res%founders%list_add(newPed(i))
                   endif
 
-                  call newGenerationList(i)%list_add(newPed(i))
+                  if (res%isSorted /= 0) then
+                    call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
+                  endif
                 enddo
 
                 res%pedigree => newPed
