@@ -24,7 +24,7 @@ end type LinkedList
 
 interface operator ( == )
         module procedure LIST_DATAEquals
-        module procedure equalLists
+        !module procedure equalLists
     end interface operator ( == )
 
 contains
@@ -82,7 +82,9 @@ function copyLinkedList(this) result(list)
             cur => cur%next
             this=> this%next
         end do
-    endif
+      else
+        list => null()
+      endif
 
 end function copyLinkedList
 

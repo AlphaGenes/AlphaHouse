@@ -360,7 +360,7 @@ function getElement( this, key ) result(elem)
     hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
-        if ( elem%data%key .eq. key ) then
+      if ( elem%data%key .eq. key ) then
             exit
         else
             elem => list_next( elem )

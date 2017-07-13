@@ -170,7 +170,7 @@ module PedigreeModule
               !---------------------------------------------------------------------------
               function copyPedigree(this) result(res)
                 use iso_fortran_env, only : output_unit, int64
-                class(PedigreeHolder) :: this
+                class(PedigreeHolder),intent(in) :: this
                 type(pedigreeHolder) :: res
                 integer :: i,h, tmpId,tmpGenotypeMapIndex
                 integer(kind=int64) :: sizeDict
