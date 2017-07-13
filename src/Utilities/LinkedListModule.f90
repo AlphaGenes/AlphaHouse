@@ -14,6 +14,9 @@ type LIST_DATA
         procedure :: clearData
 end type LIST_DATA
 
+
+
+
 type LinkedList
     type(LinkedList), pointer :: next
     type(LIST_DATA)            :: data
@@ -21,9 +24,67 @@ end type LinkedList
 
 interface operator ( == )
         module procedure LIST_DATAEquals
+        module procedure equalLists
     end interface operator ( == )
 
 contains
+
+
+logical function equalLists(left,right)
+    type(LinkedList), pointer,intent(in) :: left
+    type(LinkedList), pointer,intent(in) :: right
+    type(LinkedList), pointer :: l,r
+
+    l => left
+    r => right
+
+    do while (associated(l))
+
+! means lists are different lengths
+        if (.not. associated(r)) then
+            equalLists = .false.
+            Return
+        endif
+
+        if (.not. (l%data == r%data)) then
+            equalLists = .false.
+            Return
+        endif
+        l => l%next
+        r => r%next
+
+    enddo
+! means lists are different lengths
+    if (associated(r)) then
+        equalLists = .false.
+        Return
+    endif
+
+    equalLists = .true.
+
+    end function equalLists
+
+
+function copyLinkedList(this) result(list)
+    type(LinkedList), pointer :: list
+    type(LinkedList), pointer :: cur
+    type(LinkedList), pointer :: next, this
+
+    if (associated(this)) then
+        allocate(list)
+        list%next => null()
+        list%data = this%data
+        cur =>list
+        do while (associated(this%next))
+            allocate( next )
+            cur%next => next
+            next%data = this%data
+            cur => cur%next
+            this=> this%next
+        end do
+    endif
+
+end function copyLinkedList
 
 logical function LIST_DATAEquals(l, r)
     class(LIST_DATA), intent(in) :: l,r

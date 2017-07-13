@@ -54,6 +54,10 @@ interface DictStructure
     module procedure dict_create
     module procedure dict_create_val
 end interface DictStructure
+
+interface assignment ( = )
+        module procedure copyHashTable
+    end interface assignment ( = )
 !
 ! We do not want everything to be public
 !
@@ -83,6 +87,28 @@ class(DictStructure) :: this
   getSize = size(this%table)
 
 end function getSize
+
+
+
+subroutine copyHashTable(res, this)
+  class(DictStructure),intent(in) :: this
+  type(DictStructure),intent(inout) :: res
+
+
+  res%hash_size = this%hash_size 
+
+  allocate( res%table(res%hash_size) )
+
+  do i = 1,res%hash_size
+      res%table(i)%list = copyLinkedList(this%table(i)%list)
+  enddo
+
+
+
+
+
+
+end subroutine copyHashTable
 
 
 function getAllKeys(this) result(res)
