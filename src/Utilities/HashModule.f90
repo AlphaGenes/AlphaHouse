@@ -27,6 +27,8 @@ module HashModule
     use iso_fortran_env
     use LinkedListModule
     use constantModule
+    implicit none
+
 
 type HASH_LIST
     type(LinkedList), pointer :: list
@@ -93,6 +95,7 @@ end function getSize
 subroutine copyHashTable(res, this)
   class(DictStructure),intent(in) :: this
   type(DictStructure),intent(inout) :: res
+  integer :: i
 
 
   res%hash_size = this%hash_size 
@@ -101,7 +104,7 @@ subroutine copyHashTable(res, this)
 
   do i = 1,res%hash_size
       if (associated(this%table(i)%list)) then
-        res%table(i)%list = copyLinkedList(this%table(i)%list)
+        res%table(i)%list => copyLinkedList(this%table(i)%list)
       endif
   enddo
 
