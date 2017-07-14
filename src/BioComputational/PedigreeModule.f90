@@ -1694,6 +1694,11 @@ module PedigreeModule
 
             call dummyList%destroyLinkedList()
 
+            do i=1,this%pedigreeSize
+                call this%Pedigree(i)%destroyIndividual
+            enddo
+            deallocate(this%pedigree)
+
             this%pedigree => newPed
             do i = 0, this%maxGeneration
               call this%generations(i)%destroyLinkedList
@@ -1796,6 +1801,11 @@ module PedigreeModule
             do i = 0, this%maxGeneration
               call this%generations(i)%destroyLinkedList
             enddo
+
+            do i=1,this%pedigreeSize
+                call this%Pedigree(i)%destroyIndividual
+            enddo
+            deallocate(this%pedigree)
 
             this%pedigree => newPed
             this%generations = newGenerationList
