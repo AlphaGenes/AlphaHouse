@@ -41,7 +41,6 @@ module TestHashTable
 
         character(len=IDLENGTH), dimension(:), allocatable :: t
 
-        print *,"in test get"
         call dictionary%addKey("hi", 5)
         call dictionary%addKey("there", 5)
         t = dictionary%getAllKeys()

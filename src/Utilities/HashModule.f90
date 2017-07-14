@@ -91,7 +91,11 @@ class(DictStructure) :: this
 end function getSize
 
 
-
+   !---------------------------------------------------------------------------
+  !> @brief Returns a copy of the hash table
+  !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !> @date    October 26, 2016
+  !---------------------------------------------------------------------------
 subroutine copyHashTable(res, this)
   class(DictStructure),intent(in) :: this
   type(DictStructure),intent(inout) :: res

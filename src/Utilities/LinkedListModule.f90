@@ -71,7 +71,6 @@ function copyLinkedList(this) result(list)
     type(LinkedList), pointer :: next, this
 
     if (associated(this)) then
-        print *,"In copy"
         allocate(list)
         list%next => null()
         list%data%key = this%data%key
