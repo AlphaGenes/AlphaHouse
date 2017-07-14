@@ -57,9 +57,9 @@ interface DictStructure
     module procedure dict_create_val
 end interface DictStructure
 
-interface assignment ( = )
-       module procedure copyHashTable
-   end interface assignment ( = )
+! interface assignment ( = )
+!        module procedure copyHashTable
+!    end interface assignment ( = )
 !
 ! We do not want everything to be public
 !

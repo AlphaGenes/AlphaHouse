@@ -172,9 +172,8 @@ module PedigreeModule
                 use iso_fortran_env, only : output_unit, int64
                 class(PedigreeHolder),intent(in) :: this
                 type(pedigreeHolder) :: res
-                integer :: i,h, tmpId,tmpGenotypeMapIndex
+                integer :: i, tmpId,tmpGenotypeMapIndex
                 integer(kind=int64) :: sizeDict
-                type(IndividualLinkedListNode), pointer :: tmpIndNode
                 type(Individual), pointer, dimension(:) :: newPed
                 type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
 
@@ -190,10 +189,10 @@ module PedigreeModule
                 res%maxPedigreeSize = this%maxPedigreeSize
                 res%inputMap = this%inputMap
                 res%genotypeMap = this%genotypeMap
-                res%genotypeDictionary = this%genotypeDictionary
+                call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
                 res%nGenotyped =this%nGenotyped
                 res%hdMap = this%hdMap
-                res%hdDictionary = this%hdDictionary
+                call copyHashTable(res%hdDictionary, this%hdDictionary)
                 res%nHd = this%nHd
                 res%maxGeneration = this%maxGeneration
                 res%nsnpsPopulation = this%nsnpsPopulation
@@ -1262,8 +1261,7 @@ module PedigreeModule
               integer,intent(in),optional :: nAnnisG
               integer, intent(in),optional :: startSnp, endSnp
 
-              integer :: totalSnps
-              integer(kind=1), allocatable, dimension(:) :: tmpSnpArray, smallArray 
+              integer(kind=1), allocatable, dimension(:) :: tmpSnpArray 
               integer :: i, j,fileUnit, nAnnis,tmpIdNum
               integer :: count, end
 
@@ -1867,10 +1865,12 @@ module PedigreeModule
             class(PedigreeHolder) :: this
             character(len=*), intent(in) :: filepath
 
-            integer ::i, tmpGender,tmp
-            character(len=IDLENGTH) :: tmpID
+            integer ::i, tmpGender,tmp,unit
+            character(len=IDLENGTH) :: tmpId
+
+             open(newunit= unit, file= filepath, status="old")
             do i= 1, this%pedigreeSize
-              read(*,*) tmpId, tmpGender
+              read(unit,*) tmpId, tmpGender
               tmp = this%dictionary%getValue(tmpId)
               if (tmp/=DICT_NULL) then
                 this%pedigree(tmp)%gender = tmpGender
