@@ -750,7 +750,7 @@ module AlphaEvolveModule
       ColnameLogUnit(3) = "             Objective"
       if (present(String)) then
         if (present(StringNum)) then
-          StringFmt = "("//Int2Char(StringNum)//"a)"
+          StringFmt = "(a"//Int2Char(StringNum)//")"
         else
           StringFmt = "(a)"
         end if
@@ -798,7 +798,7 @@ module AlphaEvolveModule
       end if
       if (present(String)) then
         if (present(StringNum)) then
-          StringFmt = "("//Int2Char(StringNum)//"a)"
+          StringFmt = "(a"//Int2Char(StringNum)//")"
         else
           StringFmt = "(a)"
         end if
