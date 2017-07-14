@@ -398,6 +398,11 @@ module AlphaEvolveModule
         call BestSol%Log(Spec=Spec, Iteration=Iter, AcceptPct=AcceptPct)
       end if
       if (LogPopInternal) then
+        do Sol = 1, nSol
+          call NewSol(Sol)%LogPop(Spec=Spec, LogPopUnit=LogPopUnit, Iteration=Iter, i=Sol)
+        end do
+      end if
+      if (LogPopInternal) then
         close(LogPopUnit)
       end if
 
