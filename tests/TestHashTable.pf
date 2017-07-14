@@ -28,6 +28,7 @@ module TestHashTable
     @test
     subroutine testAdd
         implicit none
+        print *,"in test add"
         call dictionary%addKey("hi", 5)
         @assertEqual(dictionary%getValue("hi"), 5)
     end subroutine testAdd
@@ -39,6 +40,8 @@ module TestHashTable
         implicit none
 
         character(len=IDLENGTH), dimension(:), allocatable :: t
+
+        print *,"in test get"
         call dictionary%addKey("hi", 5)
         call dictionary%addKey("there", 5)
         t = dictionary%getAllKeys()
@@ -48,6 +51,8 @@ module TestHashTable
     @test
     subroutine testHasKey
         implicit none
+
+        print *,"in test has Keys"
         call dictionary%addKey("hi", 5)
         @assertTrue(dictionary%hasKey("hi"))
 

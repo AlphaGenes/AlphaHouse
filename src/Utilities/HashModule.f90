@@ -57,9 +57,9 @@ interface DictStructure
     module procedure dict_create_val
 end interface DictStructure
 
-!interface assignment ( = )
- !       module procedure copyHashTable
-  !  end interface assignment ( = )
+interface assignment ( = )
+       module procedure copyHashTable
+   end interface assignment ( = )
 !
 ! We do not want everything to be public
 !
@@ -105,11 +105,10 @@ subroutine copyHashTable(res, this)
   do i = 1,res%hash_size
       if (associated(this%table(i)%list)) then
         res%table(i)%list => copyLinkedList(this%table(i)%list)
+      else 
+      	res%table(i)%list => null()
       endif
   enddo
-
-
-
 
 
 

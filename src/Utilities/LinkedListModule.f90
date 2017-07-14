@@ -71,6 +71,7 @@ function copyLinkedList(this) result(list)
     type(LinkedList), pointer :: next, this
 
     if (associated(this)) then
+        print *,"In copy"
         allocate(list)
         list%next => null()
         list%data%key = this%data%key
@@ -79,13 +80,14 @@ function copyLinkedList(this) result(list)
         do while (associated(this%next))
             allocate( next )
             cur%next => next
-            next%data = this%data
+            next%data%key = this%data%key
+            next%data%value = this%data%value
             cur => cur%next
             this=> this%next
         end do
-      else
-        list => null()
-      endif
+  else
+    list => null()
+  endif
 
 end function copyLinkedList
 
