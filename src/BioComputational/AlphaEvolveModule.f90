@@ -24,6 +24,7 @@
 module AlphaEvolveModule
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
+  use, intrinsic :: IEEE_Arithmetic
   use AlphaHouseMod, only : Int2Char, Real2Char, ToLower
 
   implicit none
@@ -106,9 +107,9 @@ module AlphaEvolveModule
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
       integer(int32) :: Sol, a, b, c
 
+      real(real32) :: AcceptPct
       real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
-      real(real64) :: AcceptPct, OldBestSolObjective
-      real(real64) :: Chrom(nParam)
+      real(real64) :: Chrom(nParam), OldBestSolObjective
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
@@ -225,6 +226,20 @@ module AlphaEvolveModule
         call OldSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
       end do
 
+      Sol = maxloc(OldSol(:)%Objective, dim=1)
+      call BestSol%Assign(OldSol(Sol))
+      if (present(LogFile)) then
+        call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=0, AcceptPct=IEEE_Value(x=AcceptPct, class=IEEE_Quiet_NaN))
+      end if
+      if (LogStdoutInternal) then
+        call BestSol%Log(Spec=Spec, Iteration=0, AcceptPct=IEEE_Value(x=AcceptPct, class=IEEE_Quiet_NaN))
+      end if
+      if (LogPopInternal) then
+        do Sol = 1, nSol
+          call OldSol(Sol)%LogPop(Spec=Spec, LogPopUnit=LogPopUnit, Iteration=0, i=Sol)
+        end do
+      end if
+
       ! --- Evolve ---
 
       do Iter = 1, nIter
@@ -265,7 +280,7 @@ module AlphaEvolveModule
         !> @todo: Paralelize this loop? Need parallel RNG streams (random_number
         !!        uses the system seed variable so the threads need to wait each other)
         BestSolChanged = .false.
-        AcceptPct = 0.0d0
+        AcceptPct = 0.0
 
         ! $OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom)
         do Sol = 1, nSol
@@ -327,7 +342,7 @@ module AlphaEvolveModule
           call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
           ! If competitor is better or equal, keep it ("equal" to force evolution)
           if (NewSol(Sol)%Objective >= OldSol(Sol)%Objective) then
-            AcceptPct = AcceptPct + 1.0d0
+            AcceptPct = AcceptPct + 1.0
           else
             ! Keep the old solution
             call NewSol(Sol)%Assign(OldSol(Sol))
@@ -335,7 +350,7 @@ module AlphaEvolveModule
         end do ! Sol
         ! $OMP END PARALLEL DO
 
-        AcceptPct = AcceptPct / nSol * 100.0d0
+        AcceptPct = AcceptPct / nSol * 100.0
 
         ! --- Promote the new solutions into parental solutions ---
 
@@ -397,12 +412,11 @@ module AlphaEvolveModule
       if (LogStdoutInternal) then
         call BestSol%Log(Spec=Spec, Iteration=Iter, AcceptPct=AcceptPct)
       end if
+
       if (LogPopInternal) then
         do Sol = 1, nSol
           call NewSol(Sol)%LogPop(Spec=Spec, LogPopUnit=LogPopUnit, Iteration=Iter, i=Sol)
         end do
-      end if
-      if (LogPopInternal) then
         close(LogPopUnit)
       end if
 
@@ -441,7 +455,8 @@ module AlphaEvolveModule
       ! Other
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
 
-      real(real64) :: RanNum, AcceptPct, OldBestSolObjective, BestSolObjective, Chrom(nParam)
+      real(real32) :: AcceptPct
+      real(real64) :: RanNum, OldBestSolObjective, BestSolObjective, Chrom(nParam)
 
       logical :: ModeAvg, ModeMax, BestSolChanged, LogStdoutInternal
 
@@ -478,14 +493,14 @@ module AlphaEvolveModule
         OldBestSolObjective = 0.0d0
         BestSolObjective = 0.0d0
         BestSolChanged = .true.
-        AcceptPct = 100.0d0
+        AcceptPct = 100.0
       end if
 
       if (ModeMax) then
         OldBestSolObjective = -huge(RanNum)
         BestSolObjective = -huge(RanNum)
         BestSolChanged = .false.
-        AcceptPct = 0.0d0
+        AcceptPct = 0.0
       end if
 
       ! --- Printout log header ---
@@ -515,7 +530,7 @@ module AlphaEvolveModule
               call BestSol%Assign(TestSol)
               BestSolObjective = BestSol%Objective
               BestSolChanged = .true.
-              AcceptPct = AcceptPct + 1.0d0
+              AcceptPct = AcceptPct + 1.0
             end if
           end if
         end do
@@ -553,7 +568,7 @@ module AlphaEvolveModule
             call BestSol%Assign(TestSol)
             BestSolObjective = BestSol%Objective
             BestSolChanged = .true.
-            AcceptPct = AcceptPct + 1.0d0
+            AcceptPct = AcceptPct + 1.0
           end if
         end if
 
@@ -564,14 +579,14 @@ module AlphaEvolveModule
             if      (ModeAvg) then
               call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
             else if (ModeMax) then
-              AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
+              AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0
               if (present(LogFile)) then
                 call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
               end if
               if (LogStdoutInternal) then
                 call BestSol%Log(Spec=Spec, Iteration=Samp, AcceptPct=AcceptPct)
               end if
-              AcceptPct = 0.0d0
+              AcceptPct = 0.0
             end if
             LastSampPrint = Samp
           end if
@@ -598,7 +613,7 @@ module AlphaEvolveModule
       ! --- The winner solution ---
 
       if (ModeMax) then
-        AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0d0
+        AcceptPct = AcceptPct / (Samp - LastSampPrint) * 100.0
       end if
       if (present(LogFile)) then
         call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=Samp, AcceptPct=AcceptPct)
@@ -787,7 +802,7 @@ module AlphaEvolveModule
       class(AlphaEvolveSpec), intent(in)     :: Spec      !< spec holder
       integer(int32), intent(in), optional   :: LogUnit   !< log file unit (default STDOUT)
       integer(int32), intent(in)             :: Iteration !< generation/iteration
-      real(real64), intent(in)               :: AcceptPct !< acceptance rate
+      real(real32), intent(in)               :: AcceptPct !< acceptance rate
       character(len=*), intent(in), optional :: String    !< additional string that will be written before the head
       integer(int32), optional               :: StringNum !< How much space is needed for the String
 
