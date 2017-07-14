@@ -216,10 +216,7 @@ end function dict_create_val
         do i = 1,this%hash_size
             if ( associated( this%table(i)%list ) ) then
                 call list_destroy( this%table(i)%list )
-
-                ! if (associated(this%table(i)%list)) then
-                !     deallocate(this%table(i)%list)
-                ! endif
+                this%table(i)%list => null()
             endif
         enddo
         deallocate(this%table )

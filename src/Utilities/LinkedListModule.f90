@@ -73,7 +73,8 @@ function copyLinkedList(this) result(list)
     if (associated(this)) then
         allocate(list)
         list%next => null()
-        list%data = this%data
+        list%data%key = this%data%key
+        list%data%value = this%data%value
         cur =>list
         do while (associated(this%next))
             allocate( next )
