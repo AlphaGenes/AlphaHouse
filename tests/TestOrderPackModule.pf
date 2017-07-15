@@ -125,7 +125,7 @@ module TestOrderPackModule
   subroutine TestRapKnr
     implicit none
     integer(int32), allocatable, dimension(:) :: Result
-    integer(int32) :: I(5), Expect(5)
+    integer(int32) :: I(5), Expect(5), I2(10)
     real(real32) :: S(5)
     real(real64) :: D(5)
 
@@ -159,6 +159,19 @@ module TestOrderPackModule
     @AssertEqual(Expect(2), Result(2), "RapKnr on real double failed - 2nd element")
     @AssertEqual(Expect(3), Result(3), "RapKnr on real double failed - 3rd element")
     @AssertEqual(Expect(4), Result(4), "RapKnr on real double failed - 4th element")
+
+    I2 = [2, 2, 0, 0, 0, 1, 0, 0, 1, 0]
+
+    Result = RapKnr(float(I2), 4)
+    ! print*, I2
+    ! print*, Result
+    ! print*, I2(Result)
+    Expect = [2, 1, 6, 9, 0] ! NOTE: it takes last 2 as the first instance
+    @AssertEqual(Expect(1), Result(1), "RapKnr on integer failed - 1st element")
+    @AssertEqual(Expect(2), Result(2), "RapKnr on integer failed - 2nd element")
+    @AssertEqual(Expect(3), Result(3), "RapKnr on integer failed - 3rd element")
+    @AssertEqual(Expect(4), Result(4), "RapKnr on integer failed - 4th element")
+
   end subroutine
 
   !#############################################################################
