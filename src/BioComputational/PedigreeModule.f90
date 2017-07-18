@@ -367,10 +367,38 @@ module PedigreeModule
                                             ! cycle
                                         endif
                                     enddo !< pedigree loop
-                                    ! call removeGenotype(position, genConflict)
+                                    ! call removeGenotype(ped,position, genConflict)
                                 enddo
 
                             end subroutine findMendelianInconsistencies
+
+
+                            ! subroutine removeGenotypeMendellian(ped,position, genConflict)
+                          
+                            !     ! integer, dimension(:,:), allocatable :: pedConflicts !< format pedConflicts(pedsize, 1,2)
+
+
+
+
+                            !     do i=1,ped%pedigreeSize
+
+                            !         if (ped%pedigree(i)%founder) cycle
+
+                            !         damId = ped%pedigree(i)%damId%id
+                            !         sireId = ped%pedigree(i)%sirePointer%id
+
+                            !         if (GenConflict(3,sireId) < GenConflict(3,i) then
+                            !             ped%pedigree(i)%setGenotype(position,9)
+
+                            !         else if (GenConflict(3,sireId) == GenConflict(3,i) then
+                            !             ! set both to missing
+                            !             ped%pedigree(sireId)%setGenotype(position,9)
+                            !             ped%pedigree(i)%setGenotype(position,9)
+                            !         else
+                            !             ped%pedigree(sireId)%setGenotype(position,9)
+                            !         endif
+
+                            ! end subroutine       
 
                             !---------------------------------------------------------------------------
                             !< @brief Sets phase information from an array
