@@ -1,0 +1,3 @@
+[submodule "alphacmakefiles"]
+	path = alphacmakefiles
+	url = https://bitbucket.org/hickeyjohnteam/alphacmakefiles.git

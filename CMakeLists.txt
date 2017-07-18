@@ -4,7 +4,7 @@ enable_language (Fortran)
 enable_testing()
 find_package(Doxygen)
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/./alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
 INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
