@@ -6,17 +6,17 @@ module informationModule
     use AlphaHouseMod
 
     contains
-    subroutine checkYield(ped)
+    function checkYield(ped) result(res)
 
         type(PedigreeHolder) :: ped
         integer(kind=1) ,dimension(:,:), allocatable  :: array
+        real :: res
         array = ped%getGenotypesAsArrayWitHMissing()
-
-        write(unit,*) "Genotype Yield:", 1 - (count(array == 9) / size(array))
-
+        res = 1 - real(count(array == 9))/real(size(array))
 
 
-    end subroutine checkYield
+
+    end function checkYield
 
 
 
@@ -32,7 +32,6 @@ module informationModule
         character(len=IDLENGTH), dimension(:), allocatable :: tmpIDs 
         real,dimension(:), allocatable :: accuracies
         real :: meanAccuracy
-        type(CorrelationReal32) :: c
         ! if nothing is genotyped, we can't do anything of worth here
         if (ped%nGenotyped <1) then 
             return
@@ -53,8 +52,7 @@ module informationModule
 
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
-                c = cor(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray())
-                accuracies(i) = c%cor
+                accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray())
             endif
         enddo
         close(unit)
@@ -88,7 +86,6 @@ module informationModule
         real,dimension(:), allocatable :: accuracies
         real :: meanAccuracy
         integer :: nsnps,unit
-        type(CorrelationReal32) :: c
 
         ! function assumes order of input true file is the same as genotype file
 
@@ -126,8 +123,7 @@ module informationModule
 
         do i = 1, nsnps
         ! compare snps for genotyped animals
-            c = cor(pedArray(:,i), tmpArray(:,i))
-            accuracies(i) = c%cor
+            accuracies(i) = corAccuracies(pedArray(:,i), tmpArray(:,i))
         enddo 
 
         if (present(outperSnpPath)) then
@@ -143,6 +139,28 @@ module informationModule
             
 
     end function calculateAccuracyPerSnp
+
+
+
+
+    function corAccuracies(one, two) result(res)
+
+        integer(kind=1), dimension(:),intent(in) :: one,two
+        real(kind=real32) :: res
+
+        integer :: incorrect
+        incorrect = 0
+
+
+        do i =1,size(one)
+
+            if (one(i) == 9 .or. two(i) == 9) cycle
+
+            if (one(i)/=two(i)) incorrect = incorrect + 1   
+        enddo 
+
+        res = 1 - real(incorrect) / real(size(one))
+    end function corAccuracies
     ! subroutine checkPhaseYield
 
 end module informationModule
