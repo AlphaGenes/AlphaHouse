@@ -397,7 +397,9 @@ contains
 
         integer :: cursection, curpos
 
-        if (pos > h%length) then
+        if (pos == 0) then
+            phase = 9
+        else if (pos > h%length) then
 
             write(error_unit,*) "error - GetPhase has been given position longer than haplotype"
             write(error_unit,*) pos, " vs length:", h%length

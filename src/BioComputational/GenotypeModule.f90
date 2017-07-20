@@ -310,6 +310,11 @@ function getGenotype(g, pos) result (genotype)
 
     integer :: cursection, curpos
 
+
+    if (pos == 0) then 
+      genotype = 9
+      return
+    endif
     cursection = (pos-1) / 64 + 1
     curpos = pos - (cursection - 1) * 64 - 1
 
