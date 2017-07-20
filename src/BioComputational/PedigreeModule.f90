@@ -36,7 +36,7 @@ module PedigreeModule
 
     type PedigreeHolder
 
-        type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
+        type(Individual), pointer, dimension(:) :: Pedigree 
         type(IndividualLinkedList) :: Founders !linked List holding all founders
         type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
         type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
@@ -273,6 +273,18 @@ module PedigreeModule
                                 res%generations = newGenerationList
 
                             end function copyPedigree
+
+
+
+                            subroutine findMendelianInconsistenciesnew(ped, threshold)
+                                
+
+                                type(PedigreeHOlder) :: ped
+                                real, intent(in) :: threshold
+
+
+
+                            end subroutine findMendelianInconsistenciesnew(ped, threshold)
 
 
 
