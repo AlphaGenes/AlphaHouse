@@ -1365,6 +1365,10 @@ module PedigreeModule
                                     tmpIdNum = this%dictionary%getValue(tmpId)
                                     if (tmpIdNum == DICT_NULL) then
                                         write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
+                                        write(error_unit, *) "Animal will be added as a founder to pedigree"
+
+                                        call this%addAnimalAtEndOfPedigree(trim(tmpID), tmpSnpArray)
+
                                     else
 
                                         if (present(startSnp)) then
