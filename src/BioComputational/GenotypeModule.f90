@@ -992,6 +992,13 @@ function isHomo(g, pos) result (two)
     end do
   end subroutine setFromOtherIfMissing
 
+
+    !---------------------------------------------------------------------------
+    !> @brief   Return a type reprsenting Mendelian consisentincies /
+    !>          inconsistencies between an individual and its parents.
+    !> @date    July 24, 2017
+    !> @return  New mendelian object 
+    !---------------------------------------------------------------------------
     function mendelianInconsistencies(g, pg, mg) result (mend)
         class(Genotype), intent(in) :: g
         type(Genotype), intent(in) :: pg, mg
