@@ -1457,7 +1457,7 @@ module PedigreeModule
                                 character(len=IDLENGTH) :: seqid !placeholder variables
 
                                 if (.not. Present(nAnisGIn)) then
-                                    NanisG = countLines(seqFile)
+                                    NanisG = countLines(seqFile)/2
                                 else 
                                     nanisG = nAnisGIn
                                 endif
@@ -1466,12 +1466,12 @@ module PedigreeModule
                                 allocate(ref(nsnps))
                                 allocate(alt(nsnps))
                                 ! tmp = 9
+                                print *, "Number of animals in seq file", NanisG
                                 do i=1,nAnisG
                                     read (unit,*) seqid, ref(:)
                                     read (unit,*) seqid, alt(:)
 
                                     tmpID = this%dictionary%getValue(seqid)
-
                                     if (present(maximumReads)) then
                                         do j=1,nsnps
                                             if (ref(j)>=maximumReads) ref(j)=maximumReads-1
