@@ -62,6 +62,9 @@ module IndividualModule
         type(genotype) :: individualGenotype
         type(Haplotype) :: individualPhase(2)
         integer,dimension(:), allocatable :: referAllele, AlterAllele
+
+        integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
+        
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -102,7 +105,14 @@ module IndividualModule
             procedure :: writeIndividual
             procedure :: initPhaseArrays
             procedure :: hasGenotypedAnsestors
+            procedure :: getSeg
+            procedure :: setSeg
+            procedure :: setSegToMissing
+            procedure :: makeIndividualPhaseCompliment
+            procedure :: makeIndividualGenotypeFromPhase
             generic:: write(formatted)=> writeIndividual
+
+            
     end type Individual
 
     interface Individual
@@ -176,7 +186,54 @@ contains
             deallocate(this%referAllele)
             deallocate(this%alterAllele)
         endif
+
+        if (allocated(this%seg)) then
+            deallocate(this%seg)
+        endif
+
     end subroutine destroyIndividual
+
+
+
+    subroutine setSeg(this, location, parent, value) 
+
+        class(individual) :: this
+        integer, intent(in) :: location, parent, value
+
+        if (.not. allocated(this%seg)) then
+            allocate(this%seg(this%individualGenotype%length,2 ))
+        endif
+
+
+        this%seg(location, parent) = value
+
+    end subroutine setSeg
+
+
+        subroutine setSegToMissing(this) 
+
+        class(individual) :: this
+
+        if (.not. allocated(this%seg)) then
+            allocate(this%seg(this%individualGenotype%length,2 ))
+        endif
+
+
+        this%seg = MISSINGGENOTYPECODE
+
+    end subroutine setSegToMissing
+
+
+    function getSeg(this, location,parent) result(res)
+        implicit none
+
+        class(individual) :: this
+        integer, intent(in) :: location, parent
+        integer(kind =1) :: res
+        res = this%seg(location, parent)
+
+        
+    end function getSeg
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -904,6 +961,44 @@ contains
     end function isGenotypedNonMissing
 
 
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual genotype from the Haplotype
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine makeIndividualGenotypeFromPhase(this)
+        class(Individual), intent(inout) :: this
+        
+        call this%IndividualGenotype%setFromHaplotypesIfMissing(this%individualPhase(1),this%individualPhase(2)) 
+    end subroutine makeIndividualGenotypeFromPhase
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual haplotypes from the compilement if animal is genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine makeIndividualPhaseCompliment(this)
+        class(Individual), intent(inout) :: this
+        integer :: i
+        type (haplotype),allocatable :: comp1, comp2
+        
+        call this%individualPhase(1)%setErrorToMissing()
+        call this%individualPhase(2)%setErrorToMissing()
+        comp2 = this%individualGenotype%complement(this%individualPhase(1))
+        comp1 = this%individualGenotype%complement(this%individualPhase(2))
+
+        ! call comp1%setErrorToMissing()
+        ! call comp2%setErrorToMissing()
+
+        call this%individualPhase(1)%setFromOtherIfMissing(comp1)
+        call this%individualPhase(2)%setFromOtherIfMissing(comp2)
+        
+        deallocate(comp1)
+        deallocate(comp2)
+
+    end subroutine makeIndividualPhaseCompliment
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual to be genotyped.

@@ -106,6 +106,9 @@ module PedigreeModule
         procedure :: getSequenceAsArrayWithMissing
         procedure :: writeOutGenders
         procedure :: readInGenders
+        procedure :: MakeGenotype
+        procedure :: PhaseComplement
+        procedure :: homozygoticFillIn
     end type PedigreeHolder
 
     ! TODO - overload == and = functions
@@ -420,6 +423,30 @@ module PedigreeModule
                                 enddo
 
                             end subroutine setPhaseFromArray
+
+
+                            subroutine homozygoticFillIn(this)
+
+                                class(PedigreeHolder), intent(inout) :: this
+                                ! Impute phase information for homozygous cases
+
+                                integer :: i,j
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i,j)
+                                do i=1, this%pedigreeSize
+                                    do j=1, this%pedigree(this%genotypeMap(1))%individualGenotype%length
+                                        if (this%pedigree(i)%individualGenotype%getGenotype(j) == 2) then
+                                            call this%pedigree(i)%individualPhase(1)%setPhase(j,1)
+                                            call this%pedigree(i)%individualPhase(2)%setPhase(j,1)
+                                        else if (this%pedigree(i)%individualGenotype%getGenotype(j) == 0) then
+                                            call this%pedigree(i)%individualPhase(1)%setPhase(j,0)
+                                            call this%pedigree(i)%individualPhase(2)%setPhase(j,0)
+                                        endif
+                                    enddo
+                                enddo
+                                !$OMP END PARALLEL DO
+
+                            end subroutine homozygoticFillIn
 
                             !---------------------------------------------------------------------------
                             !<@brief Calculate correlation between pedigree 
@@ -2823,6 +2850,50 @@ module PedigreeModule
                             end subroutine addAnimalAtEndOfPedigree
 
 
+
+                            !---------------------------------------------------------------------------
+                            !> @brief Sets all individuals genotype from the Haplotype
+                            !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !---------------------------------------------------------------------------
+                            SUBROUTINE MakeGenotype(this)
+                                class(PedigreeHolder) :: this
+                                ! Any individual that has a missing genotype information but has both alleles
+                                ! known, has its genotype filled in as the sum of the two alleles
+                                integer :: i
+
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i)
+                                do i=1,this%pedigreeSize
+                                    call this%pedigree(i)%makeIndividualGenotypeFromPhase()    
+                                enddo 
+                                !$OMP END PARALLEL DO
+
+
+                            END SUBROUTINE MakeGenotype
+
+                            !#############################################################################################################################################################################################################################
+
+
+
+                            !---------------------------------------------------------------------------
+                            !> @brief Sets the individual haplotypes from the compilement if animal is genotyped for all animals
+                            !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !> @date    October 26, 2016
+                            !---------------------------------------------------------------------------
+                            subroutine PhaseComplement(this)
+                                class(PedigreeHolder) :: this
+                                ! If the genotype at a locus for an individual is known and one of its alleles has been determined
+                                ! then impute the missing allele as the complement of the genotype and the known phased allele
+                                integer :: i
+
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i)
+                                do i=1,this%pedigreeSize
+                                    call this%pedigree(i)%makeIndividualPhaseCompliment()
+                                enddo
+                                !$OMP END PARALLEL DO
+
+                            end subroutine PhaseComplement
 
                             !---------------------------------------------------------------------------
                             !<@brief  counts missing snps across all animals at every snp
