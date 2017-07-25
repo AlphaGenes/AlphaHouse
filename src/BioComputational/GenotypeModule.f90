@@ -90,6 +90,23 @@ module GenotypeModule
   generic:: read(unformatted) => readunFormattedGenotype
   end type Genotype
 
+    !---------------------------------------------------------------------------
+    !> @brief   Represents mendelian consistencies and inconsistencies for a trio.
+    !> @detail  Stores 6 bit arrays representing consistent / inconsistent snps
+    !>          for each of paternal, maternal and individual.
+    !>
+    !>          Consistent is where we have the information to know a snp is
+    !>          consistent.  Similarly for inconsistent.  If neither is set for
+    !>          a snp that means there is missing information and so consistentcy
+    !>          can not be determined.
+    !>
+    !>          Paternal represents where the paternal and individual snps are
+    !>          consistent or inconsistent.  This includes the case where the
+    !>          individual is a het and the parents are inconsistent.  Maternal
+    !>          is defined similarly.  Individual is whether an individual is
+    !>          consistent or inconsistent with both it's parents.
+    !> @date    May 27, 2017
+    !---------------------------------------------------------------------------
     type :: Mendelian
         integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
         integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
@@ -975,6 +992,13 @@ function isHomo(g, pos) result (two)
     end do
   end subroutine setFromOtherIfMissing
 
+
+    !---------------------------------------------------------------------------
+    !> @brief   Return a type reprsenting Mendelian consisentincies /
+    !>          inconsistencies between an individual and its parents.
+    !> @date    July 24, 2017
+    !> @return  New mendelian object 
+    !---------------------------------------------------------------------------
     function mendelianInconsistencies(g, pg, mg) result (mend)
         class(Genotype), intent(in) :: g
         type(Genotype), intent(in) :: pg, mg
