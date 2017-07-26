@@ -782,6 +782,7 @@ contains
         class(Individual), intent(in) :: this
         integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         integer:: v
+        v = 0
         select case (index)
             case(1)
                 v = this%id
@@ -790,16 +791,12 @@ contains
                     if (.not. this%sirePointer%isDummy) then
                         v = this%sirePointer%id
                     endif
-                else
-                    v = 0
                 endif
             case(3)
                 if (associated(this%damPointer)) then
                     if (.not. this%damPointer%isDummy) then
                         v = this%damPointer%id
                     endif
-                else
-                    v = 0
                 endif
             case default
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
