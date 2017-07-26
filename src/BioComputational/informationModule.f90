@@ -162,10 +162,9 @@ module informationModule
         do i =1,size(one)
 
             if (one(i) == 9 .or. two(i) == 9) cycle
-
+            count = count +1
             if (one(i)/=two(i)) then
                 incorrect = incorrect + 1   
-                count = count +1
             endif
         enddo 
 
