@@ -31,7 +31,7 @@ module IndividualModule
     
     implicit none
 
-    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual
+    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual, initIndividual
     
     private
 
@@ -54,13 +54,13 @@ module IndividualModule
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:) !holds array of given size
         integer :: nOffs  = 0 !number of offspring
-        logical :: Founder     = .false.
-        logical :: Genotyped   = .false.
-        logical :: HD          = .false.
-        logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
-        logical :: isUnknownDummy = .false.
-        type(genotype) :: individualGenotype
-        type(Haplotype) :: individualPhase(2)
+        logical(kind=1) :: Founder     = .false.
+        logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: HD          = .false.
+        logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
+        logical(kind=1) :: isUnknownDummy = .false.
+        type(genotype),allocatable :: individualGenotype
+        type(Haplotype),allocatable,dimension(:) :: individualPhase
         integer,dimension(:), allocatable :: referAllele, AlterAllele
 
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
@@ -159,6 +159,8 @@ contains
 
         if (present(nsnps)) then
             if (nsnps /= 0) then
+                allocate(this%individualPhase(2))
+                allocate(this%individualGenotype)
                 this%individualGenotype = newGenotypeMissing(nsnps)
                 this%individualPhase(1) = newHaplotypeMissing(nsnps)
                 this%individualPhase(2) = newHaplotypeMissing(nsnps)
@@ -189,6 +191,12 @@ contains
 
         if (allocated(this%seg)) then
             deallocate(this%seg)
+        endif
+        if (allocated(this%individualPhase)) then
+            deallocate(this%individualPhase)
+        endif
+        if (allocated(this%individualGenotype)) then
+            deallocate(this%individualGenotype)
         endif
 
     end subroutine destroyIndividual
