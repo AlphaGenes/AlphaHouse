@@ -994,8 +994,8 @@ contains
         comp2 = this%individualGenotype%complement(this%individualPhase(1))
         comp1 = this%individualGenotype%complement(this%individualPhase(2))
 
-        ! call comp1%setErrorToMissing()
-        ! call comp2%setErrorToMissing()
+        call comp1%setErrorToMissing()
+        call comp2%setErrorToMissing()
 
         call this%individualPhase(1)%setFromOtherIfMissing(comp1)
         call this%individualPhase(2)%setFromOtherIfMissing(comp2)
