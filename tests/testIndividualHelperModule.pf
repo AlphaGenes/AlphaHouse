@@ -72,7 +72,7 @@ module TestIndividualHelperModule
     end subroutine testGetHalfSibs
 
 
-     @test
+    @test
     subroutine testGetAllSibs
         use IndividualModule
         implicit none
@@ -84,13 +84,16 @@ module TestIndividualHelperModule
         tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
         tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
         ret = getSibs(tmp)
+
+        open(1,file="out.txt", action="readwrite", status="old")
+        write(*,*) "deleting out.txt"
+        close(1, status="delete")
+
         @assertEqual(ret%length,3)
         @assertTrue(ret%contains(tmp2))
         @assertTrue(ret%contains(tmp3))
         @assertTrue(ret%contains(tmp4))
 
-        open(1,file="out.txt", action="readwrite", status="old")
-        close(1, status="delete")
 
     end subroutine testGetAllSibs
 
