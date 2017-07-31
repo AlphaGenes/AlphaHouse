@@ -127,9 +127,7 @@ module AlphaHouseMod
             exit readLoop
           end if
           if (any(delimiterIn == tempChar(i:i))) then
-!            if (.not. previousIsDelim) then
               previousIsDelim =.true.
-!            end if
           else
             if (previousIsDelim) then
               numColumnsOut = numColumnsOut+1
@@ -150,9 +148,9 @@ module AlphaHouseMod
         end if
         read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
       end do readLoop
-      if (.not. any(delimiterIn==tempChar(finalLetter:finalLetter))) then
-        numColumnsOut = numColumnsOut+1
-      end if
+!      if (.not. any(delimiterIn==tempChar(finalLetter:finalLetter))) then
+!        numColumnsOut = numColumnsOut+1
+!      end if
       close(fileUnit)
     else
       numColumnsOut = -1

@@ -236,11 +236,14 @@ use StringModule
 use iso_fortran_env
 
 type(String):: stringUsed
+character(len=:), allocatable:: charUsed
 integer:: expected, gotten
 
-stringUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:'|\/?><,.~`+="
+charUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:'|\/?><,.~`+="
 
-gotten = 61
+stringUsed = charUsed
+
+gotten = len(charUsed)
 
 expected = stringUsed%getPosition("=")
 
