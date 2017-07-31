@@ -31,6 +31,7 @@
     use AlphaHouseMod, only : Int2Char
     implicit none
 
+    
     private addOffspringsAfterReadIn
 
     type PedigreeHolder
@@ -86,6 +87,7 @@
     procedure :: getGenotypesAsArrayWitHMissing
     procedure :: countMissingGenotypesNoDummys  
     procedure :: setGenotypeFromArray
+    procedure :: setPhaseFromArray
     procedure :: getNumGenotypesMissing
     procedure :: getGenotypedFounders
     procedure :: getSireDamGenotypeIDByIndex
@@ -317,7 +319,7 @@
 
         if (trim(tmpId) == trim(tmpsire) .or. trim(tmpDam) == trim(tmpId)) then
 
-            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this."
+            write(error_unit,*) "Error: Animal ", trim(tmpId), " has been given itself as a parent. please fix this. Error on line:",i
             stop
         endif
         call pedStructure%dictionary%addKey(tmpId, i)
@@ -348,14 +350,16 @@
         else ! if sire and dam are both found
             pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
             call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+            
             if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                 call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum))
             endif
             pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
             call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+            
             if (pedStructure%Pedigree(tmpDamNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
                 call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamNum))
             endif
         endif
@@ -584,14 +588,16 @@
         else ! if sire and dam are both found
             pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
             call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+            
             if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                 call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
             endif
             pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
             call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+            
             if (pedStructure%Pedigree(tmpDamNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
                 call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamNum)) ! add animal to dam list
             endif
         endif
@@ -689,14 +695,16 @@
         else ! if sire and dam are both found
             pedStructure%Pedigree(i)%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
             call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+            
             if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                 call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
             endif
             pedStructure%Pedigree(i)%damPointer =>  pedStructure%Pedigree(tmpDamNum)
             call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(i))
-            call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
+            
             if (pedStructure%Pedigree(tmpDamNum)%nOffs == 1) then
+                call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
                 call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamNum)) ! add animal to sire list
             endif
         endif
@@ -756,9 +764,10 @@
             if (tmpSireNum /= DICT_NULL .and. .not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then !if sire has been found in hashtable
                 pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                 call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+                
 
                 if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
+                    call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                     call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
                 endif
                 ! check that we've not already defined the parent above
@@ -778,8 +787,9 @@
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1) !if its a sire, it should be male
+                    
                     if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+                        call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1) !if its a sire, it should be male
                         call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                     endif
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
@@ -787,8 +797,9 @@
                 else
                     pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
                     call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                    call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
+                    
                     if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
+                        call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
                         call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
                     endif
                 endif
@@ -822,8 +833,8 @@
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                     call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2) !if its a dam, it should be female
                     if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+                        call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2) !if its a dam, it should be female
                         call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                     endif
                     call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
@@ -832,9 +843,10 @@
                     pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
                     call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                     if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+                        call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a sire, it should be male, dam female
                         call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                     endif
-                    call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a sire, it should be male, dam female
+                    
                     call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamnum)) ! add animal to dam list
                 endif
 
@@ -861,12 +873,12 @@
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
                 endif
 
-                call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
-                call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to dam list
+                
                 pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
                 
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                 if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+                    call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
                     call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
@@ -887,12 +899,12 @@
                     pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
                 endif
                 pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-                call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
-                call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to dam list
+                
                 pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
   
                 call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
                 if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+                call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
                     call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
                 endif
                 call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))

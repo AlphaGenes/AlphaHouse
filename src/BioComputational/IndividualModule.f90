@@ -28,6 +28,7 @@ module IndividualModule
     use genotypeModule
     use HaplotypeModule
     use iso_fortran_env
+    
     implicit none
 
     public :: Individual,individualPointerContainer,operator ( == ),compareIndividual
@@ -41,8 +42,6 @@ module IndividualModule
 
     type Individual
 
-
-        integer(kind=1) , dimension(:,:), allocatable :: phaseInfo ! (nsnp,2)
 
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
@@ -92,6 +91,7 @@ module IndividualModule
             procedure :: hasDummyParent
             procedure :: hasDummyParentsOrGranparents
             procedure :: isDummyBasedOnIndex
+            procedure :: isUnknownDummyBasedOnIndex
             procedure :: getPaternalGrandSireRecodedIndexNoDummy
             procedure :: getMaternalGrandSireRecodedIndexNoDummy
             procedure :: getPaternalGrandDamRecodedIndexNoDummy
@@ -167,9 +167,6 @@ contains
         deallocate(this%originalID)
         deallocate(this%sireID)
         deallocate(this%damID)
-        if (allocated(this%phaseInfo)) then
-            deallocate(this%phaseInfo)
-        endif
     end subroutine destroyIndividual
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
@@ -614,7 +611,7 @@ contains
         integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         select case (index)
             case(1)
-                isDummyBasedOnIndex = .false.
+                isDummyBasedOnIndex = this%isDummy
             case(2)
                 if (associated(this%sirePointer)) then
                     isDummyBasedOnIndex = this%sirePointer%isDummy
@@ -631,6 +628,41 @@ contains
         isDummyBasedOnIndex = .false.
         
     end function isDummyBasedOnIndex
+
+
+!---------------------------------------------------------------------------
+    !> @brief returns true if index of corresponding parent is dummy
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    logical function isUnknownDummyBasedOnIndex(this, index)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
+        select case (index)
+            case(1)
+                isUnknownDummyBasedOnIndex = this%isUnknownDummy
+            case(2)
+                if (associated(this%sirePointer)) then
+                    isUnknownDummyBasedOnIndex = this%sirePointer%isUnknownDummy
+                    return
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    isUnknownDummyBasedOnIndex = this%damPointer%isUnknownDummy
+                    return
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamObjectByIndex has been given an out of range value"
+        end select
+        isUnknownDummyBasedOnIndex = .false.
+        
+    end function isUnknownDummyBasedOnIndex
+
 
          !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
@@ -878,10 +910,6 @@ contains
         !TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         this%individualGenotype = Genotype(Geno)
-        if (.not. allocated(this%phaseInfo)) then
-            allocate(this%phaseInfo(size(geno),2))
-            this%phaseInfo = MissingPhaseCode
-        endif
     end subroutine setGenotypeArray
 
     !---------------------------------------------------------------------------
@@ -896,7 +924,7 @@ contains
         integer, intent(in) :: hap
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of genotype information
 
-        !Should we be checking that genotype is set and if not set it to missing?
+        !TODO: Should we be checking that genotype is set and if not set it to missing?
         this%individualPhase(hap) = Haplotype(phase)
     end subroutine setPhaseArray
 
@@ -911,12 +939,8 @@ contains
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
-        if (allocated(this%phaseInfo)) then
-            deallocate(this%phaseInfo)
-        endif
-
-        allocate(this%phaseInfo(nsnp,2))
-        this%phaseInfo = MissingPhaseCode
+        this%individualPhase(1) = Haplotype(nSnp)
+        this%individualPhase(2) = Haplotype(nSnp)
     end subroutine initPhaseArrays
 
     !---------------------------------------------------------------------------

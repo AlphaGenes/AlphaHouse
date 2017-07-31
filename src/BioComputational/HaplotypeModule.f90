@@ -89,7 +89,6 @@ module HaplotypeModule
     procedure :: writeFormattedHaplotype
     procedure :: writeunFormattedHaplotype
     procedure :: compareHaplotypeToArrayNoMiss
-    procedure :: allPresent
     procedure :: allMissingOrError
 
     generic:: write(formatted)=> writeFormattedHaplotype
@@ -1113,22 +1112,6 @@ contains
 
       call wrapper(dtv, array)
     end subroutine readFormattedHaplotype
-
-
-    pure function allPresent(hap) result(log)
-        class(Haplotype), intent(in) :: hap
-
-        logical :: log
-
-
-        if (all(hap%missing == 0)) then
-            log = .true.
-        else
-            log = .false.
-        endif
-
-    end function allPresent
-
 
     pure function allMissingOrError(hap) result(log)
         class(Haplotype), intent(in) :: hap
