@@ -346,6 +346,7 @@ module pageModule
     character(len=10000):: temp
     integer(int32):: numLines, fileId, commentPos
     integer(int32):: i
+    logical:: inputFileExists
 
     if (present(commentCharacterIn)) then
       write(commentCharacter, "(A)")  commentCharacterIn
@@ -357,6 +358,14 @@ module pageModule
 
     allocate(tempArray(numLines))
     allocate(tempLine(numLines))
+
+    Inquire(file=inputFileName, exist= inputFileExists)
+
+    if (.not. inputFileExists) then
+      write(*, "(A)") "Unable to find the input file: ", inputFileName
+      stop 348
+    end if
+
     open(newunit=fileId, file = inputFileName, action="read")
     do i = 1, numLines
       read(fileId, "(A)") temp
