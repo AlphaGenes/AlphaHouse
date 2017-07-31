@@ -9,6 +9,34 @@ contains
 ! Test Count Colums
 !##################################################################################################################################
 @test
+subroutine testCountColumnsWithSingleDelimiterNoSpaceAtStart()
+
+integer:: expected, gotten
+
+logical:: fileExists
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, "(A)") "One Two three Four Five "
+
+close(100)
+
+expected = 5
+
+Inquire(file="testFileToUse", exist=fileExists)
+gotten = countColumns("testFileToUse", " ")
+
+Inquire(file="testFileToUse", exist=fileExists)
+
+open(100, file="testFileToUse", action="read", status="old")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithSingleDelimiterNoSpaceAtStart
+
+
+@test
 subroutine testCountColumnsSingleDelimiter
 integer:: expected, gotten
 
@@ -16,7 +44,7 @@ logical:: fileExists
 
 open(100, file="testFileToUse", action="write", status="new")
 
-write(100, "(A)") " One Two three Four Five "
+write(100, "(A)") "    One Two three Four Five    "
 
 close(100)
 
@@ -57,6 +85,7 @@ close(100, status="delete")
 @assertEqual(expected, gotten)
 
 end subroutine
+
 @test
 subroutine testCountColumnsWithMultipleDelimitersNoColumns
 integer:: expected, gotten
@@ -99,6 +128,28 @@ close(100, status="delete")
 @assertEqual(expected, gotten)
 
 end subroutine testCountColumnsWithMultipleDelimitersNoDelimStartOrEnd
+
+@test
+subroutine testCountColumnsWithMultipleDelimitersNoDelimEnd
+integer:: expected, gotten
+
+open(100, file="testFileToUse", action="write", status="new")
+
+write(100, *) " One ,Two ,three ,Four Five"
+
+close(100)
+
+expected = 5
+
+gotten = countColumns("testFileToUse", [" ", ","])
+
+
+open(100, file="testFileToUse", action="read")
+close(100, status="delete")
+
+@assertEqual(expected, gotten)
+
+end subroutine testCountColumnsWithMultipleDelimitersNoDelimEnd
 
 @test
 subroutine testCountColumnsWithMultipleDelimitersNoDelimStart

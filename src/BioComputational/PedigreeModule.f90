@@ -56,7 +56,7 @@ module PedigreeModule
         integer :: maxGeneration ! largest generation
 
         integer :: nsnpsPopulation ! number of snps for 
-        integer :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
+        integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
 
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 

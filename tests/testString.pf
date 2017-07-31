@@ -229,7 +229,27 @@ stringOut = stringIn%getSubString(startPos, endPos)
 
 end subroutine testGetSubStringWithStart
 
+@test
+subroutine testGetPositionLastPostion()
+use pFUnit_mod
+use StringModule
+use iso_fortran_env
 
+type(String):: stringUsed
+character(len=:), allocatable:: charUsed
+integer:: expected, gotten
+
+charUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:'|\/?><,.~`+="
+
+stringUsed = charUsed
+
+gotten = len(charUsed)
+
+expected = stringUsed%getPosition("=")
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetPositionLastPostion
 
 @test
 subroutine testGetPosition()
@@ -249,6 +269,7 @@ call random_number(temp)
 expected = len(StringUsed)*temp+1
 
 gotten = stringIn%getPosition(StringUsed(expected:expected))
+
 
 @assertEqual(expected, gotten)
 end subroutine testGetPosition

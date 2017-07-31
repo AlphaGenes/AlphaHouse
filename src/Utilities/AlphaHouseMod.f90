@@ -92,8 +92,9 @@ module AlphaHouseMod
     character(len=:), allocatable:: tempChar
 
     integer:: fileSize, fileUnit, filePosition, fileSizeLeft
-    integer:: IOStatus, i
+    integer:: IOStatus, i, finalLetter
     logical:: fileExists, lineEnd, previousIsDelim
+    integer:: finalChar
 
     numColumnsOut = 0
     Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
@@ -110,43 +111,46 @@ module AlphaHouseMod
     if (fileExists) then
       open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
       read(fileUnit, pos=1) tempChar
+      finalLetter = len(tempChar)
 
-      if (any(delimiterIn==tempChar(1:1))) then
-        previousIsDelim = .true.
-      else
-        previousIsDelim = .false.
-        numColumnsOut = numColumnsOut+1
-      end if
+      !Just in case the first element is not a
+      !delimiter, we pretend that the element before the first is a delimiter.
+      !This has no effect if the first element is a delim
+      previousIsDelim = .true. 
         
       readLoop: do while (ioStatus==0)
         filePosition = filePosition+len(tempChar)
+        finalChar = len(tempChar)
         do i = 1, len(tempChar)
+          if (tempChar(i:i) == new_line("a")) then
+            finalChar = i
+            exit readLoop
+          end if
           if (any(delimiterIn == tempChar(i:i))) then
-            if (.not. previousIsDelim) then
-              numColumnsOut = numColumnsOut+1
               previousIsDelim =.true.
-            end if
           else
+            if (previousIsDelim) then
+              numColumnsOut = numColumnsOut+1
+            end if
             previousIsDelim = .false.
           end if
           if (tempChar(i:i) == new_line("a")) then
+            finalLetter = i-1
             exit readLoop
           end if
         end do
         fileSizeLeft = fileSize-filePosition
-        if (filePosition>=fileSize) then
-          exit readLoop
-        end if
+
         if (fileSizeLeft< len(tempChar)) then
           deallocate(tempChar)
           allocate(character(len=fileSizeLeft):: tempChar)
+          finalLetter = fileSizeLeft
         end if
         read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
       end do readLoop
-      if (any(delimiterIn==tempChar(len(tempChar):len(tempChar)))) then
-        numColumnsOut = numColumnsOut-1
-      else
-      end if
+!      if (.not. any(delimiterIn==tempChar(finalLetter:finalLetter))) then
+!        numColumnsOut = numColumnsOut+1
+!      end if
       close(fileUnit)
     else
       numColumnsOut = -1
@@ -156,16 +160,21 @@ module AlphaHouseMod
 
 
   !> @brief get the number of columns for a single delimiter
-  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter
+  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter or no delimiter. 
+  !> No delimiter default to using a space.
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 
   integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
     character(len=*), intent(in):: fileNameIn
-    character(len=1), intent(in):: delimiterIn
+    character(len=1), intent(in), optional:: delimiterIn
 
     character(len=len(delimiterIn)), dimension(1):: delimiterUsed
 
-    delimiterUsed(1) = delimiterIn
+    if (present(delimiterIn)) then
+      delimiterUsed(1) = delimiterIn
+    else
+      delimiterUsed(1) = " "
+    end if
 
     numColumnsOut = countColumns(fileNameIn, delimiterUsed)
 
