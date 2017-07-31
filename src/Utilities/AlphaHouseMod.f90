@@ -156,16 +156,21 @@ module AlphaHouseMod
 
 
   !> @brief get the number of columns for a single delimiter
-  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter
+  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter or no delimiter. 
+  !> No delimiter default to using a space.
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 
   integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
     character(len=*), intent(in):: fileNameIn
-    character(len=1), intent(in):: delimiterIn
+    character(len=1), intent(in), optional:: delimiterIn
 
     character(len=len(delimiterIn)), dimension(1):: delimiterUsed
 
-    delimiterUsed(1) = delimiterIn
+    if (present(delimiterIn)) then
+      delimiterUsed(1) = delimiterIn
+    else
+      delimiterUsed(1) = " "
+    end if
 
     numColumnsOut = countColumns(fileNameIn, delimiterUsed)
 
