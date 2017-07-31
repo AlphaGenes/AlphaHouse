@@ -94,6 +94,7 @@ module AlphaHouseMod
     integer:: fileSize, fileUnit, filePosition, fileSizeLeft
     integer:: IOStatus, i
     logical:: fileExists, lineEnd, previousIsDelim
+    integer:: finalChar
 
     numColumnsOut = 0
     Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
@@ -111,26 +112,28 @@ module AlphaHouseMod
       open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
       read(fileUnit, pos=1) tempChar
 
-      if (any(delimiterIn==tempChar(1:1))) then
-        previousIsDelim = .true.
-      else
-        previousIsDelim = .false.
-        numColumnsOut = numColumnsOut+1
-      end if
+      !Just in case the first element is not a
+      !delimiter, we pretend that the element before the first is a delimiter.
+      !This has no effect if the first element is a delim
+      previousIsDelim = .true. 
         
       readLoop: do while (ioStatus==0)
         filePosition = filePosition+len(tempChar)
+        finalChar = len(tempChar)
         do i = 1, len(tempChar)
-          if (any(delimiterIn == tempChar(i:i))) then
-            if (.not. previousIsDelim) then
-              numColumnsOut = numColumnsOut+1
-              previousIsDelim =.true.
-            end if
-          else
-            previousIsDelim = .false.
-          end if
           if (tempChar(i:i) == new_line("a")) then
+            finalChar = i
             exit readLoop
+          end if
+          if (any(delimiterIn == tempChar(i:i))) then
+!            if (.not. previousIsDelim) then
+              previousIsDelim =.true.
+!            end if
+          else
+            if (previousIsDelim) then
+              numColumnsOut = numColumnsOut+1
+            end if
+            previousIsDelim = .false.
           end if
         end do
         fileSizeLeft = fileSize-filePosition
@@ -143,10 +146,6 @@ module AlphaHouseMod
         end if
         read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
       end do readLoop
-      if (any(delimiterIn==tempChar(len(tempChar):len(tempChar)))) then
-        numColumnsOut = numColumnsOut-1
-      else
-      end if
       close(fileUnit)
     else
       numColumnsOut = -1
