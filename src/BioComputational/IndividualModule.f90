@@ -26,9 +26,12 @@
 module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     use genotypeModule
+    use HaplotypeModule
+    use iso_fortran_env
+    
     implicit none
 
-    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual
+    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual, initIndividual
     
     private
 
@@ -39,28 +42,35 @@ module IndividualModule
 
     type Individual
 
+
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
         character(len=:), allocatable :: damID
         integer :: generation
         integer :: id
+        integer :: originalPosition
         integer(kind=1) :: gender 
         type(individual), pointer :: sirePointer
         type(individual), pointer :: damPointer
         type(individualPointerContainer), allocatable :: OffSprings(:) !holds array of given size
         integer :: nOffs  = 0 !number of offspring
-        logical :: Founder     = .false.
-        logical :: Genotyped   = .false.
-        logical :: HD          = .false.
-        logical :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
+        logical(kind=1) :: Founder     = .false.
+        logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: HD          = .false.
+        logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
+        logical(kind=1) :: isUnknownDummy = .false.
+        type(genotype),allocatable :: individualGenotype
+        type(Haplotype),allocatable,dimension(:) :: individualPhase
+        integer,dimension(:), allocatable :: referAllele, AlterAllele
 
-        type(genotype) :: individualGenotype
-        integer(kind=1), allocatable, dimension(:,:) :: phase !where size is the number of sn
+        integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
+        
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
             procedure :: isGenotypedNonMissing
             procedure :: setGenotypeArray
+            procedure :: setPhaseArray
             procedure :: isHD
             procedure :: SetHD
             procedure :: getSireId
@@ -73,6 +83,7 @@ module IndividualModule
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
+            procedure :: getSireDamNewIDByIndexNoDummy
             procedure :: getIntegerVectorOfRecodedIds
             procedure :: getCharacterVectorOfRecodedIds
             procedure :: getPaternalGrandSireRecodedIndex
@@ -83,6 +94,7 @@ module IndividualModule
             procedure :: hasDummyParent
             procedure :: hasDummyParentsOrGranparents
             procedure :: isDummyBasedOnIndex
+            procedure :: isUnknownDummyBasedOnIndex
             procedure :: getPaternalGrandSireRecodedIndexNoDummy
             procedure :: getMaternalGrandSireRecodedIndexNoDummy
             procedure :: getPaternalGrandDamRecodedIndexNoDummy
@@ -91,7 +103,16 @@ module IndividualModule
             procedure :: resetOffspringInformation
             procedure :: removeOffspring
             procedure :: writeIndividual
+            procedure :: initPhaseArrays
+            procedure :: hasGenotypedAnsestors
+            procedure :: getSeg
+            procedure :: setSeg
+            procedure :: setSegToMissing
+            procedure :: makeIndividualPhaseCompliment
+            procedure :: makeIndividualGenotypeFromPhase
             generic:: write(formatted)=> writeIndividual
+
+            
     end type Individual
 
     interface Individual
@@ -109,11 +130,12 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender) result (this)
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps) result (this)
         type(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
+        integer, intent(in), Optional :: nsnps !< number of snps to initialise default genotype class
         integer(kind=1), intent(in), Optional :: gender
 
 
@@ -135,6 +157,15 @@ contains
             this%gender = gender
         endif
 
+        if (present(nsnps)) then
+            if (nsnps /= 0) then
+                allocate(this%individualPhase(2))
+                allocate(this%individualGenotype)
+                this%individualGenotype = newGenotypeMissing(nsnps)
+                this%individualPhase(1) = newHaplotypeMissing(nsnps)
+                this%individualPhase(2) = newHaplotypeMissing(nsnps)
+            endif
+        endif
     end function initIndividual
 
      !---------------------------------------------------------------------------
@@ -144,11 +175,73 @@ contains
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
         class(Individual) :: this
-        deallocate(this%offsprings)
-        deallocate(this%originalID)
-        deallocate(this%sireID)
-        deallocate(this%damID)
+        if (allocated(this%offsprings)) then
+            deallocate(this%offsprings)
+        endif
+
+        if (allocated(this%originalId)) then
+            deallocate(this%originalID)
+            deallocate(this%sireID)
+            deallocate(this%damID)
+        endif
+        if (allocated(this%referAllele)) then
+            deallocate(this%referAllele)
+            deallocate(this%alterAllele)
+        endif
+
+        if (allocated(this%seg)) then
+            deallocate(this%seg)
+        endif
+        if (allocated(this%individualPhase)) then
+            deallocate(this%individualPhase)
+        endif
+        if (allocated(this%individualGenotype)) then
+            deallocate(this%individualGenotype)
+        endif
+
     end subroutine destroyIndividual
+
+
+
+    subroutine setSeg(this, location, parent, value) 
+
+        class(individual) :: this
+        integer, intent(in) :: location, parent, value
+
+        if (.not. allocated(this%seg)) then
+            allocate(this%seg(this%individualGenotype%length,2 ))
+        endif
+
+
+        this%seg(location, parent) = value
+
+    end subroutine setSeg
+
+
+        subroutine setSegToMissing(this) 
+
+        class(individual) :: this
+
+        if (.not. allocated(this%seg)) then
+            allocate(this%seg(this%individualGenotype%length,2 ))
+        endif
+
+
+        this%seg = MISSINGGENOTYPECODE
+
+    end subroutine setSegToMissing
+
+
+    function getSeg(this, location,parent) result(res)
+        implicit none
+
+        class(individual) :: this
+        integer, intent(in) :: location, parent
+        integer(kind =1) :: res
+        res = this%seg(location, parent)
+
+        
+    end function getSeg
      !---------------------------------------------------------------------------
     !> @brief Returns true if individuals are equal, false otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -167,6 +260,50 @@ contains
         return
     end function compareIndividual
 
+        !---------------------------------------------------------------------------
+    !< @brief returns true if individual has genotyped ancestors up to certrain gen, false otherwise
+    !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !< @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    recursive function hasGenotypedAnsestors(ind,count) result(res)
+    class(individual) ,intent(in) :: ind !< individual to check ancestors of
+    integer, intent(in) :: count !< how many generations should we look for
+    logical :: res
+
+    if (count == 0) then
+        res = .false.
+        return
+    endif
+
+    if (associated(ind%damPointer)) then
+
+        if (ind%damPointer%isGenotypedNonMissing()) then
+            res= .true.
+            return
+        endif
+    endif
+    if (associated(ind%sirePointer)) then
+
+        if (ind%sirePointer%isGenotypedNonMissing()) then
+            res= .true.
+            return
+        endif
+        res = hasGenotypedAnsestors(ind%sirePointer, count -1)
+        if (res) then
+            return
+        endif
+    endif
+
+    ! This is done to insure no recursion is done if it is not neccessary, as recursion is more expensive than the branch, which can be trivially optimised
+    if (associated(ind%damPointer)) then
+        res = hasGenotypedAnsestors(ind%damPointer, count -1)
+        if (res) then
+            return
+        endif
+    endif
+
+    end function hasGenotypedAnsestors
+
          !---------------------------------------------------------------------------
     !> @brief output for individual
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -180,7 +317,7 @@ contains
         integer, intent(out) :: iostat      !< non zero on error, etc.
         character(*), intent(inout) :: iomsg  !< define if iostat non zero.
 
-        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID
+        write(unit, *, iostat = iostat, iomsg = iomsg) dtv%originalID,",", dtv%sireId,",", dtv%damID 
 
     end subroutine writeIndividual
 
@@ -201,13 +338,23 @@ contains
         class(Individual), intent(in) :: this
         integer, intent(in) :: index !< index of value to return (1 for thisID, 2 for sireID, 3 for damID)
         character(:),allocatable :: v
+          
         select case (index)
             case(1)
                 v = this%originalID
             case(2)
-                v = this%sireID
+                if (associated(this%sirePointer)) then
+                  v = this%sirePointer%originalId
+                else
+                  v = "0"
+                endif
+
             case(3)
-                v = this%damID
+                if (associated(this%damPointer)) then
+              v = this%damPointer%originalId
+              else
+                  v = "0"
+            endif
             case default
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
@@ -283,6 +430,7 @@ contains
                 write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
         end select
     end function getParentGenderBasedOnIndex
+
     !---------------------------------------------------------------------------
     !> @brief Returns the index in the pedigree of maternal grand sire, or 0 otherwise
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -537,7 +685,7 @@ contains
         integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
         select case (index)
             case(1)
-                isDummyBasedOnIndex = .false.
+                isDummyBasedOnIndex = this%isDummy
             case(2)
                 if (associated(this%sirePointer)) then
                     isDummyBasedOnIndex = this%sirePointer%isDummy
@@ -555,6 +703,41 @@ contains
         
     end function isDummyBasedOnIndex
 
+
+!---------------------------------------------------------------------------
+    !> @brief returns true if index of corresponding parent is dummy
+    !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    ! PARAMETERS:
+    !> @param[in] index - the index
+    !> @return .True. if file exists, otherwise .false.
+    !---------------------------------------------------------------------------
+    logical function isUnknownDummyBasedOnIndex(this, index)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual),target, intent(in) :: this
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
+        select case (index)
+            case(1)
+                isUnknownDummyBasedOnIndex = this%isUnknownDummy
+            case(2)
+                if (associated(this%sirePointer)) then
+                    isUnknownDummyBasedOnIndex = this%sirePointer%isUnknownDummy
+                    return
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    isUnknownDummyBasedOnIndex = this%damPointer%isUnknownDummy
+                    return
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamObjectByIndex has been given an out of range value"
+        end select
+        isUnknownDummyBasedOnIndex = .false.
+        
+    end function isUnknownDummyBasedOnIndex
+
+
          !---------------------------------------------------------------------------
     !> @brief Returns either the individuals id, the sires id or dams id based on
     !> which index is passed.
@@ -564,7 +747,6 @@ contains
     !> @date    October 26, 2016
     ! PARAMETERS:
     !> @param[in] index - the index
-    !> @return .True. if file exists, otherwise .false.
     !---------------------------------------------------------------------------
     function getSireDamNewIDByIndex(this, index) result(v)
         use iso_fortran_env, only : ERROR_UNIT
@@ -593,6 +775,42 @@ contains
     end function getSireDamNewIDByIndex
 
 
+            !---------------------------------------------------------------------------
+        !> @brief Returns either the individuals id, the sires id or dams id based on
+        !> which index is passed. 0 is returned if no parent or if parent is a dummy
+
+        !> THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
+        !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+        !> @date    October 26, 2016
+        ! PARAMETERS:
+        !> @param[in] index - the index
+        !---------------------------------------------------------------------------
+        function getSireDamNewIDByIndexNoDummy(this, index) result(v)
+        use iso_fortran_env, only : ERROR_UNIT
+        class(Individual), intent(in) :: this
+        integer, intent(in) :: index !< index of object to return (1 for this, 2 for sire, 3 for dam)
+        integer:: v
+        v = 0
+        select case (index)
+            case(1)
+                v = this%id
+            case(2)
+                if (associated(this%sirePointer)) then
+                    if (.not. this%sirePointer%isDummy) then
+                        v = this%sirePointer%id
+                    endif
+                endif
+            case(3)
+                if (associated(this%damPointer)) then
+                    if (.not. this%damPointer%isDummy) then
+                        v = this%damPointer%id
+                    endif
+                endif
+            case default
+                write(error_unit, *) "error: getSireDamByIndex has been given an out of range value"
+        end select
+        return
+    end function getSireDamNewIDByIndexNoDummy
 
     !---------------------------------------------------------------------------
     !> @brief returns true if either paretns are a dummy animal
@@ -675,6 +893,13 @@ contains
 
     end function hasDummyParentsOrGranparents
 
+
+      
+    !---------------------------------------------------------------------------
+    !> @brief Resets the offspring information for a given animal
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine resetOffspringInformation(this)
         class(Individual) :: this
     
@@ -741,6 +966,44 @@ contains
     end function isGenotypedNonMissing
 
 
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual genotype from the Haplotype
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine makeIndividualGenotypeFromPhase(this)
+        class(Individual), intent(inout) :: this
+        
+        call this%IndividualGenotype%setFromHaplotypesIfMissing(this%individualPhase(1),this%individualPhase(2)) 
+    end subroutine makeIndividualGenotypeFromPhase
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual haplotypes from the compilement if animal is genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine makeIndividualPhaseCompliment(this)
+        class(Individual), intent(inout) :: this
+        integer :: i
+        type (haplotype),allocatable :: comp1, comp2
+        
+        call this%individualPhase(1)%setErrorToMissing()
+        call this%individualPhase(2)%setErrorToMissing()
+        comp2 = this%individualGenotype%complement(this%individualPhase(1))
+        comp1 = this%individualGenotype%complement(this%individualPhase(2))
+
+        call comp1%setErrorToMissing()
+        call comp2%setErrorToMissing()
+
+        call this%individualPhase(1)%setFromOtherIfMissing(comp1)
+        call this%individualPhase(2)%setFromOtherIfMissing(comp2)
+        
+        deallocate(comp1)
+        deallocate(comp2)
+
+    end subroutine makeIndividualPhaseCompliment
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual to be genotyped.
@@ -748,6 +1011,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine setGenotypeArray(this, geno)
+        use constantModule
+        
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
         this%Genotyped = .true.
@@ -755,6 +1020,37 @@ contains
         ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual's phase.
+    !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
+    !> @date    June 19, 2017
+    !---------------------------------------------------------------------------
+    subroutine setPhaseArray(this, hap, phase)
+        use constantModule
+        
+        class(Individual), intent(inout) :: this
+        integer, intent(in) :: hap
+        integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of genotype information
+
+        !TODO: Should we be checking that genotype is set and if not set it to missing?
+        this%individualPhase(hap) = Haplotype(phase)
+    end subroutine setPhaseArray
+
+
+    !---------------------------------------------------------------------------
+    !> @brief initialises an individual phases arrays given the number of snps
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine initPhaseArrays(this, nsnp)
+        use constantModule
+        class(Individual) :: this
+        integer, intent(in) :: nsnp
+
+        this%individualPhase(1) = Haplotype(nSnp)
+        this%individualPhase(2) = Haplotype(nSnp)
+    end subroutine initPhaseArrays
 
     !---------------------------------------------------------------------------
     !> @brief returns true if the individual is genotyped at high density.
@@ -778,7 +1074,7 @@ contains
         this%HD = .true.
     end subroutine SetHD
 
-    !---------------------------------------------------------------------------
+    !------------------------\---------------------------------------------------
     !> @brief Adds an individual as offspring
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
@@ -787,8 +1083,17 @@ contains
         class(Individual), intent(inout) :: this
         class(Individual),target, intent(in) :: offspringToAdd
         type(individualPointerContainer), allocatable :: tmp(:)
+        integer :: motherId, fatherId
         this%nOffs = this%nOffs + 1
         
+        motherId = this%getSireDamNewIDByIndexNoDummy(3)
+        fatherId = this%getSireDamNewIDByIndexNoDummy(2)
+        if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
+
+            write(error_unit,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd, " as both parent and offspring"
+            stop
+        
+        endif
         if (this%nOffs > OFFSPRINGTHRESHOLD) then
             allocate(tmp(this%nOffs))
             tmp(1:size(this%Offsprings)) = this%Offsprings
@@ -825,6 +1130,9 @@ contains
         Offsprings = this%Offsprings
 
     end subroutine GetOffsprings
+
+
+  
 
     !---------------------------------------------------------------------------
     !> @brief Sets gender info of individual. 1 signifies male, 2 female. 
@@ -892,30 +1200,44 @@ contains
         use iso_fortran_env
         class(individual ) :: this
         type(individual) :: offspring
-        integer :: i,h
+        integer :: i,h, old
+        logical :: found
+        found =.false.
 
         do i=1, this%nOffs
-
-
+            
             if (compareIndividual(this%offsprings(i)%p, offspring)) then
 
                 if (compareIndividual(this%offsprings(i)%p%sirePointer, this)) then
                     this%offsprings(i)%p%sirePointer => null() 
-                else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
-                    this%offsprings(i)%p%damPointer => null() 
-                    do h=i, this%nOffs-1
-                        this%offsprings(i)%p => this%offsprings(i+1)%p
+                    old = this%nOffs-1
+                    do h=i, old 
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
                     enddo
                     this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
+                else if (compareIndividual(this%offsprings(i)%p%damPointer, this)) then
+                    this%offsprings(i)%p%damPointer => null() 
+                    old = this%nOffs-1
+                    do h=i, old
+                        this%offsprings(h)%p => this%offsprings(h+1)%p
+                    enddo
+                    this%nOffs = this%nOffs - 1
+                    found = .true.
+                    exit
                 else
-                    write(error_unit,*) "ERROR: offspring isn't present"
+                    write(error_unit,*) "WARNING: parent isn't present in offspring to remove"
                 endif
                 return
             endif
         enddo
 
-    end subroutine removeOffspring
 
+        if (.not. found) then
+            write(error_unit,*) "WARNING: unknown offspring trying to be removed from parent"
+        endif
+    end subroutine removeOffspring
 
 end module IndividualModule
 

@@ -8,7 +8,14 @@ type LIST_DATA
     character(len=:), allocatable :: key
     ! class(*)                :: value
     integer :: value
+
+    contains
+
+        procedure :: clearData
 end type LIST_DATA
+
+
+
 
 type LinkedList
     type(LinkedList), pointer :: next
@@ -17,9 +24,71 @@ end type LinkedList
 
 interface operator ( == )
         module procedure LIST_DATAEquals
+        !module procedure equalLists
     end interface operator ( == )
 
 contains
+
+
+logical function equalLists(left,right)
+    type(LinkedList), pointer,intent(in) :: left
+    type(LinkedList), pointer,intent(in) :: right
+    type(LinkedList), pointer :: l,r
+
+    l => left
+    r => right
+
+    do while (associated(l))
+
+! means lists are different lengths
+        if (.not. associated(r)) then
+            equalLists = .false.
+            Return
+        endif
+
+        if (.not. (l%data == r%data)) then
+            equalLists = .false.
+            Return
+        endif
+        l => l%next
+        r => r%next
+
+    enddo
+! means lists are different lengths
+    if (associated(r)) then
+        equalLists = .false.
+        Return
+    endif
+
+    equalLists = .true.
+
+    end function equalLists
+
+
+function copyLinkedList(this) result(list)
+    type(LinkedList), pointer :: list
+    type(LinkedList), pointer :: cur
+    type(LinkedList), pointer :: next, this
+
+    if (associated(this)) then
+        allocate(list)
+        list%next => null()
+        list%data%key = this%data%key
+        list%data%value = this%data%value
+        cur =>list
+        do while (associated(this%next))
+            allocate( next )
+            cur%next => next
+            next%data%key = this%data%key
+            next%data%value = this%data%value
+            cur => cur%next
+            this=> this%next
+        end do
+  else
+    list => null()
+  endif
+
+end function copyLinkedList
 
 logical function LIST_DATAEquals(l, r)
     class(LIST_DATA), intent(in) :: l,r
@@ -31,6 +100,15 @@ logical function LIST_DATAEquals(l, r)
 
 end function LIST_DATAEquals
 
+
+
+subroutine clearData(d)
+    class(LIST_DATA):: d
+
+    if (allocated(d%key)) then
+        deallocate(d%key)
+    endif
+end subroutine clearData
 ! list_create --
 !     Create and initialise a list
 ! Arguments:
@@ -68,11 +146,18 @@ subroutine list_destroy( list )
     type(LinkedList), pointer  :: next
 
     current => list
-    do while ( associated(current%next) )
-        next => current%next
-        deallocate( current )
-        current => next
-    enddo
+    if (.not. associated(current%next)) then
+        call current%data%clearData()
+        deallocate(current)
+    else 
+        do while ( associated(current) )
+            next => current%next
+            call current%data%clearData()
+            deallocate( current )
+            current => next
+        enddo
+    endif
+    
 end subroutine list_destroy
 
 ! list_count --
@@ -120,7 +205,7 @@ end function list_next
 !
 subroutine list_insert( elem, data )
     type(LinkedList), pointer  :: elem
-    type(LIST_DATA), intent(in) :: data
+    type(LIST_DATA) :: data
 
     type(LinkedList), pointer :: next
 
@@ -129,6 +214,7 @@ subroutine list_insert( elem, data )
     next%next => elem%next
     elem%next => next
     next%data =  data
+    deallocate(data%key)
 end subroutine list_insert
 
 ! list_insert_head

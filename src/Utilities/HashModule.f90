@@ -27,6 +27,8 @@ module HashModule
     use iso_fortran_env
     use LinkedListModule
     use constantModule
+    implicit none
+
 
 type HASH_LIST
     type(LinkedList), pointer :: list
@@ -46,6 +48,7 @@ type DictStructure
     procedure :: hasKey
     procedure :: getElement
     procedure :: getSize
+    procedure :: getAllKeys
     procedure :: hashKey
 end type DictStructure
 
@@ -53,6 +56,10 @@ interface DictStructure
     module procedure dict_create
     module procedure dict_create_val
 end interface DictStructure
+
+! interface assignment ( = )
+!        module procedure copyHashTable
+!    end interface assignment ( = )
 !
 ! We do not want everything to be public
 !
@@ -83,6 +90,62 @@ class(DictStructure) :: this
 
 end function getSize
 
+
+   !---------------------------------------------------------------------------
+  !> @brief Returns a copy of the hash table
+  !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !> @date    October 26, 2016
+  !---------------------------------------------------------------------------
+subroutine copyHashTable(res, this)
+  class(DictStructure),intent(in) :: this
+  type(DictStructure),intent(inout) :: res
+  integer :: i
+
+
+  res%hash_size = this%hash_size 
+
+  allocate( res%table(res%hash_size) )
+
+  do i = 1,res%hash_size
+      if (associated(this%table(i)%list)) then
+        res%table(i)%list => copyLinkedList(this%table(i)%list)
+      else 
+      	res%table(i)%list => null()
+      endif
+  enddo
+
+
+
+end subroutine copyHashTable
+
+
+function getAllKeys(this) result(res)
+    use CharacterLinkedListModule
+
+    class(DictStructure) :: this
+    character(len=IDLENGTH), dimension(:), allocatable :: res !< output array
+    type(CharacterLinkedList) :: list
+    type(LinkedList), pointer :: tmp
+    integer :: i
+
+
+    do i=1,this%hash_size
+
+        tmp => this%table(i)%list
+
+        do while (associated(tmp))
+         call list%list_add(tmp%data%key)
+            tmp => tmp%next
+
+        end do
+
+
+    enddo
+
+    res = list%convertToArray()
+
+
+end function getAllKeys
 
    !---------------------------------------------------------------------------
   !> @brief Constructor for dictionary
@@ -146,19 +209,23 @@ end function dict_create_val
   !> @date       October 25, 2016
   !
   !-------------------------------------------
-subroutine destroy(this)
-    class(DictStructure) :: this
+  subroutine destroy(this)
+  class(DictStructure) :: this
 
     integer(kind=int64) :: i
 
-    do i = 1,size(this%table)
-        if ( associated( this%table(i)%list ) ) then
-            call list_destroy( this%table(i)%list )
-        endif
-    enddo
-    deallocate(this%table )
 
-end subroutine destroy
+    if (associated(this%table)) then
+        do i = 1,this%hash_size
+            if ( associated( this%table(i)%list ) ) then
+                call list_destroy( this%table(i)%list )
+                this%table(i)%list => null()
+            endif
+        enddo
+        deallocate(this%table )
+    endif
+
+  end subroutine destroy
 
 
   !---------------------------------------------------------------------------
@@ -293,7 +360,7 @@ function getElement( this, key ) result(elem)
     hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
     elem => this%table(hash)%list
     do while ( associated(elem) )
-        if ( elem%data%key .eq. key ) then
+      if ( elem%data%key .eq. key ) then
             exit
         else
             elem => list_next( elem )

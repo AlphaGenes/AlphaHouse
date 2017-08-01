@@ -33,12 +33,14 @@ module AlphaHouseMod
 
   private
   ! Methods
-  public :: CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
+  public :: Append, CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
   public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
   public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
   public :: isDelim, PrintElapsedTime, intToChar, SetSeed
 
   public :: generatePairing, unPair
+  public :: CountLinesWithBlankLines
+  public:: countColumns
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -67,7 +69,116 @@ module AlphaHouseMod
     module procedure MatchC, MatchI, MatchS, MatchD
   end interface
 
+  interface Append
+    module procedure AppendReal64, AppendChar
+  end interface
+
+  interface countColumns
+    module procedure countColumnsMultiDelim, countColumnsSingleDelim
+  end interface
+
   contains
+  !> @brief A function that counts how many colums in a file
+  !> Counts the number of times that a columns in a file.   Assumes that repeated delimiters are all a single delimiter, (i.e. a,,,a
+  !!> would have two colums, with the delimiter being ,).   If the first character of the line is a delimiter, then that delimiter
+  !> isn't counted as having a column associated with it, with the same thing being true for the final character (i.e. all of 
+  !> ",A, A" and "A, A,", ",A,A," and "A, A" have two columns).  This combines with the repeated delimiters being the same (i.e.
+  !> ",,,A,A,,,," has two columns).
+  !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  integer function countColumnsMultiDelim(fileNameIn, delimiterIn) result (numColumnsOut)
+    character(len=*), intent(in):: fileNameIn !< File to count columns 
+    character(len=1), dimension(:):: delimiterIn !< List of delimiters to use
+
+    character(len=:), allocatable:: tempChar
+
+    integer:: fileSize, fileUnit, filePosition, fileSizeLeft
+    integer:: IOStatus, i, finalLetter
+    logical:: fileExists, lineEnd, previousIsDelim
+    integer:: finalChar
+
+    numColumnsOut = 0
+    Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
+
+    if (fileSize<1000) then
+      allocate(character(len=fileSize):: tempChar)
+    else
+      allocate(character(len=1000):: tempChar)
+    end if
+
+    ioStatus = 0
+    filePosition = 1
+
+    if (fileExists) then
+      open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
+      read(fileUnit, pos=1) tempChar
+      finalLetter = len(tempChar)
+
+      !Just in case the first element is not a
+      !delimiter, we pretend that the element before the first is a delimiter.
+      !This has no effect if the first element is a delim
+      previousIsDelim = .true. 
+        
+      readLoop: do while (ioStatus==0)
+        filePosition = filePosition+len(tempChar)
+        finalChar = len(tempChar)
+        do i = 1, len(tempChar)
+          if (tempChar(i:i) == new_line("a")) then
+            finalChar = i
+            exit readLoop
+          end if
+          if (any(delimiterIn == tempChar(i:i))) then
+              previousIsDelim =.true.
+          else
+            if (previousIsDelim) then
+              numColumnsOut = numColumnsOut+1
+            end if
+            previousIsDelim = .false.
+          end if
+          if (tempChar(i:i) == new_line("a")) then
+            finalLetter = i-1
+            exit readLoop
+          end if
+        end do
+        fileSizeLeft = fileSize-filePosition
+
+        if (fileSizeLeft< len(tempChar)) then
+          deallocate(tempChar)
+          allocate(character(len=fileSizeLeft):: tempChar)
+          finalLetter = fileSizeLeft
+        end if
+        read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
+      end do readLoop
+!      if (.not. any(delimiterIn==tempChar(finalLetter:finalLetter))) then
+!        numColumnsOut = numColumnsOut+1
+!      end if
+      close(fileUnit)
+    else
+      numColumnsOut = -1
+    end if
+
+  end function countColumnsMultiDelim
+
+
+  !> @brief get the number of columns for a single delimiter
+  !> @details A wraparound for countColumnsMultiDelim when using a single delimiter or no delimiter. 
+  !> No delimiter default to using a space.
+  !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+
+  integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
+    character(len=*), intent(in):: fileNameIn
+    character(len=1), intent(in), optional:: delimiterIn
+
+    character(len=len(delimiterIn)), dimension(1):: delimiterUsed
+
+    if (present(delimiterIn)) then
+      delimiterUsed(1) = delimiterIn
+    else
+      delimiterUsed(1) = " "
+    end if
+
+    numColumnsOut = countColumns(fileNameIn, delimiterUsed)
+
+  end function countColumnsSingleDelim
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
   !> @brief      Checks to see if the character passed in is the same as the delimiters
@@ -83,7 +194,6 @@ module AlphaHouseMod
   !> @param[in] delimiters(character(len=1), dimension(:)) delimiters to be checked agains
   !> @param[out] logical - true if same as a delimiter, otherwise false
   !---------------------------------------------------------------------------
-
   function isDelim(charIn, delimiters)
     character(len=*):: charIn
     character(len = *), dimension(:):: delimiters
@@ -95,6 +205,7 @@ module AlphaHouseMod
       isDelim = isDelim .or. charIn==delimiters(i)
     end do
   end function isDelim
+
    !---------------------------------------------------------------------------
    ! DESCRIPTION:
    !> @brief      Check if a fileName exists
@@ -116,9 +227,39 @@ module AlphaHouseMod
      Inquire(file = filename, exist = fileExists)
    end function checkFileExists
 
+    !---------------------------------------------------------------------------
+    !> @brief   Count number of lines in a file including blank lines
+    !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    function CountLinesWithBlankLines(FileName) result(nLines)
+      implicit none
+
+      ! Arguments
+      character(len=*),intent(in) :: FileName !< file
+      integer(int32)              :: nLines   !< @return number of lines in a file
+
+      ! Other
+      integer(int32) :: f,Unit
+
+
+      nLines=0
+      f=0
+      open(newunit=Unit,file=trim(FileName),status="old")
+      do
+        read(Unit,*,iostat=f)
+        nLines=nLines+1
+        if (f /= 0) then
+          nLines=nLines-1
+          exit
+        end if
+      end do
+      close(Unit)
+      return
+    end function
 
     !---------------------------------------------------------------------------
-    !> @brief   Count number of lines in a file
+    !> @brief   Count number of lines in a file excluding blank lines
     !> @author  John Hickey, john.hickey@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
@@ -135,6 +276,7 @@ module AlphaHouseMod
       character(len=300) :: DumC
 
       nLines=0
+      f=0
       open(newunit=Unit,file=trim(FileName),status="old")
       do
         read(Unit,*,iostat=f) DumC
@@ -236,7 +378,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    January 9, 2017
     !---------------------------------------------------------------------------
-    function Int82Char(i,fmt) result(Res)
+    pure function Int82Char(i,fmt) result(Res)
       implicit none
 
       integer(int8),intent(in)         :: i   !< integer
@@ -262,7 +404,7 @@ module AlphaHouseMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function Int322Char(i,fmt) result(Res)
+    pure function Int322Char(i,fmt) result(Res)
       implicit none
 
       integer(int32),intent(in)        :: i   !< integer
@@ -288,7 +430,7 @@ module AlphaHouseMod
     !> @author  Diarmaid de Burca, diarmaid.deburca@ed.ac.uk
     !> @date    October 28, 2016
     !---------------------------------------------------------------------------
-    function Int642Char(i,fmt) result(Res)
+    pure function Int642Char(i,fmt) result(Res)
       implicit none
 
       integer(int64),intent(in)        :: i   !< integer
@@ -900,14 +1042,13 @@ module AlphaHouseMod
 
     !###########################################################################
 
-
     !---------------------------------------------------------------------------
     !> @brief   szudzik pairing function in fortran
     !> @details Generates a unique pairing based on two integers
-     !> If input is (N,M) space, output will be (N*M) space.
+    !> If input is (N,M) space, output will be (N*M) space.
     !< @author  David Wilson david.wilson@roslin.ed.ac.uk
     !---------------------------------------------------------------------------
-    function generatePairing(xin,yin) result(res)
+    elemental function generatePairing(xin,yin) result(res)
 
       integer(int32), intent(in) :: xin, yin
       integer(int32) :: x, y
@@ -931,7 +1072,7 @@ module AlphaHouseMod
 
     end function generatePairing
 
-     !---------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     !> @brief   szudzik unpairing function in fortran
     !> @details returns two integers that generated unique number based on pair
     !> If using tuples, will overflow very quickly.
@@ -964,8 +1105,67 @@ module AlphaHouseMod
       endif
     end subroutine unPair
 
+    !###########################################################################
 
+    !---------------------------------------------------------------------------
+    !> @brief  Append value y at the end of a vector x - real64
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   May 1, 2017
+    !---------------------------------------------------------------------------
+    pure subroutine AppendReal64(x, y)
+      implicit none
+      real(real64), intent(inout), allocatable :: x(:) !< @return Appended vector
+      real(real64), intent(in)                 :: y    !< Value
+      integer(int32) :: n
+      real(real64), allocatable :: Tmp(:)
+      if (allocated(x)) then
+        n = size(x)
+        allocate(Tmp(n))
+        Tmp = x
+        deallocate(x)
+        allocate(x(n + 1))
+        x(1:n) = Tmp
+        n = n + 1
+        x(n) = y
+      else
+        n = 1
+        allocate(x(n))
+        x(n) = y
+      end if
+    end subroutine
 
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Append value y at the end of a vector x - char
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   May 1, 2017
+    !> @todo   Can we get rid of Len?
+    !---------------------------------------------------------------------------
+    pure subroutine AppendChar(x, y, len)
+      implicit none
+      character(len=len), intent(inout), allocatable :: x(:) !< @return Appended vector
+      character(len=*),   intent(in)                 :: y    !< Value
+      integer(int32), intent(in)                     :: Len  !< Length of character value
+      integer(int32) :: n
+      character(len=len), allocatable :: Tmp(:)
+      if (allocated(x)) then
+        n = size(x)
+        allocate(Tmp(n))
+        Tmp = x
+        deallocate(x)
+        allocate(x(n + 1))
+        x(1:n) = Tmp
+        n = n + 1
+        x(n) = y
+      else
+        n = 1
+        allocate(x(n))
+        x(n) = y
+      end if
+    end subroutine
+
+    !###########################################################################
 
 end module
 

@@ -5,10 +5,10 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     IntegerLinkedListModule.f90
+!> @file     CharacterLinkedListModule.f90
 !
 ! DESCRIPTION:
-!> @brief    Module containing definition of linked List for objects (currently Individuals.
+!> @brief    Module containing definition of linked List for strings
 !
 !> @details  Fully doubly linked list with useful procedures for operations on the linked list
 !
@@ -23,14 +23,13 @@
 
 !-------------------------------------------------------------------------------
 
-module IntegerLinkedListModule
+module CharacterLinkedListModule
     use iso_fortran_env
     use ConstantModule
-    implicit none
 
-    type :: IntegerLinkedList
-        type(IntegerLinkedListNode),pointer :: first => null()
-        type(IntegerLinkedListNode),pointer :: last => null()
+    type :: characterLinkedList
+        type(characterLinkedListNode),pointer :: first => null()
+        type(characterLinkedListNode),pointer :: last => null()
         ! TODO - maybe have a middle?
         integer :: length = 0 
 
@@ -45,13 +44,13 @@ module IntegerLinkedListModule
             procedure :: convertToArray
             generic:: write(formatted)=> writeLinkedList
 
-    end type IntegerLinkedList
+    end type characterLinkedList
 
-    type :: IntegerLinkedListNode
-            integer :: item
-            type(IntegerLinkedListNode),pointer :: next =>null()
-            type(IntegerLinkedListNode),pointer :: previous =>null()
-    end type IntegerLinkedListNode
+    type :: characterLinkedListNode
+            character(len=:), allocatable :: item
+            type(characterLinkedListNode),pointer :: next =>null()
+            type(characterLinkedListNode),pointer :: previous =>null()
+    end type characterLinkedListNode
 
 
 contains
@@ -62,9 +61,9 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
-        class(IntegerLinkedList),intent(inout) :: this
-        type(IntegerLinkedListNode),pointer :: node
-        integer,pointer :: tmp
+        class(characterLinkedList),intent(inout) :: this
+        type(characterLinkedListNode),pointer :: node
+        character(len=:), allocatable :: tmp
         if (associated(this%first)) then
             node => this%first
 
@@ -85,14 +84,14 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine writeLinkedList(dtv, unit, iotype, v_list, iostat, iomsg)
-        class(IntegerLinkedList), intent(in) :: dtv         !< Object to write.
+        class(characterLinkedList), intent(in) :: dtv         !< Object to write.
         integer, intent(in) :: unit         !< Internal unit to write to.
         character(*), intent(in) :: iotype  !< LISTDIRECTED or DTxxx
         integer, intent(in) :: v_list(:)    !< parameters from fmt spec.
         integer, intent(out) :: iostat      !< non zero on error, etc.
         character(*), intent(inout) :: iomsg  !< define if iostat non zero.
 
-        type(IntegerLinkedListNode),pointer :: node
+        type(characterLinkedListNode),pointer :: node
         node => dtv%first
 
         do while (associated(node))
@@ -107,14 +106,15 @@ contains
         enddo
     end subroutine writeLinkedList
 
+
     !---------------------------------------------------------------------------
     !> @brief Add item to end of the list
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_add(this,item)
-        class(IntegerLinkedList),intent(inout) :: this
-        integer,intent(in) :: item !< item to add
+        class(characterLinkedList),intent(inout) :: this
+        character(len=*),intent(in) :: item !< item to add
 
         if (.not.associated(this%last)) then
         allocate(this%first)
@@ -125,7 +125,7 @@ contains
             this%last%next%previous => this%last
             this%last => this%last%next
         endif
-        this%last%item = item
+        this%last%item = trim(item)
         this%length = this%length + 1
     end subroutine list_add
 
@@ -137,8 +137,8 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_pop(this, item)
-        class(IntegerLinkedList),intent(inout) :: this
-        integer,intent(out) :: item !< item at the end of the list
+        class(characterLinkedList),intent(inout) :: this
+        character(len=:),allocatable,intent(out) :: item !< item at the end of the list
         if (associated(this%last)) then
             item = this%last%item         
             this%last => this%last%previous
@@ -149,7 +149,7 @@ contains
             end if
             this%length = this%length - 1
         else
-            item = DICT_NULL
+            item = ""
         end if
     end subroutine list_pop
 
@@ -160,11 +160,11 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     function list_get_nth(this,n) result(res)
-        integer :: res !< item returned
-        class(IntegerLinkedList),intent(in) :: this
+        character(len=:), allocatable :: res !< item returned
+        class(characterLinkedList),intent(in) :: this
         integer, intent(in) :: n !< position of item to return 
         integer :: i
-        type(IntegerLinkedListNode),pointer :: node
+        type(characterLinkedListNode),pointer :: node
 
         if (associated(this%first).and.this%length>=n) then
           node => this%first
@@ -174,7 +174,7 @@ contains
               res = node%item
               exit
             else if (i<n.and..not.associated(node%next)) then
-              res = DICT_NULL
+              res = ""
               exit
             else
               i = i + 1
@@ -182,7 +182,7 @@ contains
             end if
           end do
         else
-          res = DICT_NULL
+          res = ""
         end if
     end function list_get_nth
 
@@ -193,16 +193,16 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     logical function contains(this, in)
-        class(IntegerLinkedList),intent(in) :: this
-        integer,target, intent(in) :: in !< item to check
-        type(IntegerLinkedListNode),pointer :: node
+        class(characterLinkedList),intent(in) :: this
+        character(len=*),target, intent(in) :: in !< item to check
+        type(characterLinkedListNode),pointer :: node
 
 
         if (associated(this%first)) then
           node => this%first
 
           do
-            if (node%item == in) then
+            if (node%item == trim(in)) then
                 contains = .true.
                 return
             else if (.not.associated(node%next)) then
@@ -225,10 +225,10 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine list_remove(this,item)
-        class(IntegerLinkedList),intent(inout) :: this
-        integer, intent(in) :: item !< item to remove
-        integer, pointer :: tmpItem
-        type(IntegerLinkedListNode),pointer :: node
+        class(characterLinkedList),intent(inout) :: this
+        character(len=*), intent(in) :: item !< item to remove
+        character(len=:), allocatable :: tmpItem
+        type(characterLinkedListNode),pointer :: node
         if (associated(this%first)) then
             node => this%first
             if (node%item == item) then
@@ -241,9 +241,9 @@ contains
                 endif
             else
                 do while (associated(node%next))
-                    tmpItem => node%next%item
+                    tmpItem = node%next%item
                     ! print *,"loop"
-                    if(tmpItem == item) then
+                    if(tmpItem == trim(item)) then
                         if(associated(node%next%next)) then
                             deallocate(node%next%next%previous)
                             node%next%next%previous => node
@@ -265,15 +265,16 @@ contains
     end subroutine list_remove
 
     !---------------------------------------------------------------------------
-    !> @brief Converts linked list to 1 dimensional array (vector) of individual objects
+    !> @brief Converts linked list to 1 dimensional array (vector) of string size IDLENGTH
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     function convertToArray(this) result(res)
-        class(IntegerLinkedList) :: this !< linked list
-        integer, dimension(:), allocatable :: res !< one dimensional array of integers to return
+        class(characterLinkedList) :: this !< linked list
+        ! TODO make larger
+        character(len=IDLENGTH), dimension(:), allocatable :: res !< one dimensional array of integers to return
         integer :: counter
-        type(IntegerLinkedListNode),pointer :: node
+        type(characterLinkedListNode),pointer :: node
         
 
         counter = 1
@@ -290,4 +291,4 @@ contains
     end function convertToArray              
 
 
-end Module IntegerLinkedListModule
+end Module CharacterLinkedListModule

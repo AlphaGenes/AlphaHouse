@@ -24,6 +24,7 @@ module TestLinkedList
     subroutine testDestroy
         type(LIST_DATA) :: tmp
         tmp%value = 2
+        tmp%key="testkey"
         call list_create(ll, tmp)
 
         call list_destroy(ll)

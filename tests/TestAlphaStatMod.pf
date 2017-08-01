@@ -5,6 +5,7 @@ module TestAlphaStatMod
   use pFUnit_mod
   use AlphaStatMod
   use ISO_Fortran_env
+  use IEEE_Arithmetic
 
   implicit none
 
@@ -319,9 +320,9 @@ module TestAlphaStatMod
       real(real64) :: xR64(6), wR64(6)
 
       xI8  = [1,     2,     3,     4,     5,     6]
-      xI32 = [1,     2,     3,     4,     5,     6]
-      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
       @assertEqual(Mean(xI8),  3.5,   "Mean is wrong int8")
       @assertEqual(Mean(xI32), 3.5,   "Mean is wrong int32")
@@ -368,13 +369,13 @@ module TestAlphaStatMod
       implicit none
       integer(int8) :: xI8(6)
       integer(int32) :: xI32(6)
-      real(real32) :: xR32(6), vR32, wR32(6), xR322(15)
-      real(real64) :: xR64(6), vR64, wR64(6), xR642(15)
+      real(real32) :: xR32(6), wR32(6), xR322(15)
+      real(real64) :: xR64(6), wR64(6), xR642(15)
 
       xI8  = [1,     2,     3,     4,     5,     6]
-      xI32 = [1,     2,     3,     4,     5,     6]
-      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
       @assertEqual(Var(xI8),            3.5,   "Variance is wrong int8")
       @assertEqual(Var(xI32),           3.5,   "Variance is wrong int32")
@@ -428,6 +429,8 @@ module TestAlphaStatMod
       @assertEqual(Var(xI32, w=wR32, wType="freq"), 106.0  /31, TolR32, "Variance with variable freq-weights is wrong int32")
       @assertEqual(Var(xR32, w=wR32, wType="freq"), 106.0  /31, TolR32, "Variance with variable freq-weights is wrong real32")
       @assertEqual(Var(xR64, w=wR64, wType="freq"), 106.0d0/31, TolR64, "Variance with variable freq-weights is wrong real64")
+
+      @assertTrue(IEEE_Is_Nan(Var([1.0])), "Calling variance on a single value should produce a NaN")
     end subroutine
 
     !###########################################################################
@@ -441,9 +444,9 @@ module TestAlphaStatMod
       real(real64) :: xR64(6)
 
       xI8  = [1,     2,     3,     4,     5,     6]
-      xI32 = [1,     2,     3,     4,     5,     6]
-      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
       @assertEqual(StdDev(xI8),  sqrt(Var(xI8)),  "Standard deviation is wrong int8")
       @assertEqual(StdDev(xI32), sqrt(Var(xI32)), "Standard deviation is wrong int32")
@@ -464,9 +467,9 @@ module TestAlphaStatMod
       type(DescStatReal64) :: rR64
 
       xI8  = [1,     2,     3,     4,     5,     6]
-      xI32 = [1,     2,     3,     4,     5,     6]
-      xR32 = [1.0,   2.0,   3.0,   4.0,   5.0,   6.0]
-      xR64 = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
       rI8  = DescStat(xI8)
       rI32 = DescStat(xR32)
@@ -502,7 +505,7 @@ module TestAlphaStatMod
     !###########################################################################
 
     @test
-    subroutine TestDescStatSymMatrix
+    subroutine TestDescStatLowTriMatrix
       implicit none
       integer(int8) :: xI8(3,3)
       integer(int32) :: xI32(3,3)
@@ -514,20 +517,14 @@ module TestAlphaStatMod
       xI8(:,1)  = [1,     2,     3]
       xI8(:,2)  = [2,     2,     2]
       xI8(:,3)  = [3,     2,     3]
-      xI32(:,1) = [1,     2,     3]
-      xI32(:,2) = [2,     2,     2]
-      xI32(:,3) = [3,     2,     3]
-      xR32(:,1) = [1.0,   2.0,   3.0]
-      xR32(:,2) = [2.0,   2.0,   2.0]
-      xR32(:,3) = [3.0,   2.0,   3.0]
-      xR64(:,1) = [1.0d0, 2.0d0, 3.0d0]
-      xR64(:,2) = [2.0d0, 2.0d0, 2.0d0]
-      xR64(:,3) = [3.0d0, 2.0d0, 3.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
-      rI8  = DescStatSymMatrix(xI8)
-      rI32 = DescStatSymMatrix(xI32)
-      rR32 = DescStatSymMatrix(xR32)
-      rR64 = DescStatSymMatrix(xR64)
+      rI8  = DescStatLowTriMatrix(xI8)
+      rI32 = DescStatLowTriMatrix(xI32)
+      rR32 = DescStatLowTriMatrix(xR32)
+      rR64 = DescStatLowTriMatrix(xR64)
 
       @assertEqual(rI8%All%n,      6,               "Number of lower-triangle & diagonal values is wrong int8")
       @assertEqual(rI32%All%n,     6,               "Number of lower-triangle & diagonal values is wrong int32")
@@ -608,15 +605,9 @@ module TestAlphaStatMod
       xI8(:,1)  = [1,     2,     4]
       xI8(:,2)  = [2,     2,     2]
       xI8(:,3)  = [3,     2,     4]
-      xI32(:,1) = [1,     2,     4]
-      xI32(:,2) = [2,     2,     2]
-      xI32(:,3) = [3,     2,     4]
-      xR32(:,1) = [1.0,   2.0,   4.0]
-      xR32(:,2) = [2.0,   2.0,   2.0]
-      xR32(:,3) = [3.0,   2.0,   4.0]
-      xR64(:,1) = [1.0d0, 2.0d0, 4.0d0]
-      xR64(:,2) = [2.0d0, 2.0d0, 2.0d0]
-      xR64(:,3) = [3.0d0, 2.0d0, 4.0d0]
+      xI32 = xI8
+      xR32 = real(xI32)
+      xR64 = xR32
 
       rI8  = DescStatMatrix(xI8)
       rI32 = DescStatMatrix(xI32)

@@ -24,7 +24,8 @@
 !-------------------------------------------------------------------------------
 
 module AlphaSortMod
-
+    
+    use iso_fortran_env
     interface HpSort
         procedure :: HpSortReal
         procedure :: HpSortI
@@ -101,7 +102,7 @@ module AlphaSortMod
     integer(kind=int64),intent(in) :: N
     integer(kind=int32)::IR,J,L,I
   integer :: RRA
-  integer(kind=8),intent(inout)::RA(N)
+  integer(kind=int64),intent(inout)::RA(N)
     if (n.lt.2) return
 
     L=INT((dble(N)/2)+1)

@@ -28,18 +28,43 @@ module TestHashTable
     @test
     subroutine testAdd
         implicit none
+        print *,"in test add"
         call dictionary%addKey("hi", 5)
         @assertEqual(dictionary%getValue("hi"), 5)
     end subroutine testAdd
 
+
+       @test
+    subroutine testGetKeys
+        use ConstantModule
+        implicit none
+
+        character(len=IDLENGTH), dimension(:), allocatable :: t
+
+        call dictionary%addKey("hi", 5)
+        call dictionary%addKey("there", 5)
+        t = dictionary%getAllKeys()
+        @assertEqual(size(t), 2)
+    end subroutine testGetKeys
+
     @test
     subroutine testHasKey
         implicit none
+
+        print *,"in test has Keys"
         call dictionary%addKey("hi", 5)
         @assertTrue(dictionary%hasKey("hi"))
 
     end subroutine testHasKey
 
+    @test
+    subroutine testDestroyEmpty
+        type(DictStructure) :: empty
+
+        empty = DictStructure()
+
+        call empty%destroy()
+    end subroutine testDestroyEmpty
 
     @test
     subroutine testDelete

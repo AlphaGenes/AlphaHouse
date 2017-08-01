@@ -1,3 +1,68 @@
+Module testString
+use pFUnit_mod
+use StringModule
+
+contains
+@test
+subroutine testPrepend
+type(String):: expected, gotten
+
+expected = "THISGOTTEN"
+gotten = "GOTTEN"
+
+call gotten%prepend("THIS")
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testPrepend
+@test
+subroutine testAddWithChar()
+character(len=5):: testChar
+type(String):: expected, gotten
+testChar = "OTHER"
+
+expected = "GOTTENOTHER"
+
+gotten = "GOTTEN"
+
+gotten = gotten+testChar
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testAddWithChar
+
+
+@test
+subroutine testAddWithString()
+use pFUnit_mod
+use StringModule
+type(String):: expected, gotten
+
+expected = "EXPECTED" // "OTHER"
+
+gotten = ""
+
+gotten = gotten+expected
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testAddWithString
+@test
+subroutine testAsChar()
+use pFUnit_mod
+use StringModule
+type(String):: stringUsed
+character(len=10):: expected, gotten
+
+expected = "Thisisexp"
+
+StringUsed = expected
+
+gotten = stringUsed%asChar()
+
+@assertEqual(expected, gotten)
+
+end subroutine testAsChar
+
 @test
 subroutine testGetOccurancesWithMoreThanOneOccuranceTogether()
 use pFUnit_mod
@@ -164,7 +229,27 @@ stringOut = stringIn%getSubString(startPos, endPos)
 
 end subroutine testGetSubStringWithStart
 
+@test
+subroutine testGetPositionLastPostion()
+use pFUnit_mod
+use StringModule
+use iso_fortran_env
 
+type(String):: stringUsed
+character(len=:), allocatable:: charUsed
+integer:: expected, gotten
+
+charUsed = "abcdefghijklmnopqrstuvwxyz1234567890!@£$%^&*();:'|\/?><,.~`+="
+
+stringUsed = charUsed
+
+gotten = len(charUsed)
+
+expected = stringUsed%getPosition("=")
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetPositionLastPostion
 
 @test
 subroutine testGetPosition()
@@ -184,6 +269,7 @@ call random_number(temp)
 expected = len(StringUsed)*temp+1
 
 gotten = stringIn%getPosition(StringUsed(expected:expected))
+
 
 @assertEqual(expected, gotten)
 end subroutine testGetPosition
@@ -276,3 +362,4 @@ outputString = inputString%split(delim)
 @assertEqualUserDefined(outputString(4), expectedOutputString(4))
 @assertEqualUserDefined(outputString(5), expectedOutputString(5))
 end subroutine testWithNonDefaults
+end module testString

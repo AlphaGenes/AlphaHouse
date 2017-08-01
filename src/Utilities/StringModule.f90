@@ -6,7 +6,7 @@ Module stringModule
 
   private
 
-  public:: assignment(=), operator(==)
+  public:: operator(+), assignment(=), operator(==)
   public:: String
 
   type :: String
@@ -22,24 +22,57 @@ Module stringModule
     procedure:: getSize
     procedure:: split
     procedure:: getNumOccurances
+    procedure:: asChar
+    procedure:: prepend
+    final:: deallocateString
+    !    procedure:: addStrings
     generic:: getSubString => getSubStringStartAndEnd, getSubstringEnd
     generic:: write(formatted)=> writeType
     generic:: read(formatted) => readType
-  end type 
+  end type
 
 
   interface assignment (=)
     procedure setString
-  end interface 
+  end interface
 
   interface operator (==)
     module procedure compareString, compareCharacter
-  end interface 
+  end interface
+
+  interface operator (+)
+    module procedure addStrings, addStringAndChar
+  end interface
 
 contains
 
+  subroutine deallocateString(self)
+    type(String), intent(inout):: self
+
+    if (allocated(self%line)) then
+      deallocate(self%line)
+    end if
+
+  end subroutine deallocateString
+
+  pure subroutine prepend(self, charIn)
+    class(String), intent(inout):: self
+    character(len=*), intent(in):: charIn
+
+    self%line = charIn//self%line
+
+  end subroutine prepend
+
+  pure function asChar(self) result (charOut)
+    class(String), intent(in):: self
+    character(len=len(self%line)):: charOut
+
+    charOut = self%line
+
+  end function asChar
+
   pure function getNumOccurances(self, characterIn) result(numOccurances)
-    class(String), intent(in):: self 
+  class(String), intent(in):: self
     character(len=*), intent(in):: characterIn
     integer:: numOccurances
     logical:: same
@@ -67,9 +100,9 @@ contains
       if (same) then
         tempStringCounter = stringCounter
         do while (same .and. characterCounter .lt. characterMax)
-        characterCounter = characterCounter+1
-        tempStringCounter = stringCounter +1
-        same = self%line(tempStringCounter:tempStringCounter) == characterIn(characterCounter:characterCounter)
+          characterCounter = characterCounter+1
+          tempStringCounter = stringCounter +1
+          same = self%line(tempStringCounter:tempStringCounter) == characterIn(characterCounter:characterCounter)
         end do
         if (same) then
           numOccurances = numOccurances+1
@@ -92,11 +125,11 @@ contains
   !> @date       October 25, 2016
   !
   ! PARAMETERS:
-  !> @param[inout] input fileInput to be converted to lowercase 
+  !> @param[inout] input fileInput to be converted to lowercase
   !---------------------------------------------------------------------------
   pure subroutine convertToLowerCaseString(this)
     use AlphaHouseMod
-    class(String), intent(inout):: this
+  class(String), intent(inout):: this
 
     this%line = ToLower(this%line)
   end subroutine convertToLowerCaseString
@@ -104,7 +137,7 @@ contains
   pure function toLowerFun(self) result (lowerCaseOut)
     use AlphaHouseMod, only:toLower
     character(len=:), allocatable:: lowerCaseOut
-    class(String), intent(in):: self
+  class(String), intent(in):: self
 
     lowerCaseOut = ToLower(self%line)
   end function toLowerFun
@@ -126,7 +159,7 @@ contains
   !---------------------------------------------------------------------------
   pure function compareString(this, stringIn) result (same)
     logical:: same
-    class(String), intent(in):: this
+  class(String), intent(in):: this
     type(String), intent(in) :: stringIn
 
     same = this%line .eq. stringIn%line
@@ -144,12 +177,12 @@ contains
   !> @date       October 25, 2016
   !
   ! PARAMETERS:
-  !> @param[in] stringIn (type: character(len=*))- character to compare to. 
+  !> @param[in] stringIn (type: character(len=*))- character to compare to.
   !> @param[out] logical
   !---------------------------------------------------------------------------
   pure function compareCharacter(this, stringIn) result (same)
     logical:: same
-    class(String), intent(in):: this
+  class(String), intent(in):: this
     character(len=*), intent(in) :: stringIn
 
     same = stringIn .eq. this%line
@@ -168,11 +201,11 @@ contains
   !> @date       October 25, 2016
   !
   ! PARAMETERS:
-  !> @param[out] sizeOut. Integer( int32).  
+  !> @param[out] sizeOut. Integer( int32).
   !---------------------------------------------------------------------------
 
   function getSize(this) result(sizeOut)
-    class(String), intent(in):: this
+  class(String), intent(in):: this
     integer(int32):: sizeOut
 
     sizeOut = len( this%line)
@@ -192,7 +225,7 @@ contains
   !---------------------------------------------------------------------------
 
   function getSubStringStartAndEnd(self, SubStringStart, subStringEnd) result (subString)
-    class(String), intent(in):: self
+  class(String), intent(in):: self
     integer, intent(in):: SubstringStart, subStringEnd
     type(String):: subString
 
@@ -212,7 +245,7 @@ contains
   ! PARAMETERS:
   !---------------------------------------------------------------------------
   function getSubstringEnd(self, subStringPosition) result (subString)
-    class(String), intent(in):: self
+  class(String), intent(in):: self
     integer, intent(in):: subStringPosition
     type(String):: subString
 
@@ -232,9 +265,10 @@ contains
   !
   !---------------------------------------------------------------------------
   function getPosition(self, charIn) result (position)
-    class(String), intent(in):: self
+  class(String), intent(in):: self
     character(len=*):: charIn
     integer(int32):: position
+
     position = index(self%line, charIn)
   end function getPosition
 
@@ -260,10 +294,10 @@ contains
   !---------------------------------------------------------------------------
   function split(this, delimitersIn) result( components)
     character(len=1), dimension(:), optional :: delimitersIn
-    class(String), intent(in):: this
+  class(String), intent(in):: this
     type(String), allocatable, dimension(:):: components
     character(len = :), allocatable:: line
-    character(len=1), dimension(:), allocatable:: delimiters 
+    character(len=1), dimension(:), allocatable:: delimiters
 
     integer(int32):: i
     integer, dimension(:,:), allocatable::numSplit
@@ -272,7 +306,7 @@ contains
       !delimiters = delimitersIn
       allocate(delimiters(size(delimitersIn)))
       do i = 1, size(delimitersIn)
-         delimiters(i) = delimitersIn(i)
+        delimiters(i) = delimitersIn(i)
       end do
     else
       allocate(delimiters(1))
@@ -315,7 +349,7 @@ contains
   !
   ! PARAMETERS:
   !> @param[in] delimiters - array of characters of length one.   Gives the character on which to split the string
-  !> @param[out] SplitPositions - 2d integer array.   Gives the start and end positions of the split 
+  !> @param[out] SplitPositions - 2d integer array.   Gives the start and end positions of the split
   !---------------------------------------------------------------------------
 
   subroutine getSplitPositions(this, SplitPositions, delimiters)
@@ -433,7 +467,7 @@ contains
   !---------------------------------------------------------------------------
 
   subroutine readType(dtv, unit, iotype, vlist, iostat, iomsg)
-    class(String), intent(inout) :: dtv         ! Object to write.
+  class(String), intent(inout) :: dtv         ! Object to write.
     integer, intent(in) :: unit         ! Internal unit to write to.
     character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
     integer, intent(in) :: vlist(:)    ! parameters from fmt spec.
@@ -459,7 +493,7 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine writeType(dtv, unit, iotype, v_list, iostat, iomsg)
-    class(String), intent(in) :: dtv         ! Object to write.
+  class(String), intent(in) :: dtv         ! Object to write.
     integer, intent(in) :: unit         ! Internal unit to write to.
     character(*), intent(in) :: iotype  ! LISTDIRECTED or DTxxx
     integer, intent(in) :: v_list(:)    ! parameters from fmt spec.
@@ -469,13 +503,30 @@ contains
     write(unit, "(A)", iostat = iostat, iomsg = iomsg) dtv%line
   end subroutine writeType
 
-  subroutine setString(this,  lineIn) 
+  pure subroutine setString(this,  lineIn)
     type(String), intent(inout) :: this
     character(len=*), intent(in):: lineIn
 
     this%line = lineIn
   end subroutine setString
 
+  function addStrings(this, stringIn) result(stringOut)
+    type(String), intent(in):: this
+    type(String), intent(in):: stringIn
+    type(String):: stringOut
+
+    stringOut%line = this%line //stringIn%line
+  end function addStrings
+
+  function addStringAndChar(this, charIn) result (stringOut)
+    type(String), intent(in):: this
+    character(len=*), intent(in):: charIn
+
+    type(String):: stringOut
+
+    stringOut%line = this%line //charIn
+
+  end function addStringAndChar
 
 end Module stringModule
 

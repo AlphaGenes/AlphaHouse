@@ -4,7 +4,7 @@ enable_language (Fortran)
 enable_testing()
 find_package(Doxygen)
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../alphacmakefiles/cmake/modules")
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/./alphacmakefiles/cmake/modules")
 set(CMAKE_MACOSX_RPATH 0)
 
 INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
@@ -12,7 +12,7 @@ INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
 
 
 OPTION(RUN_TESTS "Run and compile tests"
-    ON)
+  ON)
 OPTION(USE_HDF5 "Use hdf"
        OFF)
 
@@ -40,13 +40,14 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
 # Set some options the user may choose
 # Uncomment the below if you want the user to choose a parallelization library
-OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
+OPTION(USE_MPI "Use the MPI library for parallelization" ON)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
   # file(GLOB testDeps "${SRC}/*.f90")
   SET(testDeps
+      ${SRC}/Utilities/ConstantModule.f90
       ${SRC}/Utilities/AlphaHouseMod.f90
       ${SRC}/Utilities/AlphaSystemMod.f90
       ${SRC}/BioComputational/AlphaStatMod.f90
@@ -62,10 +63,11 @@ if (${RUN_TESTS})
       ${SRC}/Utilities/LineModule.f90
       ${SRC}/Utilities/PageModule.f90
       ${SRC}/Utilities/IntegerLinkedListModule.f90
+      ${SRC}/Utilities/CharacterLinkedListModule.f90
       ${SRC}/Utilities/Input.f90
-      ${SRC}/Untested/BitUtilities.f90
-      ${SRC}/Untested/HaplotypeModule.f90
-      ${SRC}/Untested/GenotypeModule.f90
+      ${SRC}/BioComputational/BitUtilities.f90
+      ${SRC}/BioComputational/HaplotypeModule.f90
+      ${SRC}/BioComputational/GenotypeModule.f90
 )
 
 endif (${RUN_TESTS})
@@ -103,7 +105,7 @@ set(TESTFILES
     ${TESTS}/TestOrderPackModule.pf
     ${TESTS}/TestHashTable.pf
     ${TESTS}/TestIndividual.pf
-    ${TESTS}/TestIntelRNGMod.pf
+    # ${TESTS}/TestIntelRNGMod.pf
     ${TESTS}/TestLinkedList.pf
     ${TESTS}/testAlphaHouseMod.pf
     ${TESTS}/testIndividualHelperModule.pf

@@ -4,6 +4,112 @@ use LineModule
 implicit none
 
 contains
+!##################################################################################################################################
+! Test getting Line as character
+!##################################################################################################################################
+@test
+subroutine testGetAsCharacterWithSeperator()
+type(Line):: temp
+character(len=1000):: expected, gotten
+
+expected = "One:Two:Three:Four:Five"
+
+call temp%add("One")
+call temp%add("Two")
+call temp%add("Three")
+call temp%add("Four")
+call temp%add("Five")
+
+gotten = temp%getAsCharacter(":")
+
+@assertEqual(trim(expected), trim(gotten))
+end subroutine testGetAsCharacterWithSeperator
+
+@test
+subroutine testGetAsCharacter()
+
+type(Line):: temp
+character(len=1000):: expected, gotten
+
+expected = "OneTwoThreeFourFive"
+
+call temp%add("One")
+call temp%add("Two")
+call temp%add("Three")
+call temp%add("Four")
+call temp%add("Five")
+
+gotten = temp%getAsCharacter()
+
+@assertEqual(trim(expected), trim(gotten))
+end subroutine testGetAsCharacter
+!##################################################################################################################################
+! Testing adding Lines together
+!##################################################################################################################################
+@test
+subroutine testAddEmptyLines()
+type(Line):: expected, gotten, temp1, temp2
+
+gotten = temp1+temp2
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testAddEmptyLines
+
+@test
+subroutine testAddAnEmptyLine()
+type(Line):: expected, gotten, temp1
+
+call expected%add("THIS")
+call expected%add("IS")
+call expected%add("TEST")
+
+gotten = expected+temp1
+
+@assertEqualUserDefined(gotten, expected)
+
+gotten = temp1+expected
+@assertEqualUserDefined(gotten, expected)
+
+end subroutine testAddAnEmptyLine
+
+@test
+subroutine testAddLines()
+type(Line):: expected, gotten
+type(Line):: lineOne, lineTwo
+
+call lineOne%add("First")
+call lineOne%add("Second")
+
+call lineTwo%add("Third")
+call lineTwo%add("Forth")
+call expected%add("First")
+call expected%add("Second")
+
+call expected%add("Third")
+call expected%add("Forth")
+
+gotten = lineOne+lineTwo
+
+@assertEqualUserDefined(expected, gotten)
+end subroutine testAddLines
+
+@test
+subroutine testPrependForLine()
+type(Line):: expected, gotten
+integer:: i
+do i = 1, 5
+  call expected%add("THISGOTTEN")
+  call gotten%add("GOTTEN")
+end do
+
+call gotten%prepend("THIS")
+
+@assertEqualUserDefined(expected, gotten)
+
+end subroutine testPrependForLine
+!##################################################################################################################################
+! Test hasWithin
+!##################################################################################################################################
 @test
 subroutine testHasWithinWithOut()
 type(Line):: lineUsed

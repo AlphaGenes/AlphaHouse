@@ -17,6 +17,7 @@ module pageModule
       procedure, private :: initPageWithPage
       procedure, private :: readInInputFile
       procedure, public  :: getLine
+      procedure, public  :: getLineAsLine
       procedure, public  :: getWord => getPageWord
       procedure, public  :: set => readInInputFile
       procedure, public  :: getWithStackTrace
@@ -40,6 +41,13 @@ module pageModule
   end interface 
   contains
 
+    function getLineAsLine(self, lineNumberIn) result(lineOut)
+      class(Page), intent(in):: self
+      integer, intent(in):: lineNumberIn
+      type(Line)::lineOut
+
+      lineOut = self%lines(lineNumberIn)
+    endfunction getLineAsLine
 
     !> @brief Subroutine that will take in a line and append it to the current Page
     !> @details Takes in a line.   Assumes that if the position isn't given then the line is to be appended onto the end of the
@@ -52,7 +60,12 @@ module pageModule
       type(Line), dimension(:), allocatable:: tempLine1, tempLine2
       integer:: totalSize
 
-        totalSize = self%getNumLines()
+      if (.not. allocated(self%lines)) then
+        allocate(self%lines(1))
+        self%Lines(1) = lineIn
+        return
+      end if
+      totalSize = self%getNumLines()
       if (present(position)) then
         tempLine1 = self%lines(1:position-1)
         tempLine2 = self%lines(position:)
@@ -138,10 +151,12 @@ module pageModule
 
       integer:: i
 
-      res = ""
+      res = " "
+
       do i = 1, this%getNumWords(numLine)
         res = res // this%getWord(numLine, i)
       end do
+
     end function getLine
 
     function getPageTypeNumWords(this, i) result(numWords)
@@ -318,7 +333,8 @@ module pageModule
 !> @return inputFile Allocatable character array where each element of the array corresponds to a single line from the input
 !---------------------------------------------------------------------------
   subroutine readInInputFile(this, inputFileName, commentCharacterIn, delimiters)
-    use AlphaHouseMod, only: CountLines
+    use AlphaHouseMod, only: CountLinesWithBlankLines
+    use ConstantModule, only: defaultComment
     class(Page), intent(inout):: this
     type(String), dimension(:), allocatable:: tempArray 
     type(Line), dimension(:), allocatable:: tempLine
@@ -330,17 +346,26 @@ module pageModule
     character(len=10000):: temp
     integer(int32):: numLines, fileId, commentPos
     integer(int32):: i
+    logical:: inputFileExists
 
     if (present(commentCharacterIn)) then
       write(commentCharacter, "(A)")  commentCharacterIn
     else
-      write(commentCharacter, "(A)")  "#"
+      write(commentCharacter, "(A)")  DEFAULTCOMMENT
     end if
 
-    numLines =  CountLines(inputFileName)
+    numLines =  CountLinesWithBlankLines(inputFileName)
 
     allocate(tempArray(numLines))
     allocate(tempLine(numLines))
+
+    Inquire(file=inputFileName, exist= inputFileExists)
+
+    if (.not. inputFileExists) then
+      write(*, "(A)") "Unable to find the input file: ", inputFileName
+      stop 348
+    end if
+
     open(newunit=fileId, file = inputFileName, action="read")
     do i = 1, numLines
       read(fileId, "(A)") temp
@@ -360,8 +385,10 @@ module pageModule
     end do
     this = tempLine
     this%pageName = inputFileName
+
     deallocate(tempArray)
     deallocate(tempLine)
+
 
   end subroutine readInInputFile
   end module pageModule

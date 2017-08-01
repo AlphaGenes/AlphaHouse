@@ -29,7 +29,8 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors,getOnlyHalfSibsGenotyped
+    public :: GetOffspringsAsLinkedList
 
     contains
 
@@ -174,6 +175,71 @@ module IndividualHelperModule
     
 
     end function getOnlyHalfSibs
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Returns linked list of half sibs of animal passed in that are genotyped
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    November 26, 2016
+    !> @return linked list of half sibs
+    !---------------------------------------------------------------------------
+    function getOnlyHalfSibsGenotyped(indiv) result(res)
+
+        use IndividualLinkedListModule
+        use HashModule
+        implicit none
+        class(individual) :: indiv !< individual to get half sibs of
+        type(IndividualLinkedList) :: res !< linked list of half sibs
+        type(DictStructure) :: dict
+        integer :: i, sireNum, damNum
+        integer(kind=int64) ::tmpSize
+
+        sireNum = 0
+        damNum = 0
+
+        if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
+            ! loop through sire offsprings
+            tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
+            dict = DictStructure(tmpSize)
+            sireNum = indiv%sirePointer%nOffs
+            damNum = indiv%damPointer%nOffs
+
+        else if (associated(indiv%sirePointer)) then
+            tmpSize = indiv%sirePointer%nOffs
+            dict = DictStructure(tmpSize)
+            sireNum = indiv%sirePointer%nOffs
+        else if (associated(indiv%damPointer)) then
+            tmpSize = indiv%damPointer%nOffs
+            dict = DictStructure(tmpSize)
+            damNum = indiv%damPointer%nOffs
+        else
+            return !NO parents so return empty list
+        endif
+
+        do i=1, sireNum
+            if (indiv%sirePointer%OffSprings(i)%p%id == indiv%id) cycle
+            
+            if (.not. indiv%sirePointer%OffSprings(i)%p%genotyped) cycle
+
+            call res%list_add(indiv%sirePointer%OffSprings(i)%p)
+            call dict%addKey(indiv%sirePointer%OffSprings(i)%p%originalID,1)
+        enddo
+
+        do i=1, damNum
+            if (indiv%damPointer%OffSprings(i)%p%id == indiv%id) cycle 
+            if (.not. indiv%damPointer%OffSprings(i)%p%genotyped) cycle
+            
+            if(.not. dict%hasKey(indiv%damPointer%OffSprings(i)%p%originalID)) then
+                call res%list_add(indiv%sirePointer%OffSprings(i)%p)
+            else !as we only want half sibs, remove it
+                call res%list_remove(indiv%sirePointer%OffSprings(i)%p)
+            endif  
+        enddo
+    
+
+    end function getOnlyHalfSibsGenotyped
+
+
 
 
 
@@ -411,6 +477,27 @@ integer function calcGenDistance(ind1, ind2)
 
 
 end function calcGenDistance
+
+
+
+      !---------------------------------------------------------------------------
+    !> @brief returns a Individual Linked list of all of an animals offspring
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function GetOffspringsAsLinkedList(ind) result(res)
+        use IndividualLinkedListModule
+
+        class(Individual), intent(in) :: ind
+        type(IndividualLinkedList) :: res !< linked list of given individuals offspring
+        integer :: i
+
+        do i =1, ind%nOffs
+
+            call res%list_add(ind%offsprings(i)%p)
+
+        enddo
+    end function GetOffspringsAsLinkedList
 
 end module IndividualHelperModule
 

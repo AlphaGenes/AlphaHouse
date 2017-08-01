@@ -55,6 +55,9 @@ module IndividualLinkedListModule
             procedure :: destroyLinkedList
             procedure :: convertToArray
             procedure :: convertToArrayIDs
+            procedure :: getGenotypesAtPosition
+            procedure :: destroyLinkedListFinal
+            procedure :: removeIndividualsBasedOnThreshold
             generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
@@ -87,9 +90,33 @@ contains
         endif
         deallocate(this%first)
         deallocate(this%last)
-        ! deallocate(tmp)
 
     end subroutine destroyLinkedList
+
+
+        !---------------------------------------------------------------------------
+    !> @brief Destructor for linked list, note that data set is deallocated as well
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine destroyLinkedListFinal(this)
+        class(IndividualLinkedList),intent(inout) :: this
+        type(IndividualLinkedListNode),pointer :: node
+        type(individual),pointer :: tmp
+        if (associated(this%first)) then
+            node => this%first
+
+            do while(associated(node))
+                call this%list_pop(tmp)
+                
+
+                node => this%first
+            enddo
+        endif
+        deallocate(this%first)
+        deallocate(this%last)
+
+    end subroutine destroyLinkedListFinal
 
     !---------------------------------------------------------------------------
     !> @brief output for Linked List
@@ -349,6 +376,89 @@ contains
             node => node%next
 
         enddo
-    end function convertToArrayIDs              
+    end function convertToArrayIDs           
+
+
+
+
+            !---------------------------------------------------------------------------
+    !> @brief Across a list of individuals, return all the genotypes at a given position
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !--------------------------------------------------------------------------- 
+    function getGenotypesAtPosition(this, pos) result(res)
+        class(IndividualLinkedList), intent(in) :: this
+        integer, intent(in) :: pos !< snp position
+        integer(kind=1), dimension(:), allocatable :: res !< result of all the genotyps
+        type(IndividualLinkedListNode), pointer :: ind
+        integer :: i
+        ind => this%first
+        allocate(res(this%length))
+
+
+
+        do i=1, this%length
+            res(i) = ind%item%individualGenotype%getGenotype(pos)
+
+            ind => ind%next
+        enddo 
+
+    end function getGenotypesAtPosition   
+
+
+
+
+            !---------------------------------------------------------------------------
+    !> @brief Across a list of individuals, return all the genotypes at a given position
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !--------------------------------------------------------------------------- 
+    subroutine removeIndividualsBasedOnThreshold(this, nOffsThresh, genotyped, hd, genotypedOffspring)
+
+        class(IndividualLinkedList), intent(inout) :: this
+        integer, intent(in),optional :: nOffsThresh !< threshold of number of offspring. If less than this these offsprings will be removed
+        integer, intent(in), optional :: genotyped,hd !, if either of these are present, then, these are effectively true
+        integer, intent(in), optional :: genotypedOffspring !, if present, only care about offspring that are genotpyed
+        type(IndividualLinkedListNode), pointer :: ind, tmp
+        integer :: offspringCount,i
+
+        ind => this%first
+        do while(associated(ind))
+            
+            if (present(nOffsThresh)) then
+
+                if (present(genotypedOffspring)) then
+                    offspringCount = 0
+                    do i=1,ind%item%nOffs
+
+                        if (ind%item%offsprings(i)%p%genotyped) then
+                            offspringCount = offspringCount + 1
+                        endif
+                    enddo
+                else 
+                    offspringCount = ind%item%nOffs
+                endif
+
+                
+                if(offspringCount < nOffsThresh) then
+                   call this%list_remove(ind%item)
+                endif
+            endif
+
+             if (present(genotyped)) then
+                if(.not. ind%item%Genotyped) then
+                    call this%list_remove(ind%item)
+                endif
+            endif
+
+            if (present(hd)) then
+                if(.not. ind%item%hd) then
+                  call this%list_remove(ind%item)
+                endif
+            endif
+            ind => ind%next
+            
+        enddo
+    end subroutine removeIndividualsBasedOnThreshold
 
 end Module IndividualLinkedListModule
