@@ -40,7 +40,7 @@ module AlphaHouseMod
 
   public :: generatePairing, unPair
   public :: CountLinesWithBlankLines
-  public:: countColumns
+  public :: countColumns
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'

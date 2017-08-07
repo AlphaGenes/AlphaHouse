@@ -109,6 +109,7 @@ module PedigreeModule
         procedure :: MakeGenotype
         procedure :: PhaseComplement
         procedure :: homozygoticFillIn
+        procedure :: wipeGenotypeAndPhaseInfo
     end type PedigreeHolder
 
     ! TODO - overload == and = functions
@@ -1299,6 +1300,19 @@ module PedigreeModule
                             end function getGenotypedFounders
 
 
+
+                            subroutine wipeGenotypeAndPhaseInfo(this)
+                                class(pedigreeHolder) :: this
+
+                                integer :: i
+                                
+                                do i=1,this%pedigreeSize
+
+                                    deallocate(this%pedigree(i)%individualPhase)
+                                    deallocate(this%pedigree(i)%individualGenotype)
+                                enddo
+
+                            end subroutine wipeGenotypeAndPhaseInfo
 
                             !---------------------------------------------------------------------------
                             !< @brief distructor for pedigree class

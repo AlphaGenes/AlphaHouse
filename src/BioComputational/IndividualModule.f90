@@ -63,6 +63,8 @@ module IndividualModule
         type(Haplotype),allocatable,dimension(:) :: individualPhase
         integer,dimension(:), allocatable :: referAllele, AlterAllele
 
+        real(kind=real64), allocatable, dimension(:) :: genotypeProbabilities
+        real(kind=real64), allocatable, dimension(:,:) :: phaseProbabilities 
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
         
         contains
@@ -130,13 +132,14 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps) result (this)
+    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps, probabilites) result (this)
         type(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
         integer, intent(in), Optional :: nsnps !< number of snps to initialise default genotype class
         integer(kind=1), intent(in), Optional :: gender
+        logical, optional :: probabilites !< if present, allocate probabilites
 
 
         allocate(character(len=len(originalID)) ::this%originalID)
@@ -165,7 +168,15 @@ contains
                 this%individualPhase(1) = newHaplotypeMissing(nsnps)
                 this%individualPhase(2) = newHaplotypeMissing(nsnps)
             endif
+
+            if (present(probabilites)) then
+                allocate(this%genotypeProbabilities(nsnps))
+                allocate(this%phaseProbabilities(nsnps,2))
+            endif
         endif
+
+
+
     end function initIndividual
 
      !---------------------------------------------------------------------------
@@ -197,6 +208,20 @@ contains
         endif
         if (allocated(this%individualGenotype)) then
             deallocate(this%individualGenotype)
+        endif
+
+        if (allocated(this%genotypeProbabilities)) then
+            deallocate(this%genotypeProbabilities)
+        endif
+
+
+        if (allocated(this%genotypeProbabilities)) then
+            deallocate(this%genotypeProbabilities)
+        endif
+
+
+         if (allocated(this%phaseProbabilities)) then
+            deallocate(this%phaseProbabilities)
         endif
 
     end subroutine destroyIndividual
