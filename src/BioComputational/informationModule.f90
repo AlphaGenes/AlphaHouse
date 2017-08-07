@@ -52,6 +52,7 @@ module informationModule
 
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
+                ! print *,ped%pedigree(animal)%individualGenotype%getgenotype(232)
                 accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray())
             endif
         enddo
@@ -141,25 +142,34 @@ module informationModule
     end function calculateAccuracyPerSnp
 
 
+    function correlation(one, two) result(res)
+        real(kind=real64), dimension(:), intent(in) :: one, two
+        real(kind=real64) :: res
 
+        res = (sum(one*two)-sum(one)*sum(two))/ (sqrt(sum(one**2) - sum(one)**2) * sqrt(sum(two**2)-sum(two)**2))
+
+
+    end function
 
     function corAccuracies(one, two) result(res)
 
         integer(kind=1), dimension(:),intent(in) :: one,two
         real(kind=real32) :: res
 
-        integer :: incorrect
+        integer :: incorrect, count
         incorrect = 0
-
+        count = 0
 
         do i =1,size(one)
 
             if (one(i) == 9 .or. two(i) == 9) cycle
-
-            if (one(i)/=two(i)) incorrect = incorrect + 1   
+            count = count +1
+            if (one(i)/=two(i)) then
+                incorrect = incorrect + 1   
+            endif
         enddo 
 
-        res = 1 - real(incorrect) / real(size(one))
+        res = 1 - real(incorrect) / real(count)
     end function corAccuracies
     ! subroutine checkPhaseYield
 

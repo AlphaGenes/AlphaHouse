@@ -90,6 +90,28 @@ module GenotypeModule
   generic:: read(unformatted) => readunFormattedGenotype
   end type Genotype
 
+    !---------------------------------------------------------------------------
+    !> @brief   Represents mendelian consistencies and inconsistencies for a trio.
+    !> @detail  Stores 6 bit arrays representing consistent / inconsistent snps
+    !>          for each of paternal, maternal and individual.
+    !>
+    !>          Consistent is where we have the information to know a snp is
+    !>          consistent.  Similarly for inconsistent.  If neither is set for
+    !>          a snp that means there is missing information and so consistentcy
+    !>          can not be determined.
+    !>
+    !>          Paternal represents where the paternal and individual snps are
+    !>          consistent or inconsistent.  This includes the case where the
+    !>          individual is a het and the parents are inconsistent.  Maternal
+    !>          is defined similarly.  Individual is whether an individual is
+    !>          consistent or inconsistent with both it's parents.
+    !> @date    May 27, 2017
+    !---------------------------------------------------------------------------
+    type :: Mendelian
+        integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
+        integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
+    end type Mendelian
+
   interface Genotype
     module procedure newGenotypeInt
     module procedure newGenotypeHap
@@ -310,6 +332,11 @@ function getGenotype(g, pos) result (genotype)
 
     integer :: cursection, curpos
 
+
+    if (pos == 0) then 
+      genotype = 9
+      return
+    endif
     cursection = (pos-1) / 64 + 1
     curpos = pos - (cursection - 1) * 64 - 1
 
@@ -964,6 +991,88 @@ function isHomo(g, pos) result (two)
 		    IAND(IAND(NOT(origHomo), g%additional(i)), o%additional(i)) )
     end do
   end subroutine setFromOtherIfMissing
+
+
+    !---------------------------------------------------------------------------
+    !> @brief   Return a type reprsenting Mendelian consisentincies /
+    !>          inconsistencies between an individual and its parents.
+    !> @date    July 24, 2017
+    !> @return  New mendelian object 
+    !---------------------------------------------------------------------------
+    function mendelianInconsistencies(g, pg, mg) result (mend)
+        class(Genotype), intent(in) :: g
+        type(Genotype), intent(in) :: pg, mg
+
+        type(Mendelian) :: mend
+        integer(kind=int64) :: het, patpresent, matpresent, indpresent
+
+        integer :: i
+
+        allocate(mend%paternalInconsistent(g%sections))
+        allocate(mend%maternalInconsistent(g%sections))
+        allocate(mend%individualInconsistent(g%sections))
+
+        allocate(mend%paternalConsistent(g%sections))
+        allocate(mend%maternalConsistent(g%sections))
+        allocate(mend%individualConsistent(g%sections))
+
+
+        do i = 1, g%sections
+            het = IAND( &
+                ! Individual is het
+                NOT(IOR(g%homo(i),g%additional(i))), &
+                ! Parents are same homo
+                IAND( &
+                    ! Parents are both homo
+                    IAND(pg%homo(i),mg%homo(i)), &
+                    ! Parents are same homo
+                    NOT(IEOR(pg%additional(i), mg%additional(i))) &
+                    ) &
+                )
+
+            mend%paternalInconsistent(i) = IOR( &
+                ! Individual is het and bad
+                het, &
+                ! Individual is homo and paternal is opposite homo
+                IAND(IAND(g%homo(i), pg%homo(i)), IEOR(g%additional(i), pg%additional(i))) &
+                )
+
+            mend%paternalInconsistent(i) = IOR( &
+                ! Individual is het and bad
+                het, &
+                ! Individual is homo and maternal is opposite homo)
+                IAND(IAND(g%homo(i), mg%homo(i)), IEOR(g%additional(i), mg%additional(i)))&
+                )
+
+            mend%individualInconsistent(i) = IOR(mend%paternalInconsistent(i), mend%maternalInconsistent(i))
+
+            patpresent = IOR(pg%homo(i), NOT(pg%additional(i)))
+            matpresent = IOR(mg%homo(i), NOT(mg%additional(i)))
+            indpresent = IOR(g%homo(i), NOT(g%additional(i)))
+
+            mend%paternalConsistent(i) = IAND( &
+                ! Individual and paternal are both not missing
+                IAND(indpresent, patpresent), &
+                ! Not paternal inconsistent
+                NOT(mend%paternalInconsistent(i)) &
+                )
+
+            mend%maternalConsistent(i) = IAND( &
+                ! Individual and paternal are both not missing
+                IAND(indpresent, matpresent), &
+                ! Not paternal inconsistent
+                NOT(mend%maternalInconsistent(i)) &
+                )
+
+            mend%individualConsistent(i) = IAND( &
+                ! Individual and both parents are not missing
+                IAND(indpresent, IAND(patpresent, matpresent)), &
+                ! Not individual inconsistent
+                NOT(mend%individualInconsistent(i)) &
+                )
+        end do
+
+    end function mendelianInconsistencies
 
     subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
       class(Genotype), intent(in) :: dtv         ! Object to write.

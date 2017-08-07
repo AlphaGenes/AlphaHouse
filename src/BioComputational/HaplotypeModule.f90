@@ -390,6 +390,8 @@ contains
     !> @return  The phase
     !---------------------------------------------------------------------------   
     function getPhase(h, pos) result (phase)
+        use IFCORE
+        
         class(Haplotype), intent(in) :: h
         integer, intent(in) :: pos
 
@@ -397,10 +399,14 @@ contains
 
         integer :: cursection, curpos
 
-        if (pos > h%length) then
+        phase = 9
+        if (pos == 0) then
+            return
+        else if (pos > h%length) then
 
             write(error_unit,*) "error - GetPhase has been given position longer than haplotype"
             write(error_unit,*) pos, " vs length:", h%length
+            call TRACEBACKQQ(string="error - GetPhase has been given position longer than haplotype",user_exit_code=1)
             stop
         endif
         cursection = (pos-1) / 64 + 1

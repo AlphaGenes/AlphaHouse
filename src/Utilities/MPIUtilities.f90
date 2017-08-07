@@ -28,7 +28,7 @@ function getMPIChunckSize(totalSize) result (chunkSize)
 end function
 
 
-subroutine initialseMPI
+subroutine initialiseMPI
   integer(int32)::error
   call MPI_Init(error)
   call checkMPI(error)
@@ -39,7 +39,7 @@ subroutine initialseMPI
   call MPI_COMM_RANK(MPI_COMM_WORLD, mpiRank, error)
   call checkMPI(error)
 
-end subroutine initialseMPI
+end subroutine initialiseMPI
 
 subroutine endMPI
   integer(int32)::error

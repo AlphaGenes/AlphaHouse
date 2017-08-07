@@ -56,7 +56,7 @@ module PedigreeModule
         integer :: maxGeneration ! largest generation
 
         integer :: nsnpsPopulation ! number of snps for 
-        integer :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
+        integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
 
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 
@@ -106,6 +106,9 @@ module PedigreeModule
         procedure :: getSequenceAsArrayWithMissing
         procedure :: writeOutGenders
         procedure :: readInGenders
+        procedure :: MakeGenotype
+        procedure :: PhaseComplement
+        procedure :: homozygoticFillIn
     end type PedigreeHolder
 
     ! TODO - overload == and = functions
@@ -432,6 +435,30 @@ module PedigreeModule
                                 enddo
 
                             end subroutine setPhaseFromArray
+
+
+                            subroutine homozygoticFillIn(this)
+
+                                class(PedigreeHolder), intent(inout) :: this
+                                ! Impute phase information for homozygous cases
+
+                                integer :: i,j
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i,j)
+                                do i=1, this%pedigreeSize
+                                    do j=1, this%pedigree(this%genotypeMap(1))%individualGenotype%length
+                                        if (this%pedigree(i)%individualGenotype%getGenotype(j) == 2) then
+                                            call this%pedigree(i)%individualPhase(1)%setPhase(j,1)
+                                            call this%pedigree(i)%individualPhase(2)%setPhase(j,1)
+                                        else if (this%pedigree(i)%individualGenotype%getGenotype(j) == 0) then
+                                            call this%pedigree(i)%individualPhase(1)%setPhase(j,0)
+                                            call this%pedigree(i)%individualPhase(2)%setPhase(j,0)
+                                        endif
+                                    enddo
+                                enddo
+                                !$OMP END PARALLEL DO
+
+                            end subroutine homozygoticFillIn
 
                             !---------------------------------------------------------------------------
                             !<@brief Calculate correlation between pedigree 
@@ -1377,6 +1404,10 @@ module PedigreeModule
                                     tmpIdNum = this%dictionary%getValue(tmpId)
                                     if (tmpIdNum == DICT_NULL) then
                                         write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
+                                        write(error_unit, *) "Animal will be added as a founder to pedigree"
+
+                                        call this%addAnimalAtEndOfPedigree(trim(tmpID), tmpSnpArray)
+
                                     else
 
                                         if (present(startSnp)) then
@@ -1465,7 +1496,7 @@ module PedigreeModule
                                 character(len=IDLENGTH) :: seqid !placeholder variables
 
                                 if (.not. Present(nAnisGIn)) then
-                                    NanisG = countLines(seqFile)
+                                    NanisG = countLines(seqFile)/2
                                 else 
                                     nanisG = nAnisGIn
                                 endif
@@ -1474,12 +1505,12 @@ module PedigreeModule
                                 allocate(ref(nsnps))
                                 allocate(alt(nsnps))
                                 ! tmp = 9
+                                print *, "Number of animals in seq file", NanisG
                                 do i=1,nAnisG
                                     read (unit,*) seqid, ref(:)
                                     read (unit,*) seqid, alt(:)
 
                                     tmpID = this%dictionary%getValue(seqid)
-
                                     if (present(maximumReads)) then
                                         do j=1,nsnps
                                             if (ref(j)>=maximumReads) ref(j)=maximumReads-1
@@ -2831,6 +2862,50 @@ module PedigreeModule
                             end subroutine addAnimalAtEndOfPedigree
 
 
+
+                            !---------------------------------------------------------------------------
+                            !> @brief Sets all individuals genotype from the Haplotype
+                            !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !---------------------------------------------------------------------------
+                            SUBROUTINE MakeGenotype(this)
+                                class(PedigreeHolder) :: this
+                                ! Any individual that has a missing genotype information but has both alleles
+                                ! known, has its genotype filled in as the sum of the two alleles
+                                integer :: i
+
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i)
+                                do i=1,this%pedigreeSize
+                                    call this%pedigree(i)%makeIndividualGenotypeFromPhase()    
+                                enddo 
+                                !$OMP END PARALLEL DO
+
+
+                            END SUBROUTINE MakeGenotype
+
+                            !#############################################################################################################################################################################################################################
+
+
+
+                            !---------------------------------------------------------------------------
+                            !> @brief Sets the individual haplotypes from the compilement if animal is genotyped for all animals
+                            !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !> @date    October 26, 2016
+                            !---------------------------------------------------------------------------
+                            subroutine PhaseComplement(this)
+                                class(PedigreeHolder) :: this
+                                ! If the genotype at a locus for an individual is known and one of its alleles has been determined
+                                ! then impute the missing allele as the complement of the genotype and the known phased allele
+                                integer :: i
+
+                                !$OMP PARALLEL DO &
+                                !$OMP PRIVATE(i)
+                                do i=1,this%pedigreeSize
+                                    call this%pedigree(i)%makeIndividualPhaseCompliment()
+                                enddo
+                                !$OMP END PARALLEL DO
+
+                            end subroutine PhaseComplement
 
                             !---------------------------------------------------------------------------
                             !<@brief  counts missing snps across all animals at every snp
