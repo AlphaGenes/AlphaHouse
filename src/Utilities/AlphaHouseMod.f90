@@ -165,7 +165,7 @@ module AlphaHouseMod
   !> No delimiter default to using a space.
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 
-  integer function a(fileNameIn, delimiterIn) result (numColumnsOut)
+  integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)
     character(len=*), intent(in):: fileNameIn
     character(len=1), intent(in), optional:: delimiterIn
 

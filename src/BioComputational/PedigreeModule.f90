@@ -60,6 +60,8 @@ module PedigreeModule
 
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 
+
+        type(IndividualLinkedList), allocatable :: uniqueParentList
     contains
         procedure :: calculatePedigreeCorrelationNoInbreeding
         procedure :: copyPedigree
@@ -110,6 +112,7 @@ module PedigreeModule
         procedure :: PhaseComplement
         procedure :: homozygoticFillIn
         procedure :: wipeGenotypeAndPhaseInfo
+        procedure :: getUniqueParents
     end type PedigreeHolder
 
     ! TODO - overload == and = functions
@@ -425,6 +428,40 @@ module PedigreeModule
 
                             end subroutine setPhaseFromArray
 
+                            function getUniqueParents(this) result(res)
+
+                                class(PedigreeHolder) :: this
+
+                                type(IndividualLinkedList) :: res
+                                type(DictStructure) ::tmpDict
+                                integer :: i
+                                type(IndividualLinkedListNode), pointer :: node
+
+
+                                if (allocated(this%uniqueParentList)) then
+                                    res= this%uniqueParentList
+                                else 
+
+                                    tmpDict= DictStructure()
+                                    node => this%sireList%first
+
+                                    do i=1,this%sireList%length
+                                        call tmpDict%addKey(node%item%originalID,1)
+                                        call res%list_add(node%item)
+                                        node => node%next
+                                    enddo
+
+                                    node => this%damList%first
+                                    do i=1, this%damList%length
+
+                                        if (tmpDict%getValue(node%item%originalID) == DICT_NULL) then
+                                            call res%list_add(node%item)
+                                        endif
+                                        node => node%next
+                                    enddo
+                                    this%uniqueParentList = res
+                                endif
+                            end function getUniqueParents
 
                             subroutine homozygoticFillIn(this)
 
@@ -1340,6 +1377,10 @@ module PedigreeModule
                                     deallocate(this%hdMap)
                                 endif
 
+                                if (allocated(this%uniqueParentList)) then
+
+                                    deallocate(this%uniqueParentList)
+                                endif
                             end subroutine destroyPedigree
 
 

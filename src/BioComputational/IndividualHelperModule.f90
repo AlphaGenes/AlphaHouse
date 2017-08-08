@@ -33,12 +33,6 @@ module IndividualHelperModule
     public :: GetOffspringsAsLinkedList
 
 
-    type MatePairType
-        use IndividualModule
-
-        type(individual), pointer :: parent1, parent2
-
-    end type MatePairType
     
 
     contains

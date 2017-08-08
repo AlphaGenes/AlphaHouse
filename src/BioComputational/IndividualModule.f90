@@ -1293,13 +1293,15 @@ contains
             count = 0
             allocate(this%nHighDensityOffspring)
             do i=1,this%nOffs
-                if (this%OffSprings(i)%p%isHD) then
+                if (this%OffSprings(i)%p%hd) then
                     count = count +1
                 endif
             enddo
 
             this%nHighDensityOffspring = count
         endif
+
+    end function countHighDensityOffspring
 
 
 end module IndividualModule
