@@ -1441,6 +1441,8 @@ module PedigreeModule
                                         endif
                                     endif
                                 enddo
+
+                                ped%nsnpsPopulation = nSnp
                                 write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
                             end subroutine addGenotypeInformationFromFile

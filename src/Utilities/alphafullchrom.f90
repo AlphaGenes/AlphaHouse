@@ -27,6 +27,9 @@ contains
 
 
             call ped%addGenotypeInformationFromFile("genoFile")
+
+            ! cwd for program should be settable
+            ! Can be done using CHDIR command
             
         enddo 
 
