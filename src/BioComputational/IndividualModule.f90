@@ -56,6 +56,7 @@ module IndividualModule
         integer :: nOffs  = 0 !number of offspring
         logical(kind=1) :: Founder     = .false.
         logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: isPhased    = .false.
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical(kind=1) :: isUnknownDummy = .false.
@@ -66,7 +67,12 @@ module IndividualModule
         real(kind=real64), allocatable, dimension(:) :: genotypeProbabilities
         real(kind=real64), allocatable, dimension(:,:) :: phaseProbabilities 
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
-        
+        integer, allocatable :: nHighDensityOffspring
+        ! plant stuff
+        logical(kind=1), allocatable :: isInbred
+        logical(kind=1), allocatable :: isImputed
+
+
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -112,6 +118,7 @@ module IndividualModule
             procedure :: setSegToMissing
             procedure :: makeIndividualPhaseCompliment
             procedure :: makeIndividualGenotypeFromPhase
+            procedure :: countHighDensityOffspring
             generic:: write(formatted)=> writeIndividual
 
             
@@ -223,6 +230,15 @@ contains
          if (allocated(this%phaseProbabilities)) then
             deallocate(this%phaseProbabilities)
         endif
+
+        if (allocated(this%isInbred)) then
+            deallocate(this%isInbred)
+        endif
+
+        if (allocated(this%isImputed)) then
+            deallocate(this%isImputed)
+        endif
+
 
     end subroutine destroyIndividual
 
@@ -1263,6 +1279,28 @@ contains
             write(error_unit,*) "WARNING: unknown offspring trying to be removed from parent"
         endif
     end subroutine removeOffspring
+
+
+
+
+    function countHighDensityOffspring(this) result(count)
+        class(individual ) :: this
+        integer :: count, i
+
+        if (allocated(this%nHighDensityOffspring)) then
+            count = this%nHighDensityOffspring
+        else 
+            count = 0
+            allocate(this%nHighDensityOffspring)
+            do i=1,this%nOffs
+                if (this%OffSprings(i)%p%isHD) then
+                    count = count +1
+                endif
+            enddo
+
+            this%nHighDensityOffspring = count
+        endif
+
 
 end module IndividualModule
 

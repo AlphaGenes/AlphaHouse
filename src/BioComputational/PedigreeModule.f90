@@ -1472,6 +1472,7 @@ module PedigreeModule
                                             write(error_unit, *) "WARNING: Phase info for non existing animal here:",trim(tmpId), " file:", trim(phaseFile), " line:",i
                                         else
                                             call this%pedigree(tmpIdNum)%setPhaseArray(h, tmpSnpArray)
+                                            this%pedigree(tmpIdNum)%isPhased = .true.
                                         endif
                                     end do
                                 enddo
