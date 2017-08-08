@@ -1074,6 +1074,40 @@ function isHomo(g, pos) result (two)
 
     end function mendelianInconsistencies
 
+    !---------------------------------------------------------------------------
+    !> @brief   Returns the position of the first het or -1 if none
+    !> @date    August 8, 2017
+    !> @return  Position of the first het 
+    !---------------------------------------------------------------------------
+    function firstHet(g) result(pos)
+        class(Genotype), intent(in) :: g
+
+        integer :: pos
+
+        integer :: i, j, endj
+        integer(kind=8) :: isHet
+
+        do i = 1, g%sections
+            isHet = IAND(NOT(g%homo(i)),NOT(g%additional(i)))
+
+            if (i == g%sections) then
+                endj = 63 - g%overhang
+            else
+                endj = 63
+            end if
+
+            do j = 0, endj
+                if (BTEST(isHet,j)) then
+                    pos = 64 * (i - 1) + j + 1
+                    return
+                end if
+            end do
+        end do
+
+        pos = -1
+    end function firstHet
+
+
     subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
       class(Genotype), intent(in) :: dtv         ! Object to write.
       integer, intent(in) :: unit         ! Internal unit to write to.
