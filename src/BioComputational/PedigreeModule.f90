@@ -428,6 +428,14 @@ module PedigreeModule
 
                             end subroutine setPhaseFromArray
 
+
+
+                               !---------------------------------------------------------------------------
+                            !< @brief Returns IndividualLinkedList of animals that are parents (with no overlaps)
+                            !< @details caches, so avoids code duplication
+                            !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !< @date    October 26, 2016
+                            !---------------------------------------------------------------------------
                             function getUniqueParents(this) result(res)
 
                                 class(PedigreeHolder) :: this
