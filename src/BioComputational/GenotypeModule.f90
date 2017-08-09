@@ -49,6 +49,8 @@ module GenotypeModule
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   integer(kind=int64), allocatable, dimension(:) :: homo
   integer(kind=int64), allocatable, dimension(:) :: additional
+  integer(kind=int64), allocatable, dimension(:) :: locked
+  logical :: hasLock
   integer :: sections
   integer :: overhang
   integer :: length
@@ -127,14 +129,19 @@ module GenotypeModule
           deallocate(g%homo)
           deallocate(g%additional)
         endif
+        if (allocated(g%locked)) then
+            deallocate(g%locked)
+        end if
     end subroutine destroyGenotype
     !---------------------------------------------------------------------------
-    !> @brief	Constructs a new Genotype from a integer array
+    !> @brief	Constructs a new Genotype from a integer array. lock determines
+    !>          whether genotypes that are known at creation are locked.
     !> @date    November 26, 2016
     !> @return	New genotype object 
     !---------------------------------------------------------------------------
-      pure function newGenotypeInt(geno) result (g)
+      pure function newGenotypeInt(geno, lock) result (g)
         integer(kind=1), dimension(:), intent(in) :: geno
+        integer, optional, intent(in) :: lock
 
         type(Genotype) :: g
 
@@ -151,6 +158,7 @@ module GenotypeModule
         curpos = 0
         g%homo = 0
         g%additional = 0
+
         do i = 1, g%length
             select case (geno(i))
             case (0)
@@ -169,19 +177,32 @@ module GenotypeModule
                 cursection = cursection + 1
             end if
         end do
+
+        if (present(lock)) then
+            g%hasLock = .true.
+            allocate(g%locked(g%sections))
+            do i = 1, g%sections
+                g%locked(i) = IOR(g%homo(i),NOT(g%additional(i)))
+            end do
+        else
+            g%hasLock = .false.
+        end if
     end function newGenotypeInt
     
     !---------------------------------------------------------------------------
-    !> @brief	Constructs a new genotype from two haplotype objects
+    !> @brief	Constructs a new genotype from two haplotype objects.  lock
+    !>          determines whether genotypes that are known at creation are
+    !>          locked.
     !> @date    November 26, 2016
     !> @return	New genotype object 
     !---------------------------------------------------------------------------
-    function newGenotypeHap(h1, h2) result (g)
+    function newGenotypeHap(h1, h2, lock) result (g)
       use HaplotypeModule
       type(Haplotype) :: h1, h2
       
       type(Genotype) :: g
       integer :: i
+      integer, optional, intent(in) :: lock
       
       g%length = h1%length
       g%sections = h1%sections
@@ -207,6 +228,17 @@ module GenotypeModule
       do i = 64 - g%overhang, 63
 	g%homo(g%sections) = ibclr(g%homo(g%sections), i)
       end do 
+
+        if (present(lock)) then
+            g%hasLock = .true.
+            allocate(g%locked(g%sections))
+            do i = 1, g%sections
+                g%locked(i) = IOR(g%homo(i),NOT(g%additional(i)))
+            end do
+        else
+            g%hasLock = .false.
+        end if
+
     end function newGenotypeHap
 
     
@@ -236,6 +268,8 @@ module GenotypeModule
         g%homo(g%sections) = ibclr(g%homo(g%sections), i)
         g%additional(g%sections) = ibclr(g%additional(g%sections), i)
     end do
+
+    g%hasLock = .false.
   end function newGenotypeMissing
 
   
@@ -365,25 +399,34 @@ subroutine setGenotype(g, pos, val)
     integer, intent(in) :: pos
 
     integer :: cursection, curpos
+    logical :: canSet
 
     cursection = (pos-1) / 64 + 1
     curpos = pos - (cursection - 1) * 64 - 1
 
-    select case (val)
-      case (0)
-          g%homo(cursection) = ibset(g%homo(cursection), curpos)
-          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
-      case (1)
-          ! Nothing to do due to default
-          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
-          g%additional(cursection) = ibclr(g%additional(cursection), curpos)
-      case (2)
-          g%homo(cursection) = ibset(g%homo(cursection), curpos)
-          g%additional(cursection) = ibset(g%additional(cursection), curpos)
-      case default
-          g%additional(cursection) = ibset(g%additional(cursection), curpos)
-          g%homo(cursection) = ibclr(g%homo(cursection), curpos)
-    end select 
+    canSet = .true.
+    if (g%hasLock) then
+        if (BTEST(g%locked(cursection),curpos)) then
+            canSet = .false.
+        end if
+    end if
+
+    if (canSet) then
+        select case (val)
+          case (0)
+              g%homo(cursection) = ibset(g%homo(cursection), curpos)
+              g%additional(cursection) = ibclr(g%additional(cursection), curpos)
+          case (1)
+              g%homo(cursection) = ibclr(g%homo(cursection), curpos)
+              g%additional(cursection) = ibclr(g%additional(cursection), curpos)
+          case (2)
+              g%homo(cursection) = ibset(g%homo(cursection), curpos)
+              g%additional(cursection) = ibset(g%additional(cursection), curpos)
+          case default
+              g%additional(cursection) = ibset(g%additional(cursection), curpos)
+              g%homo(cursection) = ibclr(g%homo(cursection), curpos)
+        end select
+    end if
 
 end subroutine setGenotype
 
@@ -1073,6 +1116,40 @@ function isHomo(g, pos) result (two)
         end do
 
     end function mendelianInconsistencies
+
+    !---------------------------------------------------------------------------
+    !> @brief   Returns the position of the first het or -1 if none
+    !> @date    August 8, 2017
+    !> @return  Position of the first het 
+    !---------------------------------------------------------------------------
+    function firstHet(g) result(pos)
+        class(Genotype), intent(in) :: g
+
+        integer :: pos
+
+        integer :: i, j, endj
+        integer(kind=8) :: isHet
+
+        do i = 1, g%sections
+            isHet = IAND(NOT(g%homo(i)),NOT(g%additional(i)))
+
+            if (i == g%sections) then
+                endj = 63 - g%overhang
+            else
+                endj = 63
+            end if
+
+            do j = 0, endj
+                if (BTEST(isHet,j)) then
+                    pos = 64 * (i - 1) + j + 1
+                    return
+                end if
+            end do
+        end do
+
+        pos = -1
+    end function firstHet
+
 
     subroutine writeFormattedGenotype(dtv, unit, iotype, v_list, iostat, iomsg)
       class(Genotype), intent(in) :: dtv         ! Object to write.
