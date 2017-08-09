@@ -1,5 +1,7 @@
 module ConstantModule
     use ISO_Fortran_Env
+
+    integer, parameter :: ONEBYTEINT = 1
     integer, parameter :: MissingPhaseCode = 9
     integer, parameter :: ErrorPhaseCode = -1
     integer, parameter :: MissingGenotypeCode = 9
