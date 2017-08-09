@@ -48,6 +48,8 @@ module HaplotypeModule
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         integer(kind=int64), dimension(:), allocatable :: phase
         integer(kind=int64), dimension(:), allocatable :: missing
+        integer(kind=int64), allocatable, dimension(:) :: locked
+        logical :: hasLock
         integer :: sections
         integer :: overhang
         integer :: length
@@ -102,6 +104,7 @@ module HaplotypeModule
     interface Haplotype
         module procedure newHaplotypeInt
         module procedure newHaplotypeBits
+        module procedure newHaplotypeBitsWithLocked
         module procedure newHaplotypeMissing
         module procedure newHaplotypeHaplotype
     end interface Haplotype
@@ -120,12 +123,14 @@ contains
     end subroutine destroyHaplotype
 
     !---------------------------------------------------------------------------
-    !> @brief   Constructs a new Haplotype from a integer array
+    !> @brief   Constructs a new Haplotype from a integer array. lock determines
+    !>          whether phase that is known at creation is locked.
     !> @date    May 25, 2017
-    !> @return  New haplotype object 
+    !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    pure function newHaplotypeInt(hap) result(h)
+    pure function newHaplotypeInt(hap, lock) result(h)
         integer(kind=1), dimension(:), intent(in) :: hap
+        integer, optional, intent(in) :: lock
 
         type(Haplotype) :: h
 
@@ -149,7 +154,7 @@ contains
             case (1)
                 h%phase(cursection) = ibset(h%phase(cursection), curpos)
             case (MissingPhaseCode)
-                h%missing(cursection) = ibset(h%missing(cursection), curpos)    
+                h%missing(cursection) = ibset(h%missing(cursection), curpos)
             case default
                 h%phase(cursection) = ibset(h%phase(cursection), curpos)
                 h%missing(cursection) = ibset(h%missing(cursection), curpos)
@@ -160,16 +165,28 @@ contains
                 cursection = cursection + 1
             end if
         end do
+
+        if (present(lock)) then
+            h%hasLock = .true.
+            allocate(h%locked(h%sections))
+            do i = 1, h%sections
+                h%locked(i) = NOT(h%missing(i))
+            end do
+        else
+            h%hasLock = .false.
+        end if
     end function newHaplotypeInt
 
     !---------------------------------------------------------------------------
-    !> @brief   Constructs a new Haplotype from bit arrays
+    !> @brief   Constructs a new Haplotype from bit arrays.  lock determines
+    !>          whether phase that is known at creation is locked.
     !> @date    May 25, 2017
-    !> @return  New haplotype object 
+    !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    function newHaplotypeBits(phase, missing, length) result(h)
+    function newHaplotypeBits(phase, missing, length, lock) result(h)
         integer(kind=int64), dimension(:), allocatable, intent(in) :: phase, missing
         integer :: length
+        integer, optional, intent(in) :: lock
 
         type(Haplotype) :: h
 
@@ -189,27 +206,68 @@ contains
             h%missing(h%sections) = ibclr(h%missing(h%sections), i)
         end do
 
+        if (present(lock)) then
+            h%hasLock = .true.
+            allocate(h%locked(h%sections))
+            do i = 1, h%sections
+                h%locked(i) = NOT(h%missing(i))
+            end do
+        else
+            h%hasLock = .false.
+        end if
     end function newHaplotypeBits
+
+    !---------------------------------------------------------------------------
+    !> @brief   Constructs a new Haplotype from bit arrays with the given lock
+    !>          status.
+    !> @date    May 25, 2017
+    !> @return  New haplotype object
+    !---------------------------------------------------------------------------
+    function newHaplotypeBitsWithLocked(phase, missing, length, locked) result(h)
+        integer(kind=int64), dimension(:), allocatable, intent(in) :: phase, missing, locked
+
+        integer :: length
+
+        type(Haplotype) :: h
+
+        integer :: i
+
+        h%length = length
+        h%sections = size(phase,1)
+        h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+
+        allocate(h%phase(h%sections))
+        allocate(h%missing(h%sections))
+        allocate(h%locked(h%sections))
+        h%phase = phase
+        h%missing = missing
+        h%locked = locked
+
+        do i = 64 - h%overhang, 63
+            h%phase(h%sections) = ibclr(h%phase(h%sections), i)
+            h%missing(h%sections) = ibclr(h%missing(h%sections), i)
+        end do
+    end function newHaplotypeBitsWithLocked
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype as  a copy of another Haplotype
     !> @date    May 25, 2017
-    !> @return  New haplotype object 
-    !---------------------------------------------------------------------------  
+    !> @return  New haplotype object
+    !---------------------------------------------------------------------------
     function newHaplotypeHaplotype(oh) result(h)
         class(Haplotype) :: oh
 
         type(Haplotype) :: h
 
-        h = Haplotype(oh%phase, oh%missing, oh%length)
+        h = Haplotype(oh%phase, oh%missing, oh%length, oh%locked)
     end function newHaplotypeHaplotype
 
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype with all positions set to missing
     !> @date    May 25, 2017
-    !> @return  New haplotype object 
-    !---------------------------------------------------------------------------      
+    !> @return  New haplotype object
+    !---------------------------------------------------------------------------
     function newHaplotypeMissing(length) result(h)
         integer, intent(in) :: length
 
@@ -437,24 +495,34 @@ contains
         integer(kind=1) :: phase
 
         integer :: cursection, curpos
+        logical :: canSet
 
         cursection = (pos-1) / 64 + 1
         curpos = pos - (cursection - 1) * 64 - 1 
 
-        select case (phase)
-        case (0)
-            h%phase(cursection) = ibclr(h%phase(cursection), curpos)
-            h%missing(cursection) = ibclr(h%missing(cursection), curpos)
-        case (1)
-            h%phase(cursection) = ibset(h%phase(cursection), curpos)
-            h%missing(cursection) = ibclr(h%missing(cursection), curpos)
-        case (MissingPhaseCode)
-            h%phase(cursection) = ibclr(h%phase(cursection), curpos)
-            h%missing(cursection) = ibset(h%missing(cursection), curpos)
-        case default
-            h%phase(cursection) = ibset(h%phase(cursection), curpos)
-            h%missing(cursection) = ibset(h%missing(cursection), curpos)
-        end select
+        canSet = .true.
+        if (h%hasLock) then
+            if (BTEST(h%locked(cursection),curpos)) then
+                canSet = .false.
+            end if
+        end if
+
+        if (canSet) then
+            select case (phase)
+            case (0)
+                h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+                h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+            case (1)
+                h%phase(cursection) = ibset(h%phase(cursection), curpos)
+                h%missing(cursection) = ibclr(h%missing(cursection), curpos)
+            case (MissingPhaseCode)
+                h%phase(cursection) = ibclr(h%phase(cursection), curpos)
+                h%missing(cursection) = ibset(h%missing(cursection), curpos)
+            case default
+                h%phase(cursection) = ibset(h%phase(cursection), curpos)
+                h%missing(cursection) = ibset(h%missing(cursection), curpos)
+            end select
+        end if
     end subroutine setPhase
 
     !---------------------------------------------------------------------------
@@ -802,7 +870,7 @@ contains
 
     !---------------------------------------------------------------------------
     !> @brief   Sets one haplotypes from another
-    !> @detail  Uses the following rules per snp:
+    !> @detail  If snp is locked leave unchanged else uses the following rules
     !>        1) If haplotype 2 is phased then return that phase
     !>        2) If haplotype 1 is phased but haplotype 2 is missing then
     !>          return that phase
@@ -816,9 +884,22 @@ contains
 
         integer :: i
 
+        ! do i = 1, h%sections
+        !     h%missing(i) = IAND(h%missing(i), oh%missing(i))
+        !     h%phase(i) = IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))
+        ! end do
+
         do i = 1, h%sections
-            h%missing(i) = IAND(h%missing(i), oh%missing(i))
-            h%phase(i) = IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))
+            h%missing(i) = IOR( &
+                ! Locked so keep as old
+                IAND(h%locked(i),h%missing(i)), &
+                ! Not locked so update
+                IAND(NOT(h%locked(i)),IAND(h%missing(i), oh%missing(i))))
+            h%phase(i) =  IOR(&
+                ! Locked so keep as old
+                IAND(h%locked(i),h%phase(i)), &
+                ! Not locked so update
+                IAND(NOT(h%locked(i)), IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))))
         end do
     end subroutine setFromOther
 
