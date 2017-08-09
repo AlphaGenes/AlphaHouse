@@ -56,6 +56,7 @@ module IndividualModule
         integer :: nOffs  = 0 !number of offspring
         logical(kind=1) :: Founder     = .false.
         logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: isPhased    = .false.
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical(kind=1) :: isUnknownDummy = .false.
@@ -66,7 +67,12 @@ module IndividualModule
         real(kind=real64), allocatable, dimension(:) :: genotypeProbabilities
         real(kind=real64), allocatable, dimension(:,:) :: phaseProbabilities 
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
-        
+        integer, allocatable :: nHighDensityOffspring
+        ! plant stuff
+        logical(kind=1), allocatable :: isInbred
+        logical(kind=1), allocatable :: isImputed
+
+
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -112,6 +118,7 @@ module IndividualModule
             procedure :: setSegToMissing
             procedure :: makeIndividualPhaseCompliment
             procedure :: makeIndividualGenotypeFromPhase
+            procedure :: countHighDensityOffspring
             generic:: write(formatted)=> writeIndividual
 
             
@@ -223,6 +230,15 @@ contains
          if (allocated(this%phaseProbabilities)) then
             deallocate(this%phaseProbabilities)
         endif
+
+        if (allocated(this%isInbred)) then
+            deallocate(this%isInbred)
+        endif
+
+        if (allocated(this%isImputed)) then
+            deallocate(this%isImputed)
+        endif
+
 
     end subroutine destroyIndividual
 
@@ -1035,14 +1051,24 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine setGenotypeArray(this, geno)
+    subroutine setGenotypeArray(this, geno, lockIn)
         use constantModule
         
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+        logical, intent(in), optional :: lockIn
+
         this%Genotyped = .true.
         !TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
+
+        if (present(lockIn)) then
+
+            if (lockIn) then
+                this%individualGenotype = Genotype(Geno,lock=1)
+                return
+            endif
+        endif 
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
 
@@ -1263,6 +1289,30 @@ contains
             write(error_unit,*) "WARNING: unknown offspring trying to be removed from parent"
         endif
     end subroutine removeOffspring
+
+
+
+
+    function countHighDensityOffspring(this) result(count)
+        class(individual ) :: this
+        integer :: count, i
+
+        if (allocated(this%nHighDensityOffspring)) then
+            count = this%nHighDensityOffspring
+        else 
+            count = 0
+            allocate(this%nHighDensityOffspring)
+            do i=1,this%nOffs
+                if (this%OffSprings(i)%p%hd) then
+                    count = count +1
+                endif
+            enddo
+
+            this%nHighDensityOffspring = count
+        endif
+
+    end function countHighDensityOffspring
+
 
 end module IndividualModule
 
