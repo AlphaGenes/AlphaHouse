@@ -1,5 +1,6 @@
 module alphaFullChrom
 
+    use AlphaImputeModule
 
 contains 
     subroutine fullChromSplit(prepend,args)
@@ -9,7 +10,7 @@ contains
 
         character(len=300) :: chromPath
 
-
+        procedure(forced), pointer:: funPointer => NULL()
 
         ! TODO currently only opperate on a single pedigree, can be chnaged to take in more using array
         ! Will use more memory
