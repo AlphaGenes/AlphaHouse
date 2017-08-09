@@ -1035,14 +1035,24 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    subroutine setGenotypeArray(this, geno)
+    subroutine setGenotypeArray(this, geno, lockIn)
         use constantModule
         
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+        logical, intent(in), optional :: lockIn
+
         this%Genotyped = .true.
         !TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
         ! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
+
+        if (present(lockIn)) then
+
+            if (lockIn) then
+                this%individualGenotype = Genotype(Geno,lock=1)
+                return
+            endif
+        endif 
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
 

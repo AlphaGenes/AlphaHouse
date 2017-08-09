@@ -1373,7 +1373,7 @@ module PedigreeModule
                             !
                             !<@date       October 25, 2016
                             !--------------------------------------------------------------------------
-                            subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp)
+                            subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn)
 
                                 use AlphaHouseMod, only : countLines
                                 implicit none
@@ -1383,11 +1383,18 @@ module PedigreeModule
                                 integer,intent(in) :: nsnps
                                 integer,intent(in),optional :: nAnnisG
                                 integer, intent(in),optional :: startSnp, endSnp
-
+                                logical, intent(in), optional :: lockIn
                                 integer(kind=1), allocatable, dimension(:) :: tmpSnpArray 
                                 integer :: i, j,fileUnit, nAnnis,tmpIdNum
                                 integer :: count, end
+                                logical :: lock
 
+                                if (present(lockIn)) then
+                                    lock = lockIn
+                                else 
+                                    lock = .false.
+
+                                endif
                                 if (present(nAnnisG)) then
                                     nAnnis = nAnnisG
                                 else
@@ -1420,12 +1427,12 @@ module PedigreeModule
                                             else 
                                                 end = nsnps
                                             endif
-                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(startSnp:endSnp))
+                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(startSnp:endSnp),lock)
                                         else if (present(endSnp)) then
                                             count = 0
-                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(1:endsnp))
+                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(1:endsnp),lock)
                                         else 
-                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray)
+                                            call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray,lock)
                                         endif
                                     endif
                                 enddo
@@ -2531,11 +2538,21 @@ module PedigreeModule
                             !<@author  David Wilson david.wilson@roslin.ed.ac.uk
                             !<@date    October 26, 2016
                             !---------------------------------------------------------------------------
-                            subroutine setAnimalAsGenotyped(this, individualIndex, geno)
+                            subroutine setAnimalAsGenotyped(this, individualIndex, geno, lockIn)
 
                                 class(pedigreeHolder) :: this
                                 integer, intent(in) :: individualIndex !< index of animal to get genotyped
                                 integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
+                                logical, intent(in), optional :: lockIn
+                                logical :: lock
+
+                                if (present(lockIn)) then
+                                    lock = lockIn
+                                else 
+                                    lock = .false.
+                                endif
+
+
 
                                 if (this%nGenotyped == 0) then
                                     this%genotypeDictionary = DictStructure()
@@ -2548,7 +2565,7 @@ module PedigreeModule
                                 else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
                                     ! if animal has already been genotyped, overwrite array, but don't increment
                                     if (present(geno)) then
-                                        call this%pedigree(individualIndex)%setGenotypeArray(geno)
+                                        call this%pedigree(individualIndex)%setGenotypeArray(geno,lock)
                                     endif
                                     return
                                 endif
@@ -2556,7 +2573,7 @@ module PedigreeModule
                                 this%nGenotyped = this%nGenotyped+1
                                 call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)
                                 if (present(geno)) then
-                                    call this%pedigree(individualIndex)%setGenotypeArray(geno)
+                                    call this%pedigree(individualIndex)%setGenotypeArray(geno,lock)
                                 endif
                                 this%genotypeMap(this%nGenotyped) = individualIndex
 

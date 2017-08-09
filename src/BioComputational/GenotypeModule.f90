@@ -72,6 +72,7 @@ module GenotypeModule
   procedure :: isTwo
   procedure :: isMissing
   procedure :: isHomo
+  procedure :: firstHet
   procedure :: numberErrors
   procedure :: getErrors
   procedure :: setHaplotypeFromGenotypeIfError
