@@ -44,7 +44,7 @@ module TestPedigreeModule
 
         
         pedigreeUnsorted = PedigreeHolder("testPedUnsorted.txt")
-        call pedigree%addGenotypeInformationFromFile("testGen.txt", 4)
+        call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
          
     end subroutine
 
@@ -173,7 +173,7 @@ module TestPedigreeModule
           @assertEqualUserDefined(pedigree%pedigree(tmp)%Offsprings(1)%p,pedigree%pedigree(tmp3))
     end subroutine testRemoveOffspring
 
-     @test
+    @test
     subroutine testGenos
         implicit none
         integer :: tmp1, tmp,i
@@ -193,6 +193,9 @@ module TestPedigreeModule
         print *, array
         print *, test1
         @assertEqualUserDefined(array, test1)
+        @assertEqual(pedigree%pedigree(tmp1)%individualGenotype%firstHet(),3)
+        call pedigree%pedigree(tmp1)%individualGenotype%setGenotype(3,2)
+        @assertEqual(pedigree%pedigree(tmp1)%individualGenotype%getGenotype(3),1)
         array = pedigree%pedigree(tmp)%individualGenotype%toIntegerArray()
          @assertEqualUserDefined(array, test1)
     end subroutine testGenos
