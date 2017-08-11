@@ -1,0 +1,34 @@
+module testAlphaSort
+use pFUnit_mod
+use AlphaSortMod
+use iso_fortran_env
+
+contains
+
+@test
+subroutine testIntegerSort()
+integer, dimension(4):: listOne
+integer, dimension(6):: listTwo
+integer, dimension(:), allocatable:: expected, gotten
+
+integer::i
+
+do i = 1, 4
+  listOne(i) = i
+end do
+
+do i = 1, 6
+  listTwo(i) = i+3
+end do
+
+allocate(expected(9))
+
+do i = 1,9
+  expected(i) = i
+end do
+
+gotten = mergeTwoSortedLists(listOne, listTwo)
+
+@assertEqual(expected, gotten)
+
+end subroutine testIntegerSort

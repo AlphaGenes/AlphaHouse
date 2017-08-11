@@ -33,6 +33,19 @@ module AlphaSortMod
     end interface HpSort
 
   contains
+
+    function mergeTwoSortedLists(listOne, listTwo ) result (listOut)
+      integer, dimension(:),intent(in):: listOne
+      integer, dimension(:), intent(in):: listTwo
+
+      integer, dimension(:), allocatable:: listOut
+
+      integer:: firstListSize, secondListSize
+
+      firstListSize = size(listOne)
+      secondListSize = size(listTwo)
+
+    end function mergeTwoSortedLists
    !  (C) Copr. 1986-92 Numerical Recipes Software 6
 
    !*****************************************************
