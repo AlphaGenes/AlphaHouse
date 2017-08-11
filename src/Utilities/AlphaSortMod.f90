@@ -33,10 +33,138 @@ module AlphaSortMod
     end interface HpSort
 
     interface mergeSortedLists
-      module procedure mergeTwoSortedListsInteger!, mergeTwoSortedListsReal
+      module procedure mergeTwoSortedListsInteger, mergeTwoSortedListsReal, mergeTwoSortedListsReal64, mergeTwoSortedListsInteger64
     end interface
 
   contains
+    function mergeTwoSortedListsReal64(listOne, listTwo ) result (listOut)
+      real(real64), dimension(:),intent(in):: listOne
+      real(real64), dimension(:), intent(in):: listTwo
+
+      real(real64), dimension(:), allocatable:: listOut, tempList
+
+      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+
+      firstListSize = size(listOne)
+      secondListSize = size(listTwo)
+
+      allocate(tempList(firstListSize+secondListSize))
+
+      firstIndex = 1
+      secondIndex = 1
+      outputIndex = 1
+      do while(firstIndex <= firstListSize .and. secondIndex<= secondListSize)
+        if (listOne(firstIndex) < listTwo(secondIndex)) then
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+        else if (listOne(firstIndex) > listTwo(secondIndex)) then
+          tempList(outputIndex) = listTwo(secondIndex)
+          secondIndex = secondIndex+1
+        else 
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+          secondIndex = secondIndex+1
+        end if
+        outputIndex = outputIndex+1
+      end do
+
+      if (firstIndex == firstListSize+1) then
+        listRange = secondListSize-secondIndex
+        tempList(outputIndex:outputIndex+listRange) = listTwo(secondIndex:)
+      else if (secondIndex == secondListSize+1) then
+        listRange = firstListSize - firstIndex
+        tempList(outputIndex+1: outputIndex+listRange) = listOne(firstIndex:)
+      end if
+      outputIndex = outputIndex+listRange
+
+      listOut = tempList(:outputIndex)
+    end function mergeTwoSortedListsReal64
+
+    function mergeTwoSortedListsReal(listOne, listTwo ) result (listOut)
+      real, dimension(:),intent(in):: listOne
+      real, dimension(:), intent(in):: listTwo
+
+      real, dimension(:), allocatable:: listOut, tempList
+
+      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+
+      firstListSize = size(listOne)
+      secondListSize = size(listTwo)
+
+      allocate(tempList(firstListSize+secondListSize))
+
+      firstIndex = 1
+      secondIndex = 1
+      outputIndex = 1
+      do while(firstIndex <= firstListSize .and. secondIndex<= secondListSize)
+        if (listOne(firstIndex) < listTwo(secondIndex)) then
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+        else if (listOne(firstIndex) > listTwo(secondIndex)) then
+          tempList(outputIndex) = listTwo(secondIndex)
+          secondIndex = secondIndex+1
+        else 
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+          secondIndex = secondIndex+1
+        end if
+        outputIndex = outputIndex+1
+      end do
+
+      if (firstIndex == firstListSize+1) then
+        listRange = secondListSize-secondIndex
+        tempList(outputIndex:outputIndex+listRange) = listTwo(secondIndex:)
+      else if (secondIndex == secondListSize+1) then
+        listRange = firstListSize - firstIndex
+        tempList(outputIndex+1: outputIndex+listRange) = listOne(firstIndex:)
+      end if
+      outputIndex = outputIndex+listRange
+
+      listOut = tempList(:outputIndex)
+    end function mergeTwoSortedListsReal
+
+    function mergeTwoSortedListsInteger64(listOne, listTwo ) result (listOut)
+      integer(int64), dimension(:),intent(in):: listOne
+      integer(int64), dimension(:), intent(in):: listTwo
+
+      integer(int64), dimension(:), allocatable:: listOut, tempList
+
+      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+
+      firstListSize = size(listOne)
+      secondListSize = size(listTwo)
+
+      allocate(tempList(firstListSize+secondListSize))
+
+      firstIndex = 1
+      secondIndex = 1
+      outputIndex = 1
+      do while(firstIndex <= firstListSize .and. secondIndex<= secondListSize)
+        if (listOne(firstIndex) < listTwo(secondIndex)) then
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+        else if (listOne(firstIndex) > listTwo(secondIndex)) then
+          tempList(outputIndex) = listTwo(secondIndex)
+          secondIndex = secondIndex+1
+        else 
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+          secondIndex = secondIndex+1
+        end if
+        outputIndex = outputIndex+1
+      end do
+
+      if (firstIndex == firstListSize+1) then
+        listRange = secondListSize-secondIndex
+        tempList(outputIndex:outputIndex+listRange) = listTwo(secondIndex:)
+      else if (secondIndex == secondListSize+1) then
+        listRange = firstListSize - firstIndex
+        tempList(outputIndex+1: outputIndex+listRange) = listOne(firstIndex:)
+      end if
+      outputIndex = outputIndex+listRange
+
+      listOut = tempList(:outputIndex)
+    end function mergeTwoSortedListsInteger64
 
     function mergeTwoSortedListsInteger(listOne, listTwo ) result (listOut)
       integer, dimension(:),intent(in):: listOne
@@ -77,8 +205,6 @@ module AlphaSortMod
         tempList(outputIndex+1: outputIndex+listRange) = listOne(firstIndex:)
       end if
       outputIndex = outputIndex+listRange
-!      write(*,*) tempList
-write(*,*) outputIndex, listRange
 
       listOut = tempList(:outputIndex)
     end function mergeTwoSortedListsInteger
