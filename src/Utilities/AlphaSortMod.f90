@@ -32,20 +32,56 @@ module AlphaSortMod
         procedure :: HpSortDS
     end interface HpSort
 
+    interface mergeSortedLists
+      module procedure mergeTwoSortedListsInteger!, mergeTwoSortedListsReal
+    end interface
+
   contains
 
-    function mergeTwoSortedLists(listOne, listTwo ) result (listOut)
+    function mergeTwoSortedListsInteger(listOne, listTwo ) result (listOut)
       integer, dimension(:),intent(in):: listOne
       integer, dimension(:), intent(in):: listTwo
 
-      integer, dimension(:), allocatable:: listOut
+      integer, dimension(:), allocatable:: listOut, tempList
 
-      integer:: firstListSize, secondListSize
+      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
 
       firstListSize = size(listOne)
       secondListSize = size(listTwo)
 
-    end function mergeTwoSortedLists
+      allocate(tempList(firstListSize+secondListSize))
+
+      firstIndex = 1
+      secondIndex = 1
+      outputIndex = 1
+      do while(firstIndex <= firstListSize .and. secondIndex<= secondListSize)
+        if (listOne(firstIndex) < listTwo(secondIndex)) then
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+        else if (listOne(firstIndex) > listTwo(secondIndex)) then
+          tempList(outputIndex) = listTwo(secondIndex)
+          secondIndex = secondIndex+1
+        else 
+          tempList(outputIndex) = listOne(firstIndex)
+          firstIndex = firstIndex+1
+          secondIndex = secondIndex+1
+        end if
+        outputIndex = outputIndex+1
+      end do
+
+      if (firstIndex == firstListSize+1) then
+        listRange = secondListSize-secondIndex
+        tempList(outputIndex:outputIndex+listRange) = listTwo(secondIndex:)
+      else if (secondIndex == secondListSize+1) then
+        listRange = firstListSize - firstIndex
+        tempList(outputIndex+1: outputIndex+listRange) = listOne(firstIndex:)
+      end if
+      outputIndex = outputIndex+listRange
+!      write(*,*) tempList
+write(*,*) outputIndex, listRange
+
+      listOut = tempList(:outputIndex)
+    end function mergeTwoSortedListsInteger
    !  (C) Copr. 1986-92 Numerical Recipes Software 6
 
    !*****************************************************
