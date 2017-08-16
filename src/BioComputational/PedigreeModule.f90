@@ -36,7 +36,7 @@ module PedigreeModule
 
     type PedigreeHolder
 
-        type(Individual), pointer, dimension(:) :: Pedigree !have to use pointer here as otherwise won't let me point to it
+        type(Individual), pointer, dimension(:) :: Pedigree 
         type(IndividualLinkedList) :: Founders !linked List holding all founders
         type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
         type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
@@ -60,6 +60,8 @@ module PedigreeModule
 
         type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
 
+
+        type(IndividualLinkedList), allocatable :: uniqueParentList
     contains
         procedure :: calculatePedigreeCorrelationNoInbreeding
         procedure :: copyPedigree
@@ -110,6 +112,7 @@ module PedigreeModule
         procedure :: PhaseComplement
         procedure :: homozygoticFillIn
         procedure :: wipeGenotypeAndPhaseInfo
+        procedure :: getUniqueParents
     end type PedigreeHolder
 
     ! TODO - overload == and = functions
@@ -280,6 +283,18 @@ module PedigreeModule
 
 
 
+                            subroutine findMendelianInconsistenciesnew(ped, threshold)
+                                
+
+                                type(PedigreeHOlder) :: ped
+                                real, intent(in) :: threshold
+
+
+
+                            end subroutine findMendelianInconsistenciesnew(ped, threshold)
+
+
+
                             subroutine findMendelianInconsistencies(ped, threshold)
                                 implicit none
                                 type(pedigreeHolder) :: ped
@@ -425,6 +440,48 @@ module PedigreeModule
 
                             end subroutine setPhaseFromArray
 
+
+
+                               !---------------------------------------------------------------------------
+                            !< @brief Returns IndividualLinkedList of animals that are parents (with no overlaps)
+                            !< @details caches, so avoids code duplication
+                            !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+                            !< @date    October 26, 2016
+                            !---------------------------------------------------------------------------
+                            function getUniqueParents(this) result(res)
+
+                                class(PedigreeHolder) :: this
+
+                                type(IndividualLinkedList) :: res
+                                type(DictStructure) ::tmpDict
+                                integer :: i
+                                type(IndividualLinkedListNode), pointer :: node
+
+
+                                if (allocated(this%uniqueParentList)) then
+                                    res= this%uniqueParentList
+                                else 
+
+                                    tmpDict= DictStructure()
+                                    node => this%sireList%first
+
+                                    do i=1,this%sireList%length
+                                        call tmpDict%addKey(node%item%originalID,1)
+                                        call res%list_add(node%item)
+                                        node => node%next
+                                    enddo
+
+                                    node => this%damList%first
+                                    do i=1, this%damList%length
+
+                                        if (tmpDict%getValue(node%item%originalID) == DICT_NULL) then
+                                            call res%list_add(node%item)
+                                        endif
+                                        node => node%next
+                                    enddo
+                                    this%uniqueParentList = res
+                                endif
+                            end function getUniqueParents
 
                             subroutine homozygoticFillIn(this)
 
@@ -1340,6 +1397,10 @@ module PedigreeModule
                                     deallocate(this%hdMap)
                                 endif
 
+                                if (allocated(this%uniqueParentList)) then
+
+                                    deallocate(this%uniqueParentList)
+                                endif
                             end subroutine destroyPedigree
 
 
@@ -1436,6 +1497,8 @@ module PedigreeModule
                                         endif
                                     endif
                                 enddo
+
+                                ped%nsnpsPopulation = nSnp
                                 write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
                             end subroutine addGenotypeInformationFromFile
@@ -1479,6 +1542,7 @@ module PedigreeModule
                                             write(error_unit, *) "WARNING: Phase info for non existing animal here:",trim(tmpId), " file:", trim(phaseFile), " line:",i
                                         else
                                             call this%pedigree(tmpIdNum)%setPhaseArray(h, tmpSnpArray)
+                                            this%pedigree(tmpIdNum)%isPhased = .true.
                                         endif
                                     end do
                                 enddo

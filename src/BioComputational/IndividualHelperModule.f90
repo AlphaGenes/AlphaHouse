@@ -32,9 +32,18 @@ module IndividualHelperModule
     public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors,getOnlyHalfSibsGenotyped
     public :: GetOffspringsAsLinkedList
 
+
+    
+
     contains
 
 
+
+
+
+
+
+    ! function getMatePair
     !---------------------------------------------------------------------------
     !> @brief Returns linked list of Full sibs of animal passed in
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
