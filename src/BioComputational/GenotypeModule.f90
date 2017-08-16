@@ -957,7 +957,7 @@ function isHomo(g, pos) result (two)
     
     sub%length = finish - start + 1
 
-    sub%sections = sub%length / 64 + 1
+    sub%sections = (sub%length - 1) / 64 + 1
     sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
     
     allocate(sub%homo(sub%sections))

@@ -1,4 +1,4 @@
-module alphaFullChrom
+module alphaFullChromModule
 
     use AlphaImputeModule
 
@@ -51,4 +51,4 @@ contains
     end subroutine fullChromSplit
 
 
-end module alphaFullChrom
+end module alphaFullChromModule
