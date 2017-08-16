@@ -1,4 +1,7 @@
+module CompatibilityModule
 
+
+  contains
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -61,26 +64,29 @@ end function readToPedigreeFormat
 
 subroutine readPlink(binaryFilePre, outfile, missing, ped)
     use AlphaHouseMod, only : CountLines
-
+    use PedigreeModule
     character(len=*),intent(in) :: binaryFilePre, outfile,missing
     integer :: fam,bim,bed
-    integer, allocatable
+    type(pedigreeholder), intent(out) :: ped
+    ! integer, allocatable
     open(newUnit=fam, file=binaryFilePre//".fam", status='old')
     open(newUnit=bim, file=binaryFilePre//".bim", status='old')
-    open(newUnit=bd, file=binaryFilePre//".bed", status='old')
+    open(newUnit=bed, file=binaryFilePre//".bed", status='old')
 
     ped = readToPedigreeFormat(binaryFilePre//".fam")
-
+end subroutine readPlink
 
 ! Stores entire genotype file in memory
 subroutine readplinkIntoPedigree(bed, ncol, nlines, na, ped, minor, maf, extract, keep, status)
   
+  use PedigreeModule
+  use genotypeModule
   implicit none
 
   ! Arguments  
   character(255), intent(in) :: bed
   integer, intent(in) :: ncol, nlines, na, minor
-  integer, dimension(nlines), intent(in) :: newID, keep
+  integer, dimension(nlines), intent(in) :: keep
   integer, dimension(ncol), intent(in) :: extract
   integer, intent(out) :: status
   type(PedigreeHolder), intent(inout) :: ped
@@ -97,7 +103,7 @@ subroutine readplinkIntoPedigree(bed, ncol, nlines, na, ped, minor, maf, extract
   integer :: stat, i, j, k, snpcount, majorcount
   integer, dimension(4) :: codes
   !integer, dimension(:), allocatable :: domasksnps
-  integer, dimension(:,:), allocatable :: snps, masked
+  integer(kind=1), dimension(:,:), allocatable ::  snps
   real :: allelefreq
   character(100) :: nChar, fmt
   
@@ -158,7 +164,7 @@ subroutine readplinkIntoPedigree(bed, ncol, nlines, na, ped, minor, maf, extract
         if (snpcount /= 0) then
           allelefreq = majorcount / (snpcount*2.)
           masksnps(k) = masksnps(k) .and. allelefreq .ge. maf .and. allelefreq .le. (1-maf)
-        endif
+        endif 
         j = 0
         snpcount = 0
         majorcount = 0
@@ -178,7 +184,6 @@ subroutine readplinkIntoPedigree(bed, ncol, nlines, na, ped, minor, maf, extract
   
 
 
-  pack(snps(i,:), masksnps)
   do i=1,nlines
     ped%pedigree(i)%individualGenotype = NewGenotypeInt(pack(snps(i,:), masksnps))
   enddo
@@ -191,4 +196,4 @@ subroutine readplinkIntoPedigree(bed, ncol, nlines, na, ped, minor, maf, extract
 end subroutine readplinkIntoPedigree
 
 
-
+end module CompatibilityModule

@@ -283,15 +283,15 @@ module PedigreeModule
 
 
 
-                            subroutine findMendelianInconsistenciesnew(ped, threshold)
+                            ! subroutine findMendelianInconsistenciesnew(ped, threshold)
                                 
 
-                                type(PedigreeHOlder) :: ped
-                                real, intent(in) :: threshold
+                            !     type(PedigreeHOlder) :: ped
+                            !     real, intent(in) :: threshold
 
 
 
-                            end subroutine findMendelianInconsistenciesnew(ped, threshold)
+                            ! end subroutine findMendelianInconsistenciesnew(ped, threshold)
 
 
 
@@ -1498,7 +1498,7 @@ module PedigreeModule
                                     endif
                                 enddo
 
-                                ped%nsnpsPopulation = nSnp
+                                this%nsnpsPopulation = nsnps
                                 write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
                             end subroutine addGenotypeInformationFromFile
