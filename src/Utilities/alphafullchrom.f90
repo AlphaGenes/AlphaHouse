@@ -4,10 +4,10 @@ module alphaFullChromModule
 
 
       interface
-     function specFileInput (filename)
+     function runProgram (specFileInput, ped)
         type(specFilebase) :: specFileInput
-        character(len=*), intent (in) :: file\
-     end function func
+        type(pedigreeHolder) :: ped
+     end function runProgram
 
 contains 
 
@@ -19,7 +19,7 @@ contains
 
         character(len=300) :: chromPath
 
-        procedure(forced), pointer, intent(in):: funPointer
+        procedure(runProgram), pointer, intent(in):: funPointer
 
         ! TODO currently only opperate on a single pedigree, can be chnaged to take in more using array
         ! Will use more memory
@@ -28,6 +28,7 @@ contains
 
         do i=1, nChroms
 
+            specFile%resultFolderPath = chromPath
             write(chromPath,'(a,i0)') "chr",i
             result=makedirqq(prepend//trim(chromPath))
             if (result /= 0) then
@@ -40,7 +41,7 @@ contains
             call ped%addGenotypeInformationFromFile("genoFile")
 
 
-            call funPointer
+            call funPointer(specFile,ped)
             ! cwd for program should be settable
             ! Can be done using CHDIR command
             
