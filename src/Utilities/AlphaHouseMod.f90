@@ -194,12 +194,13 @@ module AlphaHouseMod
   !> ",,,A,A,,,," has two columns).
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
   integer function countColumnsMultiDelim(fileNameIn, delimiterIn) result (numColumnsOut)
+    use ISO_Fortran_Env
     character(len=*), intent(in):: fileNameIn !< File to count columns 
     character(len=1), dimension(:), intent(in):: delimiterIn !< List of delimiters to use
 
     character(len=:), allocatable:: tempChar
 
-    integer:: fileSize, fileUnit, filePosition, fileSizeLeft
+    integer(kind=int64):: fileSize, fileUnit, filePosition, fileSizeLeft
     integer:: IOStatus, i, finalLetter
     logical:: fileExists, lineEnd, previousIsDelim
     integer:: finalChar

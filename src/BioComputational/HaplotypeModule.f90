@@ -118,6 +118,11 @@ contains
         if (allocated(this%phase)) then
             deallocate(this%phase)
             deallocate(this%missing)
+            
+        endif
+
+        if (allocated(this%locked)) then
+            deallocate(this%locked)
         endif
 
     end subroutine destroyHaplotype
@@ -884,23 +889,27 @@ contains
 
         integer :: i
 
-        ! do i = 1, h%sections
-        !     h%missing(i) = IAND(h%missing(i), oh%missing(i))
-        !     h%phase(i) = IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))
-        ! end do
 
-        do i = 1, h%sections
-            h%missing(i) = IOR( &
-                ! Locked so keep as old
-                IAND(h%locked(i),h%missing(i)), &
-                ! Not locked so update
-                IAND(NOT(h%locked(i)),IAND(h%missing(i), oh%missing(i))))
-            h%phase(i) =  IOR(&
-                ! Locked so keep as old
-                IAND(h%locked(i),h%phase(i)), &
-                ! Not locked so update
-                IAND(NOT(h%locked(i)), IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))))
-        end do
+        if (.not. h%hasLock) then
+            do i = 1, h%sections
+                h%missing(i) = IAND(h%missing(i), oh%missing(i))
+                h%phase(i) = IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))
+            end do
+        else
+
+            do i = 1, h%sections
+                h%missing(i) = IOR( &
+                    ! Locked so keep as old
+                    IAND(h%locked(i),h%missing(i)), &
+                    ! Not locked so update
+                    IAND(NOT(h%locked(i)),IAND(h%missing(i), oh%missing(i))))
+                h%phase(i) =  IOR(&
+                    ! Locked so keep as old
+                    IAND(h%locked(i),h%phase(i)), &
+                    ! Not locked so update
+                    IAND(NOT(h%locked(i)), IOR(IAND(oh%missing(i),h%phase(i)),IAND(NOT(oh%missing(i)),oh%phase(i)))))
+            end do
+        endif
     end subroutine setFromOther
 
     !---------------------------------------------------------------------------
@@ -1009,7 +1018,7 @@ contains
 
         sub%length = finish - start + 1
 
-        sub%sections = sub%length / 64 + 1
+        sub%sections = (sub%length-1) / 64 + 1
         sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
 
         allocate(sub%phase(sub%sections))
