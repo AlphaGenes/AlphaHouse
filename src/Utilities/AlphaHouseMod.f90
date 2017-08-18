@@ -40,7 +40,7 @@ module AlphaHouseMod
 
   public :: generatePairing, unPair
   public :: CountLinesWithBlankLines
-  public :: countColumns
+  public :: countColumns, getColumnNumbers
   !> @brief List of characters for case conversion in ToLower
   CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -78,6 +78,114 @@ module AlphaHouseMod
   end interface
 
   contains
+  !> @brief A subroutine to link the columns and column numbers
+  subroutine getColumnNumbers(fileNameIn, delimiterIn, hashModuleOut, numColumnsOut, initialFilePosition, fileChunkSizeIn)
+    use HashModule
+    character(len=*), intent(in):: fileNameIn
+    character(len=1), dimension(:), intent(in):: delimiterIn
+    type(DictStructure), intent(out):: hashModuleOut
+    integer, optional, intent(out):: numColumnsOut 
+    integer, intent(in), optional:: initialFilePosition
+    integer, intent(in), optional:: fileChunkSizeIn
+
+    character(len=:), allocatable:: tempChar, columnName, other
+
+    integer:: fileSize, fileUnit, filePosition, fileSizeLeft
+    integer:: IOStatus, i, j, val
+    logical:: fileExists, lineEnd, previousIsDelim
+    integer:: numColumnsUsed
+    integer:: fileChunkSize, StartChar
+
+    hashModuleOut = DictStructure()
+
+    if (present(fileChunkSizeIn)) then
+      fileChunkSize = fileChunkSizeIn
+    else
+      fileChunkSize = 1000
+    end if
+
+    numColumnsUsed = 0
+    Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
+    if (fileSize ==0) then
+      write(*, "(A)") "File ", fileNameIn, " is empty (of size 0)."
+      return
+    end if
+
+    if (fileSize<fileChunkSize) then
+      allocate(character(len=fileSize):: tempChar)
+    else
+      allocate(character(len=fileChunkSize):: tempChar)
+    end if
+
+    ioStatus = 0
+    if (present(initialFilePosition)) then
+      filePosition = initialFilePosition
+    else
+      filePosition = 1
+    end if
+
+    if (fileExists) then
+      open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
+      read(fileUnit, pos=filePosition) tempChar
+
+      !Just in case the first element is not a
+      !delimiter, we pretend that the element before the first is a delimiter.
+      !This has no effect if the first element is a delim
+      previousIsDelim = .true. 
+
+      readLoop: do while (ioStatus==0)
+        filePosition = filePosition+len(tempChar)
+        do i = 1, len(tempChar)
+          if (tempChar(i:i) == new_line("a")) then
+            if (.not. previousIsDelim) then
+              numColumnsUsed = numColumnsUsed+1
+              call hashModuleOut%addKey(tempChar(startChar:i-1), numColumnsUsed)
+            end if
+            exit readLoop
+          end if
+
+          if (any(delimiterIn == tempChar(i:i))) then
+            if (.not. previousIsDelim) then
+              val= hashModuleOut%getValue(tempChar(startChar:i-1))
+              if (val ==DICT_NULL) then
+                call hashModuleOut%addKey(tempChar(startChar:i-1), numColumnsUsed)
+              else
+                j=1
+                getFirstUnique: do while (.true.)
+                  j =j+1
+                  columnName = tempChar(startChar:i-1) // Int2char(j)
+                  val = hashModuleOut%getValue(columnName)
+                  if (val == DICT_NULL) then
+                    call hashModuleOut%addKey(columnName, numColumnsUsed)
+                    exit getFirstUnique
+                  end if
+                end do getFirstUnique
+              end if
+            end if
+            previousIsDelim =.true.
+          else
+            if (previousIsDelim) then
+              numColumnsUsed = numColumnsUsed+1
+              startChar = i
+            end if
+            previousIsDelim = .false.
+          end if
+        end do
+
+        fileSizeLeft = fileSize-filePosition
+
+        if (fileSizeLeft< len(tempChar)) then
+          deallocate(tempChar)
+          allocate(character(len=fileSizeLeft):: tempChar)
+        end if
+        read(fileUnit, pos=filePosition, iostat = ioStatus) tempChar
+      end do readLoop
+      close(fileUnit)
+    else
+      numColumnsUsed = -1
+    end if
+  end subroutine getColumnNumbers
+
   !> @brief A function that counts how many colums in a file
   !> Counts the number of times that a columns in a file.   Assumes that repeated delimiters are all a single delimiter, (i.e. a,,,a
   !!> would have two colums, with the delimiter being ,).   If the first character of the line is a delimiter, then that delimiter
@@ -87,7 +195,7 @@ module AlphaHouseMod
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
   integer function countColumnsMultiDelim(fileNameIn, delimiterIn) result (numColumnsOut)
     character(len=*), intent(in):: fileNameIn !< File to count columns 
-    character(len=1), dimension(:):: delimiterIn !< List of delimiters to use
+    character(len=1), dimension(:), intent(in):: delimiterIn !< List of delimiters to use
 
     character(len=:), allocatable:: tempChar
 

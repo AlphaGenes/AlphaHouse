@@ -2106,11 +2106,12 @@ module PedigreeModule
                                     ! if the generation of both parents has been set, add one to the greater one
                                     if (indiv%sirePointer%generation /= NOGENERATIONVALUE .and. indiv%damPointer%generation /= NOGENERATIONVALUE) then
 
-                                        if (indiv%sirePointer%generation > indiv%damPointer%generation) then
-                                            indiv%generation = indiv%sirePointer%generation + 1
-                                        else
-                                            indiv%generation = indiv%damPointer%generation + 1
-                                        endif
+                                      indiv%generation = max(indiv%sirePointer%generation, indiv%damPointer%generation)+1
+                                     !   if (indiv%sirePointer%generation > indiv%damPointer%generation) then
+                                     !       indiv%generation = indiv%sirePointer%generation + 1
+                                     !   else
+                                     !       indiv%generation = indiv%damPointer%generation + 1
+                                     !   endif
 
                                     else !otherwise, both parents have not been set so return, as animal will get checked later
                                         return

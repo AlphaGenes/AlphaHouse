@@ -6,7 +6,42 @@
 
 contains
 !##################################################################################################################################
-! Test Count Colums
+! Test Get Columns
+!##################################################################################################################################
+@test
+subroutine testGetColumnsTwoColumnsNoDelimiterAtStartOrEnd()
+use HashModule
+use ConstantModule
+type(DictStructure):: colNames
+integer:: fileUnit
+character(len=IDLENGTH), dimension(:), allocatable:: tempCHar
+character(len=*), parameter:: fileName = "testFileName"
+integer:: i
+
+open(newUnit=fileUnit, file=fileName, action="write", status="replace")
+write(fileUnit, "(A)") "No delimiters at the start or the end"
+close(fileUnit)
+
+call getColumnNumbers(fileName, [" "], colNames)
+
+
+@assertEqual(1, colNames%getValue("no"))
+
+@assertEqual(2, colNames%getValue("delimiters"))
+@assertEqual(3, colNames%getValue("at"))
+
+@assertEqual(7, colNames%getValue("the2"))
+
+
+
+
+open(newUnit=fileUnit, file=fileName)
+close(fileUnit, status = "delete")
+end subroutine testGetColumnsTwoColumnsNoDelimiterAtStartOrEnd
+
+
+!##################################################################################################################################
+! Test Count Columns
 !##################################################################################################################################
 @test
 subroutine testCountColumnsWithSingleDelimiterNoSpaceAtStart()
