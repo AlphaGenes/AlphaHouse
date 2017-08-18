@@ -284,15 +284,15 @@ module PedigreeModule
 
 
                             ! subroutine findMendelianInconsistenciesnew(ped, threshold)
-                                
+                            !     use GenotypeModule
 
                             !     type(PedigreeHOlder) :: ped
+                            !     type(Mendelian) :: mend
                             !     real, intent(in) :: threshold
 
                             !     do i=1,ped%pedigreeSize
                             !         if (ped%pedigree(i)%isFounder) cycle
-
-                            !         if (ped%pedigree(i)%individualGenotype%numOppose(ped%pedigree(i)%sirePointer%individualGenotype) > threshold) then
+                            !         mend = ped%pedigree(i)%individualGenotyp%mendelianInconsistencies(ped%pedigree(i)%sirePointer%individualGenotype,ped%pedigree(i)%damPointer%individualGenotype)
                             !             ! TODO cut pedigree
                             !         endif
                             !     enddo
