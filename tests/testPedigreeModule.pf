@@ -51,6 +51,7 @@ module TestPedigreeModule
     @after
     subroutine Uninit
       integer(int32) :: pedUnit
+      logical:: exists
 
       call pedigree%destroyPedigree
       call pedigreeUnsorted%destroyPedigree
@@ -59,6 +60,12 @@ module TestPedigreeModule
       close(pedUnit, status="delete")
       open(newunit=pedUnit, file="testPedUnsorted.txt", status="old")
       close(pedUnit, status="delete")
+
+      inquire(file="testGen.txt", exist = exists)
+      if (exists) then
+        open(100, file="testGen.txt")
+        close(100, status="delete")
+      end if
     end subroutine
 
     @test
