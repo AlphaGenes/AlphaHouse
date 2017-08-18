@@ -58,6 +58,7 @@ module IndividualLinkedListModule
             procedure :: getGenotypesAtPosition
             procedure :: destroyLinkedListFinal
             procedure :: removeIndividualsBasedOnThreshold
+            procedure :: convertToListOfKnownAnimals
             generic:: write(formatted)=> writeLinkedList
 
     end type IndividualLinkedList
@@ -350,7 +351,35 @@ contains
             node => node%next
 
         enddo
-    end function convertToArray              
+    end function convertToArray       
+
+
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Converts linked list to 1 dimensional array (vector) of individual objects
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function convertToListOfKnownAnimals(this) result(res)
+
+        use individualModule
+        class(IndividualLinkedList) :: this !< linked list
+        type(IndividualLinkedList) :: res !< one dimensional array of animal pointers to return
+        type(IndividualLinkedListNode),pointer :: node
+        
+
+        node => this%first
+
+        do while (associated(node))
+
+            if (node%item%isUnknownDummy) cycle
+            
+            call res%list_add(node%item)
+            node => node%next
+
+        enddo
+    end function convertToListOfKnownAnimals        
 
 
         !---------------------------------------------------------------------------
@@ -419,7 +448,7 @@ contains
         integer, intent(in),optional :: nOffsThresh !< threshold of number of offspring. If less than this these offsprings will be removed
         integer, intent(in), optional :: genotyped,hd !, if either of these are present, then, these are effectively true
         integer, intent(in), optional :: genotypedOffspring !, if present, only care about offspring that are genotpyed
-        type(IndividualLinkedListNode), pointer :: ind, tmp
+        type(IndividualLinkedListNode), pointer :: ind
         integer :: offspringCount,i
 
         ind => this%first
