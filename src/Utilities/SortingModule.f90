@@ -1,3 +1,26 @@
+
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     SortingModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing sort functions
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 DWilson - Initial Version
+!
+!-------------------------------------------------------------------------------
 module SortingModule
     implicit none
 
@@ -9,6 +32,8 @@ module SortingModule
 	    real :: value       
 	end type group
     contains
+	 
+
 	 
 	recursive subroutine QSortNew(a,na)
 	 
