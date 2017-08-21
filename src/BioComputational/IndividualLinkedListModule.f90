@@ -67,10 +67,22 @@ module IndividualLinkedListModule
             type(individual), pointer :: item
             type(IndividualLinkedListNode),pointer :: next =>null()
             type(IndividualLinkedListNode),pointer :: previous =>null()
+
+            contains
+              final:: destroyIndividualLinkedListNodeFinal
     end type IndividualLinkedListNode
 
 
 contains
+
+  subroutine destroyIndividualLinkedListNodeFinal(this)
+    type(IndividualLinkedListNode), intent(inout):: this
+
+    this%item => null()
+    this%next =>null()
+    this%previous => null()
+
+  end subroutine destroyIndividualLinkedListNodeFinal
 
     !---------------------------------------------------------------------------
     !> @brief Destructor for linked list
@@ -373,10 +385,10 @@ contains
 
         do while (associated(node))
 
-            if (node%item%isUnknownDummy) cycle
-            
-            call res%list_add(node%item)
-            node => node%next
+            if (.not. node%item%isUnknownDummy) then
+              call res%list_add(node%item)
+            end if
+            node=> node%next
 
         enddo
     end function convertToListOfKnownAnimals        
