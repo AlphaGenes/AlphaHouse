@@ -38,11 +38,12 @@ module IndividualModule
     ! This type is required to have an array of pointers
     type IndividualPointerContainer
         type(Individual), pointer :: p
+
+        contains
+          final:: deallocateIndividualPointer
     end type IndividualPointerContainer
 
     type Individual
-
-
         character(len=:), allocatable :: originalID
         character(len=:), allocatable :: sireID
         character(len=:), allocatable :: damID
@@ -133,6 +134,14 @@ module IndividualModule
     end interface operator ( == )
 
 contains
+
+  subroutine deallocateIndividualPointer(this)
+    type(IndividualPointerContainer), intent(inout):: this
+
+    this%p => null()
+
+  end subroutine deallocateIndividualPointer
+
 
         !---------------------------------------------------------------------------
     !> @brief Constructor for individual class.
