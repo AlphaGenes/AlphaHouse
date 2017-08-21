@@ -63,6 +63,38 @@ module TestIndividualLinkedList
         @assertEqualuserdefined(ll%last%item, testIndiv1)
     end subroutine testDelete
 
+@test
+subroutine testConvertToKnownAnimals()
+type(IndividualLinkedList):: LL
+type(IndividualLinkedList):: gottenList
+type(Individual), dimension(:), allocatable:: expected, gotten
+type(Individual):: one, two
+integer:: i
+
+one = Individual("OLD", "dad", "mom", 0)
+two = Individual("OLD2", "dad", "mom", 0)
+
+one%isUnknownDummy = .true.
+two%isUnknownDummy = .false.
+
+call LL%list_add(one)
+call LL%list_add(two)
+
+
+gottenList = LL%convertToListOfKnownAnimals()
+
+allocate(expected(1))
+expected(1) = two
+
+gotten = gottenList%convertToArray()
+
+@assertEqual(size(expected), size(gotten)) 
+
+do i = 1, size(expected)
+  @assertEqualuserdefined(expected(i), gotten(i))
+end do
+
+end subroutine
 
 
     @test
