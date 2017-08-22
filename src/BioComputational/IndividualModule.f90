@@ -74,6 +74,9 @@ module IndividualModule
         logical(kind=1), allocatable :: isImputed
 
 
+        integer :: inconsistencies = 0 !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
+
+
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped

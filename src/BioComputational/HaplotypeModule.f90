@@ -81,6 +81,7 @@ module HaplotypeModule
         procedure :: setZeroBits
         procedure :: setOneBits
         procedure :: setZero
+        procedure :: setMissingBits
         procedure :: setOne
         procedure :: subset
         procedure :: setSubset
@@ -968,6 +969,24 @@ contains
             h%phase(i) = IAND(NOT(array(i)), h%phase(i))
         end do
     end subroutine setZeroBits
+
+
+    !---------------------------------------------------------------------------
+    !> @brief   Sets the snps in a haplotype to missing
+    !> @detail  Sets a snp to be zero if the same position in the bit array is set
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
+    subroutine setMissingBits(h, array)
+        class(Haplotype) :: h
+        integer(kind=int64), dimension(:), intent(in) :: array
+
+        integer :: i
+
+        do i = 1, h%sections
+            h%missing(i) = IOR((array(i)), h%missing(i))
+            h%phase(i) = IAND(NOT(array(i)), h%phase(i))
+        end do
+    end subroutine setMissingBits
 
     !---------------------------------------------------------------------------
     !> @brief   Sets the snps in the given position to zero

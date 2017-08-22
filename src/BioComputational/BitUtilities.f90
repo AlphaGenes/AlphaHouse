@@ -38,6 +38,37 @@ module BitUtilities
       c = c + POPCNT(bits(i))
     end do
   end function bitCount
+
+
+
+
+  !-------------------------------------------------------------------------------
+  !>@brief returns true if bit is set at position
+  !-------------------------------------------------------------------------------
+  function testBit(bits, pos) result (res)
+    integer(kind=int64), dimension(:), intent(in) :: bits !< input array of bits 
+
+    integer, intent(in) :: pos !< position 
+
+    logical :: res !< true if position is set
+
+    integer :: cursection, curpos
+
+
+    if (pos == 0) then 
+      res = .false.
+      return
+    endif
+    cursection = (pos-1) / 64 + 1
+    curpos = pos - (cursection - 1) * 64 - 1
+
+    if (btest(bits(cursection),curpos)) then
+        res = .true.
+
+    else
+        res = .false.
+    end if
+end function testBit
   
   !-------------------------------------------------------------------------------
   !>@brief Converts bits to an integer array
