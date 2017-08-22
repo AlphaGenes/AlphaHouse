@@ -331,7 +331,7 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
         write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
     endif
 
-  do i=1,ped%pedigreeSize
+    do i=1,ped%pedigreeSize
 
         ! if sire is associated, then dam must be too 
         if (associated(ped%pedigree(i)%sirePointer)) then
@@ -355,66 +355,66 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
 
 
           if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
-                ! remove sire link
+            ! remove sire link
+            if (present(file)) then
+                write (outfile,'(2a30,4I, 4E15.7)') &
+                Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
+
+            endif
+            CountChanges=CountChanges+1
+            ! remove offspring link
+            call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
+            call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
+
+
+        else 
+
+
+
+            if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
+
+                ! remove dam link
                 if (present(file)) then
                     write (outfile,'(2a30,4I, 4E15.7)') &
-                    Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
-
+                    Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
                 endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
-                call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
+                call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
                 call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-
-
             else 
+             
+                ! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies) 
 
 
+                do j=1,ped%pedigree(i)%individualGenotype%length
 
-                if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
+                   ! if both were inconsistent, set to which one is more likely
+                   if (testBit(mend%individualInconsistent,j) ) then
 
-                    ! remove dam link
-                    if (present(file)) then
-                        write (outfile,'(2a30,4I, 4E15.7)') &
-                        Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
+                    ! TODO is it worth checking if this animal is inconsistent? 
+                    if (ped%pedigree(i)%sirePointer%inconsistencies > ped%pedigree(i)%damPointer%inconsistencies) then
+                        tmpGeno = ped%pedigree(i)%damPointer%individualGenotype%getGenotype(j)
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
+                    else if(ped%pedigree(i)%sirePointer%inconsistencies < ped%pedigree(i)%damPointer%inconsistencies) then
+                        tmpGeno = ped%pedigree(i)%sirePointer%individualGenotype%getGenotype(j)
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
+                    else
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                     endif
-                    CountChanges=CountChanges+1
-                    ! remove offspring link
-                    call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
-                    call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-                else 
-               
-                    ! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies) 
-
-
-                    do j=1,ped%pedigree(i)%individualGenotype%length
-
-                         ! if both were inconsistent, set to which one is more likely
-                        if (testBit(mend%individualInconsistent,j) ) then
-
-                            ! TODO is it worth checking if this animal is inconsistent? 
-                            if (ped%pedigree(i)%sirePointer%inconsistencies > ped%pedigree(i)%damPointer%inconsistencies) then
-                                    tmpGeno = ped%pedigree(i)%damPointer%individualGenotype%getGenotype(j)
-                                    call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
-                            else if(ped%pedigree(i)%sirePointer%inconsistencies < ped%pedigree(i)%damPointer%inconsistencies) then
-                                    tmpGeno = ped%pedigree(i)%sirePointer%individualGenotype%getGenotype(j)
-                                    call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
-                            else
-                                call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
-                            endif
-                        endif
-                    enddo
-
                 endif
-            endif
-        endif
+            enddo
 
-    enddo
-    if (present(file)) then
-        write (outfile,*) CountChanges," changes were made to the pedigree"
-        close (outfile)
+        endif
     endif
-    print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
+endif
+
+enddo
+if (present(file)) then
+    write (outfile,*) CountChanges," changes were made to the pedigree"
+    close (outfile)
+endif
+print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
 
 
 
