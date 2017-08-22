@@ -22,8 +22,10 @@ module BitUtilities
   
   contains
   
+  !-------------------------------------------------------------------------------
     !> @brief Counts the number of bits set across all integers in the array 
     !> @details Takes in an array of 64 bit integers and counts the number of bits in the array which are set to one.
+    !-------------------------------------------------------------------------------
   function bitCount(bits) result(c)
     integer(kind=int64), dimension(:), intent(in) :: bits
     
@@ -37,9 +39,11 @@ module BitUtilities
     end do
   end function bitCount
   
+  !-------------------------------------------------------------------------------
   !>@brief Converts bits to an integer array
   !> @details Converts each bit in an integer to a zero or one in a integer array.  Can do this for multiple integers (hence the
   !> array input).
+  !-------------------------------------------------------------------------------
   function bitToIntegerArray(b) result(array)
     integer(kind=int64), dimension(:), intent(in) :: b
     

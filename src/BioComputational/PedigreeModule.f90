@@ -5,19 +5,22 @@
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!<@file     PedigreeModule.f90
+!> @file     PedigreeModule.f90
 !
 ! DESCRIPTION:
-!<@brief    Module containing logic of Pedigree
-!<@details  Module contains functions to read in and set up pedgiree data structure
+!> @brief    Module containing definition of pedigree.
 !
-!<@author   David Wilson, david.wilson@roslin.ed.ac.uk
+!> @details  Fully doubly linked list with useful procedures for operations on the linked list
 !
-!<@date     January 4, 2017
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
 !
-!<@version  1.0.0
+!> @date     September 26, 2016
 !
+!> @version  0.0.1 (alpha)
 !
+! REVISION HISTORY:
+! 2016-09-26 Dwilson - Initial Version
+
 !-------------------------------------------------------------------------------
 
 
@@ -513,11 +516,11 @@ contains
   end subroutine homozygoticFillIn
 
   !---------------------------------------------------------------------------
-  !<@brief Calculate correlation between pedigree 
+  !< @brief Calculate correlation between pedigree 
   !<Calculates the correlation between individuals in the pedigree, assuming no inbreeding.   Will also handle groups - just give
   !<the group parents a unique ID.   It assumes that the pedigree has been sorted such that the unknown dummies are at the end
   !<(sortPedigreeAndOverwrite(1)).
-  !<@author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
+  !< @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
   !---------------------------------------------------------------------------
   function calculatePedigreeCorrelationNoInbreeding(pedigreeIn, additiveVarianceIn) result(valuesOut)
   class(PedigreeHolder), intent(in):: pedigreeIn
@@ -1412,11 +1415,11 @@ contains
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
-  !<@brief     Adds genotype information to pedigree from a 2 dimensional array
+  !< @brief     Adds genotype information to pedigree from a 2 dimensional array
   !
-  !<@author     David Wilson, david.wilson@roslin.ed.ac.uk
+  !< @author     David Wilson, david.wilson@roslin.ed.ac.uk
   !
-  !<@date       October 25, 2016
+  !< @date       October 25, 2016
   !---------------------------------------------------------------------------
   subroutine addGenotypeInformationFromArray(this, array)
 
@@ -1434,11 +1437,11 @@ contains
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
-  !<@brief     Adds genotype information to pedigree from a file
+  !< @brief     Adds genotype information to pedigree from a file
   !
-  !<@author     David Wilson, david.wilson@roslin.ed.ac.uk
+  !< @author     David Wilson, david.wilson@roslin.ed.ac.uk
   !
-  !<@date       October 25, 2016
+  !< @date       October 25, 2016
   !--------------------------------------------------------------------------
   subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn)
 
@@ -1511,11 +1514,11 @@ contains
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION:
-  !<@brief     Adds phase information to pedigree from a file
+  !< @brief     Adds phase information to pedigree from a file
   !
-  !<@author    Daniel Money, daniel.money@roslin.ed.ac.uk
+  !< @author    Daniel Money, daniel.money@roslin.ed.ac.uk
   !
-  !<@date       June 19, 2017
+  !< @date       June 19, 2017
   !--------------------------------------------------------------------------
   subroutine addPhaseInformationFromFile(this, phaseFile, nsnps, nAnnisG)
 
@@ -2603,11 +2606,11 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief Sets the individual to be genotyped.
+  !< @brief Sets the individual to be genotyped.
   !<If geno array is not given, animal will still be set to genotyped. It is up to the callee
   !<if the animal has enough snps set to actually genotyped
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   subroutine setAnimalAsGenotyped(this, individualIndex, geno, lockIn)
 
@@ -2653,11 +2656,11 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief Sets the individual to be genotyped.
+  !< @brief Sets the individual to be genotyped.
   !<If geno array is not given, animal will still be set to genotyped. It is up to the callee
   !<if the animal has enough snps set to actually genotyped
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   subroutine setAnimalAsGenotypedSequence(this, individualIndex, geno, referAllele, alterAllele)
 
@@ -2695,9 +2698,9 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief  Converts the sequence data counts to a 3D array (similar to phase) of size of pedigree
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @brief  Converts the sequence data counts to a 3D array (similar to phase) of size of pedigree
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   function convertSequenceDataToArray(this) result(res)
 
@@ -2742,12 +2745,12 @@ contains
   end function getSequenceAsArrayWithMissing
 
   !---------------------------------------------------------------------------
-  !<@brief Returns either the individuals id, the sires id or dams id based on
+  !< @brief Returns either the individuals id, the sires id or dams id based on
   !<which index is passed.
 
   !<THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   function getSireDamGenotypeIDByIndex(this,ind, index) result(v)
     use iso_fortran_env, only : ERROR_UNIT
@@ -2789,9 +2792,9 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief Sets the individual to be genotyped at high density.
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @brief Sets the individual to be genotyped at high density.
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   subroutine setAnimalAsHD(this, indId)
     use iso_fortran_env
@@ -2828,14 +2831,14 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief Returns either the individuals id in hd index, the sires id or dams id based on
+  !< @brief Returns either the individuals id in hd index, the sires id or dams id based on
   !<which index is passed.
   !<THIS IS DEPRECATED - ONLY MEANT FOR COMPATIBILITY
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   ! PARAMETERS:
-  !<@param[in] index - the index
-  !<@return hdIndex of animal based on index
+  !< @param[in] index - the index
+  !< @return hdIndex of animal based on index
   !---------------------------------------------------------------------------
   function getSireDamHDIDByIndex(this,ind, index) result(v)
     use iso_fortran_env, only : ERROR_UNIT
@@ -2877,9 +2880,9 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief creates a new dummy animal at end of pedigree
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @brief creates a new dummy animal at end of pedigree
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   ! PARAMETERS:
   !---------------------------------------------------------------------------
   subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
@@ -2923,10 +2926,10 @@ contains
 
 
   !---------------------------------------------------------------------------
-  !<@brief creates a new animal at end of pedigree
-  !<If genotype is supplied, animal is set to hd
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @brief creates a new animal at end of pedigree
+  !< If genotype is supplied, animal is set to hd
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
   class(PedigreeHolder) :: this
@@ -2998,10 +3001,10 @@ contains
   end subroutine PhaseComplement
 
   !---------------------------------------------------------------------------
-  !<@brief  counts missing snps across all animals at every snp
+  !< @brief  counts missing snps across all animals at every snp
   !<Returns a count of missing snps across all animals at every snp
-  !<@author  David Wilson david.wilson@roslin.ed.ac.uk
-  !<@date    October 26, 2016
+  !< @author  David Wilson david.wilson@roslin.ed.ac.uk
+  !< @date    October 26, 2016
   !---------------------------------------------------------------------------
   function countMissingGenotypesNoDummys(this) result(res)
     integer :: res

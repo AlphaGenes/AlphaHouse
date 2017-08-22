@@ -1,3 +1,26 @@
+
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     SortingModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing sort functions
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     September 26, 2016
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2016-09-26 DWilson - Initial Version
+!
+!-------------------------------------------------------------------------------
 module SortingModule
     implicit none
 
@@ -9,6 +32,8 @@ module SortingModule
 	    real :: value       
 	end type group
     contains
+	 
+
 	 
 	recursive subroutine QSortNew(a,na)
 	 
@@ -55,52 +80,76 @@ module SortingModule
 	 
 	end subroutine QSortNew
 
+    !---------------------------------------------------------------------------
+    !> @brief   Takes a string array and returns a list of sorted indicies
+    !> @detail  As an example [c, a, d, b] would return [2, 4, 1, 3].  Item 2
+    !>          is the smallest, item 4 the next smallest etc
+    !>          Should probably be a function rather than a subroutine.  Not
+    !>          sure why it is not.
+    !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
+    !> @date    Aug 21, 2017
+    !> @return  Array of sorted indexes
+    !---------------------------------------------------------------------------
     subroutine sortWithIndex(array, indexes)
-    character(*), dimension(:), intent(inout), target :: array
-    integer, dimension(size(array)), intent(out) :: indexes
+        character(*), dimension(:), intent(inout), target :: array
+        integer, dimension(size(array)), intent(out) :: indexes
 
-    character(len(array)), dimension(size(array)) :: tempArray
-    integer :: i
-    integer(8) :: as, es
+        character(len(array)), dimension(size(array)) :: tempArray
+        integer :: i
+        integer(8) :: as, es
 
-    sortArray => array
-    as = size(indexes)
-    es = sizeof(indexes(1))
+        sortArray => array
+        as = size(indexes)
+        es = sizeof(indexes(1))
 
-    do i = 1, size(array)
-        indexes(i) = i
-    end do
+        do i = 1, size(array)
+            indexes(i) = i
+        end do
 
-    call qsort(indexes, as, es, sortCompare)
+        call qsort(indexes, as, es, sortCompare)
 
-    do i = 1, size(array)
-        tempArray(i) = array(indexes(i))
-    end do
+        do i = 1, size(array)
+            tempArray(i) = array(indexes(i))
+        end do
 
-    array = tempArray
+        array = tempArray
     end subroutine sortWithIndex
 
+    !---------------------------------------------------------------------------
+    !> @brief   Compares two strings
+    !> @detail  Uses standard Fortran sort order
+    !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
+    !> @date    Aug 21, 2017
+    !> @return  -1 if first character is smaller, 0 if the same, 1 if second
+    !>          integer is smaller.
+    !---------------------------------------------------------------------------
     function compare(a, b) result(i)
-    character(*), intent(in) :: a, b
-    integer(2) :: i
+        character(*), intent(in) :: a, b
+        integer(2) :: i
 
-    if (a < b) then
-        i = -1
-    end if
-    if (a > b) then
-        i = 1
-    end if
-    if (a == b) then
-        i = 0
-    end if
-    !    print *, a, b, i
+        if (a < b) then
+            i = -1
+        end if
+        if (a > b) then
+            i = 1
+        end if
+        if (a == b) then
+            i = 0
+        end if
     end function compare
 
+    !---------------------------------------------------------------------------
+    !> @brief   Compares two elements of the sort array
+    !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
+    !> @date    Aug 21, 2017
+    !> @return  -1 if array(a) is smaller than array(b) , 0 if the same, 1
+    !>          otherwiae.
+    !---------------------------------------------------------------------------
     function sortCompare(a, b) result(i)
-    integer, intent(in) :: a, b
-    integer(2) :: i
+        integer, intent(in) :: a, b
+        integer(2) :: i
 
-    i = compare(sortArray(a), sortArray(b))
+        i = compare(sortArray(a), sortArray(b))
     end function sortCompare
-    end module SortingModule
+end module SortingModule
 
