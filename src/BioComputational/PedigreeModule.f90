@@ -116,6 +116,8 @@ module PedigreeModule
   procedure :: homozygoticFillIn
   procedure :: wipeGenotypeAndPhaseInfo
   procedure :: getUniqueParents
+  procedure :: findMendelianInconsistencies
+  procedure :: writeOutGenotypesAll
   end type PedigreeHolder
 
   ! TODO - overload == and = functions
@@ -309,7 +311,7 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
     use genotypeModule
     use BitUtilities
     implicit none
-    type(pedigreeHolder) :: ped
+    class(pedigreeHolder) :: ped
     type(Mendelian) :: mend 
     real, intent(in) :: threshold !< threshold for removing animals
     integer :: sireInconsistencies, damInconsistencies
@@ -331,6 +333,9 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
         write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
     endif
 
+    print *,"THRESH", threshold
+
+    call ped%writeOutGenotypesAll("genotypes.txt")
     do i=1,ped%pedigreeSize
 
         ! if sire is associated, then dam must be too 
@@ -353,31 +358,39 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
 
           ped%pedigree(i)%inconsistencies = bitcount(mend%individualInconsistent)
 
+          if (present(file)) then
+                    write (outfile,'(3a30,2I)') &
+                    Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
 
-          if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
-            ! remove sire link
-            if (present(file)) then
-                write (outfile,'(2a30,4I, 4E15.7)') &
-                Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
+        endif
 
-            endif
-            CountChanges=CountChanges+1
-            ! remove offspring link
-            call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
-            call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
+          ! print *,"sireInconsistencies",(float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) 
+          ! print *,"damInconsistencies",(float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) 
+          
+            if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
+                ! remove sire link
+                ! if (present(file)) then
+                !     write (outfile,'(2a30,4I, 4E15.7)') &
+                !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
+
+                ! endif
+                CountChanges=CountChanges+1
+                ! remove offspring link
+                call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
+                call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
 
-        else 
+            else 
 
 
 
             if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 
                 ! remove dam link
-                if (present(file)) then
-                    write (outfile,'(2a30,4I, 4E15.7)') &
-                    Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
-                endif
+                ! if (present(file)) then
+                !     write (outfile,'(2a30,4I, 4E15.7)') &
+                !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
+                ! endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
                 call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
