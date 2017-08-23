@@ -1083,7 +1083,12 @@ function isHomo(g, pos) result (two)
         allocate(mend%maternalConsistent(g%sections))
         allocate(mend%individualConsistent(g%sections))
 
-
+        mend%paternalInconsistent = 0
+        mend%maternalInconsistent = 0
+        mend%individualInconsistent = 0
+        mend%paternalconsistent = 0
+        mend%maternalconsistent = 0
+        mend%individualconsistent = 0
         do i = 1, g%sections
             het = IAND( &
                 ! Individual is het
