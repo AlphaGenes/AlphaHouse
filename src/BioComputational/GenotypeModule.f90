@@ -1116,6 +1116,12 @@ function isHomo(g, pos) result (two)
                 )
         end do
 
+        do i = 64 - g%overhang, 63
+            mend%paternalConsistent(g%sections) = ibclr(mend%paternalConsistent(g%sections), i)
+            mend%maternalConsistent(g%sections) = ibclr(mend%maternalConsistent(g%sections), i)
+            mend%individualConsistent(g%sections) = ibclr(mend%individualConsistent(g%sections), i)
+        end do
+
     end function mendelianInconsistencies
 
     !---------------------------------------------------------------------------
