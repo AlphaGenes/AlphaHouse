@@ -75,6 +75,7 @@ module GenotypeModule
   procedure :: firstHet
   procedure :: numberErrors
   procedure :: getErrors
+  procedure :: setMissingBits
   procedure :: setHaplotypeFromGenotypeIfError
   procedure :: setHaplotypeFromGenotypeIfMissing
   procedure :: numberErrorsSingle
@@ -85,6 +86,7 @@ module GenotypeModule
   procedure :: readFormattedGenotype
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
+  procedure :: mendelianInconsistencies
   procedure :: writeunFormattedGenotype
   final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
@@ -113,6 +115,8 @@ module GenotypeModule
     type :: Mendelian
         integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
         integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
+    !paternal
+
     end type Mendelian
 
   interface Genotype
@@ -189,6 +193,25 @@ module GenotypeModule
             g%hasLock = .false.
         end if
     end function newGenotypeInt
+
+
+
+        !---------------------------------------------------------------------------
+    !> @brief   Sets the snps in a haplotype to missing
+    !> @detail  Sets a snp to be zero if the same position in the bit array is set
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
+    subroutine setMissingBits(g, array)
+        class(Genotype) :: g
+        integer(kind=int64), dimension(:), intent(in) :: array
+
+        integer :: i
+
+        do i = 1, g%sections
+            g%additional(i) = IOR((array(i)), g%additional(i))
+            g%homo(i) = IAND(NOT(array(i)), g%homo(i))
+        end do
+    end subroutine setMissingBits
     
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new genotype from two haplotype objects.  lock
@@ -1060,7 +1083,12 @@ function isHomo(g, pos) result (two)
         allocate(mend%maternalConsistent(g%sections))
         allocate(mend%individualConsistent(g%sections))
 
-
+        mend%paternalInconsistent = 0
+        mend%maternalInconsistent = 0
+        mend%individualInconsistent = 0
+        mend%paternalconsistent = 0
+        mend%maternalconsistent = 0
+        mend%individualconsistent = 0
         do i = 1, g%sections
             het = IAND( &
                 ! Individual is het

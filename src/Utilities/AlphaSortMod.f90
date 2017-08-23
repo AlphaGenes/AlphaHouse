@@ -37,6 +37,9 @@ module AlphaSortMod
     end interface
 
   contains
+    !> @brief A function that takes in two (sorted) lists and produces a union of the unique elements
+    !> @details Takes in two list of integers, and creates a sorted output list of the unique elements.
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
     function mergeTwoSortedListsReal64(listOne, listTwo ) result (listOut)
       real(real64), dimension(:),intent(in):: listOne
       real(real64), dimension(:), intent(in):: listTwo
@@ -80,6 +83,9 @@ module AlphaSortMod
       listOut = tempList(:outputIndex)
     end function mergeTwoSortedListsReal64
 
+    !> @brief A function that takes in two (sorted) lists and produces a union of the unique elements
+    !> @details Takes in two list of integers, and creates a sorted output list of the unique elements.
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
     function mergeTwoSortedListsReal(listOne, listTwo ) result (listOut)
       real, dimension(:),intent(in):: listOne
       real, dimension(:), intent(in):: listTwo
@@ -123,6 +129,9 @@ module AlphaSortMod
       listOut = tempList(:outputIndex)
     end function mergeTwoSortedListsReal
 
+    !> @brief A function that takes in two (sorted) lists and produces a union of the unique elements
+    !> @details Takes in two list of integers, and creates a sorted output list of the unique elements.
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
     function mergeTwoSortedListsInteger64(listOne, listTwo ) result (listOut)
       integer(int64), dimension(:),intent(in):: listOne
       integer(int64), dimension(:), intent(in):: listTwo
@@ -166,6 +175,9 @@ module AlphaSortMod
       listOut = tempList(:outputIndex)
     end function mergeTwoSortedListsInteger64
 
+    !> @brief A function that takes in two (sorted) lists and produces a union of the unique elements
+    !> @details Takes in two list of integers, and creates a sorted output list of the unique elements.
+    !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
     function mergeTwoSortedListsInteger(listOne, listTwo ) result (listOut)
       integer, dimension(:),intent(in):: listOne
       integer, dimension(:), intent(in):: listTwo
