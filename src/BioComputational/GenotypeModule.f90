@@ -1109,7 +1109,7 @@ function isHomo(g, pos) result (two)
                 IAND(IAND(g%homo(i), pg%homo(i)), IEOR(g%additional(i), pg%additional(i))) &
                 )
 
-            mend%paternalInconsistent(i) = IOR( &
+            mend%maternalInconsistent(i) = IOR( &
                 ! Individual is het and bad
                 het, &
                 ! Individual is homo and maternal is opposite homo)
