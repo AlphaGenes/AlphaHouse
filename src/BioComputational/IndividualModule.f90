@@ -74,7 +74,7 @@ module IndividualModule
         logical(kind=1), allocatable :: isImputed
 
 
-        integer :: inconsistencies = 0 !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
+        integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
 
 
         contains
@@ -183,9 +183,11 @@ contains
             if (nsnps /= 0) then
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
+                allocate(this%inconsistencies(nsnps))
                 this%individualGenotype = newGenotypeMissing(nsnps)
                 this%individualPhase(1) = newHaplotypeMissing(nsnps)
                 this%individualPhase(2) = newHaplotypeMissing(nsnps)
+                this%inconsistencies =  0
             endif
 
             if (present(probabilites)) then
@@ -249,6 +251,9 @@ contains
 
         if (allocated(this%isImputed)) then
             deallocate(this%isImputed)
+        endif
+        if (allocated(this%inconsistencies)) then
+            deallocate(this%inconsistencies)
         endif
 
 

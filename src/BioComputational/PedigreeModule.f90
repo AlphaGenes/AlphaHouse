@@ -8,7 +8,7 @@
 !> @file     PedigreeModule.f90
 !
 ! DESCRIPTION:
-!> @brief    Module containing definition of pedigree.
+!> @brief    Module` containing definition of pedigree.
 !
 !> @details  Fully doubly linked list with useful procedures for operations on the linked list
 !
@@ -312,16 +312,20 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
     use BitUtilities
     implicit none
     class(pedigreeHolder) :: ped
-    type(Mendelian) :: mend 
+    type(Mendelian), dimension(:), allocatable :: mend 
     real, intent(in) :: threshold !< threshold for removing animals
     integer :: sireInconsistencies, damInconsistencies
     integer :: outfile
     type(individual),pointer :: sire, dam
-    integer :: i,g,j
-    integer :: GenConflict(3,ped%pedigreesize)   ! score for 1) paternal link, 2) maternal link, and 3) sum of both
-    integer :: PedConflict(4,ped%pedigreesize)   ! count of father-individual and mother-individual genotype combinations available (1,2) and conflicts thereof (3,4)
+    integer :: i,j
     character(len=*),intent(in), optional :: file
-    integer :: CountChanges, dumId,tmpGeno
+    integer :: CountChanges, dumId
+    logical :: sireRemoved, damRemoved,changedGeno 
+
+    changedGeno = .false.
+    sireRemoved = .false.
+    damRemoved = .false.
+
     if (present(file)) then
         open(newunit=outfile, file=file, status='unknown')
     endif
@@ -341,32 +345,29 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
         ! if sire is associated, then dam must be too 
         if (associated(ped%pedigree(i)%sirePointer)) then
 
-          sire => ped%pedigree(i)%sirePointer
-          dam => ped%pedigree(i)%damPointer
+            sire => ped%pedigree(i)%sirePointer
+            dam => ped%pedigree(i)%damPointer
 
 
-          mend = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
-          
-          sireInconsistencies = bitcount(mend%paternalInconsistent)
+            mend(i) = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
+
+            sireInconsistencies = bitcount(mend(i)%paternalInconsistent)
 
 
-          ! update inconsistencies, maybe do this first 
-          ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
-          damInconsistencies = bitcount(mend%maternalInconsistent)
-          ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
+            ! update inconsistencies, maybe do this first 
+            ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
+            damInconsistencies = bitcount(mend(i)%maternalInconsistent)
+            ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
+
+            if (present(file)) then
+                write (outfile,'(3a30,2I)') &
+                Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
+
+            endif
 
 
-          ped%pedigree(i)%inconsistencies = bitcount(mend%individualInconsistent)
 
-          if (present(file)) then
-                    write (outfile,'(3a30,2I)') &
-                    Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
-
-        endif
-
-          ! print *,"sireInconsistencies",(float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) 
-          ! print *,"damInconsistencies",(float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) 
-          
+            ! looks like a pedigree error
             if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
                 ! remove sire link
                 ! if (present(file)) then
@@ -379,10 +380,8 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
                 call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
                 call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
-
-            else 
-
-
+                sireRemoved = .true.
+            endif 
 
             if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 
@@ -395,34 +394,117 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
                 ! remove offspring link
                 call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
                 call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-            else 
-             
-                ! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies) 
 
+                damRemoved =.true.
+            
+
+            endif
+
+            ! means we only Calculate inconsistencies for animals that aren't unlinked
+            if (.not. sireRemoved) then
 
                 do j=1,ped%pedigree(i)%individualGenotype%length
 
-                   ! if both were inconsistent, set to which one is more likely
-                   if (testBit(mend%individualInconsistent,j) ) then
+                    if (testBit(mend(i)%paternalInconsistent,j)) then
+                        ped%pedigree(i)%sirePointer%inconsistencies(j) = ped%pedigree(i)%sirePointer%inconsistencies(j) + 1
+                        ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) + 1
+                    else if (testBit(mend(i)%paternalconsistent,j))  then
+                        ped%pedigree(i)%sirePointer%inconsistencies(j) = ped%pedigree(i)%sirePointer%inconsistencies(j) - 1
+                        ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) - 1
 
-                    ! TODO is it worth checking if this animal is inconsistent? 
-                    if (ped%pedigree(i)%sirePointer%inconsistencies > ped%pedigree(i)%damPointer%inconsistencies) then
-                        tmpGeno = ped%pedigree(i)%damPointer%individualGenotype%getGenotype(j)
-                        call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
-                    else if(ped%pedigree(i)%sirePointer%inconsistencies < ped%pedigree(i)%damPointer%inconsistencies) then
-                        tmpGeno = ped%pedigree(i)%sirePointer%individualGenotype%getGenotype(j)
-                        call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
+                    endif
+                enddo 
+            endif
+
+            if (.not. damRemoved) then
+
+                do j=1,ped%pedigree(i)%individualGenotype%length
+
+                    if (testBit(mend(i)%maternalInconsistent,j)) then
+                        ped%pedigree(i)%damPointer%inconsistencies(j) = ped%pedigree(i)%damPointer%inconsistencies(j) + 1
+                        ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) + 1
+                    else if (testBit(mend(i)%maternalconsistent,j))  then
+                        ped%pedigree(i)%damPointer%inconsistencies(j) = ped%pedigree(i)%damPointer%inconsistencies(j) - 1
+                        ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) - 1
+
+                    endif
+
+                enddo 
+            endif
+        endif
+
+    enddo
+
+        ! at this point, we have calculated inconsistenceis
+
+
+    do i=1, ped%pedigreeSize
+
+
+        ! if both parents haven't been removed, check most likely one
+         
+            ! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies) 
+
+        do j=1,ped%pedigree(i)%individualGenotype%length
+
+            !< if either is a dummy, likely that individualInconsistent is inccorrect
+            if (.not. ped%pedigree(i)%sirePointer%isDummy .and. .not. ped%pedigree(i)%damPointer%isDummy) then 
+           ! if both were inconsistent, set to which one is more likely
+               if (testBit(mend(i)%individualInconsistent,j) ) then
+
+                  changedGeno = .true.
+                  ! TODO is it worth checking if this animal is inconsistent? 
+
+                  ! if dam is more likely correct, set to dam value, and set sire to missing
+                  if (ped%pedigree(i)%sirePointer%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
+                      call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                  else if(ped%pedigree(i)%sirePointer%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
+                      call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                  else !< if they are both as unlikely, set all the animals as missing here
+                      call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                  endif
+                endif
+
+            else 
+
+                if (.not. ped%pedigree(i)%sirePointer%isDummy  .and.  testBit(mend(i)%paternalInconsistent,j) ) then
+                    if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                    else if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
+                        call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                     else
+                        call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                         call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                     endif
                 endif
-            enddo
 
-        endif
-    endif
-endif
+                if (.not. ped%pedigree(i)%damPointer%isDummy  .and.  testBit(mend(i)%maternalInconsistent,j) )  then
+                     if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                    else if (ped%pedigree(i)%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
+                        call ped%pedigree(i)%dampointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                    else 
+                        call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
 
-enddo
+                    endif
+                endif    
+
+
+            endif
+
+        enddo
+    enddo
+
+
+
+
+deallocate(mend)
+
 if (present(file)) then
     write (outfile,*) CountChanges," changes were made to the pedigree"
     close (outfile)

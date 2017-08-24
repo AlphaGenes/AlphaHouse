@@ -116,6 +116,9 @@ module GenotypeModule
         integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
         integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
     !paternal
+      contains
+
+        final :: destroyMendelian
 
     end type Mendelian
 
@@ -138,6 +141,25 @@ module GenotypeModule
             deallocate(g%locked)
         end if
     end subroutine destroyGenotype
+
+
+    subroutine destroyMendelian(m)
+
+      type(mendelian) :: m
+
+      if (allocated(m%paternalInconsistent)) then
+        deallocate(m%paternalInconsistent)
+        deallocate(m%maternalInconsistent)
+        deallocate(m%individualInconsistent)
+        deallocate(m%paternalConsistent)
+        deallocate(m%maternalConsistent)
+        deallocate(m%individualConsistent)
+      endif
+
+
+
+
+    end subroutine destroyMendelian
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Genotype from a integer array. lock determines
     !>          whether genotypes that are known at creation are locked.
