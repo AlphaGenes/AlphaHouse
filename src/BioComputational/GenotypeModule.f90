@@ -147,7 +147,7 @@ module GenotypeModule
 
       type(mendelian) :: m
 
-      if (allocated(m%paternalInconsistent)) then
+      if (allocated(m%maternalConsistent)) then
         deallocate(m%paternalInconsistent)
         deallocate(m%maternalInconsistent)
         deallocate(m%individualInconsistent)

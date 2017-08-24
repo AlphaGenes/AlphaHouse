@@ -307,7 +307,7 @@ end function copyPedigree
 
 
 
-function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
+function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(CountChanges)
     use genotypeModule
     use BitUtilities
     implicit none
@@ -315,29 +315,36 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
     type(Mendelian), dimension(:), allocatable :: mend 
     real, intent(in) :: threshold !< threshold for removing animals
     integer :: sireInconsistencies, damInconsistencies
-    integer :: outfile
+    integer :: outfile,snpFile
     type(individual),pointer :: sire, dam
     integer :: i,j
     character(len=*),intent(in), optional :: file
+    character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
     integer :: CountChanges, dumId
+    integer :: snpChanges
     logical :: sireRemoved, damRemoved,changedGeno 
 
     changedGeno = .false.
     sireRemoved = .false.
     damRemoved = .false.
 
+
+    if (present(snpfilePath)) then
+      open(newunit=snpFile, file=snpfilePath, status='unknown')
+    endif
     if (present(file)) then
         open(newunit=outfile, file=file, status='unknown')
     endif
 
     CountChanges = 0
 
-    if (ped%isSorted == 0) then
 
+    allocate(mend(ped%pedigreeSize))
+
+    if (ped%isSorted == 0) then
         write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
     endif
 
-    print *,"THRESH", threshold
 
     call ped%writeOutGenotypesAll("genotypes.txt")
     do i=1,ped%pedigreeSize
@@ -358,23 +365,22 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
             ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
             damInconsistencies = bitcount(mend(i)%maternalInconsistent)
             ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
+            write (outfile,'(3a30)') "AnimalId","ParentId","Number Of Inconsistencies"
+            ! if (present(file)) then
+            !     write (outfile,'(3a30,2I)') &
+            !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
 
-            if (present(file)) then
-                write (outfile,'(3a30,2I)') &
-                Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
-
-            endif
+            ! endif
 
 
 
             ! looks like a pedigree error
             if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
-                ! remove sire link
-                ! if (present(file)) then
-                !     write (outfile,'(2a30,4I, 4E15.7)') &
-                !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
+                remove sire link
+                if (present(file)) then
+                    Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
 
-                ! endif
+                endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
                 call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
@@ -386,10 +392,10 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
             if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 
                 ! remove dam link
-                ! if (present(file)) then
-                !     write (outfile,'(2a30,4I, 4E15.7)') &
-                !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
-                ! endif
+                if (present(file)) then
+                    write (outfile,'(3a30,1I)') &
+                    Ped%pedigree(i)%originalID, "DAM", Ped%pedigree(i)%damPointer%originalID, damInconsistencies
+                endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
                 call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
@@ -440,6 +446,7 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
 
     do i=1, ped%pedigreeSize
 
+      if (ped%pedigree(i)%Founder) cycle
 
         ! if both parents haven't been removed, check most likely one
          
@@ -451,7 +458,7 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
             if (.not. ped%pedigree(i)%sirePointer%isDummy .and. .not. ped%pedigree(i)%damPointer%isDummy) then 
            ! if both were inconsistent, set to which one is more likely
                if (testBit(mend(i)%individualInconsistent,j) ) then
-
+                  snpChanges = snpChanges + 1 
                   changedGeno = .true.
                   ! TODO is it worth checking if this animal is inconsistent? 
 
@@ -459,37 +466,67 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
                   if (ped%pedigree(i)%sirePointer%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
                       call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                       call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      if (present(snpfilePath)) then
+                        write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+                      endif
                   else if(ped%pedigree(i)%sirePointer%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
                       call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                       call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      if (present(snpfilePath)) then
+                        write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+                      endif
                   else !< if they are both as unlikely, set all the animals as missing here
                       call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                       call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                       call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                      if (present(snpfilePath)) then
+                        write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+                        write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+                      endif
                   endif
                 endif
 
             else 
 
                 if (.not. ped%pedigree(i)%sirePointer%isDummy  .and.  testBit(mend(i)%paternalInconsistent,j) ) then
+                    snpChanges = snpChanges +1 
                     if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
                         call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(1a30,I)') & Ped%pedigree(i)%originalID, j
+                        endif
                     else if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
                         call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(1a30,I)') & Ped%pedigree(i)%sirePointer%originalID, j
+                        endif
                     else
                         call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                         call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+                        endif
                     endif
                 endif
 
                 if (.not. ped%pedigree(i)%damPointer%isDummy  .and.  testBit(mend(i)%maternalInconsistent,j) )  then
+                    snpChanges = snpChanges +1 
                      if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
                         call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(1a30,I)') & Ped%pedigree(i)%originalID, j
+                        endif
                     else if (ped%pedigree(i)%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
                         call ped%pedigree(i)%dampointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(1a30,I)') & Ped%pedigree(i)%damPointer%originalID, j
+                        endif
                     else 
                         call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
                         call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+                        if (present(snpfilePath)) then
+                          write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+                        endif
 
                     endif
                 endif    
@@ -505,12 +542,17 @@ function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
 
 deallocate(mend)
 
+
+if (present(snpfilePath)) then
+    close(snpFile)
+endif
+
 if (present(file)) then
     write (outfile,*) CountChanges," changes were made to the pedigree"
     close (outfile)
 endif
 print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
-
+print*, " ",snpChanges," snps changed throughout pedigree"
 
 
 end function findMendelianInconsistencies
