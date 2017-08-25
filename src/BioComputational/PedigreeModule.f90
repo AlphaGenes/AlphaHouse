@@ -376,10 +376,9 @@ function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(Co
 
             ! looks like a pedigree error
             if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
-                remove sire link
+                ! remove sire link
                 if (present(file)) then
-                    Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
-
+                    write (outfile,'(4a30)') Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
                 endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
