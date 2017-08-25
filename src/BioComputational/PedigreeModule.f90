@@ -331,9 +331,11 @@ function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(Co
 
     if (present(snpfilePath)) then
       open(newunit=snpFile, file=snpfilePath, status='unknown')
+      write (snpFile,'(3a30)') "AnimalId","ParentId", "SNP Position of Mismatch"
     endif
     if (present(file)) then
         open(newunit=outfile, file=file, status='unknown')
+        write (outfile,'(4a30)') "AnimalId","Sire Or Dam", "ParentId","Number Of Inconsistencies"
     endif
 
     CountChanges = 0
@@ -345,8 +347,6 @@ function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(Co
         write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
     endif
 
-
-    call ped%writeOutGenotypesAll("genotypes.txt")
     do i=1,ped%pedigreeSize
 
         ! if sire is associated, then dam must be too 
@@ -360,12 +360,11 @@ function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(Co
 
             sireInconsistencies = bitcount(mend(i)%paternalInconsistent)
 
-
             ! update inconsistencies, maybe do this first 
             ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
             damInconsistencies = bitcount(mend(i)%maternalInconsistent)
             ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
-            write (outfile,'(3a30)') "AnimalId","ParentId","Number Of Inconsistencies"
+            
             ! if (present(file)) then
             !     write (outfile,'(3a30,2I)') &
             !     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
@@ -378,7 +377,7 @@ function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(Co
             if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
                 ! remove sire link
                 if (present(file)) then
-                    write (outfile,'(4a30)') Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
+                    write (outfile,'(3a30,1I)') Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
                 endif
                 CountChanges=CountChanges+1
                 ! remove offspring link
