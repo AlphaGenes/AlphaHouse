@@ -27,6 +27,8 @@ module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     use genotypeModule
     use HaplotypeModule
+    use IntegerLinkedList
+
     use iso_fortran_env
     
     implicit none
@@ -73,6 +75,8 @@ module IndividualModule
         logical(kind=1), allocatable :: isInbred
         logical(kind=1), allocatable :: isImputed
 
+
+        type(IntegerLinkedList) :: families
 
         integer :: inconsistencies = 0 !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
 
@@ -123,6 +127,7 @@ module IndividualModule
             procedure :: makeIndividualPhaseCompliment
             procedure :: makeIndividualGenotypeFromPhase
             procedure :: countHighDensityOffspring
+            procedure :: addFamily
             generic:: write(formatted)=> writeIndividual
 
             
@@ -191,6 +196,7 @@ contains
             if (present(probabilites)) then
                 allocate(this%genotypeProbabilities(nsnps))
                 allocate(this%phaseProbabilities(nsnps,2))
+                allocate(this%isImputed)
             endif
         endif
 
@@ -1305,9 +1311,14 @@ contains
 
 
 
+  !---------------------------------------------------------------------------
+    !> @brief counts the number of offspring flagged as hd
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !---------------------------------------------------------------------------
     function countHighDensityOffspring(this) result(count)
-        class(individual ) :: this
-        integer :: count, i
+        class(individual) :: this 
+        integer :: count !< the number of high density offspring this individual has
+        integer :: i
 
         if (allocated(this%nHighDensityOffspring)) then
             count = this%nHighDensityOffspring
@@ -1324,6 +1335,21 @@ contains
         endif
 
     end function countHighDensityOffspring
+
+
+    !---------------------------------------------------------------------------
+    !> @brief adds index for family to the individual's families linked list
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine addFamily(this, int)
+        class(individual) :: this
+        integer :: int !< the input integer to add to the linked list
+
+        call this%families%list_add(int)
+
+
+    end subroutine addFamily
 
 
 end module IndividualModule
