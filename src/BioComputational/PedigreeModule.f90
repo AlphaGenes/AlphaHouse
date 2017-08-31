@@ -108,7 +108,6 @@ module PedigreeModule
   procedure :: createDummyAnimalAtEndOfPedigree
   procedure :: addAnimalAtEndOfPedigree
   procedure :: addSequenceFromFile
-  procedure :: addSequenceFromVCFFile
   procedure :: setAnimalAsGenotypedSequence
   procedure :: convertSequenceDataToArray
   procedure :: getSequenceAsArrayWithMissing
@@ -1793,7 +1792,8 @@ end subroutine addSequenceFromFile
 !--------------------------------------------------------------------------
 subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,startSnp,endSnp,position,quality)
     
-    use AlphaHouseMod, only : countLines
+    use omp_lib
+    use AlphaHouseMod, only : countLines,countColumns
     use ConstantModule, only : IDLENGTH,DICT_NULL
 
     implicit none
@@ -1802,7 +1802,7 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     integer,intent(in),optional :: nSnpsIn
     integer,intent(in),optional :: maximumReads
     integer,intent(in),optional :: nAnisIn
-    integer,intent(in),optional :: startSnp, endSnp 
+    integer,intent(inout),optional :: startSnp, endSnp 
 
     integer:: nAnis,nSnp,unit,pos,i,j,tmpID
     character(len=1), dimension(3):: delimiter
@@ -1836,7 +1836,7 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     endif
 
     if (.not. Present(nAnisIn)) then
-      nAnis = countColumns(fileName, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
+      nAnis = countColumns(seqFile, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
     else 
       nAnis = nAnisIn
     endif
@@ -1868,7 +1868,7 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
 
     pos=1
     do j = 1, nSnp
-        read(fileUnit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
+        read(unit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
         if ((j.ge.startSnp).and.(j.le.endSnp)) then
           if (Present(position)) position(pos)=tPOS
           if (Present(quality)) quality(pos)=tQUAL
