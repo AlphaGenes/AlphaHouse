@@ -108,6 +108,7 @@ module PedigreeModule
   procedure :: createDummyAnimalAtEndOfPedigree
   procedure :: addAnimalAtEndOfPedigree
   procedure :: addSequenceFromFile
+  procedure :: addSequenceFromVCFFile
   procedure :: setAnimalAsGenotypedSequence
   procedure :: convertSequenceDataToArray
   procedure :: getSequenceAsArrayWithMissing
