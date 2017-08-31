@@ -84,6 +84,7 @@ module PedigreeModule
   procedure :: printPedigree
   procedure :: printPedigreeOriginalFormat
   procedure :: getMatePairsAndOffspring
+  procedure :: addSequenceFromVCFFile
   procedure :: getAllGenotypesAtPosition
   procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
   procedure :: getPhaseAtPosition
@@ -1714,6 +1715,11 @@ enddo
 end subroutine addPhaseInformationFromFile
 
 
+!---------------------------------------------------------------------------
+! DESCRIPTION:
+!< @brief     Adds sequence information from VCF file - this was taken out of Roberto's HMM
+!< @date       June 19, 2017
+!--------------------------------------------------------------------------
 subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, startSnp, endSnp)
 
     use AlphaHouseMod, only : countLines
@@ -1741,7 +1747,7 @@ subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, star
   open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
   allocate(ref(nsnps))
   allocate(alt(nsnps))
-  ! tmp = 9
+  tmp = 9
   print *, "Number of animals in seq file", NanisG
   do i=1,nAnisG
       read (unit,*) seqid, ref(:)
@@ -1774,6 +1780,88 @@ end do
 
 close(unit)
 end subroutine addSequenceFromFile
+
+
+
+!---------------------------------------------------------------------------
+! DESCRIPTION:
+!< @brief     Adds sequence information from VCF file - this was taken out of Mara's code and
+!< adapted to work with the pedigree class 
+!< @date       June 19, 2017
+!--------------------------------------------------------------------------
+subroutine addSequenceFromVCFFile(this,filename, quality,nSnpIn,SnpUsed,StartSnp,EndSnp,nIndivIn)
+  use omp_lib
+  implicit none
+  class(PedigreeHolder) :: this
+  !filename has the name of the file to be read
+  character(len=*), intent(in)::filename
+  character(len=100), allocatable, dimension(:):: Ids
+  !info holds the quality and the poisition (
+
+  character(len=100), dimension(:), allocatable::dumE, dumC
+  real(real64), allocatable, dimension(:), intent(out):: quality
+  integer(int64), dimension(:), allocatable :: position
+  integer, dimension(:,:,:), allocatable:: SequenceData
+  
+  integer(int64)  :: tmpPosition
+  real(real64)    :: tmpQuality
+  integer(kind=2), dimension(:,:), allocatable:: tmpSequenceData
+
+  integer(int32), intent(in):: SnpUsed,nSnpIn,StartSnp,EndSnp,nIndivIn
+  integer(int32)::nSnp,pos,fileUnit, nIndiv
+  integer(int32)::i,j
+  integer :: tmpId
+  integer(KIND=1), allocatable, dimension(:) :: tmp
+  real(kind=8)::tstart,tend
+  character(100):: temp
+
+  ! Open the file
+  open(newunit=fileUnit, file=filename, action="read")
+
+  nSnp = nSnpIn
+  nIndiv = nIndivIn
+  allocate(tmp(nsnp))
+  tmp = 9
+  allocate(SequenceData(nIndiv, SnpUsed, 2))
+  allocate(tmpSequenceData(nIndiv,2))
+  allocate(position(SnpUsed))
+  allocate(quality(SnpUsed))
+  allocate(Ids(nIndiv))
+  allocate(dumE(5+2*nIndiv))
+  allocate(dumC(5+nIndiv))
+
+  tstart = omp_get_wtime()
+
+  read(fileUnit, *) dumC 
+  write(*,"(5A)") "STUFF", trim(dumC(1)), trim(dumC(2)), trim(dumC(3)), "ENDSTUFF"
+  do i =1, nIndiv
+    write(Ids(i), *) dumC(i+5)
+  end do
+
+  pos=1
+  do j = 1, nSnp
+      read(fileUnit, *) temp, tmpPosition, temp, temp, tmpQuality, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nIndiv)
+      if ((j.ge.StartSnp).and.(j.le.EndSnp)) then
+        position(pos)=tmpPosition
+        quality(pos)=tmpQuality
+        SequenceData(:,pos,1)=tmpSequenceData(:,1)
+        SequenceData(:,pos,2)=tmpSequenceData(:,2)
+        pos=pos+1
+      end if
+  end do
+
+  do i=1, nIndiv
+    tmpID = this%dictionary%getValue(ids(i))
+    if (tmpID /= DICT_NULL) then
+        call this%setAnimalAsGenotypedSequence(tmpID,tmp,SequenceData(i,:,1),SequenceData(i,:,2))
+    endif
+
+  enddo 
+  tend = omp_get_wtime()
+  write(*,*) "Total wall time for Importing Reads", tend - tstart
+  !write(*,*) SequenceData
+
+end subroutine addSequenceFromVCFFile
 
 
 
