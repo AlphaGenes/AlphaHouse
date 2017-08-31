@@ -1790,7 +1790,7 @@ end subroutine addSequenceFromFile
 !< adapted to work with the pedigree class 
 !< @date       June 19, 2017
 !--------------------------------------------------------------------------
-subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,startSnp,endSnp,position,quality)
+subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,startSnpIn,endSnpIn,position,quality)
     
     use omp_lib
     use AlphaHouseMod, only : countLines,countColumns
@@ -1802,9 +1802,10 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     integer,intent(in),optional :: nSnpsIn
     integer,intent(in),optional :: maximumReads
     integer,intent(in),optional :: nAnisIn
-    integer,intent(inout),optional :: startSnp, endSnp 
+    integer,intent(in),optional :: startSnpIn, endSnpIn
 
-    integer:: nAnis,nSnp,unit,pos,i,j,tmpID
+
+    integer:: nAnis,nSnp,unit,pos,i,j,tmpID,startSnp, endSnp
     character(len=1), dimension(3):: delimiter
     
     character(len=IDLENGTH), allocatable, dimension(:)              :: Ids
@@ -1843,10 +1844,9 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
 
     if (Present(position)) allocate(position(nSnp))
     if (Present(quality)) allocate(quality(nSnp))
-    if (.not. Present(endSnp)) then
-      startSnp=1
-      endSnp=nSnp
-    endif
+
+    if (.not. Present(endSnpIn)) endSnp=nSnp
+    if (.not. Present(startSnpIn)) startSnp=1
 
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
@@ -1860,7 +1860,7 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     ! Read header and store animals id
     read (unit,*) dumC 
     do i =1, nAnis
-      write(ids(i), *) dumC(i+5)
+      write(ids(i), *) trim(dumC(i+5))
     end do
     deallocate(dumC)
 
