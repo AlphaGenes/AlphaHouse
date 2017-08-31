@@ -3303,8 +3303,8 @@ function countMissingPhaseNoDummys(this) result(res)
 
       if (this%pedigree(i)%isDummy) cycle
 
-      res = res + this%pedigree(i)%individualPhase(1)%numMissing()
-      res = res + this%pedigree(i)%individualPhase(2)%numMissing()
+      res = res + this%pedigree(i)%individualPhase(1)%numberMissing()
+      res = res + this%pedigree(i)%individualPhase(2)%numberMissing()
   end do
 end function countMissingPhaseNoDummys
 
