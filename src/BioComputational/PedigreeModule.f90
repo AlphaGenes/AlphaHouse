@@ -3170,4 +3170,27 @@ function countMissingGenotypesNoDummys(this) result(res)
   end do
 end function countMissingGenotypesNoDummys
 
+!---------------------------------------------------------------------------
+!< @brief  counts missing alleles (in the 2 gametes) across all animals at every snp
+!<Returns a count of missing alleles across all animals at every snp
+!< @author  Mara Battagin mara.battagin@roslin.ed.ac.uk
+!< @date    August 31, 2017
+!---------------------------------------------------------------------------
+function countMissingPhaseNoDummys(this) result(res)
+    integer :: res
+    integer :: i
+    class(PedigreeHolder) :: this
+
+    res = 0
+    do i=1, this%pedigreeSize
+
+      if (this%pedigree(i)%isDummy) cycle
+
+      res = res + this%pedigree(i)%individualPhase(1)%numMissing()
+      res = res + this%pedigree(i)%individualPhase(2)%numMissing()
+  end do
+end function countMissingPhaseNoDummys
+
+
+
 end module PedigreeModule
