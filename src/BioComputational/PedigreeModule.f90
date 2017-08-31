@@ -1842,7 +1842,11 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
 
     if (Present(position)) allocate(position(nSnp))
     if (Present(quality)) allocate(quality(nSnp))
-    
+    if (.not. Present(endSnp)) then
+      startSnp=1
+      endSnp=nSnp
+    endif
+
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
     allocate(Ids(nAnis))
