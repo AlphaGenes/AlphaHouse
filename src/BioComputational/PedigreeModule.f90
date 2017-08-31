@@ -1843,13 +1843,6 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     if (Present(position)) allocate(position(nSnp))
     if (Present(quality)) allocate(quality(nSnp))
     
-
-    if (.not. Present(nAnisIn)) then
-      nAnis = countColumns(fileName, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
-    else 
-      nAnis = nAnisIn
-    endif
-
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
     allocate(Ids(nAnis))
