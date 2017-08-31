@@ -1790,77 +1790,107 @@ end subroutine addSequenceFromFile
 !< adapted to work with the pedigree class 
 !< @date       June 19, 2017
 !--------------------------------------------------------------------------
-subroutine addSequenceFromVCFFile(this,filename, quality,nSnpIn,SnpUsed,StartSnp,EndSnp,nIndivIn)
-  use omp_lib
-  implicit none
-  class(PedigreeHolder) :: this
-  !filename has the name of the file to be read
-  character(len=*), intent(in)::filename
-  character(len=100), allocatable, dimension(:):: Ids
-  !info holds the quality and the poisition (
+subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,startSnp,endSnp,position,quality)
+    
+    use AlphaHouseMod, only : countLines
+    use ConstantModule, only : IDLENGTH,DICT_NULL
 
-  character(len=100), dimension(:), allocatable::dumE, dumC
-  real(real64), allocatable, dimension(:), intent(out):: quality
-  integer(int64), dimension(:), allocatable :: position
-  integer, dimension(:,:,:), allocatable:: SequenceData
+    implicit none
+    class(PedigreeHolder)       :: this
+    character(len=*), intent(in):: seqFile
+    integer,intent(in),optional :: nSnpsIn
+    integer,intent(in),optional :: maximumReads
+    integer,intent(in),optional :: nAnisIn
+    integer,intent(in),optional :: startSnp, endSnp 
+
+    integer:: nAnis,nSnp,unit,pos,i,j,tmpID
+    character(len=1), dimension(3):: delimiter
+    
+    character(len=IDLENGTH), allocatable, dimension(:)              :: Ids
+    integer(int64), allocatable, dimension(:),intent(out),optional  :: position
+    real(real64), allocatable, dimension(:),intent(out),optional    :: quality
   
-  integer(int64)  :: tmpPosition
-  real(real64)    :: tmpQuality
-  integer(kind=2), dimension(:,:), allocatable:: tmpSequenceData
+    character(100)  :: tCHROM,tREF,tALT
+    integer(int64)  :: tPOS
+    real(real64)    :: tQUAL
 
-  integer(int32), intent(in):: SnpUsed,nSnpIn,StartSnp,EndSnp,nIndivIn
-  integer(int32)::nSnp,pos,fileUnit, nIndiv
-  integer(int32)::i,j
-  integer :: tmpId
-  integer(KIND=1), allocatable, dimension(:) :: tmp
-  real(kind=8)::tstart,tend
-  character(100):: temp
+    character(len=100), dimension(:), allocatable:: dumC
+    
+    integer(KIND=1), allocatable, dimension(:) :: tmp
+    
+    integer, dimension(:,:), allocatable:: tmpSequenceData
+    integer, dimension(:,:,:), allocatable:: SequenceData
 
-  ! Open the file
-  open(newunit=fileUnit, file=filename, action="read")
+    real(kind=8)::tstart,tend
 
-  nSnp = nSnpIn
-  nIndiv = nIndivIn
-  allocate(tmp(nsnp))
-  tmp = 9
-  allocate(SequenceData(nIndiv, SnpUsed, 2))
-  allocate(tmpSequenceData(nIndiv,2))
-  allocate(position(SnpUsed))
-  allocate(quality(SnpUsed))
-  allocate(Ids(nIndiv))
-  allocate(dumE(5+2*nIndiv))
-  allocate(dumC(5+nIndiv))
+    delimiter(1) = ","
+    delimiter(2) = " "
+    delimiter(3) = char(9)
 
-  tstart = omp_get_wtime()
-
-  read(fileUnit, *) dumC 
-  write(*,"(5A)") "STUFF", trim(dumC(1)), trim(dumC(2)), trim(dumC(3)), "ENDSTUFF"
-  do i =1, nIndiv
-    write(Ids(i), *) dumC(i+5)
-  end do
-
-  pos=1
-  do j = 1, nSnp
-      read(fileUnit, *) temp, tmpPosition, temp, temp, tmpQuality, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nIndiv)
-      if ((j.ge.StartSnp).and.(j.le.EndSnp)) then
-        position(pos)=tmpPosition
-        quality(pos)=tmpQuality
-        SequenceData(:,pos,1)=tmpSequenceData(:,1)
-        SequenceData(:,pos,2)=tmpSequenceData(:,2)
-        pos=pos+1
-      end if
-  end do
-
-  do i=1, nIndiv
-    tmpID = this%dictionary%getValue(ids(i))
-    if (tmpID /= DICT_NULL) then
-        call this%setAnimalAsGenotypedSequence(tmpID,tmp,SequenceData(i,:,1),SequenceData(i,:,2))
+ 
+    if (.not. Present(nSnpsIn)) then
+      nSnp = countLines(seqFile)-1 ! First row is the header
+    else 
+      nSnp = nSnpsIn
     endif
 
-  enddo 
-  tend = omp_get_wtime()
-  write(*,*) "Total wall time for Importing Reads", tend - tstart
-  !write(*,*) SequenceData
+    if (.not. Present(nAnisIn)) then
+      nAnis = countColumns(fileName, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
+    else 
+      nAnis = nAnisIn
+    endif
+
+    if (Present(position)) allocate(position(nSnp))
+    if (Present(quality)) allocate(quality(nSnp))
+    
+
+    if (.not. Present(nAnisIn)) then
+      nAnis = countColumns(fileName, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
+    else 
+      nAnis = nAnisIn
+    endif
+
+    open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
+
+    allocate(Ids(nAnis))
+    allocate(dumC(5+nAnis))
+    allocate(tmp(nSnp))
+    tmp = 9
+    allocate(SequenceData(nAnis, nSnp, 2))
+    allocate(tmpSequenceData(nAnis,2))
+ 
+    ! Read header and store animals id
+    read (unit,*) dumC 
+    do i =1, nAnis
+      write(ids(i), *) dumC(i+5)
+    end do
+    deallocate(dumC)
+
+    tstart = omp_get_wtime()
+
+    pos=1
+    do j = 1, nSnp
+        read(fileUnit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
+        if ((j.ge.startSnp).and.(j.le.endSnp)) then
+          if (Present(position)) position(pos)=tPOS
+          if (Present(quality)) quality(pos)=tQUAL
+          SequenceData(:,pos,1)=tmpSequenceData(:,1)
+          SequenceData(:,pos,2)=tmpSequenceData(:,2)
+          pos=pos+1
+        end if
+    end do
+    close(unit)
+
+    do i=1, nAnis
+      tmpID = this%dictionary%getValue(ids(i))
+      if (tmpID /= DICT_NULL) then
+        call this%setAnimalAsGenotypedSequence(tmpID,tmp,SequenceData(i,:,1),SequenceData(i,:,2))
+      endif
+    enddo 
+
+    tend = omp_get_wtime()
+
+    write(*,*) "Total wall time for Importing Reads", tend - tstart
 
 end subroutine addSequenceFromVCFFile
 
