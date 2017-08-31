@@ -93,7 +93,8 @@ module PedigreeModule
   procedure :: getGenotypesAsArray
   procedure :: getPhaseAsArray
   procedure :: getGenotypesAsArrayWitHMissing
-  procedure :: countMissingGenotypesNoDummys  
+  procedure :: countMissingGenotypesNoDummys
+  procedure :: countMissingPhaseNoDummys  
   procedure :: setGenotypeFromArray
   procedure :: setPhaseFromArray
   procedure :: getNumGenotypesMissing
