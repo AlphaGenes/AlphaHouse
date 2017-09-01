@@ -1849,17 +1849,14 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
     allocate(Ids(nAnis))
-    allocate(dumC(5+nAnis))
+    allocate(dumC(5))
     allocate(tmp(nSnp))
     tmp = 9
     allocate(SequenceData(nAnis, nSnp, 2))
     allocate(tmpSequenceData(nAnis,2))
  
     ! Read header and store animals id
-    read (unit,*) dumC 
-    do i =1, nAnis
-      write(ids(i), *) trim(dumC(i+5))
-    end do
+    read (unit,*) dumC,ids
     deallocate(dumC)
 
     tstart = omp_get_wtime()
