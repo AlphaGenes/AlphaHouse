@@ -62,8 +62,6 @@ module PedigreeModule
   integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
 
   type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
-
-
   type(IndividualLinkedList), allocatable :: uniqueParentList
   contains
   procedure :: calculatePedigreeCorrelationNoInbreeding
@@ -2927,9 +2925,7 @@ if (present(geno)) then
   call this%pedigree(individualIndex)%setGenotypeArray(geno)
 endif
 
-this%pedigree(individualIndex)%referAllele = referAllele
-this%pedigree(individualIndex)%alterAllele = alterAllele
-
+call this%pedigree(individualIndex)%setSequenceArray(referAllele,alterAllele)
 this%genotypeMap(this%nGenotyped) = individualIndex
 
 end subroutine setAnimalAsGenotypedSequence

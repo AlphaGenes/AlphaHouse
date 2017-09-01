@@ -57,6 +57,7 @@ module IndividualModule
         integer :: nOffs  = 0 !number of offspring
         logical(kind=1) :: Founder     = .false.
         logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: Sequenced   = .false.
         logical(kind=1) :: isPhased    = .false.
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
@@ -87,6 +88,7 @@ module IndividualModule
             procedure :: SetHD
             procedure :: getSireId
             procedure :: getDamID
+            procedure :: setSequenceArray
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
@@ -1088,6 +1090,26 @@ contains
         endif 
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setSequenceArray(this, referAllele, alterAllele)
+        use constantModule
+        
+        class(Individual), intent(inout) :: this
+        integer, dimension(:), intent(in) :: referAllele, alterAllele
+
+        this%Genotyped = .true.
+        this%Sequenced = .true.
+        
+        this%referAllele = referAllele
+        this%alterAllele  = alterAllele
+    end subroutine setSequenceArray
+
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual's phase.
