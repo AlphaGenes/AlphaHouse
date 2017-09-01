@@ -5,6 +5,7 @@ module informationModule
     use PedigreeModule
     use AlphaHouseMod
 
+    implicit none
     contains
     function checkYield(ped) result(res)
 
@@ -20,14 +21,14 @@ module informationModule
 
 
 
-    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath) result(meanAccuracy)
+    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath, snpErrorPath) result(meanAccuracy)
         
         type(PedigreeHolder) :: ped
         character(len=*),intent(in) :: trueFile
-        character(len=*),intent(in),optional :: outputPerAnimalPath   
+        character(len=*),intent(in),optional :: outputPerAnimalPath, snpErrorPath
 
         integer(kind=1), allocatable, dimension(:) :: tmpArray
-        integer :: animal,i, unit
+        integer :: animal,i, unit, lines, snpErrorUnit
 
         character(len=IDLENGTH), dimension(:), allocatable :: tmpIDs 
         real,dimension(:), allocatable :: accuracies
@@ -46,6 +47,10 @@ module informationModule
         ! allocate the
         allocate(tmpArray(ped%pedigree(ped%genotypeMap(1))%individualgenotype%length))
         open(newunit=unit, file=trueFile, status="old")
+
+        if (present(snpErrorPath)) then
+            open(newunit=snpErrorUnit, file=trim(snpErrorPath), status='unknown')
+        endif
         do i=1,lines
 
             read(unit,*) tmpIDs(i), tmpArray
@@ -53,7 +58,11 @@ module informationModule
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
                 ! print *,ped%pedigree(animal)%individualGenotype%getgenotype(232)
-                accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray())
+                if (present(snpErrorPath)) then
+                    accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i, snpErrorUnit)
+                else
+                    accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i)
+                endif
             endif
         enddo
         close(unit)
@@ -64,6 +73,10 @@ module informationModule
                 write(unit,*) tmpIds(i),accuracies(i)
             enddo
             close(unit)
+        endif
+
+        if (present(snpErrorPath)) then
+            close(snpErrorUnit)
         endif
 
         meanAccuracy = sum(accuracies) / lines
@@ -86,7 +99,7 @@ module informationModule
         character(len=IDLENGTH), dimension(:), allocatable :: tmpIDs 
         real,dimension(:), allocatable :: accuracies
         real :: meanAccuracy
-        integer :: nsnps,unit
+        integer :: nsnps,unit,lines
 
         ! function assumes order of input true file is the same as genotype file
 
@@ -151,25 +164,33 @@ module informationModule
 
     end function
 
-    function corAccuracies(one, two) result(res)
+    function corAccuracies(one, two, index, unit) result(res)
 
         integer(kind=1), dimension(:),intent(in) :: one,two
         real(kind=real32) :: res
+        integer, optional :: index
+        integer, optional :: unit
 
-        integer :: incorrect, count
+        integer :: incorrect, count, i
         incorrect = 0
         count = 0
 
+    
         do i =1,size(one)
 
             if (one(i) == 9 .or. two(i) == 9) cycle
             count = count +1
             if (one(i)/=two(i)) then
+                if (present(unit)) then
+                    write(unit,*) "error at animal at line: ",index," at position ",i," with vals:",one(i),two(i)
+                endif
+
                 incorrect = incorrect + 1   
             endif
         enddo 
 
         res = 1 - real(incorrect) / real(count)
+
     end function corAccuracies
     ! subroutine checkPhaseYield
 

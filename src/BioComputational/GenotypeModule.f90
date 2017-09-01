@@ -75,6 +75,7 @@ module GenotypeModule
   procedure :: firstHet
   procedure :: numberErrors
   procedure :: getErrors
+  procedure :: setMissingBits
   procedure :: setHaplotypeFromGenotypeIfError
   procedure :: setHaplotypeFromGenotypeIfMissing
   procedure :: numberErrorsSingle
@@ -85,6 +86,7 @@ module GenotypeModule
   procedure :: readFormattedGenotype
   procedure :: readunFormattedGenotype
   procedure :: writeFormattedGenotype
+  procedure :: mendelianInconsistencies
   procedure :: writeunFormattedGenotype
   final :: destroyGenotype
   generic:: write(formatted)=> writeFormattedGenotype
@@ -113,6 +115,11 @@ module GenotypeModule
     type :: Mendelian
         integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
         integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
+    !paternal
+      contains
+
+        final :: destroyMendelian
+
     end type Mendelian
 
   interface Genotype
@@ -134,6 +141,25 @@ module GenotypeModule
             deallocate(g%locked)
         end if
     end subroutine destroyGenotype
+
+
+    subroutine destroyMendelian(m)
+
+      type(mendelian) :: m
+
+      if (allocated(m%maternalConsistent)) then
+        deallocate(m%paternalInconsistent)
+        deallocate(m%maternalInconsistent)
+        deallocate(m%individualInconsistent)
+        deallocate(m%paternalConsistent)
+        deallocate(m%maternalConsistent)
+        deallocate(m%individualConsistent)
+      endif
+
+
+
+
+    end subroutine destroyMendelian
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Genotype from a integer array. lock determines
     !>          whether genotypes that are known at creation are locked.
@@ -189,6 +215,25 @@ module GenotypeModule
             g%hasLock = .false.
         end if
     end function newGenotypeInt
+
+
+
+        !---------------------------------------------------------------------------
+    !> @brief   Sets the snps in a haplotype to missing
+    !> @detail  Sets a snp to be zero if the same position in the bit array is set
+    !> @date    May 25, 2017
+    !---------------------------------------------------------------------------  
+    subroutine setMissingBits(g, array)
+        class(Genotype) :: g
+        integer(kind=int64), dimension(:), intent(in) :: array
+
+        integer :: i
+
+        do i = 1, g%sections
+            g%additional(i) = IOR((array(i)), g%additional(i))
+            g%homo(i) = IAND(NOT(array(i)), g%homo(i))
+        end do
+    end subroutine setMissingBits
     
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new genotype from two haplotype objects.  lock
@@ -1060,7 +1105,12 @@ function isHomo(g, pos) result (two)
         allocate(mend%maternalConsistent(g%sections))
         allocate(mend%individualConsistent(g%sections))
 
-
+        mend%paternalInconsistent = 0
+        mend%maternalInconsistent = 0
+        mend%individualInconsistent = 0
+        mend%paternalconsistent = 0
+        mend%maternalconsistent = 0
+        mend%individualconsistent = 0
         do i = 1, g%sections
             het = IAND( &
                 ! Individual is het
@@ -1081,7 +1131,7 @@ function isHomo(g, pos) result (two)
                 IAND(IAND(g%homo(i), pg%homo(i)), IEOR(g%additional(i), pg%additional(i))) &
                 )
 
-            mend%paternalInconsistent(i) = IOR( &
+            mend%maternalInconsistent(i) = IOR( &
                 ! Individual is het and bad
                 het, &
                 ! Individual is homo and maternal is opposite homo)
@@ -1114,6 +1164,12 @@ function isHomo(g, pos) result (two)
                 ! Not individual inconsistent
                 NOT(mend%individualInconsistent(i)) &
                 )
+        end do
+
+        do i = 64 - g%overhang, 63
+            mend%paternalConsistent(g%sections) = ibclr(mend%paternalConsistent(g%sections), i)
+            mend%maternalConsistent(g%sections) = ibclr(mend%maternalConsistent(g%sections), i)
+            mend%individualConsistent(g%sections) = ibclr(mend%individualConsistent(g%sections), i)
         end do
 
     end function mendelianInconsistencies

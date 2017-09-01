@@ -57,6 +57,7 @@ module IndividualModule
         integer :: nOffs  = 0 !number of offspring
         logical(kind=1) :: Founder     = .false.
         logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: Sequenced   = .false.
         logical(kind=1) :: isPhased    = .false.
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
@@ -74,6 +75,9 @@ module IndividualModule
         logical(kind=1), allocatable :: isImputed
 
 
+        integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
+
+
         contains
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
@@ -84,6 +88,7 @@ module IndividualModule
             procedure :: SetHD
             procedure :: getSireId
             procedure :: getDamID
+            procedure :: setSequenceArray
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
@@ -180,9 +185,11 @@ contains
             if (nsnps /= 0) then
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
+                allocate(this%inconsistencies(nsnps))
                 this%individualGenotype = newGenotypeMissing(nsnps)
                 this%individualPhase(1) = newHaplotypeMissing(nsnps)
                 this%individualPhase(2) = newHaplotypeMissing(nsnps)
+                this%inconsistencies =  0
             endif
 
             if (present(probabilites)) then
@@ -246,6 +253,9 @@ contains
 
         if (allocated(this%isImputed)) then
             deallocate(this%isImputed)
+        endif
+        if (allocated(this%inconsistencies)) then
+            deallocate(this%inconsistencies)
         endif
 
 
@@ -1080,6 +1090,26 @@ contains
         endif 
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setSequenceArray(this, referAllele, alterAllele)
+        use constantModule
+        
+        class(Individual), intent(inout) :: this
+        integer, dimension(:), intent(in) :: referAllele, alterAllele
+
+        this%Genotyped = .true.
+        this%Sequenced = .true.
+        
+        this%referAllele = referAllele
+        this%alterAllele  = alterAllele
+    end subroutine setSequenceArray
+
 
     !---------------------------------------------------------------------------
     !> @brief Sets the individual's phase.
