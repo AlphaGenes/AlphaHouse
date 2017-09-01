@@ -1788,22 +1788,23 @@ end subroutine addSequenceFromFile
 !< adapted to work with the pedigree class 
 !< @date       June 19, 2017
 !--------------------------------------------------------------------------
-subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,startSnpIn,endSnpIn,position,quality)
+subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,position,quality,chr,startPos,EndPos)
     
     use omp_lib
     use AlphaHouseMod, only : countLines,countColumns
     use ConstantModule, only : IDLENGTH,DICT_NULL
 
     implicit none
-    class(PedigreeHolder)       :: this
-    character(len=*), intent(in):: seqFile
+    class(PedigreeHolder)        :: this
+    character(len=*), intent(in) :: seqFile
+    character(len=300),intent(in) :: chr                           
+    integer,intent(in) :: StartPos,EndPos                 
+
     integer,intent(in),optional :: nSnpsIn
-    integer,intent(in),optional :: maximumReads
     integer,intent(in),optional :: nAnisIn
-    integer,intent(in),optional :: startSnpIn, endSnpIn
+    
 
-
-    integer:: nAnis,nSnp,unit,pos,i,j,tmpID,startSnp, endSnp
+    integer:: nAnis,nSnp,unit,pos,i,j,tmpID
     character(len=1), dimension(3):: delimiter
     
     character(len=IDLENGTH), allocatable, dimension(:)              :: Ids
@@ -1843,9 +1844,6 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     if (Present(position)) allocate(position(nSnp))
     if (Present(quality)) allocate(quality(nSnp))
 
-    if (.not. Present(endSnpIn)) endSnp=nSnp
-    if (.not. Present(startSnpIn)) startSnp=1
-
     open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 
     allocate(Ids(nAnis))
@@ -1864,12 +1862,14 @@ subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,maximumReads,star
     pos=1
     do j = 1, nSnp
         read(unit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
-        if ((j.ge.startSnp).and.(j.le.endSnp)) then
-          if (Present(position)) position(pos)=tPOS
-          if (Present(quality)) quality(pos)=tQUAL
-          SequenceData(:,pos,1)=tmpSequenceData(:,1)
-          SequenceData(:,pos,2)=tmpSequenceData(:,2)
-          pos=pos+1
+        if (trim(tCHROM).eq.trim(chr)) then
+          if (((tPos.ge.StartPos).or.(StartPos.eq.0)).and.((tPos.le.EndPos).or.(EndPos.eq.0))) then
+            if (Present(position)) position(pos)=tPOS
+            if (Present(quality)) quality(pos)=tQUAL
+            SequenceData(:,pos,1)=tmpSequenceData(:,1)
+            SequenceData(:,pos,2)=tmpSequenceData(:,2)
+            pos=pos+1
+          endif
         end if
     end do
     close(unit)
