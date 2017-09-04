@@ -129,7 +129,6 @@ module TestPedigreeModule
     expected(3,3) = 8.0_real64/3.0_real64
 
 
-
     call pedigree%sortPedigreeAndOverwrite(1)
 
     gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
@@ -166,6 +165,23 @@ module TestPedigreeModule
          @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
 
+
+      @test
+
+    subroutine testHDPed
+        implicit none
+        integer :: tmp,i
+        type(PedigreeHolder) :: hdPed
+        tmp = pedigree%dictionary%getValue("bbb")
+        call pedigree%setAnimalAsHD(tmp)
+        tmp = pedigree%dictionary%getValue("fff")
+        call pedigree%setAnimalAsHD(tmp)
+        hdPed = pedigree%getHDPedigree()
+        @assertEqual(hdPed%pedigreeSize,4)
+        @assertEqual(hdPed%nHd,2)
+        !  @assertFalse(tmp == DICT_NULL)
+        !  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
+    end subroutine testHDPed
 
 
     @test

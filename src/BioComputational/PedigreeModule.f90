@@ -40,6 +40,7 @@ module PedigreeModule
   type PedigreeHolder
 
   type(Individual), pointer, dimension(:) :: Pedigree 
+
   type(IndividualLinkedList) :: Founders !linked List holding all founders
   type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
   type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
@@ -118,6 +119,7 @@ module PedigreeModule
   procedure :: getUniqueParents
   procedure :: findMendelianInconsistencies
   procedure :: writeOutGenotypesAll
+  procedure :: getHDPedigree
   end type PedigreeHolder
 
   ! TODO - overload == and = functions
@@ -160,13 +162,14 @@ module PedigreeModule
                         integer, optional :: nsnps
 
                         pedStructure%dictionary = DictStructure()
+                        
                         pedStructure%pedigreeSize = 0
                         pedStructure%nDummys = 0
                         pedStructure%nGenotyped = 0
                         pedStructure%nHd = 0
                         pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+                        allocate(pedStructure%pedigree(pedStructure%maxPedigreeSize))
                         pedStructure%nsnpsPopulation = 0
-
                         if (present(nsnps)) then
                           pedStructure%nsnpsPopulation = nsnps
                       endif
@@ -288,22 +291,103 @@ end function copyPedigree
 
 
 
-! subroutine findMendelianInconsistenciesnew(ped, threshold)
-!     use GenotypeModule
 
-!     type(PedigreeHOlder) :: ped
-!     type(Mendelian) :: mend
-!     real, intent(in) :: threshold
-
-!     do i=1,ped%pedigreeSize
-!         if (ped%pedigree(i)%isFounder) cycle
-!         mend = ped%pedigree(i)%individualGenotyp%mendelianInconsistencies(ped%pedigree(i)%sirePointer%individualGenotype,ped%pedigree(i)%damPointer%individualGenotype)
-!             ! TODO cut pedigree
-!         endif
-!     enddo
+function getHDPedigree(this) result(new)
+    class(pedigreeHolder) :: this
+    type(pedigreeHolder) :: new
+    integer :: i, sire,dam,tmpAnimalCount, indiv
 
 
-! end subroutine findMendelianInconsistenciesnew(ped, threshold)
+    integer, allocatable, dimension(:) :: tmpAnimalArray 
+
+    ! new%pedigreeSize = this%nHd
+    new = initEmptyPedigree(this%nsnpsPopulation)
+    tmpAnimalCount = 0 
+    new%nhd = 0
+
+    allocate(new%hdMap(this%nHd))
+    allocate(new%genotypeMap(this%nGenotyped))
+    allocate(tmpAnimalArray(this%nHd))
+
+    new%hdDictionary = DictStructure()
+    new%genotypeDictionary = DictStructure()
+
+    if (this%nHd == 0) then
+        write(error_unit, * ) "ERROR: No animals defined as HD."
+        return
+    endif
+
+    do i =1,this%nHd
+        sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
+        dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
+        if (this%pedigree(this%hdMap(i))%founder .or.(dam /=DICT_NULL .and. sire /=DICT_NULL) ) then
+            new%pedigreeSize = new%pedigreeSize+1
+            new%nhd = new%nhd + 1
+            new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+            new%pedigree(i)%id = new%pedigreeSize
+            new%hdMap(new%nhd) = new%pedigreeSize
+            call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)  
+            call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
+            call new%pedigree(i)%resetOffspringInformation
+            
+            if (sire /= DICT_NULL) then
+                call new%pedigree(sire)%AddOffspring(new%pedigree(i))
+                ! from above condition we know dam is also not null
+                call new%pedigree(dam)%AddOffspring(new%pedigree(i))
+            endif
+            
+        else
+            tmpAnimalCount = tmpAnimalCount + 1
+            tmpAnimalArray(tmpAnimalCount) = this%hdmap(i)
+        endif
+    enddo 
+
+    
+    do i=1,tmpAnimalCount
+        sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
+        dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
+        print *, "adding" ,tmpAnimalCount
+        new%pedigreeSize = new%pedigreeSize+1
+        call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
+        new%nhd = new%nhd + 1
+        new%hdMap(new%nhd) = new%pedigreeSize
+        call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)  
+        indiv = new%pedigreeSize
+        new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+        call new%pedigree(i)%resetOffspringInformation
+        if (dam ==DICT_NULL) then
+
+            call new%createDummyAnimalAtEndOfPedigree(dam)
+
+            call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+            new%pedigree(indiv)%damId = new%pedigree(dam)%originalId
+        
+        
+        else
+            call new%pedigree(dam)%addOffspring(new%pedigree(indiv))  
+        endif 
+
+
+
+        if (sire ==DICT_NULL) then
+
+            call new%createDummyAnimalAtEndOfPedigree(sire)
+
+            call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+            new%pedigree(indiv)%sireId = new%pedigree(sire)%originalId
+        
+        
+        else
+            call new%pedigree(sire)%addOffspring(new%pedigree(indiv))  
+        endif
+    
+    enddo 
+    
+    new%nGenotyped = this%nHd
+    new%genotypeMap = new%hdMap
+    new%genotypeDictionary = new%hdDictionary
+    deallocate(tmpAnimalArray)
+end function getHDPedigree
 
 
 
@@ -784,7 +868,6 @@ function initPedigree(fileIn, numberInFile, genderFile, nsnps) result(pedStructu
     integer :: tmpAnimalArrayCount,i
     integer(kind=int64) :: sizeDict
     logical :: sireFound, damFound
-
     pedStructure%isSorted = 0
     pedStructure%nDummys = 0
     pedStructure%nHd = 0
@@ -1741,7 +1824,7 @@ subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, star
   open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
   allocate(ref(nsnps))
   allocate(alt(nsnps))
-  ! tmp = 9
+  tmp = 9
   print *, "Number of animals in seq file", NanisG
   do i=1,nAnisG
       read (unit,*) seqid, ref(:)
@@ -2804,7 +2887,6 @@ this%genotypeMap(this%nGenotyped) = individualIndex
 end subroutine setAnimalAsGenotyped
 
 
-
 !---------------------------------------------------------------------------
 !< @brief Sets the individual to be genotyped.
 !<If geno array is not given, animal will still be set to genotyped. It is up to the callee
@@ -2952,7 +3034,7 @@ subroutine setAnimalAsHD(this, indId)
     integer, intent(in) :: indId
 
     ! if index not in pedigree return.
-    if (indId > this%pedigreeSize) then
+    if (indId > this%pedigreeSize .or. indId < 1) then
       write(error_unit, *) "warning - setAnimalAsHD was given an index that was out of range"
       return
   endif
