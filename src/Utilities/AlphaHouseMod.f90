@@ -270,7 +270,7 @@ module AlphaHouseMod
 
   !> @brief get the number of columns for a single delimiter
   !> @details A wraparound for countColumnsMultiDelim when using a single delimiter or no delimiter. 
-  !> No delimiter default to using a space.
+  !> No delimiter defaults to using a space. Provided for ease of use only.
   !> @author Diarmaid de Búrca, diarmaid.deburca@ed.ac.uk
 
   integer function countColumnsSingleDelim(fileNameIn, delimiterIn) result (numColumnsOut)

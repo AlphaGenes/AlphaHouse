@@ -63,8 +63,6 @@ module PedigreeModule
   integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top 
 
   type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
-
-
   type(IndividualLinkedList), allocatable :: uniqueParentList
   contains
   procedure :: calculatePedigreeCorrelationNoInbreeding
@@ -85,6 +83,7 @@ module PedigreeModule
   procedure :: printPedigree
   procedure :: printPedigreeOriginalFormat
   procedure :: getMatePairsAndOffspring
+  procedure :: addSequenceFromVCFFile
   procedure :: getAllGenotypesAtPosition
   procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
   procedure :: getPhaseAtPosition
@@ -93,7 +92,8 @@ module PedigreeModule
   procedure :: getGenotypesAsArray
   procedure :: getPhaseAsArray
   procedure :: getGenotypesAsArrayWitHMissing
-  procedure :: countMissingGenotypesNoDummys  
+  procedure :: countMissingGenotypesNoDummys
+  procedure :: countMissingPhaseNoDummys  
   procedure :: setGenotypeFromArray
   procedure :: setPhaseFromArray
   procedure :: getNumGenotypesMissing
@@ -1797,6 +1797,11 @@ enddo
 end subroutine addPhaseInformationFromFile
 
 
+!---------------------------------------------------------------------------
+! DESCRIPTION:
+!< @brief     Adds sequence information from VCF file - this was taken out of Roberto's HMM
+!< @date       June 19, 2017
+!--------------------------------------------------------------------------
 subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, startSnp, endSnp)
 
     use AlphaHouseMod, only : countLines
@@ -1857,6 +1862,113 @@ end do
 
 close(unit)
 end subroutine addSequenceFromFile
+
+
+
+!---------------------------------------------------------------------------
+! DESCRIPTION:
+!< @brief     Adds sequence information from VCF file - this was taken out of Mara's code and
+!< adapted to work with the pedigree class 
+!< @date       June 19, 2017
+!--------------------------------------------------------------------------
+subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,position,quality,chr,startPos,EndPos)
+    
+    use omp_lib
+    use AlphaHouseMod, only : countLines,countColumns
+    use ConstantModule, only : IDLENGTH,DICT_NULL
+
+    implicit none
+    class(PedigreeHolder)        :: this
+    character(len=*), intent(in) :: seqFile
+    character(len=300),intent(in) :: chr                           
+    integer,intent(in) :: StartPos,EndPos                 
+
+    integer,intent(in),optional :: nSnpsIn
+    integer,intent(in),optional :: nAnisIn
+    
+
+    integer:: nAnis,nSnp,unit,pos,i,j,tmpID
+    character(len=1), dimension(3):: delimiter
+    
+    character(len=IDLENGTH), allocatable, dimension(:)              :: Ids
+    integer(int64), allocatable, dimension(:),intent(out),optional  :: position
+    real(real64), allocatable, dimension(:),intent(out),optional    :: quality
+  
+    character(100)  :: tCHROM,tREF,tALT
+    integer(int64)  :: tPOS
+    real(real64)    :: tQUAL
+
+    character(len=100), dimension(:), allocatable:: dumC
+    
+    integer(KIND=1), allocatable, dimension(:) :: tmp
+    
+    integer, dimension(:,:), allocatable:: tmpSequenceData
+    integer, dimension(:,:,:), allocatable:: SequenceData
+
+    real(kind=8)::tstart,tend
+
+    delimiter(1) = ","
+    delimiter(2) = " "
+    delimiter(3) = char(9)
+
+ 
+    if (.not. Present(nSnpsIn)) then
+      nSnp = countLines(seqFile)-1 ! First row is the header
+    else 
+      nSnp = nSnpsIn
+    endif
+
+    if (.not. Present(nAnisIn)) then
+      nAnis = countColumns(seqFile, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
+    else 
+      nAnis = nAnisIn
+    endif
+
+    if (Present(position)) allocate(position(nSnp))
+    if (Present(quality)) allocate(quality(nSnp))
+
+    open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
+
+    allocate(Ids(nAnis))
+    allocate(dumC(5))
+    allocate(tmp(nSnp))
+    tmp = 9
+    allocate(SequenceData(nAnis, nSnp, 2))
+    allocate(tmpSequenceData(nAnis,2))
+ 
+    ! Read header and store animals id
+    read (unit,*) dumC,ids
+    deallocate(dumC)
+
+    tstart = omp_get_wtime()
+
+    pos=1
+    do j = 1, nSnp
+        read(unit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
+        if (trim(tCHROM).eq.trim(chr)) then
+          if (((tPos.ge.StartPos).or.(StartPos.eq.0)).and.((tPos.le.EndPos).or.(EndPos.eq.0))) then
+            if (Present(position)) position(pos)=tPOS
+            if (Present(quality)) quality(pos)=tQUAL
+            SequenceData(:,pos,1)=tmpSequenceData(:,1)
+            SequenceData(:,pos,2)=tmpSequenceData(:,2)
+            pos=pos+1
+          endif
+        end if
+    end do
+    close(unit)
+
+    do i=1, nAnis
+      tmpID = this%dictionary%getValue(ids(i))
+      if (tmpID /= DICT_NULL) then
+        call this%setAnimalAsGenotypedSequence(tmpID,tmp,SequenceData(i,:,1),SequenceData(i,:,2))
+      endif
+    enddo 
+
+    tend = omp_get_wtime()
+
+    write(*,*) "Total wall time for Importing Reads", tend - tstart
+
+end subroutine addSequenceFromVCFFile
 
 
 
@@ -2921,9 +3033,7 @@ if (present(geno)) then
   call this%pedigree(individualIndex)%setGenotypeArray(geno)
 endif
 
-this%pedigree(individualIndex)%referAllele = referAllele
-this%pedigree(individualIndex)%alterAllele = alterAllele
-
+call this%pedigree(individualIndex)%setSequenceArray(referAllele,alterAllele)
 this%genotypeMap(this%nGenotyped) = individualIndex
 
 end subroutine setAnimalAsGenotypedSequence
@@ -3251,5 +3361,28 @@ function countMissingGenotypesNoDummys(this) result(res)
       res = res + this%pedigree(i)%individualGenotype%numMissing()
   end do
 end function countMissingGenotypesNoDummys
+
+!---------------------------------------------------------------------------
+!< @brief  counts missing alleles (in the 2 gametes) across all animals at every snp
+!<Returns a count of missing alleles across all animals at every snp
+!< @author  Mara Battagin mara.battagin@roslin.ed.ac.uk
+!< @date    August 31, 2017
+!---------------------------------------------------------------------------
+function countMissingPhaseNoDummys(this) result(res)
+    integer :: res
+    integer :: i
+    class(PedigreeHolder) :: this
+
+    res = 0
+    do i=1, this%pedigreeSize
+
+      if (this%pedigree(i)%isDummy) cycle
+
+      res = res + this%pedigree(i)%individualPhase(1)%numberMissing()
+      res = res + this%pedigree(i)%individualPhase(2)%numberMissing()
+  end do
+end function countMissingPhaseNoDummys
+
+
 
 end module PedigreeModule
