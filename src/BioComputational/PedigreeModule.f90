@@ -2434,7 +2434,7 @@ subroutine readInGenders(this, filepath)
 
   integer ::i, tmpGender,tmp,unit
   character(len=IDLENGTH) :: tmpId
-
+     character(len=100) :: fmt
   open(newunit= unit, file= filepath, status="old")
   do i= 1, this%pedigreeSize
       read(unit,*) tmpId, tmpGender
@@ -2458,10 +2458,11 @@ subroutine writeOutGenotypes(this, filename)
   class(PedigreeHolder) :: this
   character(*), intent(in) :: filename
   integer ::i, fileUnit
-
+     character(len=100) :: fmt
   open(newUnit=fileUnit,file=filename,status="unknown")
+write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
   do i= 1, this%nGenotyped
-      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+      write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
   enddo
   close(fileUnit)
 end subroutine writeOutGenotypes
@@ -2477,10 +2478,12 @@ subroutine writeOutGenotypesAll(this, filename)
   class(PedigreeHolder) :: this
   character(*), intent(in) :: filename
   integer ::i, fileUnit
+   character(len=100) :: fmt
 
   open(newUnit=fileUnit,file=filename,status="unknown")
+  write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
   do i= 1, this%pedigreeSize
-      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+      write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
   enddo
   close(fileUnit)
 end subroutine writeOutGenotypesAll
@@ -2496,11 +2499,13 @@ subroutine WriteoutPhase(this, filename)
   class(PedigreeHolder) :: this
   character(*), intent(in) :: filename
   integer ::i, fileUnit
+     character(len=100) :: fmt
 
+    write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
   open(newUnit=fileUnit,file=filename,status="unknown")
   do i= 1, this%pedigreeSize
-      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
-      write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+      write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+      write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
   enddo
   close(fileUnit)
 end subroutine WriteoutPhase
