@@ -79,16 +79,16 @@ module AlphaHouseMod
 
   contains
   !> @brief A subroutine to link the columns and column numbers
-  subroutine getColumnNumbers(fileNameIn, delimiterIn, hashModuleOut, numColumnsOut, initialFilePosition, fileChunkSizeIn)
+  subroutine getColumnNumbers(fileNameIn, delimiterIn, hashModuleOut, initialFilePosition, fileChunkSizeIn)
     use HashModule
     character(len=*), intent(in):: fileNameIn
     character(len=1), dimension(:), intent(in):: delimiterIn
     type(DictStructure), intent(out):: hashModuleOut
-    integer, optional, intent(out):: numColumnsOut 
+!    integer, optional, intent(out):: numColumnsOut 
     integer, intent(in), optional:: initialFilePosition
     integer, intent(in), optional:: fileChunkSizeIn
 
-    character(len=:), allocatable:: tempChar, columnName, other
+    character(len=:), allocatable:: tempChar, columnName
 
     integer:: fileSize, fileUnit, filePosition, fileSizeLeft
     integer:: IOStatus, i, j, val
@@ -202,7 +202,7 @@ module AlphaHouseMod
 
     integer(kind=int64):: fileSize, fileUnit, filePosition, fileSizeLeft
     integer:: IOStatus, i, finalLetter
-    logical:: fileExists, lineEnd, previousIsDelim
+    logical:: fileExists, previousIsDelim
     integer:: finalChar
 
     numColumnsOut = 0
