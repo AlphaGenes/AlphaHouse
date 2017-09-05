@@ -52,4 +52,16 @@ contains
     end subroutine fullChromSplit
 
 
+
+
+subroutine parseMapFile(filename)
+
+    character(len=*) :: filename
+
+    
+
+
+end subroutine parseMapFile
+
+
 end module alphaFullChromModule
