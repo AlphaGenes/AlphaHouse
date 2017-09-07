@@ -303,9 +303,9 @@ module AlphaHouseMod
   !> @param[in] delimiters(character(len=1), dimension(:)) delimiters to be checked agains
   !> @param[out] logical - true if same as a delimiter, otherwise false
   !---------------------------------------------------------------------------
-  function isDelim(charIn, delimiters)
-    character(len=*):: charIn
-    character(len = *), dimension(:):: delimiters
+  pure function isDelim(charIn, delimiters)
+    character(len=*), intent(in):: charIn
+    character(len = *), dimension(:), intent(in):: delimiters
     logical:: isDelim
     integer:: i
 
