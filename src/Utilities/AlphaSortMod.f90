@@ -26,6 +26,8 @@
 module AlphaSortMod
     
     use iso_fortran_env
+    implicit none
+
     interface HpSort
         procedure :: HpSortReal
         procedure :: HpSortI
@@ -46,7 +48,7 @@ module AlphaSortMod
 
       real(real64), dimension(:), allocatable:: listOut, tempList
 
-      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+      integer(int64):: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex, listRange
 
       firstListSize = size(listOne)
       secondListSize = size(listTwo)
@@ -92,7 +94,7 @@ module AlphaSortMod
 
       real, dimension(:), allocatable:: listOut, tempList
 
-      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+      integer(int64):: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex, listRange
 
       firstListSize = size(listOne)
       secondListSize = size(listTwo)
@@ -138,7 +140,7 @@ module AlphaSortMod
 
       integer(int64), dimension(:), allocatable:: listOut, tempList
 
-      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+      integer(int64):: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex, listRange
 
       firstListSize = size(listOne)
       secondListSize = size(listTwo)
@@ -184,7 +186,7 @@ module AlphaSortMod
 
       integer, dimension(:), allocatable:: listOut, tempList
 
-      integer:: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex
+      integer(int64):: firstListSize, secondListSize, firstIndex, secondIndex, outputIndex, listRange
 
       firstListSize = size(listOne)
       secondListSize = size(listTwo)
