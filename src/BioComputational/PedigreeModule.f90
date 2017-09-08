@@ -1499,35 +1499,35 @@ subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, st
       do j=1,nsnps
         if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) then
           tmpSnpArray(j)=9
-      endif    
+        endif    
+      enddo
+
+      tmpIdNum = this%dictionary%getValue(tmpId)
+      if (tmpIdNum == DICT_NULL) then
+        write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
+        write(error_unit, *) "Animal will be added as a founder to pedigree"
+
+        call this%addAnimalAtEndOfPedigree(trim(tmpID), tmpSnpArray)
+
+      else
+
+        if (present(startSnp)) then
+          count = 0
+
+          if (present(endSnp)) then
+            end =endSnp
+          else 
+            end = nsnps
+          endif
+          call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(startSnp:endSnp),lock)
+        else if (present(endSnp)) then
+          count = 0
+          call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(1:endsnp),lock)
+        else 
+          call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray,lock)
+        endif
+      endif
   enddo
-
-  tmpIdNum = this%dictionary%getValue(tmpId)
-  if (tmpIdNum == DICT_NULL) then
-    write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
-    write(error_unit, *) "Animal will be added as a founder to pedigree"
-
-    call this%addAnimalAtEndOfPedigree(trim(tmpID), tmpSnpArray)
-
-else
-
-    if (present(startSnp)) then
-      count = 0
-
-      if (present(endSnp)) then
-        end =endSnp
-    else 
-        end = nsnps
-    endif
-    call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(startSnp:endSnp),lock)
-else if (present(endSnp)) then
-  count = 0
-  call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray(1:endsnp),lock)
-else 
-  call this%setAnimalAsGenotyped(tmpIdNum, tmpSnpArray,lock)
-endif
-endif
-enddo
 
 this%nsnpsPopulation = nsnps
 write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped

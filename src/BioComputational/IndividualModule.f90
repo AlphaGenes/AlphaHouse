@@ -63,8 +63,8 @@ module IndividualModule
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
         logical(kind=1) :: isUnknownDummy = .false.
-        type(genotype),allocatable :: individualGenotype
-        type(Haplotype),allocatable,dimension(:) :: individualPhase
+        type(genotype),allocatable :: individualGenotype, individualGenotypeSubset
+        type(Haplotype),allocatable,dimension(:) :: individualPhase, individualPhaseSubset
         integer,dimension(:), allocatable :: referAllele, AlterAllele
 
         real(kind=real64), allocatable, dimension(:) :: genotypeProbabilities
@@ -72,9 +72,21 @@ module IndividualModule
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
         integer, allocatable :: nHighDensityOffspring
         ! plant stuff
+        integer :: IgnoreMe = 0
+        integer :: MyFamilyAsOffspring = -99
+        real(kind=real64) :: MendelianInconsistenciesPercFamily = 0
         logical(kind=1), allocatable :: isInbred
         logical(kind=1), allocatable :: isImputed
 
+        integer, allocatable, dimension(:) :: StrandBreakArray, ParentInferredSwitchCount
+        real, allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
+        real, allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
+        ! plant stuff testing 
+        integer :: NumberOfSwitches = 0
+        integer, allocatable, dimension(:) :: BestSwitchPosArray, ParentInferredSwitchCount
+        double precision :: MyGenoYield, MyGenoAccuracy, MyGenoAccuracyInf, MyGenoYieldInf, MyGenoCorrect, MyGenoCorrectInf
+        double precision :: MyPhase1YieldInf, MyPhase1AccInf,  MyPhase1CorrectInf, MyPhase2YieldInf, MyPhase2AccInf, MyPhase2CorrectInf
+        double precision, allocatable, dimension(:,:) :: MyPhaseYield, MyPhaseAcc, MyPhaseCorrect
 
         type(IntegerLinkedList) :: families
 
@@ -87,6 +99,8 @@ module IndividualModule
             procedure :: isGenotypedNonMissing
             procedure :: setGenotypeArray
             procedure :: setPhaseArray
+            procedure :: setGenotypeArraySubset
+            procedure :: setPhaseArraySubset
             procedure :: isHD
             procedure :: SetHD
             procedure :: getSireId
@@ -128,6 +142,7 @@ module IndividualModule
             procedure :: makeIndividualGenotypeFromPhase
             procedure :: countHighDensityOffspring
             procedure :: addFamily
+            procedure :: initialisePlantArrays
             generic:: write(formatted)=> writeIndividual
 
             
@@ -1091,6 +1106,22 @@ contains
     end subroutine setGenotypeArray
 
     !---------------------------------------------------------------------------
+    !> @brief For plants, sets subset genotypes to use (for imputation)
+    !> @author  Serap Gonen serap.gonen@roslin.ed.ac.uk
+    !> @date    August 30, 2017
+    !---------------------------------------------------------------------------
+    subroutine setGenotypeArraySubset(this, geno)
+        use constantModule
+
+        class(Individual), intent(inout) :: this
+        integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
+
+        this%individualGenotypeSubset = Geno(geno)
+
+    end subroutine setGenotypeArraySubset
+
+
+    !---------------------------------------------------------------------------
     !> @brief Sets the individual's phase.
     !> @author  Daniel Money, daniel.money@roslin.ed.ac.uk
     !> @date    June 19, 2017
@@ -1100,12 +1131,29 @@ contains
         
         class(Individual), intent(inout) :: this
         integer, intent(in) :: hap
-        integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of genotype information
+        integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
 
         !TODO: Should we be checking that genotype is set and if not set it to missing?
         this%individualPhase(hap) = Haplotype(phase)
     end subroutine setPhaseArray
 
+
+    !---------------------------------------------------------------------------
+    !> @brief For plants, sets subset phase to use (for imputation)
+    !> @author  Serap Gonen serap.gonen@roslin.ed.ac.uk
+    !> @date    August 30, 2017
+    !---------------------------------------------------------------------------
+    subroutine setPhaseArraySubset(this, hap, phase)
+        use constantModule
+
+        class(Individual), intent(inout) :: this
+        integer, intent(in) :: hap
+        integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
+                
+
+        this%individualPhaseSubset(hap) = Haplotype(phase)
+
+    end subroutine setGenotypeArraySubset
 
     !---------------------------------------------------------------------------
     !> @brief initialises an individual phases arrays given the number of snps
@@ -1351,6 +1399,36 @@ contains
 
     end subroutine addFamily
 
+    !---------------------------------------------------------------------------
+    !> @brief arrays for plant imputation
+    !> @author  serap gonen serap.gonen@roslin.ed.ac.uk
+    !> @date    September 08, 2017
+    !---------------------------------------------------------------------------
+
+    subroutine initialisePlantArrays(this, nSnpSubset, nSnpAll)
+        use constantModule, only: MissingPlantArrayCode
+
+        class(individual) :: this
+        integer, intent(in) :: nSnpSubset, nSnpAll
+        
+        allocate(this%individualGenotypeSubset)
+        allocate(this%individualPhaseSubset(2))
+        allocate(this%ParentalHaplotypes(2,nSnpSubset))
+        allocate(this%StrandBreakArray(nSnpSubset))
+        allocate(this%PartialInformativeHaplotype(2,nSnpSubset))
+        allocate(this%ParentInferredSwitchCount(2))
+        allocate(this%ParentalHaplotypesFull(2,nSnpAll))
+        allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
+        this%individualGenotypeSubset = newGenotypeMissing(nsnp)
+        this%individualPhaseSubset(1) = newHaplotypeMissing(nsnp)
+        this%individualPhaseSubset(2) = newHaplotypeMissing(nsnp)
+        this%ParentalHaplotypes = MissingPlantArrayCode
+        this%StrandBreakArray = 0
+        this%ParentInferredSwitchCount = 0
+        this%PartialInformativeHaplotype = MissingPlantArrayCode
+        this%ParentalHaplotypesFull = MissingPlantArrayCode
+        this%PartialInformativeHaplotypeFull =MissingPlantArrayCode
+    end subroutine initialisePlantLDArrays
 
 end module IndividualModule
 

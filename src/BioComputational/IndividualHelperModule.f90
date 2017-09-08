@@ -29,7 +29,7 @@ module IndividualHelperModule
     use IndividualModule
 
     ! procedures
-    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors,getOnlyHalfSibsGenotyped
+    public :: getFullSibs, getSibs, getOnlyHalfSibs, getMates, getAncestors,getOnlyHalfSibsGenotyped, getSharedKids, getHDKids
     public :: GetOffspringsAsLinkedList
 
 
@@ -280,6 +280,34 @@ module IndividualHelperModule
 
 
     end function getSharedKids
+
+
+
+      !---------------------------------------------------------------------------
+    !> @brief Returns linked list of HD individuals 
+    !> @author  Serap Gonen
+    !> @date    August 2017
+    !> @param[in] type(IndividualLinkedList) :: ListIn
+    !> @return linked list HD individuals in list
+    !---------------------------------------------------------------------------
+    function getHDKids(ListIn) result(res)
+        use IndividualModule
+        use IndividualLinkedListModule
+        type(IndividualLinkedList),intent(in) :: ListIn !< list of individuals to check if HD 
+        type(IndividualLinkedList) :: res !< linked list of HD individuals
+        integer ::  i
+        type(IndividualLinkedListNode) :: Current 
+
+        Current => ListIn%first
+
+        do i=1, ListIn%length
+            if (Current%HD) then 
+                call res%list_add(Current)
+            endif  
+        enddo
+
+
+    end function getHDKids
 
 
     !---------------------------------------------------------------------------

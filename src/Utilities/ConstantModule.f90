@@ -20,6 +20,7 @@ module ConstantModule
     integer, parameter :: DICT_NULL = -2147483647
     integer, parameter :: DICT_MULTIPLIER = 17
     integer, parameter :: MAXINT32 = 2147483647
+    integer, parameter :: MissingPlantArrayCode = -99
     character(len=3), parameter:: DEFAULTNULLVAL = "nan"
     character(len=5), parameter:: DUMMYANIMALPREPRE = "DUMAL"
     character(len=1), parameter:: DEFAULTDELIM =","
