@@ -152,7 +152,7 @@ end function getAllKeys
   !> @author  David Wilson david.wilson@roslin.ed.ac.uk
   !> @date    October 26, 2016
   !---------------------------------------------------------------------------
-function dict_create(size) result(dict)
+pure function dict_create(size) result(dict)
     type(DictStructure)  :: dict !< Dictionary Object
     integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
     integer(kind=int64) :: i
@@ -174,7 +174,7 @@ end function dict_create
   !> @author  David Wilson david.wilson@roslin.ed.ac.uk
   !> @date    October 26, 2016
   !---------------------------------------------------------------------------
-function dict_create_val(key, value, size ) result(dict)
+pure function dict_create_val(key, value, size ) result(dict)
     type(DictStructure)  :: dict !< Dictionary Object
     character(len=*), intent(in) ::  key !< key for value in dictionary
     integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
