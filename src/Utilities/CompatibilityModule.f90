@@ -132,7 +132,7 @@ contains
 			enddo
 			write(fmt, '(a,i10,a)')  '(a20,', size(allSnps(1,:)), 'i2)'
 			do p=1,ped%pedigreeSize-ped%nDummys
-				print *, "in write"
+				! print *, "in write"
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(allSnps(p,:), maskedLogi)
 			end do
 			close(outChrF)
