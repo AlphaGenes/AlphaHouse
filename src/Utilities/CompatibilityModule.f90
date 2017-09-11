@@ -122,7 +122,7 @@ contains
 
 		print *, "MAX CHROMS",maxChroms
 		do i =1, maxChroms
-			write(outChrFile, '(a,a,i,a)') trim(path),"chr",i,".txt"
+			write(outChrFile, '(a,a,i,a)') trim(path),trim("chr"),i,".txt"
 			open(newunit=outChrF, file=outChrFile, status="unknown")
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
