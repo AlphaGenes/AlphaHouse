@@ -98,6 +98,7 @@ module PedigreeModule
 		procedure :: setPhaseFromArray
 		procedure :: getNumGenotypesMissing
 		procedure :: getGenotypedFounders
+		procedure :: cleanGenotypesBasedOnHaplotypes
 		procedure :: getSireDamGenotypeIDByIndex
 		procedure :: setAnimalAsHD
 		procedure :: getSireDamHDIDByIndex
@@ -3347,6 +3348,27 @@ module PedigreeModule
 			!$OMP END PARALLEL DO
 
 		end subroutine PhaseComplement
+
+
+
+		!---------------------------------------------------------------------------
+		!> @brief Sets the individual genotypes from the haplotypes. Overwrites anything that was already there in the genotype
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine cleanGenotypesBasedOnHaplotypes(this)
+			use GenotypeModule
+			class(PedigreeHolder) :: this
+			integer :: i
+
+			!$OMP PARALLEL DO &
+			!$OMP PRIVATE(i)
+			do i=1,this%pedigreeSize
+				this%pedigree(i)%individualGenotype = Genotype(this%pedigree(i)%individualPhase(1), this%pedigree(i)%individualPhase(2))
+			enddo
+			!$OMP END PARALLEL DO
+
+		end subroutine cleanGenotypesBasedOnHaplotypes
 
 		!---------------------------------------------------------------------------
 		!< @brief  counts missing snps across all animals at every snp

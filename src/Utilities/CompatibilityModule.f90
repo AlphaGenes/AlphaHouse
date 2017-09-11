@@ -82,12 +82,12 @@ contains
 
 		ped = PedigreeHolder(pedArray, genderArray)
 
-		call ped%printPedigreeOriginalFormat("pedweee.txt")
+		call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
 	end function readToPedigreeFormat
 
 
-	subroutine readPlink(binaryFilePre, ped)
+	subroutine readPlink(binaryFilePre, ped, outputPaths)
 		use HashModule
 		use AlphaHouseMod, only : CountLines
 		use PedigreeModule
@@ -105,6 +105,7 @@ contains
 		integer :: nsnps
 		integer(kind=1), dimension(:,:), allocatable ::  allsnps
 		character(len=128) :: path, outChrFile
+		character(len=128), dimension(:), allocatable :: outputPaths
 		integer result,i,p,h,outChrF
 		! integer, allocatable
 
@@ -121,9 +122,12 @@ contains
 		result=makedirqq(path)
 
 		print *, "MAX CHROMS",maxChroms
+
+		allocate(outputPaths(maxChroms))
 		do i =1, maxChroms
-			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,".txt"
-			open(newunit=outChrF, file=outChrFile, status="unknown")
+			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,DASH
+			outputPaths(i) = outChrFile
+			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="unknown")
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
