@@ -3551,9 +3551,11 @@ module PedigreeModule
 #ifdef MPIACTIVE
   function calculatePedigreeWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
     use MyLinkedList
+    use mpi
+    use MPIUtilities, only: checkMPI
     class(PedigreeHolder), intent(in):: pedIn
     real(real64), intent(in), optional:: additVarianceIn
-    integer, intent(in):: communicatorIn
+    integer, intent(in), optional:: communicatorIn
     type(MyLL), allocatable:: sireList, damList
     real(real64), dimension(:,:), allocatable:: lValues
     real(real64), dimension(:), allocatable:: F, F2
@@ -3573,17 +3575,24 @@ module PedigreeModule
     integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
     real(real64):: startTime, endTime
 
-    integer:: mpiSize, mpiRank, mpiErr)
+    integer:: mpiSize, mpiRank, mpiCommunicator
+    integer:: numLevels
 
-    call MPI_COMM_SIZE(communicatorIn, mpiSize, mpiErr)
+    if (present(communicatorIn)) then
+      mpiCommunicator = communicatorIn
+    else
+      mpiCommunicator = MPI_COMM_WORLD
+    end if
+
+    call MPI_COMM_SIZE(mpiCommunicator, mpiSize, mpiErr)
     call checkMPI(mpiErr)
-    call MPI_COMM_RANK(communicatorIn, mpiRank, mpiErr)
+    call MPI_COMM_RANK(mpiCommunicator, mpiRank, mpiErr)
     call checkMPI(mpiErr)
     numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
 
     allocate(values(numLevels, numLevels))
 
-    allocate(F(0:self%numLevels))
+    allocate(F(0:numLevels))
     allocate(gatherSizes(mpiSize))
     allocate(offsetLocation(mpiSize))
 
@@ -3632,7 +3641,7 @@ module PedigreeModule
   
           allocate(damList)
           allocate(sireList)
-          allocate(lValues(self%numLevels, self%numLevels))
+          allocate(lValues(numLevels, numLevels))
           damKnown = .false.
           sireKnown = .false.
           lValues = 0
