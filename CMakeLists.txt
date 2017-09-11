@@ -58,6 +58,7 @@ if (${RUN_TESTS})
       ${SRC}/BioComputational/IndividualModule.f90
       ${SRC}/BioComputational/IndividualLinkedListModule.f90
       ${SRC}/BioComputational/IndividualHelperModule.f90
+      ${SRC}/Utilities/PedigreeLinkedList.f90
       ${SRC}/BioComputational/PedigreeModule.f90
       ${SRC}/BioComputational/IntelRNGMod.f90
       ${SRC}/Utilities/StringModule.f90
