@@ -10,7 +10,6 @@ SET(ALPHAHOUSE_src
     BioComputational/IndividualModule.f90
     BioComputational/IndividualLinkedListModule.f90
     BioComputational/IndividualHelperModule.f90
-    BioComputational/PedigreeModule.f90
     BioComputational/IntelRNGMod.f90
     Utilities/HelperSubroutines.f90
     Utilities/StringModule.f90
@@ -21,6 +20,8 @@ SET(ALPHAHOUSE_src
     Utilities/AlphaSortMod.f90
     Utilities/IntegerLinkedListModule.f90
     Utilities/CharacterLinkedListModule.f90
+    Utilities/PedigreeLinkedList.f90
+    BioComputational/PedigreeModule.f90
     BioComputational/GenotypeModule.f90
     BioComputational/HaplotypeModule.f90
     BioComputational/HaplotypeLibraryModule.f90

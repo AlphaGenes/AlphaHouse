@@ -3,7 +3,12 @@ use mpi
 use ISO_Fortran_Env
 implicit none
 integer(int32), save:: mpiSize, mpiRank
+integer(int32), save, protected:: mpiCommunicator
+INTEGER, PARAMETER:: DEFAULTMPIRANK=0
 
+interface startMPI
+  module procedure initialiseMPI
+end interface
 contains
 
 subroutine checkMPI(errorIn)
@@ -19,14 +24,6 @@ subroutine checkMPI(errorIn)
   end if
 
 end subroutine checkMPI
-
-
-function getMPIChunckSize(totalSize) result (chunkSize)
-  integer(int32):: totalSize, chunkSize
-
-  chunkSize =totalSize/mpiSize
-end function
-
 
 subroutine initialiseMPI
   integer(int32)::error
@@ -51,6 +48,72 @@ subroutine endMPI
   end if
 end subroutine endMPI
 
+  subroutine broadcastAllocatableCharacter(characterIn, mpiRankUsed)
+    character(len=:), allocatable, intent(inout):: characterIn
+    integer, intent(in), optional:: mpiRankUsed
+    integer:: messageLength
+
+
+    integer:: mpiErr 
+
+    messageLength=len(characterIn)
+    call MPI_BCAST(messageLength, 1, MPI_INTEGER, mpiRankUsed, mpiCommunicator, mpiErr)
+    call checkMPI(mpiErr)
+
+    if (mpiRank .ne. mpiRankUsed) then
+      if (allocated(characterIn)) then
+        deallocate(characterIn)
+      end if
+      allocate(character(len=messageLength)::characterIn)
+    end if
+
+    call MPI_BCAST(characterIn, messageLength, MPI_CHARACTER, mpiRankUsed, mpiCommunicator, mpiErr)
+    call checkMPI(mpiErr)
+  end subroutine broadcastAllocatableCharacter
+
+
+subroutine getMPIChunckSize(totalSize, chunkSize, startObs, endObs)
+  integer(int32), intent(in):: totalSize
+  integer, intent(out):: chunkSize, startObs, endObs
+  integer:: extras
+
+  chunkSize = totalSize/mpiSize
+
+  if (mpiRank==mpiSize-1) then
+    extras = totalSize-chunkSize*mpiSize
+  else
+    extras = 0
+  end if
+
+  startObs = mpiRank*chunkSize+1
+  endObs = (mpiRank+1)*chunkSize+extras
+
+end subroutine getMPIChunckSize
+
+
+!> @brief Set which communicator to use
+!> @details Mainly here for the tests.   Allows you to set the communicator from
+!> outside of the subroutine
+subroutine setMPICommunicator(commIn)
+  integer, intent(in), optional:: commIn
+
+  if (present(commIn)) then
+    mpiCommunicator = commIn
+  else
+    mpiCommunicator = MPI_COMM_WORLD
+  end if
+end subroutine setMPICommunicator
+
+subroutine setMPISizes()
+  integer(int32):: error
+
+  call MPI_COMM_SIZE(mpiCommunicator, mpiSize,error)
+  call checkMPI(error)
+
+  call MPI_COMM_RANK(mpiCommunicator, mpiRank, error)
+  call checkMPI(error)
+
+end subroutine setMPISizes
 
 end module MPIUtilities
 
