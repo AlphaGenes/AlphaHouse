@@ -87,7 +87,7 @@ contains
 	end function readToPedigreeFormat
 
 
-	subroutine readPlink(binaryFilePre, ped, outputPaths)
+	subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps)
 		use HashModule
 		use AlphaHouseMod, only : CountLines
 		use PedigreeModule
@@ -102,11 +102,11 @@ contains
 		logical, dimension(:), allocatable :: maskedLogi
 		integer, dimension(:), allocatable :: masked
 		character(len=100) :: fmt
-		integer :: nsnps
 		integer(kind=1), dimension(:,:), allocatable ::  allsnps
 		character(len=128) :: path, outChrFile
 		character(len=128), dimension(:), allocatable :: outputPaths
 		integer result,i,p,h,outChrF
+		integer, intent(out) :: nsnps
 		! integer, allocatable
 
 
@@ -118,6 +118,8 @@ contains
 		print *,"READ BED"
 		allocate(maskedLogi(size(allSnps(1,:))))
 
+
+		nsnps = size(allSnps(1,:))
 		path = "chromosomeGenotypes/"
 		result=makedirqq(path)
 
@@ -134,7 +136,7 @@ contains
 				maskedLogi(masked(h)) = .true.
 
 			enddo
-			write(fmt, '(a,i10,a)')  '(a20,', size(allSnps(1,:)), 'i2)'
+			write(fmt, '(a,i10,a)')  '(a20,', nsnps, 'i2)'
 			do p=1,ped%pedigreeSize-ped%nDummys
 				! print *, "in write"
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(allSnps(p,:), maskedLogi)
@@ -234,7 +236,7 @@ contains
 		!data magicnumber/X"6C",X'0000001B' /,  plinkmode/X'01'/
 		data magicnumber /108,27/, plinkmode /1/
 
-		
+
 		print *,"start BED read"
 		allocate(snps(ped%pedigreeSize-ped%nDummys,ncol))
 
@@ -269,7 +271,7 @@ contains
 		majorcount = 0
 		outer: do
 
-			
+
 			read(bedInUnit, iostat=stat) element
 			if (stat /= 0) exit
 			inner: do i=0,6,2
@@ -306,7 +308,7 @@ contains
 		if (stat == -1) stat=0
 
 		print *, "finished"
-		
+
 
 		! Write output
 		! fmt='(i20,'//trim(adjustl(nChar))//'I2)'
@@ -326,6 +328,7 @@ contains
 
 
 end module CompatibilityModule
+
 
 
 

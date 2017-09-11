@@ -3,13 +3,13 @@ module alphaFullChromModule
 	use baseSpecFileModule
 
 		interface 
-		function runProgram (specFileInput, ped)
+		subroutine runProgram (specFileInput, ped)
 		use baseSpecFileModule
 		use pedigreeModule
 
 		class(baseSpecFile) :: specFileInput
 		type(pedigreeHolder) :: ped
-	end function runProgram
+	end subroutine runProgram
 		end interface
 	contains
 
@@ -61,13 +61,15 @@ module alphaFullChromModule
 		subroutine runPlink(plinkPre, specfile, funPointer)
 			use CompatibilityModule
 			use pedigreeModule
+			use baseSpecFileModule
 			
 			type(pedigreeHolder) :: ped
 			character(len=*) :: plinkPre
 			procedure(runProgram), pointer, intent(in):: funPointer
 			character(len=128), dimension(:), allocatable :: chromPaths
-			class(specFilebase) :: specfile
-			call readPlink(plinkPre, ped, chromPaths)
+			integer :: i, nsnps
+			class(baseSpecFile) :: specfile
+			call readPlink(plinkPre, ped, chromPaths,nsnps)
 
 
 
@@ -81,7 +83,7 @@ module alphaFullChromModule
 				call ped%wipeGenotypeAndPhaseInfo
 
 
-				call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt")
+				call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps)
 
 
 				call funPointer(specFile,ped)
