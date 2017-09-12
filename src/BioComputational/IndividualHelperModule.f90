@@ -296,14 +296,16 @@ module IndividualHelperModule
         type(IndividualLinkedList),intent(in) :: ListIn !< list of individuals to check if HD 
         type(IndividualLinkedList) :: res !< linked list of HD individuals
         integer ::  i
-        type(IndividualLinkedListNode) :: Current 
+        type(IndividualLinkedListNode), pointer :: Current 
 
         Current => ListIn%first
 
         do i=1, ListIn%length
-            if (Current%HD) then 
-                call res%list_add(Current)
+            if (Current%item%HD) then 
+                call res%list_add(Current%item)
             endif  
+
+            current => current%next
         enddo
 
 

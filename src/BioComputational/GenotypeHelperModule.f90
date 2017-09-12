@@ -14,7 +14,7 @@ contains
 
 		else
 			write(error_unit,*) "ERROR: GiveOppositeGenotype given incorrect value"
-			abort()
+			call abort()
 		endif
 
 	end function GiveOppositeGenotype

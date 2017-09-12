@@ -27,7 +27,7 @@ module IndividualModule
     use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
     use genotypeModule
     use HaplotypeModule
-    use IntegerLinkedList
+    use IntegerLinkedListModule
 
     use iso_fortran_env
     
@@ -78,7 +78,7 @@ module IndividualModule
         logical(kind=1)::isImputed
         logical(kind=1) :: IgnoreMe =.false.
 
-        integer, allocatable, dimension(:) :: StrandBreakArray, ParentInferredSwitchCount
+        integer, allocatable, dimension(:) :: StrandBreakArray
         real, allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
         real, allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
         ! plant stuff testing 
@@ -211,7 +211,6 @@ contains
             if (present(probabilites)) then
                 allocate(this%genotypeProbabilities(nsnps))
                 allocate(this%phaseProbabilities(nsnps,2))
-                allocate(this%isImputed)
             endif
         endif
 
@@ -264,14 +263,7 @@ contains
             deallocate(this%phaseProbabilities)
         endif
 
-        if (allocated(this%isInbred)) then
-            deallocate(this%isInbred)
-        endif
-
-        if (allocated(this%isImputed)) then
-            deallocate(this%isImputed)
-        endif
-
+    
 
     end subroutine destroyIndividual
 
@@ -1116,7 +1108,7 @@ contains
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
 
-        this%individualGenotypeSubset = Geno(geno)
+        this%individualGenotypeSubset = Genotype(geno)
 
     end subroutine setGenotypeArraySubset
 
@@ -1153,7 +1145,7 @@ contains
 
         this%individualPhaseSubset(hap) = Haplotype(phase)
 
-    end subroutine setGenotypeArraySubset
+    end subroutine setPhaseArraySubset
 
     !---------------------------------------------------------------------------
     !> @brief initialises an individual phases arrays given the number of snps
@@ -1408,9 +1400,9 @@ contains
         class(individual) :: this
     
 
-        this%genotypeProbabilities = this%indivdualGenotype%toIntegerArray()
-        this%phaseProbabilities(1) = this%IndividualPhase(1)%toIntegerArray()
-        this%phaseProbabilities(2) = this%IndividualPhase(1)%toIntegerArray()
+        this%genotypeProbabilities = this%individualGenotype%toIntegerArray()
+        this%phaseProbabilities(1,:) = this%IndividualPhase(1)%toIntegerArray()
+        this%phaseProbabilities(2,:) = this%IndividualPhase(1)%toIntegerArray()
 
     end subroutine getProbabilitiesFromOwnGenotypeAndPhase
 
@@ -1426,7 +1418,7 @@ contains
         class(individual) :: this
         integer, intent(in) :: nSnpSubset, nSnpAll
         
-        allocate(this%individualGenotypeSubset)
+        ! allocate(this%individualGenotypeSubset)
         allocate(this%individualPhaseSubset(2))
         allocate(this%ParentalHaplotypes(2,nSnpSubset))
         allocate(this%StrandBreakArray(nSnpSubset))
@@ -1434,16 +1426,16 @@ contains
         allocate(this%ParentInferredSwitchCount(2))
         allocate(this%ParentalHaplotypesFull(2,nSnpAll))
         allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
-        this%individualGenotypeSubset = newGenotypeMissing(nsnp)
-        this%individualPhaseSubset(1) = newHaplotypeMissing(nsnp)
-        this%individualPhaseSubset(2) = newHaplotypeMissing(nsnp)
+        this%individualGenotypeSubset = newGenotypeMissing(nSnpSubset)
+        this%individualPhaseSubset(1) = newHaplotypeMissing(nSnpSubset)
+        this%individualPhaseSubset(2) = newHaplotypeMissing(nSnpSubset)
         this%ParentalHaplotypes = MissingPlantArrayCode
         this%StrandBreakArray = 0
         this%ParentInferredSwitchCount = 0
         this%PartialInformativeHaplotype = MissingPlantArrayCode
         this%ParentalHaplotypesFull = MissingPlantArrayCode
         this%PartialInformativeHaplotypeFull =MissingPlantArrayCode
-    end subroutine initialisePlantLDArrays
+    end subroutine initialisePlantArrays
 
 end module IndividualModule
 
