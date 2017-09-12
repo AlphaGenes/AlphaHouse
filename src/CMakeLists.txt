@@ -31,6 +31,7 @@ SET(ALPHAHOUSE_src
     BioComputational/CoreUtils.f90
     Utilities/SortingModule.f90
     Utilities/ClusteringModule.f90
+    Utilities/alphafullchrom.f90
     Utilities/par_zig_mod.f90
     Utilities/LegacyRandom.f90
     BioComputational/AlphaEvolveModule.f90
