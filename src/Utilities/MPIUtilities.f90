@@ -2,7 +2,7 @@ module MPIUtilities
 use mpi
 use ISO_Fortran_Env
 implicit none
-integer(int32), save:: mpiSize, mpiRank
+integer(int32), save, protected:: mpiSize, mpiRank
 integer(int32), save, protected:: mpiCommunicator
 INTEGER, PARAMETER:: DEFAULTMPIRANK=0
 
@@ -30,11 +30,9 @@ subroutine initialiseMPI
   call MPI_Init(error)
   call checkMPI(error)
 
-  call MPI_COMM_SIZE(MPI_COMM_WORLD, mpiSize,error)
-  call checkMPI(error)
+  call setMPICommunicator()
 
-  call MPI_COMM_RANK(MPI_COMM_WORLD, mpiRank, error)
-  call checkMPI(error)
+  call setMPISizes()
 
 end subroutine initialiseMPI
 
