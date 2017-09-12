@@ -463,7 +463,7 @@ contains
 
         integer :: cursection, curpos
 
-        phase = 9
+        phase = MISSINGPHASECODE
         if (pos == 0) then
             return
         else if (pos > h%length) then

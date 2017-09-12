@@ -1399,6 +1399,21 @@ contains
 
     end subroutine addFamily
 
+
+
+
+
+    subroutine getProbabilitiesFromOwnGenotypeAndPhase(this)
+        use iso_fortran_env
+        class(individual) :: this
+    
+
+        this%genotypeProbabilities = this%indivdualGenotype%toIntegerArray()
+        this%phaseProbabilities(1) = this%IndividualPhase(1)%toIntegerArray()
+        this%phaseProbabilities(2) = this%IndividualPhase(1)%toIntegerArray()
+
+    end subroutine getProbabilitiesFromOwnGenotypeAndPhase
+
     !---------------------------------------------------------------------------
     !> @brief arrays for plant imputation
     !> @author  serap gonen serap.gonen@roslin.ed.ac.uk

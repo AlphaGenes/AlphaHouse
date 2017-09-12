@@ -112,6 +112,7 @@ module PedigreeModule
   procedure :: writeOutGenders
   procedure :: readInGenders
   procedure :: MakeGenotype
+  procedure :: writeOutGenotypesForImputed
   procedure :: PhaseComplement
   procedure :: homozygoticFillIn
   procedure :: wipeGenotypeAndPhaseInfo
@@ -2134,6 +2135,28 @@ subroutine writeOutGenotypes(this, filename)
   open(newUnit=fileUnit,file=filename,status="unknown")
   do i= 1, this%nGenotyped
       write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+  enddo
+  close(fileUnit)
+end subroutine writeOutGenotypes
+
+
+
+
+!---------------------------------------------------------------------------
+!< @brief Output  of animals that are genotyped
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
+subroutine writeOutGenotypesForImputed(this, filename)
+  class(PedigreeHolder) :: this
+  character(*), intent(in) :: filename
+  integer ::i, fileUnit
+
+  open(newUnit=fileUnit,file=filename,status="unknown")
+  do i= 1, this%pedigreeSize
+    if (this%pedigree(i)%isimputed) then
+        write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+    enddo
   enddo
   close(fileUnit)
 end subroutine writeOutGenotypes
