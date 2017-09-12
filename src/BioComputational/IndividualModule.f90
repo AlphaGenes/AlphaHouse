@@ -72,11 +72,11 @@ module IndividualModule
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
         integer, allocatable :: nHighDensityOffspring
         ! plant stuff
-        integer :: IgnoreMe = 0
         integer :: MyFamilyAsOffspring = -99
         real(kind=real64) :: MendelianInconsistenciesPercFamily = 0
-        logical(kind=1), allocatable :: isInbred
-        logical(kind=1), allocatable :: isImputed
+        logical(kind=1):: isInbred
+        logical(kind=1)::isImputed
+        logical(kind=1) :: IgnoreMe =.false.
 
         integer, allocatable, dimension(:) :: StrandBreakArray, ParentInferredSwitchCount
         real, allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
