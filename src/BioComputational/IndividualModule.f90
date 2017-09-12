@@ -67,8 +67,8 @@ module IndividualModule
         type(Haplotype),allocatable,dimension(:) :: individualPhase, individualPhaseSubset
         integer,dimension(:), allocatable :: referAllele, AlterAllele
 
-        real(kind=real64), allocatable, dimension(:) :: genotypeProbabilities
-        real(kind=real64), allocatable, dimension(:,:) :: phaseProbabilities 
+        real(kind=real32), allocatable, dimension(:) :: genotypeProbabilities
+        real(kind=real32), allocatable, dimension(:,:) :: phaseProbabilities 
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
         integer, allocatable :: nHighDensityOffspring
         ! plant stuff
@@ -79,14 +79,14 @@ module IndividualModule
         logical(kind=1) :: IgnoreMe =.false.
 
         integer, allocatable, dimension(:) :: StrandBreakArray
-        real, allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
-        real, allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
+        integer(kind=1), allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
+        integer(kind=1), allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
         ! plant stuff testing 
         integer :: NumberOfSwitches = 0
         integer, allocatable, dimension(:) :: BestSwitchPosArray, ParentInferredSwitchCount
         double precision :: MyGenoYield, MyGenoAccuracy, MyGenoAccuracyInf, MyGenoYieldInf, MyGenoCorrect, MyGenoCorrectInf
         double precision :: MyPhase1YieldInf, MyPhase1AccInf,  MyPhase1CorrectInf, MyPhase2YieldInf, MyPhase2AccInf, MyPhase2CorrectInf
-        double precision, allocatable, dimension(:,:) :: MyPhaseYield, MyPhaseAcc, MyPhaseCorrect
+        double precision, allocatable, dimension( :,:) :: MyPhaseYield, MyPhaseAcc, MyPhaseCorrect
 
         type(IntegerLinkedList) :: families
 
@@ -264,6 +264,51 @@ contains
         endif
 
     
+        if (allocated(this%BestSwitchPosArray)) then
+
+            deallocate(this%BestSwitchPosArray)
+        endif
+        
+        if (allocated(this%ParentInferredSwitchCount)) then
+
+            deallocate(this%ParentInferredSwitchCount)
+        endif
+    if (allocated(this%StrandBreakArray)) then
+
+            deallocate(this%StrandBreakArray)
+        endif
+
+        if (allocated(this%PartialInformativeHaplotype)) then
+
+            deallocate(this%PartialInformativeHaplotype)
+        endif
+
+          if (allocated(this%PartialInformativeHaplotypeFull)) then
+
+            deallocate(this%PartialInformativeHaplotypeFull)
+        endif
+
+        if (allocated(this%ParentInferredSwitchCount)) then
+
+            deallocate(this%ParentInferredSwitchCount)
+        endif
+
+        if (allocated(this%MyPhaseYield)) then
+
+            deallocate(this%MyPhaseYield)
+        endif
+
+         if (allocated(this%MyPhaseAcc)) then
+
+            deallocate(this%MyPhaseAcc)
+        endif
+
+
+        if (allocated(this%MyPhaseCorrect)) then
+
+            deallocate(this%MyPhaseCorrect)
+        endif
+
 
     end subroutine destroyIndividual
 

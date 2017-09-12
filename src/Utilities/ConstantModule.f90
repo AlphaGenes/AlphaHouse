@@ -18,6 +18,7 @@ module ConstantModule
     integer, parameter :: MISSINGGENDERCODE = -9
     integer , parameter ::  DEFAULTDICTSIZE = 4993
     integer, parameter :: DICT_NULL = -2147483647
+    character(len=IDLENGTH) :: ID_NULL = "2147483647"
     integer, parameter :: DICT_MULTIPLIER = 17
     integer, parameter :: MAXINT32 = 2147483647
     integer, parameter :: MissingPlantArrayCode = -99
