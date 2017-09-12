@@ -66,7 +66,7 @@ module PedigreeModule
 	type(IndividualLinkedList), allocatable :: uniqueParentList
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
-    procedure :: calculateCorrelationWithInbreeding
+    procedure :: calculatePedigreeCorrelationWithInbreeding
 		procedure :: copyPedigree
 		procedure :: destroyPedigree
 		procedure :: setPedigreeGenerationsAndBuildArrays
@@ -123,7 +123,7 @@ module PedigreeModule
 		procedure :: getHDPedigree
 		procedure :: writeOutPedigree
 #ifdef MPIACTIVE
-    procedure:: calculatePedigreeWithInBreedingMPI
+    procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
     
 	end type PedigreeHolder
@@ -3395,7 +3395,7 @@ module PedigreeModule
 		end function countMissingPhaseNoDummys
 
 
-  function calculateCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
+  function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
     use MyLinkedList
     class(PedigreeHolder), intent(in):: pedIn
     real(real64), intent(in), optional:: additVarianceIn
@@ -3546,10 +3546,10 @@ module PedigreeModule
       values = values*additVarianceIn
     end if
 
-  end function calculateCorrelationWithInbreeding
+  end function calculatePedigreeCorrelationWithInbreeding
 
 #ifdef MPIACTIVE
-  function calculatePedigreeWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
+  function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
     use MyLinkedList
     use mpi
     use MPIUtilities, only: checkMPI
@@ -3766,7 +3766,7 @@ module PedigreeModule
     if (present(additVarianceIn)) then
       values = values*additVarianceIn
     end if
-  end function calculatePedigreeWithInBreedingMPI
+  end function calculatePedigreeCorrelationWithInBreedingMPI
 #endif
 
   subroutine addSireDamToListAndUpdateValues(listIn, IndividualIn, values, firstValue)
