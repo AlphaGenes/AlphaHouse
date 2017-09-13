@@ -66,7 +66,7 @@ module PedigreeModule
 	type(IndividualLinkedList), allocatable :: uniqueParentList
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
-    procedure :: calculatePedigreeCorrelationWithInbreeding
+		procedure :: calculatePedigreeCorrelationWithInbreeding
 		procedure :: copyPedigree
 		procedure :: destroyPedigree
 		procedure :: setPedigreeGenerationsAndBuildArrays
@@ -124,7 +124,7 @@ module PedigreeModule
 		procedure :: getHDPedigree
 		procedure :: writeOutPedigree
 #ifdef MPIACTIVE
-    procedure:: calculatePedigreeCorrelationWithInBreedingMPI
+		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
 
 	end type PedigreeHolder
@@ -3417,159 +3417,158 @@ module PedigreeModule
 		end function countMissingPhaseNoDummys
 
 
-<<<<<<< HEAD
-  function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
-    use MyLinkedList
-    class(PedigreeHolder), intent(in):: pedIn
-    real(real64), intent(in), optional:: additVarianceIn
-    real(real64), dimension(:,:), allocatable:: values 
-    type(MyLL), allocatable:: sireList, damList
-    real(real64), dimension(:,:), allocatable:: lValues
-    real(real64), dimension(:), allocatable:: F
+		function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
+			use MyLinkedList
+			class(PedigreeHolder), intent(in):: pedIn
+			real(real64), intent(in), optional:: additVarianceIn
+			real(real64), dimension(:,:), allocatable:: values
+			type(MyLL), allocatable:: sireList, damList
+			real(real64), dimension(:,:), allocatable:: lValues
+			real(real64), dimension(:), allocatable:: F
 
-    integer:: knownDummies 
-    integer:: i, youngestSire, youngestDam
-    integer:: sireI, damI, temp, ID
+			integer:: knownDummies
+			integer:: i, youngestSire, youngestDam
+			integer:: sireI, damI, temp, ID
 
-    logical:: sireKnown, damKnown
-    logical:: sireJKnown, damJKnown
-    real(real64):: D
-    integer:: numLevels
+			logical:: sireKnown, damKnown
+			logical:: sireJKnown, damJKnown
+			real(real64):: D
+			integer:: numLevels
 
-    numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
+			numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
 
-    allocate(values(numLevels, numLevels))
-    allocate(F(0:numLevels))
+			allocate(values(numLevels, numLevels))
+			allocate(F(0:numLevels))
 
-    F(0) = -1
-    F(1:) = 0
+			F(0) = -1
+			F(1:) = 0
 
 
-    knownDummies = pedIn%nDummys - pedIn%unKnownDummys
+			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
 
-    values = 0
+			values = 0
 
-!$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
-    do i = 1, numLevels
-          allocate(damList)
-          allocate(sireList)
-          allocate(lValues(numLevels, numLevels))
-      damKnown = .false.
-      sireKnown = .false.
-      lValues = 0
-      F(i) = 0
-      sireI = 0
-      damI = 0
-      ID = pedIn%pedigree(i)%ID
-      if (associated(pedIn%pedigree(i)%sirePointer)) then
-        if (.not. pedIn%pedigree(i)%sirePointer%isUnknownDummy) then
-          sireI = pedIn%pedigree(i)%sirePointer%ID
-          call sireList%list_add(pedIn%pedigree(i)%sirePointer%ID)
-          lValues(sireI, sireI) = 1
-          sireKnown = .true.
-        end if
-      end if
+			!$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
+			do i = 1, numLevels
+				allocate(damList)
+				allocate(sireList)
+				allocate(lValues(numLevels, numLevels))
+				damKnown = .false.
+				sireKnown = .false.
+				lValues = 0
+				F(i) = 0
+				sireI = 0
+				damI = 0
+				ID = pedIn%pedigree(i)%ID
+				if (associated(pedIn%pedigree(i)%sirePointer)) then
+					if (.not. pedIn%pedigree(i)%sirePointer%isUnknownDummy) then
+						sireI = pedIn%pedigree(i)%sirePointer%ID
+						call sireList%list_add(pedIn%pedigree(i)%sirePointer%ID)
+						lValues(sireI, sireI) = 1
+						sireKnown = .true.
+					end if
+				end if
 
-      if (associated(pedIn%pedigree(i)%damPointer)) then
-        if (.not. pedIn%pedigree(i)%damPointer%isUnknownDummy) then
-          damI = pedIn%pedigree(i)%damPointer%ID
-          call damList%list_add(damI)
-          lValues(damI, damI) = 1
-          damKnown=.true.
-        end if
-      end if
+				if (associated(pedIn%pedigree(i)%damPointer)) then
+					if (.not. pedIn%pedigree(i)%damPointer%isUnknownDummy) then
+						damI = pedIn%pedigree(i)%damPointer%ID
+						call damList%list_add(damI)
+						lValues(damI, damI) = 1
+						damKnown=.true.
+					end if
+				end if
 
-      do while (sireList%length>0 .and. damList%length>0)
-        youngestSire = sireList%first%item
-        youngestDam = damList%first%item
+				do while (sireList%length>0 .and. damList%length>0)
+					youngestSire = sireList%first%item
+					youngestDam = damList%first%item
 
-        if (youngestSire>youngestDam) then !i.e. the sire is younger
-          call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
-          temp= sireList%pop_first()
-        else if (youngestDam>youngestSire) then !i.e. the dam is younger
-          call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
-          temp = damList%pop_first()
-        else !youngestSire == youngestDam
-          sireJKnown = .false.
-          damJKnown = .false.
-          if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
-            if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
-              sireJKnown = .true.
-            end if
-          end if
+					if (youngestSire>youngestDam) then !i.e. the sire is younger
+						call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
+						temp= sireList%pop_first()
+					else if (youngestDam>youngestSire) then !i.e. the dam is younger
+						call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
+						temp = damList%pop_first()
+					else !youngestSire == youngestDam
+						sireJKnown = .false.
+						damJKnown = .false.
+						if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
+							if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
+								sireJKnown = .true.
+							end if
+						end if
 
-          if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
-            if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
-              damJKnown = .true.
-            end if
-          end if
+						if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
+							if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
+								damJKnown = .true.
+							end if
+						end if
 
-          if (sireJKnown .and. damJKnown) then
-            D= 2
-          else if (sireJKnown .or. damJKnown) then
-            D = 4.0_real64/3.0_real64
-          else
-            D = 1.0_real64
-          end if
+						if (sireJKnown .and. damJKnown) then
+							D= 2
+						else if (sireJKnown .or. damJKnown) then
+							D = 4.0_real64/3.0_real64
+						else
+							D = 1.0_real64
+						end if
 
-          call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
-          call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
-          !$OMP ATOMIC
-          F(i) = F(i) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
-          temp = sireList%pop_first()
-          temp = damList%pop_first()
-        end if
-      end do
+						call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
+						call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
+						!$OMP ATOMIC
+						F(i) = F(i) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
+						temp = sireList%pop_first()
+						temp = damList%pop_first()
+					end if
+				end do
 
-      if (sireKnown .and. damKnown) then
-        D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
-      else if (sireKnown) then
-        D = 0.75_real64 -0.25_real64*F(sireI)
-      else if (damKnown) then
-        D = 0.75_real64 -0.25_real64*F(damI)
-      else
-        D = 1_real64
-      end if
+				if (sireKnown .and. damKnown) then
+					D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
+				else if (sireKnown) then
+					D = 0.75_real64 -0.25_real64*F(sireI)
+				else if (damKnown) then
+					D = 0.75_real64 -0.25_real64*F(damI)
+				else
+					D = 1_real64
+				end if
 
-      D = 1.0_real64/D
+				D = 1.0_real64/D
 
-      !$OMP ATOMIC
-      values(ID, ID) = values(ID, ID) + D
-      if (sireKnown) then
-        !$OMP ATOMIC
-        values(sireI, ID) = values(sireI, ID) -0.5_real64*D
-        !$OMP ATOMIC
-        values(ID, sireI) = values(ID, sireI) -0.5_real64*D
-        !$OMP ATOMIC
-        values(sireI, sireI) = values(sireI, sireI) +0.25_real64*D
-      end if
+				!$OMP ATOMIC
+				values(ID, ID) = values(ID, ID) + D
+				if (sireKnown) then
+					!$OMP ATOMIC
+					values(sireI, ID) = values(sireI, ID) -0.5_real64*D
+					!$OMP ATOMIC
+					values(ID, sireI) = values(ID, sireI) -0.5_real64*D
+					!$OMP ATOMIC
+					values(sireI, sireI) = values(sireI, sireI) +0.25_real64*D
+				end if
 
-      if (damKnown) then
-        !$OMP ATOMIC
-        values(damI, ID) = values(damI, ID) - 0.5_real64*D
-        !$OMP ATOMIC
-        values(ID, damI) = values(ID, damI) - 0.5_real64*D
-        !$OMP ATOMIC
-        values(damI, damI) = values(damI, damI) + 0.25_real64*D
-      end if
+				if (damKnown) then
+					!$OMP ATOMIC
+					values(damI, ID) = values(damI, ID) - 0.5_real64*D
+					!$OMP ATOMIC
+					values(ID, damI) = values(ID, damI) - 0.5_real64*D
+					!$OMP ATOMIC
+					values(damI, damI) = values(damI, damI) + 0.25_real64*D
+				end if
 
-      if (damKnown .and. sireKnown) then
-        !$OMP ATOMIC
-        values(sireI, damI) = values(sireI, damI) + 0.25_real64*D
-        !$OMP ATOMIC
-        values(damI, sireI) = values(damI, sireI) + 0.25_real64*D
-      end if
-          deallocate(damList)
-          deallocate(sireList)
-          deallocate(lValues)
-    end do
-!    !$OMP END PARALLEL DO
+				if (damKnown .and. sireKnown) then
+					!$OMP ATOMIC
+					values(sireI, damI) = values(sireI, damI) + 0.25_real64*D
+					!$OMP ATOMIC
+					values(damI, sireI) = values(damI, sireI) + 0.25_real64*D
+				end if
+				deallocate(damList)
+				deallocate(sireList)
+				deallocate(lValues)
+			end do
+			!    !$OMP END PARALLEL DO
 
-    if (present(additVarianceIn)) then
-      values = values*additVarianceIn
-    end if
+			if (present(additVarianceIn)) then
+				values = values*additVarianceIn
+			end if
 
-  end function calculatePedigreeCorrelationWithInbreeding
+		end function calculatePedigreeCorrelationWithInbreeding
 
 #ifdef MPIACTIVE
   function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
@@ -3820,6 +3819,7 @@ module PedigreeModule
 			end if
 		end subroutine addSireDamToListAndUpdateValues
 end module PedigreeModule
+
 
 
 
