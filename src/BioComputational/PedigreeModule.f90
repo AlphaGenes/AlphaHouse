@@ -3074,7 +3074,7 @@ module PedigreeModule
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
             character(len=12) :: StrSnp,OutFmt
             integer :: fileUnit,i
-			open(newunit=FileUnit, file="ImputedDescendantPhase.txt", status="replace")
+			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%phaseProbabilities(1,:))
 			OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
@@ -3099,7 +3099,7 @@ module PedigreeModule
 		end subroutine writeOutPhaseProbabilities
 
 		!---------------------------------------------------------------------------
-		!< @brief  writes out phase probabilites
+		!< @brief  writes out geno probabilites
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
@@ -3109,7 +3109,8 @@ module PedigreeModule
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
             integer :: i, fileUnit
             character(len=12) :: StrSnp,OutFmt
-			open(newunit=FileUnit, file="ImputedDescendantPhase.txt", status="replace")
+			
+			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%genotypeProbabilities)
 			OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'

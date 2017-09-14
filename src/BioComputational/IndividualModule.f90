@@ -210,7 +210,7 @@ contains
 
             if (present(probabilites)) then
                 allocate(this%genotypeProbabilities(nsnps))
-                allocate(this%phaseProbabilities(nsnps,2))
+                allocate(this%phaseProbabilities(2,nsnps))
             endif
         endif
 
@@ -247,10 +247,6 @@ contains
         endif
         if (allocated(this%individualGenotype)) then
             deallocate(this%individualGenotype)
-        endif
-
-        if (allocated(this%genotypeProbabilities)) then
-            deallocate(this%genotypeProbabilities)
         endif
 
 
@@ -1443,7 +1439,7 @@ contains
     subroutine getProbabilitiesFromOwnGenotypeAndPhase(this)
         use iso_fortran_env
         class(individual) :: this
-    
+        
 
         this%genotypeProbabilities = this%individualGenotype%toIntegerArray()
         this%phaseProbabilities(1,:) = this%IndividualPhase(1)%toIntegerArray()
