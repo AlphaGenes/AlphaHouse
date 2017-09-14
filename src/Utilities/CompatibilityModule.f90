@@ -418,6 +418,7 @@ contains
 
 
 	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps)
+                use HashModule
 		use AlphaHouseMod
 
 		character(len=*),intent(in) :: filename
@@ -451,6 +452,7 @@ contains
 
 
 	subroutine readPedFile(filename,ped, maxSnps,genotypes, refAlleleOutputFile)
+use PedigreeModule
 
 		use AlphaHouseMod
 
