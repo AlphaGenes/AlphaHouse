@@ -27,6 +27,7 @@
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
 
+<<<<<<< HEAD
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
 
   implicit none
@@ -84,7 +85,6 @@ module AlphaHouseMod
     character(len=*), intent(in):: fileNameIn
     character(len=1), dimension(:), intent(in):: delimiterIn
     type(DictStructure), intent(out):: hashModuleOut
-!    integer, optional, intent(out):: numColumnsOut 
     integer, intent(in), optional:: initialFilePosition
     integer, intent(in), optional:: fileChunkSizeIn
 
@@ -101,7 +101,7 @@ module AlphaHouseMod
     if (present(fileChunkSizeIn)) then
       fileChunkSize = fileChunkSizeIn
     else
-      fileChunkSize = 1000
+      fileChunkSize = 10000
     end if
 
     numColumnsUsed = 0
@@ -1277,5 +1277,3 @@ module AlphaHouseMod
     !###########################################################################
 
 end module
-
-!###############################################################################

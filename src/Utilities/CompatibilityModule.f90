@@ -1,12 +1,60 @@
-#ifdef OS_UNIX
+#ifdef _WIN32
 
-#DEFINE DASH "/"
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
 
 #else
-#DEFINE DASH "\"
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
 #endif
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     CompatibilityModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module cotaining subroutines to deal with text PLINK format
+!> @details  currently only contains integer and real heap sort procedures
+!
+!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
+!
+!> @date     January 4, 2017
+!
+!> @version  1.0.0
+!
+!
+!-------------------------------------------------------------------------------
 module CompatibilityModule
 	use integerLinkedListModule
+	use HashModule
+	use PedigreeModule
 
 	type bimHolder
 	character(len=1) :: ref,alt
@@ -22,27 +70,6 @@ contains
 	final :: destroyChrom
 end type Chromosome
 contains
-	!###############################################################################
-
-	!-------------------------------------------------------------------------------
-	! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
-	!-------------------------------------------------------------------------------
-	!
-	!> @file     CompatibilityModule.f90
-	!
-	! DESCRIPTION:
-	!> @brief    Module cotaining subroutines to deal with text PLINK format
-	!> @details  currently only contains integer and real heap sort procedures
-	!
-	!> @author   David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date     January 4, 2017
-	!
-	!> @version  1.0.0
-	!
-	!
-	!-------------------------------------------------------------------------------
-
 
 	subroutine destroyChrom(chrom)
 
@@ -333,7 +360,177 @@ contains
 	end subroutine readplinkSnps
 
 
+	subroutine readPlinkNoneBinary(filePre, outputPaths, nsnps, ped)
+		use HashModule
+		use PedigreeModule
+		use AlphaHouseMod
+		use ifport
+
+		character(len=*),intent(in) :: filePre
+		character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
+		integer, dimension(:) ,allocatable :: nsnps
+		integer :: totalSnps,outChrF
+		type(Chromosome), dimension(:), allocatable :: chroms
+		character(len=128) :: path, outChrFile
+		integer(kind=1), dimension(:,:), allocatable ::  genotypes
+		logical, dimension(:), allocatable :: maskedLogi
+		integer, dimension(:), allocatable :: masked
+		integer :: i,h,maxChroms,maxSnps,result,p
+		character(100) :: fmt
+		type(DictStructure) :: dict
+		type(pedigreeHolder) :: ped
+
+		call readMap(filePre//".map", dict,chroms,maxChroms, nsnps, totalSnps)
+		
+		allocate(maskedLogi(totalSnps))
+		
+		call readPedFile(filePre//".ped",ped, maxSnps, genotypes, "refAlleles.txt")
+		path = "chromosomeGenotypes/"
+		result=makedirqq(path)
+
+		print *, "MAX CHROMS",maxChroms
+
+		allocate(outputPaths(maxChroms))
+		do i =1, maxChroms
+			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,DASH
+			outputPaths(i) = outChrFile
+			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="unknown")
+			masked = chroms(i)%snps%convertToArray()
+			maskedLogi = .false.
+			do h =1, size(masked)
+				maskedLogi(masked(h)) = .true.
+
+			enddo
+			write(fmt, '(a,i10,a)')  '(a20,', nsnps, 'i2)'
+			do p=1,ped%pedigreeSize-ped%nDummys
+				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(genotypes(p,:), maskedLogi)
+			end do
+			close(outChrF)
+		enddo
+
+		call dict%destroy()
+
+
+	end subroutine readPlinkNoneBinary
+
+
+
+	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps)
+                use HashModule
+		use AlphaHouseMod
+
+		character(len=*),intent(in) :: filename
+		integer, dimension(:) ,allocatable, intent(out) :: snpCounts
+		integer, intent(out) :: maxChroms
+		type(DictStructure), intent(out) :: dict
+		type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
+		integer, intent(out) :: totalSnps
+		integer :: unit,i,chrom,length, basepair
+		character(len=128) :: id
+
+		totalSnps = countLines(fileName)
+		open(newunit=unit, file=filename, status='OLD')
+
+		allocate(chroms(LARGECHROMNUMBER))
+		maxChroms = 0
+		snpCounts = 0
+		do i=1,totalSnps
+
+			read(unit, *) chrom, id,length, basepair
+			if (chrom > maxChroms) then
+				maxChroms = chrom
+			endif
+
+			snpCounts(chrom) = snpCounts(chrom) + 1
+			call dict%addKey(id, i)
+			call chroms(chrom)%snps%list_add(i)
+		enddo
+
+	end subroutine readMap
+
+
+	subroutine readPedFile(filename,ped, maxSnps,genotypes, refAlleleOutputFile)
+use PedigreeModule
+
+		use AlphaHouseMod
+
+		character(len=*), intent(in) :: filename
+		type(pedigreeHolder), intent(out) :: ped
+		integer, intent(in) :: maxSnps
+		character(len=*), intent(in), optional :: refAlleleOutputFile
+
+
+		character(len=IDLENGTH), dimension(:,:), allocatable :: pedArray
+
+		character(len=1),dimension(:), allocatable :: referenceAllelePerSnps !<array saying for which snp the reference allele is
+		character(len=1),dimension(:,:), allocatable :: alleles !< size nsnp x2 (for each allele,)
+		integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes
+		integer, allocatable, dimension(:) :: genderArray, phenotypeArray
+		integer :: size,cursnp,i,j,stat, fileUnit,gender,phenotype
+		character(len=1) :: all1, all2
+		character(len=IDLENGTH) :: FAMILYID
+		size = countlines(filename)
+
+		allocate(pedArray(3,size))
+		allocate(genderArray(size))
+		allocate(phenotypeArray(size))
+		allocate(referenceAllelePerSnps(maxSnps))
+		allocate(alleles(size, maxSnps*2))
+
+
+
+		do i=1,size
+			read(fileUnit,*) familyID,pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype, alleles(i,:)
+
+			read(gender,*,iostat=stat)  genderArray(i)
+			read(phenotype,*,iostat=stat)  phenotypeArray(i)
+		enddo
+
+		close(fileUnit)
+
+		do j=1,maxSnps*2,2
+			cursnp = (j/2) + 1
+			referenceAllelePerSnps(cursnp) = alleles(1,j)
+			do i=1,size
+				all1 = alleles(i,j)
+				all2 = alleles(i,j+1)
+				if (all1 == '0' .or. all2 == '0') then
+					genotypes(i,curSnp) = MISSINGGENOTYPECODE
+
+				else if (all1 == all2) then
+
+					if (all1 == referenceAllelePerSnps(curSnp) ) then
+						genotypes(i,curSnp) = 2
+					else
+						genotypes(i,curSnp) = 0
+					endif
+				else !< means they are different
+					genotypes(i,curSnp) = 1
+				endif
+			enddo
+		enddo
+
+		ped = pedigreeHolder(pedArray, genderArray)
+		! ped%addGenotypeInformationFromArray(genotypes)
+
+		if (present(refAlleleOutputFile)) then
+			open(fileUnit, file=refAlleleOutputFile, status="unknown")
+
+			do i=1,maxSnps
+
+				write(fileUnit, '(2a5)') "snp","Ref Allele"
+				write(fileUnit, '(i5,a5)') i, referenceAllelePerSnps(i)
+			enddo
+			close(fileUnit)
+		endif
+		! TODO write output map showing which snp was reference allele
+
+	end subroutine readPedFile
+
+
 end module CompatibilityModule
+
+
 
 
 
