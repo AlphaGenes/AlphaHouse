@@ -27,7 +27,6 @@
 !-------------------------------------------------------------------------------
 module AlphaHouseMod
 
-<<<<<<< HEAD
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
 
   implicit none
