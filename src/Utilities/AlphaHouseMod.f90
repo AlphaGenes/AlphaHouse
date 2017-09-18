@@ -92,7 +92,7 @@ module AlphaHouseMod
 
     integer:: fileSize, fileUnit, filePosition, fileSizeLeft
     integer:: IOStatus, i, j, val
-    logical:: fileExists, lineEnd, previousIsDelim
+    logical:: fileExists, previousIsDelim
     integer:: numColumnsUsed
     integer:: fileChunkSize, StartChar
 

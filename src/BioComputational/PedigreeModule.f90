@@ -2441,7 +2441,6 @@ module PedigreeModule
 
 			integer ::i, tmpGender,tmp,unit
 			character(len=IDLENGTH) :: tmpId
-			character(len=100) :: fmt
 			open(newunit= unit, file= filepath, status="old")
 			do i= 1, this%pedigreeSize
 				read(unit,*) tmpId, tmpGender
@@ -3595,7 +3594,6 @@ module PedigreeModule
     type(Individual), dimension(:), pointer:: knownAnimalArray
 
     integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
-    real(real64):: startTime, endTime
 
     integer:: mpiSize, mpiRank, mpiCommunicator
     integer:: numLevels
@@ -3627,7 +3625,6 @@ module PedigreeModule
     values = 0
 
     lastGenAnimal = 0
-    startTime = MPI_Wtime()
     GenerationLoop: do j = 0, size(pedIn%generations)-1
       knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
       knownAnimalArray => knownAnimals%convertToArray()

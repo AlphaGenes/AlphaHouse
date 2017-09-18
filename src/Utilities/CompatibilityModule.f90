@@ -1,3 +1,10 @@
+#ifdef OS_UNIX
+
+#DEFINE DASH "/"
+
+#else
+#DEFINE DASH "\"
+#endif
 module CompatibilityModule
 	use integerLinkedListModule
 
@@ -229,7 +236,6 @@ contains
 		!integer, dimension(:), allocatable :: domasksnps
 		integer(kind=1), dimension(:,:), allocatable,intent(out) ::  snps
 		real :: allelefreq
-		character(100) :: nChar, fmt
 		integer :: na
 		integer :: bedInUnit
 		! Supported formats as per plink 1.9.
