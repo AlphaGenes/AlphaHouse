@@ -71,6 +71,9 @@ if (${RUN_TESTS})
       ${SRC}/BioComputational/HaplotypeModule.f90
       ${SRC}/BioComputational/GenotypeModule.f90
 )
+  if (${USE_MPI}) 
+    SET(testDeps ${SRC}/Utilities/MPIUtilities.f90 ${testDeps})
+  endif (${USE_MPI})
 
 endif (${RUN_TESTS})
 
