@@ -3287,7 +3287,7 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
 			class(PedigreeHolder) :: this
-			character(len=IDLENGTH) ,intent(in):: OriginalId
+			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
 
 			! change pedigree to no longer be sorted
@@ -3387,6 +3387,8 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 
 			res = 0
+
+			!$OMP SIMD reduction(+:res)
 			do i=1, this%pedigreeSize
 
 				if (this%pedigree(i)%isDummy) cycle
@@ -3407,6 +3409,8 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 
 			res = 0
+
+			!$OMP SIMD reduction(+:res)
 			do i=1, this%pedigreeSize
 
 				if (this%pedigree(i)%isDummy) cycle
