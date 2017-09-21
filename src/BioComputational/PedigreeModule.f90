@@ -2646,7 +2646,7 @@ module PedigreeModule
 			end if
 			allocate(this%id(3, 0:n))
 			this%id = 0
-		end subroutine
+		end subroutine initRecodedPedigreeArray
 
 		!---------------------------------------------------------------------------
 		!< @brief Destructor for recodedPedigreeArray
