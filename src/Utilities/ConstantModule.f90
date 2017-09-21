@@ -30,4 +30,5 @@ module ConstantModule
     real(real64), parameter :: PI = 4.0d0 * atan(1.0d0)
     real(real64), parameter :: RAD2DEG = 180.0d0 / PI
     real(real64), parameter :: DEG2RAD = PI / 180.0d0
+
 end Module ConstantModule

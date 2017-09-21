@@ -2,6 +2,9 @@ module TestPedigreeModule
   use pFUnit_mod
   use PedigreeModule
   use ISO_Fortran_env
+#ifdef MPIACTIVE
+  use MPIUtilities
+#endif
 
   implicit none
 
