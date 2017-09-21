@@ -106,6 +106,7 @@ module PedigreeModule
 		procedure :: getGenotypePercentage
 		procedure :: writeOutGenotypes
 		procedure :: WriteoutPhase
+		procedure :: WriteoutPhaseNoDummies
 		procedure :: createDummyAnimalAtEndOfPedigree
 		procedure :: addAnimalAtEndOfPedigree
 		procedure :: addSequenceFromFile
@@ -121,6 +122,7 @@ module PedigreeModule
 		procedure :: getUniqueParents
 		procedure :: findMendelianInconsistencies
 		procedure :: writeOutGenotypesAll
+		procedure :: writeOutGenotypesNoDummies
 		procedure :: getHDPedigree
 		procedure :: writeOutPedigree
 #ifdef MPIACTIVE
@@ -2503,6 +2505,27 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypesAll
 
+			!---------------------------------------------------------------------------
+		!< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+		!< for all animals not just the ones that are genotyped\
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypesNoDummies(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
+			do i= 1, this%pedigreeSize
+				if (this%pedigree(i)%isdummy) cycle
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine writeOutGenotypesNoDummies
+
 
 
 		!---------------------------------------------------------------------------
@@ -2524,6 +2547,28 @@ module PedigreeModule
 			enddo
 			close(fileUnit)
 		end subroutine WriteoutPhase
+
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file, excluding dummy animals
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine WriteoutPhaseNoDummies(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%pedigreeSize
+				if (this%pedigree(i)%isDummy) cycle
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine WriteoutPhaseNoDummies
+
 
 
 
@@ -3295,7 +3340,7 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
 			class(PedigreeHolder) :: this
-			character(len=IDLENGTH) ,intent(in):: OriginalId
+			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
 
 			! change pedigree to no longer be sorted
@@ -3415,6 +3460,7 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 
 			res = 0
+
 			do i=1, this%pedigreeSize
 
 				if (this%pedigree(i)%isDummy) cycle
