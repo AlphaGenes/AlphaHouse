@@ -1046,7 +1046,6 @@ contains
     !---------------------------------------------------------------------------
     subroutine makeIndividualPhaseCompliment(this)
         class(Individual), intent(inout) :: this
-        integer :: i
         type (haplotype),allocatable :: comp1, comp2
         
         call this%individualPhase(1)%setErrorToMissing()

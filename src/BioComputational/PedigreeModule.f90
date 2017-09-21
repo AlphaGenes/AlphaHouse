@@ -1811,7 +1811,7 @@ module PedigreeModule
 		!--------------------------------------------------------------------------
 		subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, startSnp, endSnp)
 
-			use AlphaHouseMod, only : countLines
+			use AlphaHouseMod, only : countLines,countColumns
 			use ConstantModule, only : IDLENGTH,DICT_NULL
 			implicit none
 			class(PedigreeHolder) :: this
@@ -1826,6 +1826,8 @@ module PedigreeModule
 			integer,allocatable, dimension(:) :: ref, alt
 			integer :: unit, tmpID,i,j
 			character(len=IDLENGTH) :: seqid !placeholder variables
+			character(len=1), dimension(3):: delimiter
+			integer :: nCol
 
 			if (.not. Present(nAnisGIn)) then
 				NanisG = countLines(seqFile)/2
@@ -1833,9 +1835,16 @@ module PedigreeModule
 				nanisG = nAnisGIn
 			endif
 
+			delimiter(1) = ","
+			delimiter(2) = " "
+			delimiter(3) = char(9)
+
+			nCol=countColumns(trim(seqFile), delimiter)-1 ! First column is animal id
+			
 			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
-			allocate(ref(nsnps))
-			allocate(alt(nsnps))
+			allocate(ref(nCol))
+			allocate(alt(nCol))
+
 			tmp = 9
 			print *, "Number of animals in seq file", NanisG
 			do i=1,nAnisG
@@ -2441,7 +2450,6 @@ module PedigreeModule
 
 			integer ::i, tmpGender,tmp,unit
 			character(len=IDLENGTH) :: tmpId
-			character(len=100) :: fmt
 			open(newunit= unit, file= filepath, status="old")
 			do i= 1, this%pedigreeSize
 				read(unit,*) tmpId, tmpGender
@@ -3599,7 +3607,6 @@ module PedigreeModule
     type(Individual), dimension(:), pointer:: knownAnimalArray
 
     integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
-    real(real64):: startTime, endTime
 
     integer:: mpiSize, mpiRank, mpiCommunicator
     integer:: numLevels
@@ -3631,7 +3638,6 @@ module PedigreeModule
     values = 0
 
     lastGenAnimal = 0
-    startTime = MPI_Wtime()
     GenerationLoop: do j = 0, size(pedIn%generations)-1
       knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
       knownAnimalArray => knownAnimals%convertToArray()
