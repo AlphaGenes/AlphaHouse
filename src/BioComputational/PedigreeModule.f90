@@ -1560,7 +1560,9 @@ module PedigreeModule
 			if (present(nAnnisG)) then
 				nAnnis = nAnnisG
 			else
-				nAnnis = countLines(phaseFile)
+				! nAnnis = countLines(phaseFile)
+				!SG changed 22/09/17
+				nAnnis = float(countLines(phaseFile)) / 2.0 ! DW / DM check is this correct?
 			endif
 
 			allocate(tmpSnpArray(nsnps))
@@ -3077,8 +3079,9 @@ module PedigreeModule
 			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%phaseProbabilities(1,:))
-			OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
 
+			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
 			if (present(indexesToPrint)) then
 
 				do i=1,size(indexesToPrint)
@@ -3108,12 +3111,13 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
             integer :: i, fileUnit
-            character(len=12) :: StrSnp,OutFmt
+            character(len=30) :: StrSnp,OutFmt
 			
 			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%genotypeProbabilities)
-			OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
 
 			if (present(indexesToPrint)) then
 
