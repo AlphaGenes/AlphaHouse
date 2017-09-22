@@ -143,6 +143,7 @@ module IndividualModule
             procedure :: countHighDensityOffspring
             procedure :: addFamily
             procedure :: initialisePlantArrays
+            procedure :: getProbabilitiesFromOwnGenotypeAndPhase
             generic:: write(formatted)=> writeIndividual
 
             
