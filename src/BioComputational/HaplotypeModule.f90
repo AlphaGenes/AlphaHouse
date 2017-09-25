@@ -313,7 +313,7 @@ contains
 
         allocate(array(h%length))
         
-        array = 9
+        array = MissingPhaseCode
         cursection = 1
         curpos = 0
         do i = 1, h%length
@@ -354,6 +354,7 @@ contains
 
         allocate(array(h%length))
 
+        array = MissingPhaseCode
         cursection = 1
         curpos = 0
         do i = 1, h%length
