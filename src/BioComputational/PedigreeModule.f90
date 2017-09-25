@@ -1842,7 +1842,7 @@ module PedigreeModule
 			delimiter(3) = char(9)
 
 			nCol=countColumns(trim(seqFile), delimiter)-1 ! First column is animal id
-			
+
 			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 			allocate(ref(nCol))
 			allocate(alt(nCol))
@@ -2505,7 +2505,7 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypesAll
 
-			!---------------------------------------------------------------------------
+		!---------------------------------------------------------------------------
 		!< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
 		!< for all animals not just the ones that are genotyped\
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -3625,222 +3625,222 @@ module PedigreeModule
 		end function calculatePedigreeCorrelationWithInbreeding
 
 #ifdef MPIACTIVE
-  function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
-    use MyLinkedList
-    use mpi
-    use MPIUtilities, only: checkMPI
-    class(PedigreeHolder), intent(in):: pedIn
-    real(real64), intent(in), optional:: additVarianceIn
-    integer, intent(in), optional:: communicatorIn
-    type(MyLL), allocatable:: sireList, damList
-    real(real64), dimension(:,:), allocatable:: lValues
-    real(real64), dimension(:), allocatable:: F, F2
-    real(real64), dimension(:, :), allocatable:: values
+		function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
+			use MyLinkedList
+			use mpi
+			use MPIUtilities, only: checkMPI
+			class(PedigreeHolder), intent(in):: pedIn
+			real(real64), intent(in), optional:: additVarianceIn
+			integer, intent(in), optional:: communicatorIn
+			type(MyLL), allocatable:: sireList, damList
+			real(real64), dimension(:,:), allocatable:: lValues
+			real(real64), dimension(:), allocatable:: F, F2
+			real(real64), dimension(:, :), allocatable:: values
 
-    integer:: knownDummies, extras, mpiErr 
-    integer:: i, j, youngestSire, youngestDam
-    integer:: sireI, damI, temp, ID
-    integer,dimension(:), allocatable:: gatherSizes, offsetLocation
+			integer:: knownDummies, extras, mpiErr
+			integer:: i, j, youngestSire, youngestDam
+			integer:: sireI, damI, temp, ID
+			integer,dimension(:), allocatable:: gatherSizes, offsetLocation
 
-    logical:: sireKnown, damKnown
-    logical:: sireJKnown, damJKnown
-    real(real64):: D
-    type(IndividualLinkedList):: knownAnimals
-    type(Individual), dimension(:), pointer:: knownAnimalArray
+			logical:: sireKnown, damKnown
+			logical:: sireJKnown, damJKnown
+			real(real64):: D
+			type(IndividualLinkedList):: knownAnimals
+			type(Individual), dimension(:), pointer:: knownAnimalArray
 
-    integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
+			integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
 
-    integer:: mpiSize, mpiRank, mpiCommunicator
-    integer:: numLevels
+			integer:: mpiSize, mpiRank, mpiCommunicator
+			integer:: numLevels
 
-    if (present(communicatorIn)) then
-      mpiCommunicator = communicatorIn
-    else
-      mpiCommunicator = MPI_COMM_WORLD
-    end if
+			if (present(communicatorIn)) then
+				mpiCommunicator = communicatorIn
+			else
+				mpiCommunicator = MPI_COMM_WORLD
+			end if
 
-    call MPI_COMM_SIZE(mpiCommunicator, mpiSize, mpiErr)
-    call checkMPI(mpiErr)
-    call MPI_COMM_RANK(mpiCommunicator, mpiRank, mpiErr)
-    call checkMPI(mpiErr)
-    numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
+			call MPI_COMM_SIZE(mpiCommunicator, mpiSize, mpiErr)
+			call checkMPI(mpiErr)
+			call MPI_COMM_RANK(mpiCommunicator, mpiRank, mpiErr)
+			call checkMPI(mpiErr)
+			numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
 
-    allocate(values(numLevels, numLevels))
+			allocate(values(numLevels, numLevels))
 
-    allocate(F(0:numLevels))
-    allocate(gatherSizes(mpiSize))
-    allocate(offsetLocation(mpiSize))
+			allocate(F(0:numLevels))
+			allocate(gatherSizes(mpiSize))
+			allocate(offsetLocation(mpiSize))
 
-    F(0) = -1
-    F(1:) = 0
-
-
-    knownDummies = pedIn%nDummys - pedIn%unKnownDummys
-
-    values = 0
-
-    lastGenAnimal = 0
-    GenerationLoop: do j = 0, size(pedIn%generations)-1
-      knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
-      knownAnimalArray => knownAnimals%convertToArray()
-      numAnimalsInThisgeneration = knownAnimals%length
-
-      animalsPerCore = numAnimalsInThisgeneration/mpiSize
-
-      extras = numAnimalsInThisgeneration - mpiSize*(numAnimalsInThisgeneration/mpiSize) !Integer Arithmatic
-
-      startAnimal = mpiRank*animalsPerCore+1
-      endAnimal = (mpiRank+1)*animalsPerCore
-      if (mpiRank ==mpiSize-1) then
-        endAnimal = endAnimal+extras
-      end if
+			F(0) = -1
+			F(1:) = 0
 
 
-      gatherSizes = animalsPerCore
-      do i =1, mpiSize
-        offsetLocation(i) = animalsPerCore*(i-1)
-      end do
-      gatherSizes(mpiSize) = gatherSizes(mpiSize)+extras
+			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
 
-        allocate(F2(gatherSizes(mpiRank+1)))
-        F2=0
+			values = 0
 
-        firstGenAnimal = lastGenAnimal+1
-        lastGenAnimal = firstGenAnimal+numAnimalsInThisgeneration-1
+			lastGenAnimal = 0
+			GenerationLoop: do j = 0, size(pedIn%generations)-1
+				knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
+				knownAnimalArray => knownAnimals%convertToArray()
+				numAnimalsInThisgeneration = knownAnimals%length
 
-        F(FirstGenAnimal: lastGenAnimal) = 0
+				animalsPerCore = numAnimalsInThisgeneration/mpiSize
 
-        !$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
-        AnimalLoop: do i = startAnimal, endAnimal
-  
-          allocate(damList)
-          allocate(sireList)
-          allocate(lValues(numLevels, numLevels))
-          damKnown = .false.
-          sireKnown = .false.
-          lValues = 0
-          F2(i-startAnimal+1) = 0
-          sireI = 0
-          damI = 0
-          ID = knownAnimalArray(i)%ID
-          if (associated(knownAnimalArray(i)%sirePointer)) then
-            if (.not. knownAnimalArray(i)%sirePointer%isUnknownDummy) then
-              sireI = knownAnimalArray(i)%sirePointer%ID
-              call sireList%list_add(sireI)!knownAnimalArray(i)%sirePointer%ID)
-              lValues(sireI, sireI) = 1
-              sireKnown = .true.
-            end if
-          end if
-  
-          if (associated(knownAnimalArray(i)%damPointer)) then
-            if (.not. knownAnimalArray(i)%damPointer%isUnknownDummy) then
-              damI = knownAnimalArray(i)%damPointer%ID
-              call damList%list_add(damI)
-              lValues(damI, damI) = 1
-              damKnown=.true.
-            end if
-          end if
-  
-          do while (sireList%length>0 .and. damList%length>0)
-            youngestSire = sireList%first%item
-            youngestDam = damList%first%item
-  
-            if (youngestSire>youngestDam) then !i.e. the sire is younger
-              call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
-              temp= sireList%pop_first()
-            else if (youngestDam>youngestSire) then !i.e. the dam is younger
-              call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
-              temp = damList%pop_first()
-            else !youngestOnSireSide == youngestOnDamSide
-              sireJKnown = .false.
-              damJKnown = .false.
-              if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
-                if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
-                  sireJKnown = .true.
-                end if
-              end if
-  
-              if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
-                if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
-                  damJKnown = .true.
-                end if
-              end if
-  
-              if (sireJKnown .and. damJKnown) then
-                D= 2
-              else if (sireJKnown .or. damJKnown) then
-                D = 4.0_real64/3.0_real64
-              else
-                D = 1.0_real64
-              end if
-  
-              call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
-              call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
-              F2(i-startAnimal+1) = F2(i-startAnimal+1) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
-              temp = sireList%pop_first()
-              temp = damList%pop_first()
-            end if
-          end do
-  
-          if (sireKnown .and. damKnown) then
-            D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
-          else if (sireKnown) then
-            D = 0.75_real64 -0.25_real64*F(sireI)
-          else if (damKnown) then
-            D = 0.75_real64 -0.25_real64*F(damI)
-          else
-            D = 1.0_real64
-          end if
-  
-          D = 1.0_real64/D
-  
-          !$OMP ATOMIC
-          values(ID, ID) = values(ID, ID) + D!1.0_real64/(1+F(i))
-          if (sireKnown) then
-          !$OMP ATOMIC
-          values(sireI, ID) =values(sireI, ID) -0.5*D!F(i)
-          !$OMP ATOMIC
-          values(ID, sireI) = values(ID, sireI) -0.5*D!F(i)
-          !$OMP ATOMIC
-          values(sireI, sireI) = values(sireI, sireI) +0.25*D!F(i)
-          end if
-  
-          if (damKnown) then 
-          !$OMP ATOMIC
-            values(damI, ID) = values(damI, ID) -0.5*D!F(i)
-          !$OMP ATOMIC
-            values(ID, damI) = values(ID, damI) - 0.5*D!F(i)
-          !$OMP ATOMIC
-            values(damI, damI) = values(damI, damI) + 0.25*D!F(i)
-          end if
-  
-          if (damKnown .and. sireKnown) then
-          !$OMP ATOMIC
-            values(sireI, damI) = values(sireI, damI) + 0.25*D
-          !$OMP ATOMIC
-            values(damI, sireI) = values(damI, sireI) + 0.25*D
-            end if
+				extras = numAnimalsInThisgeneration - mpiSize*(numAnimalsInThisgeneration/mpiSize) !Integer Arithmatic
 
-            deallocate(sireList)
-            deallocate(damList)
-            deallocate(lValues)
+				startAnimal = mpiRank*animalsPerCore+1
+				endAnimal = (mpiRank+1)*animalsPerCore
+				if (mpiRank ==mpiSize-1) then
+					endAnimal = endAnimal+extras
+				end if
 
-        end do AnimalLoop
-        !$OMP END PARALLEL DO
 
-        call MPI_ALLGATHERV(F2, gatherSizes(mpiRank+1), MPI_DOUBLE, F(firstGenAnimal:lastGenAnimal), gatherSizes, offsetLocation, MPI_DOUBLE, mpiCommunicator, mpiErr)
-        knownAnimalArray => null()
-        deallocate(F2)
+				gatherSizes = animalsPerCore
+				do i =1, mpiSize
+					offsetLocation(i) = animalsPerCore*(i-1)
+				end do
+				gatherSizes(mpiSize) = gatherSizes(mpiSize)+extras
 
-!      end if
-    end do GenerationLoop
+				allocate(F2(gatherSizes(mpiRank+1)))
+				F2=0
 
-    call MPI_ALLREDUCE(MPI_IN_PLACE, values, size(values), MPI_DOUBLE, MPI_SUM, mpiCommunicator, mpiErr)
+				firstGenAnimal = lastGenAnimal+1
+				lastGenAnimal = firstGenAnimal+numAnimalsInThisgeneration-1
 
-    if (present(additVarianceIn)) then
-      values = values*additVarianceIn
-    end if
-  end function calculatePedigreeCorrelationWithInBreedingMPI
+				F(FirstGenAnimal: lastGenAnimal) = 0
+
+				!$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
+				AnimalLoop: do i = startAnimal, endAnimal
+
+					allocate(damList)
+					allocate(sireList)
+					allocate(lValues(numLevels, numLevels))
+					damKnown = .false.
+					sireKnown = .false.
+					lValues = 0
+					F2(i-startAnimal+1) = 0
+					sireI = 0
+					damI = 0
+					ID = knownAnimalArray(i)%ID
+					if (associated(knownAnimalArray(i)%sirePointer)) then
+						if (.not. knownAnimalArray(i)%sirePointer%isUnknownDummy) then
+							sireI = knownAnimalArray(i)%sirePointer%ID
+							call sireList%list_add(sireI)!knownAnimalArray(i)%sirePointer%ID)
+							lValues(sireI, sireI) = 1
+							sireKnown = .true.
+						end if
+					end if
+
+					if (associated(knownAnimalArray(i)%damPointer)) then
+						if (.not. knownAnimalArray(i)%damPointer%isUnknownDummy) then
+							damI = knownAnimalArray(i)%damPointer%ID
+							call damList%list_add(damI)
+							lValues(damI, damI) = 1
+							damKnown=.true.
+						end if
+					end if
+
+					do while (sireList%length>0 .and. damList%length>0)
+						youngestSire = sireList%first%item
+						youngestDam = damList%first%item
+
+						if (youngestSire>youngestDam) then !i.e. the sire is younger
+							call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
+							temp= sireList%pop_first()
+						else if (youngestDam>youngestSire) then !i.e. the dam is younger
+							call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
+							temp = damList%pop_first()
+						else !youngestOnSireSide == youngestOnDamSide
+							sireJKnown = .false.
+							damJKnown = .false.
+							if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
+								if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
+									sireJKnown = .true.
+								end if
+							end if
+
+							if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
+								if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
+									damJKnown = .true.
+								end if
+							end if
+
+							if (sireJKnown .and. damJKnown) then
+								D= 2
+							else if (sireJKnown .or. damJKnown) then
+								D = 4.0_real64/3.0_real64
+							else
+								D = 1.0_real64
+							end if
+
+							call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
+							call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
+							F2(i-startAnimal+1) = F2(i-startAnimal+1) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
+							temp = sireList%pop_first()
+							temp = damList%pop_first()
+						end if
+					end do
+
+					if (sireKnown .and. damKnown) then
+						D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
+					else if (sireKnown) then
+						D = 0.75_real64 -0.25_real64*F(sireI)
+					else if (damKnown) then
+						D = 0.75_real64 -0.25_real64*F(damI)
+					else
+						D = 1.0_real64
+					end if
+
+					D = 1.0_real64/D
+
+					!$OMP ATOMIC
+					values(ID, ID) = values(ID, ID) + D!1.0_real64/(1+F(i))
+					if (sireKnown) then
+						!$OMP ATOMIC
+						values(sireI, ID) =values(sireI, ID) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(ID, sireI) = values(ID, sireI) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(sireI, sireI) = values(sireI, sireI) +0.25*D!F(i)
+					end if
+
+					if (damKnown) then
+						!$OMP ATOMIC
+						values(damI, ID) = values(damI, ID) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(ID, damI) = values(ID, damI) - 0.5*D!F(i)
+						!$OMP ATOMIC
+						values(damI, damI) = values(damI, damI) + 0.25*D!F(i)
+					end if
+
+					if (damKnown .and. sireKnown) then
+						!$OMP ATOMIC
+						values(sireI, damI) = values(sireI, damI) + 0.25*D
+						!$OMP ATOMIC
+						values(damI, sireI) = values(damI, sireI) + 0.25*D
+					end if
+
+					deallocate(sireList)
+					deallocate(damList)
+					deallocate(lValues)
+
+				end do AnimalLoop
+				!$OMP END PARALLEL DO
+
+				call MPI_ALLGATHERV(F2, gatherSizes(mpiRank+1), MPI_DOUBLE, F(firstGenAnimal:lastGenAnimal), gatherSizes, offsetLocation, MPI_DOUBLE, mpiCommunicator, mpiErr)
+				knownAnimalArray => null()
+				deallocate(F2)
+
+				!      end if
+			end do GenerationLoop
+
+			call MPI_ALLREDUCE(MPI_IN_PLACE, values, size(values), MPI_DOUBLE, MPI_SUM, mpiCommunicator, mpiErr)
+
+			if (present(additVarianceIn)) then
+				values = values*additVarianceIn
+			end if
+		end function calculatePedigreeCorrelationWithInBreedingMPI
 #endif
 
 		subroutine addSireDamToListAndUpdateValues(listIn, IndividualIn, values, firstValue)
@@ -3871,6 +3871,7 @@ module PedigreeModule
 			end if
 		end subroutine addSireDamToListAndUpdateValues
 end module PedigreeModule
+
 
 
 

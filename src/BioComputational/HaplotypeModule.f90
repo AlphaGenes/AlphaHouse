@@ -312,7 +312,8 @@ contains
         integer :: i, cursection, curpos
 
         allocate(array(h%length))
-
+        
+        array = 9
         cursection = 1
         curpos = 0
         do i = 1, h%length
