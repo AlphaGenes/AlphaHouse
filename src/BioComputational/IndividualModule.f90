@@ -1443,8 +1443,8 @@ contains
         
 
         this%genotypeProbabilities = this%individualGenotype%toIntegerArray()
-        this%phaseProbabilities(1,:) = this%IndividualPhase(1)%toIntegerArray()
-        this%phaseProbabilities(2,:) = this%IndividualPhase(1)%toIntegerArray()
+        this%phaseProbabilities(1,:) = this%IndividualPhase(1)%toIntegerArrayWithErrors()
+        this%phaseProbabilities(2,:) = this%IndividualPhase(2)%toIntegerArrayWithErrors()
 
     end subroutine getProbabilitiesFromOwnGenotypeAndPhase
 

@@ -313,6 +313,7 @@ contains
 
         allocate(array(h%length))
 
+        array = MissingPhaseCode
         cursection = 1
         curpos = 0
         do i = 1, h%length
@@ -352,7 +353,7 @@ contains
         integer :: i, cursection, curpos
 
         allocate(array(h%length))
-
+        array = MissingPhaseCode
         cursection = 1
         curpos = 0
         do i = 1, h%length
