@@ -89,6 +89,7 @@ module PedigreeModule
 		procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
 		procedure :: getPhaseAtPosition
 		procedure :: getPhaseAtPositionUngenotypedAnimals
+		procedure :: getPhaseAsArrayWithMissing
 		procedure :: setAnimalAsGenotyped
 		procedure :: getGenotypesAsArray
 		procedure :: getPhaseAsArray
@@ -106,6 +107,7 @@ module PedigreeModule
 		procedure :: getGenotypePercentage
 		procedure :: writeOutGenotypes
 		procedure :: WriteoutPhase
+		procedure :: WriteoutPhaseAll
 		procedure :: WriteoutPhaseNoDummies
 		procedure :: createDummyAnimalAtEndOfPedigree
 		procedure :: addAnimalAtEndOfPedigree
@@ -2476,14 +2478,33 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypesNoDummies
 
+		
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file of only animals that are genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine WriteoutPhase(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
 
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%nGenotyped
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine WriteoutPhase
 
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine WriteoutPhase(this, filename)
+		subroutine WriteoutPhaseAll(this, filename)
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
 			integer ::i, fileUnit
@@ -2496,7 +2517,7 @@ module PedigreeModule
 				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
 			close(fileUnit)
-		end subroutine WriteoutPhase
+		end subroutine WriteoutPhaseAll
 
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file, excluding dummy animals
@@ -2842,6 +2863,13 @@ module PedigreeModule
 		end function getGenotypesAsArray
 
 
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< only information is populated where animals have been set as genotyped
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------	
 		function getPhaseAsArray(this) result(res)
 
 			class(pedigreeHolder) :: this
@@ -2857,6 +2885,30 @@ module PedigreeModule
 			enddo
 
 		end function getPhaseAsArray
+
+
+
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		function getPhaseAsArrayWithMissing(this) result(res)
+
+			class(pedigreeHolder) :: this
+			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+			integer :: i
+
+
+			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			res = 9
+			do i=1, this%pedigreeSize
+				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+			enddo
+
+		end function getPhaseAsArrayWithMissing
 
 
 		!---------------------------------------------------------------------------
