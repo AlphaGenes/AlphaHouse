@@ -1046,10 +1046,13 @@ contains
     !---------------------------------------------------------------------------
     subroutine makeIndividualPhaseCompliment(this)
         class(Individual), intent(inout) :: this
-        type (haplotype),allocatable :: comp1, comp2
+        type (haplotype) :: comp1, comp2
         
         call this%individualPhase(1)%setErrorToMissing()
         call this%individualPhase(2)%setErrorToMissing()
+
+        ! allocate(comp1)
+        ! allocate(comp2)
         comp2 = this%individualGenotype%complement(this%individualPhase(1))
         comp1 = this%individualGenotype%complement(this%individualPhase(2))
 
@@ -1059,8 +1062,8 @@ contains
         call this%individualPhase(1)%setFromOtherIfMissing(comp1)
         call this%individualPhase(2)%setFromOtherIfMissing(comp2)
         
-        deallocate(comp1)
-        deallocate(comp2)
+        ! deallocate(comp1)
+        ! deallocate(comp2)
 
     end subroutine makeIndividualPhaseCompliment
 

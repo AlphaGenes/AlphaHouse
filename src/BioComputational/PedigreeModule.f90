@@ -421,7 +421,7 @@ module PedigreeModule
 			sireRemoved = .false.
 			damRemoved = .false.
 
-
+			snpChanges = 0
 			if (present(snpfilePath)) then
 				open(newunit=snpFile, file=snpfilePath, status='unknown')
 				write (snpFile,'(3a30)') "AnimalId","ParentId", "SNP Position of Mismatch"
@@ -433,7 +433,6 @@ module PedigreeModule
 
 			CountChanges = 0
 
-
 			allocate(mend(ped%pedigreeSize))
 
 			if (ped%isSorted == 0) then
@@ -441,13 +440,11 @@ module PedigreeModule
 			endif
 
 			do i=1,ped%pedigreeSize
-
 				! if sire is associated, then dam must be too
 				if (associated(ped%pedigree(i)%sirePointer)) then
 
 					sire => ped%pedigree(i)%sirePointer
 					dam => ped%pedigree(i)%damPointer
-
 
 					mend(i) = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
 
@@ -463,9 +460,6 @@ module PedigreeModule
 					!     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
 
 					! endif
-
-
-
 					! looks like a pedigree error
 					if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 						! remove sire link
@@ -491,15 +485,11 @@ module PedigreeModule
 						! remove offspring link
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-
 						damRemoved =.true.
-
-
 					endif
 
 					! means we only Calculate inconsistencies for animals that aren't unlinked
 					if (.not. sireRemoved) then
-
 						do j=1,ped%pedigree(i)%individualGenotype%length
 
 							if (testBit(mend(i)%paternalInconsistent,j)) then
@@ -514,7 +504,6 @@ module PedigreeModule
 					endif
 
 					if (.not. damRemoved) then
-
 						do j=1,ped%pedigree(i)%individualGenotype%length
 
 							if (testBit(mend(i)%maternalInconsistent,j)) then
@@ -536,13 +525,9 @@ module PedigreeModule
 
 
 			do i=1, ped%pedigreeSize
-
 				if (ped%pedigree(i)%Founder) cycle
-
 				! if both parents haven't been removed, check most likely one
-
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
-
 				do j=1,ped%pedigree(i)%individualGenotype%length
 
 					!< if either is a dummy, likely that individualInconsistent is inccorrect
@@ -577,7 +562,7 @@ module PedigreeModule
 							endif
 						endif
 
-					else
+					else !if animal has a dummy parent
 
 						if (.not. ped%pedigree(i)%sirePointer%isDummy  .and.  testBit(mend(i)%paternalInconsistent,j) ) then
 							snpChanges = snpChanges +1
@@ -618,21 +603,14 @@ module PedigreeModule
 								if (present(snpfilePath)) then
 									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
 								endif
-
 							endif
 						endif
-
-
 					endif
 
 				enddo
 			enddo
 
-
-
-
 			deallocate(mend)
-
 
 			if (present(snpfilePath)) then
 				close(snpFile)
@@ -645,36 +623,8 @@ module PedigreeModule
 			print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
 			print*, " ",snpChanges," snps changed throughout pedigree"
 
-
 		end function findMendelianInconsistencies
 
-
-		! subroutine removeGenotypeMendellian(ped,position, genConflict)
-
-		!     ! integer, dimension(:,:), allocatable :: pedConflicts !< format pedConflicts(pedsize, 1,2)
-
-
-
-
-		!     do i=1,ped%pedigreeSize
-
-		!         if (ped%pedigree(i)%founder) cycle
-
-		!         damId = ped%pedigree(i)%damId%id
-		!         sireId = ped%pedigree(i)%sirePointer%id
-
-		!         if (GenConflict(3,sireId) < GenConflict(3,i) then
-		!             ped%pedigree(i)%setGenotype(position,9)
-
-		!         else if (GenConflict(3,sireId) == GenConflict(3,i) then
-		!             ! set both to missing
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!             ped%pedigree(i)%setGenotype(position,9)
-		!         else
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!         endif
-
-		! end subroutine
 
 		!---------------------------------------------------------------------------
 		!< @brief Sets phase information from an array
