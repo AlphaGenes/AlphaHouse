@@ -89,6 +89,7 @@ module PedigreeModule
 		procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
 		procedure :: getPhaseAtPosition
 		procedure :: getPhaseAtPositionUngenotypedAnimals
+		procedure :: getPhaseAsArrayWithMissing
 		procedure :: setAnimalAsGenotyped
 		procedure :: getGenotypesAsArray
 		procedure :: getPhaseAsArray
@@ -106,6 +107,7 @@ module PedigreeModule
 		procedure :: getGenotypePercentage
 		procedure :: writeOutGenotypes
 		procedure :: WriteoutPhase
+		procedure :: WriteoutPhaseAll
 		procedure :: WriteoutPhaseNoDummies
 		procedure :: createDummyAnimalAtEndOfPedigree
 		procedure :: addAnimalAtEndOfPedigree
@@ -421,7 +423,7 @@ module PedigreeModule
 			sireRemoved = .false.
 			damRemoved = .false.
 
-
+			snpChanges = 0
 			if (present(snpfilePath)) then
 				open(newunit=snpFile, file=snpfilePath, status='unknown')
 				write (snpFile,'(3a30)') "AnimalId","ParentId", "SNP Position of Mismatch"
@@ -433,7 +435,6 @@ module PedigreeModule
 
 			CountChanges = 0
 
-
 			allocate(mend(ped%pedigreeSize))
 
 			if (ped%isSorted == 0) then
@@ -441,13 +442,11 @@ module PedigreeModule
 			endif
 
 			do i=1,ped%pedigreeSize
-
 				! if sire is associated, then dam must be too
 				if (associated(ped%pedigree(i)%sirePointer)) then
 
 					sire => ped%pedigree(i)%sirePointer
 					dam => ped%pedigree(i)%damPointer
-
 
 					mend(i) = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
 
@@ -463,9 +462,6 @@ module PedigreeModule
 					!     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
 
 					! endif
-
-
-
 					! looks like a pedigree error
 					if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 						! remove sire link
@@ -491,15 +487,11 @@ module PedigreeModule
 						! remove offspring link
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-
 						damRemoved =.true.
-
-
 					endif
 
 					! means we only Calculate inconsistencies for animals that aren't unlinked
 					if (.not. sireRemoved) then
-
 						do j=1,ped%pedigree(i)%individualGenotype%length
 
 							if (testBit(mend(i)%paternalInconsistent,j)) then
@@ -514,7 +506,6 @@ module PedigreeModule
 					endif
 
 					if (.not. damRemoved) then
-
 						do j=1,ped%pedigree(i)%individualGenotype%length
 
 							if (testBit(mend(i)%maternalInconsistent,j)) then
@@ -536,13 +527,9 @@ module PedigreeModule
 
 
 			do i=1, ped%pedigreeSize
-
 				if (ped%pedigree(i)%Founder) cycle
-
 				! if both parents haven't been removed, check most likely one
-
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
-
 				do j=1,ped%pedigree(i)%individualGenotype%length
 
 					!< if either is a dummy, likely that individualInconsistent is inccorrect
@@ -577,7 +564,7 @@ module PedigreeModule
 							endif
 						endif
 
-					else
+					else !if animal has a dummy parent
 
 						if (.not. ped%pedigree(i)%sirePointer%isDummy  .and.  testBit(mend(i)%paternalInconsistent,j) ) then
 							snpChanges = snpChanges +1
@@ -618,21 +605,14 @@ module PedigreeModule
 								if (present(snpfilePath)) then
 									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
 								endif
-
 							endif
 						endif
-
-
 					endif
 
 				enddo
 			enddo
 
-
-
-
 			deallocate(mend)
-
 
 			if (present(snpfilePath)) then
 				close(snpFile)
@@ -645,36 +625,8 @@ module PedigreeModule
 			print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
 			print*, " ",snpChanges," snps changed throughout pedigree"
 
-
 		end function findMendelianInconsistencies
 
-
-		! subroutine removeGenotypeMendellian(ped,position, genConflict)
-
-		!     ! integer, dimension(:,:), allocatable :: pedConflicts !< format pedConflicts(pedsize, 1,2)
-
-
-
-
-		!     do i=1,ped%pedigreeSize
-
-		!         if (ped%pedigree(i)%founder) cycle
-
-		!         damId = ped%pedigree(i)%damId%id
-		!         sireId = ped%pedigree(i)%sirePointer%id
-
-		!         if (GenConflict(3,sireId) < GenConflict(3,i) then
-		!             ped%pedigree(i)%setGenotype(position,9)
-
-		!         else if (GenConflict(3,sireId) == GenConflict(3,i) then
-		!             ! set both to missing
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!             ped%pedigree(i)%setGenotype(position,9)
-		!         else
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!         endif
-
-		! end subroutine
 
 		!---------------------------------------------------------------------------
 		!< @brief Sets phase information from an array
@@ -2526,14 +2478,33 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypesNoDummies
 
+		
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file of only animals that are genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine WriteoutPhase(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
 
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%nGenotyped
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine WriteoutPhase
 
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine WriteoutPhase(this, filename)
+		subroutine WriteoutPhaseAll(this, filename)
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
 			integer ::i, fileUnit
@@ -2546,7 +2517,7 @@ module PedigreeModule
 				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
 			close(fileUnit)
-		end subroutine WriteoutPhase
+		end subroutine WriteoutPhaseAll
 
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file, excluding dummy animals
@@ -2892,6 +2863,13 @@ module PedigreeModule
 		end function getGenotypesAsArray
 
 
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< only information is populated where animals have been set as genotyped
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------	
 		function getPhaseAsArray(this) result(res)
 
 			class(pedigreeHolder) :: this
@@ -2907,6 +2885,30 @@ module PedigreeModule
 			enddo
 
 		end function getPhaseAsArray
+
+
+
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		function getPhaseAsArrayWithMissing(this) result(res)
+
+			class(pedigreeHolder) :: this
+			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+			integer :: i
+
+
+			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			res = 9
+			do i=1, this%pedigreeSize
+				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+			enddo
+
+		end function getPhaseAsArrayWithMissing
 
 
 		!---------------------------------------------------------------------------
