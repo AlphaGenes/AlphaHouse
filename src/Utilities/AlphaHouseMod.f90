@@ -1043,240 +1043,241 @@ module AlphaHouseMod
 						second(sCount1) = " "
 					else if (c == '#') then
 						return
+
+					else if (useSecond) then
+						second(sCount1)(sCount2:sCount2) = c
+						scount2 = sCount2 + 1
+					else
+						first(fCount:fCount) = c
+						fCount = fCount + 1
 					endif
-				else if (useSecond) then
-					second(sCount1)(sCount2:sCount2) = c
-					scount2 = sCount2 + 1
 				else
-					first(fCount:fCount) = c
-					fCount = fCount + 1
+					!We know that it is either a tab or whitespace, so why add them
+					continue
 				endif
+			enddo
+			if (sCount1 > 0) then
+				allocate(tmp(sCount1)) !Allocate temp to count after
+				tmp(1:sCount1) = second(1:sCount1) ! make tmp contain values of second
+				call move_alloc(tmp, second)
 			else
-				!We know that it is either a tab or whitespace, so why add them
-				continue
+				deallocate(second) ! Deallocate second if nothing has come afterwards
 			endif
-		enddo
-		if (sCount1 > 0) then
-			allocate(tmp(sCount1)) !Allocate temp to count after
-			tmp(1:sCount1) = second(1:sCount1) ! make tmp contain values of second
-			call move_alloc(tmp, second)
-		else
-			deallocate(second) ! Deallocate second if nothing has come afterwards
-		endif
-	end subroutine splitLineIntoTwoParts
+		end subroutine splitLineIntoTwoParts
 
-	!###########################################################################
+		!###########################################################################
 
-	!---------------------------------------------------------------------------
-	!> @brief   Set seed
-	!> @details Standard Fortran seed approach
-	!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-	!> @date    September 26, 2016
-	!> @return  Set seed, potentially created file (SeedFile), and potentially
-	!!          returned seed value (Out)
-	!---------------------------------------------------------------------------
-	subroutine SetSeed(Seed,SeedFile,Out)
-		implicit none
+		!---------------------------------------------------------------------------
+		!> @brief   Set seed
+		!> @details Standard Fortran seed approach
+		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date    September 26, 2016
+		!> @return  Set seed, potentially created file (SeedFile), and potentially
+		!!          returned seed value (Out)
+		!---------------------------------------------------------------------------
+		subroutine SetSeed(Seed,SeedFile,Out)
+			implicit none
 
-		! Arguments
-		integer(int32),intent(in),optional    :: Seed     !< A number to initialize RNG
-		character(len=*),intent(in), optional :: SeedFile !< File to save the seed in
-		integer(int32),intent(out),optional   :: Out      !< Make the seed value available outside
+			! Arguments
+			integer(int32),intent(in),optional    :: Seed     !< A number to initialize RNG
+			character(len=*),intent(in), optional :: SeedFile !< File to save the seed in
+			integer(int32),intent(out),optional   :: Out      !< Make the seed value available outside
 
-		! Other
-		integer(int32) :: Size,Unit
-		integer(int32),allocatable :: SeedList(:)
+			! Other
+			integer(int32) :: Size,Unit
+			integer(int32),allocatable :: SeedList(:)
 
-		! Get the size of seed array
-		call random_seed(size=Size)
-		allocate(SeedList(Size))
+			! Get the size of seed array
+			call random_seed(size=Size)
+			allocate(SeedList(Size))
 
-		! Set seed
-		if (present(Seed)) then ! using the given value
-			SeedList(1)=Seed
-			SeedList(2:Size)=1
-			call random_seed(put=SeedList)
-		else                    ! using system/compiler value
-			call random_seed
-			call random_seed(get=SeedList)
-		end if
+			! Set seed
+			if (present(Seed)) then ! using the given value
+				SeedList(1)=Seed
+				SeedList(2:Size)=1
+				call random_seed(put=SeedList)
+			else                    ! using system/compiler value
+				call random_seed
+				call random_seed(get=SeedList)
+			end if
 
-		! Save to a file
-		if (present(SeedFile)) then
-			open(newunit=Unit,file=trim(SeedFile),status="unknown")
-			write(Unit,*) SeedList(1)
-			close(Unit)
-		end if
+			! Save to a file
+			if (present(SeedFile)) then
+				open(newunit=Unit,file=trim(SeedFile),status="unknown")
+				write(Unit,*) SeedList(1)
+				close(Unit)
+			end if
 
-		! Output
-		if (present(Out)) then
-			Out=SeedList(1)
-		end if
-		deallocate(SeedList)
-	end subroutine
+			! Output
+			if (present(Out)) then
+				Out=SeedList(1)
+			end if
+			deallocate(SeedList)
+		end subroutine
 
-	!###########################################################################
+		!###########################################################################
 
-	!---------------------------------------------------------------------------
-	!> @brief   Print elapsed time in a nice way
-	!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-	!> @date    December 22, 2016
-	!> @return  Print on standard output
-	!---------------------------------------------------------------------------
-	subroutine PrintElapsedTime(Start, End)
-		implicit none
-		real(real32) :: Start !< Start time from cpu_time()
-		real(real32) :: End   !< End time from cpu_time()
+		!---------------------------------------------------------------------------
+		!> @brief   Print elapsed time in a nice way
+		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date    December 22, 2016
+		!> @return  Print on standard output
+		!---------------------------------------------------------------------------
+		subroutine PrintElapsedTime(Start, End)
+			implicit none
+			real(real32) :: Start !< Start time from cpu_time()
+			real(real32) :: End   !< End time from cpu_time()
 
-		real(real32) :: Total
-		integer(int32) :: Hours, Minutes, Seconds
+			real(real32) :: Total
+			integer(int32) :: Hours, Minutes, Seconds
 
-		Total = 0.0
-		Hours = 0
-		Minutes = 0
-		Seconds = 0
+			Total = 0.0
+			Hours = 0
+			Minutes = 0
+			Seconds = 0
 
-		Total = End - Start
-		Minutes = int(Total / 60)
-		Seconds = int(Total - (Minutes * 60))
-		Hours = int(Minutes / 60)
-		Minutes = Minutes - (Hours * 60)
+			Total = End - Start
+			Minutes = int(Total / 60)
+			Seconds = int(Total - (Minutes * 60))
+			Hours = int(Minutes / 60)
+			Minutes = Minutes - (Hours * 60)
 
-		write(STDOUT, "(a)") ""
-		write(STDOUT, "(a)") " Process ended"
-		write(STDOUT, "(a,f20.2,a,3(i4,a))") " Time elapsed: ", Total, " seconds => ",&
-		Hours,   " hours ",&
-		Minutes, " minutes ",&
-		Seconds, " seconds"
-		write(STDOUT, "(a)") ""
-	end subroutine
+			write(STDOUT, "(a)") ""
+			write(STDOUT, "(a)") " Process ended"
+			write(STDOUT, "(a,f20.2,a,3(i4,a))") " Time elapsed: ", Total, " seconds => ",&
+			Hours,   " hours ",&
+			Minutes, " minutes ",&
+			Seconds, " seconds"
+			write(STDOUT, "(a)") ""
+		end subroutine
 
-	!###########################################################################
+		!###########################################################################
 
-	!---------------------------------------------------------------------------
-	!> @brief   szudzik pairing function in fortran
-	!> @details Generates a unique pairing based on two integers
-	!> If input is (N,M) space, output will be (N*M) space.
-	!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-	!---------------------------------------------------------------------------
-	elemental function generatePairing(xin,yin) result(res)
+		!---------------------------------------------------------------------------
+		!> @brief   szudzik pairing function in fortran
+		!> @details Generates a unique pairing based on two integers
+		!> If input is (N,M) space, output will be (N*M) space.
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		elemental function generatePairing(xin,yin) result(res)
 
-		integer(int32), intent(in) :: xin, yin
-		integer(int32) :: x, y
-		integer(int64) :: res
+			integer(int32), intent(in) :: xin, yin
+			integer(int32) :: x, y
+			integer(int64) :: res
 
-		! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
-		if (xin < yin) then
-			x = yin
-			y = xin
-		else
-			x = xin
-			y = yin
-		endif
+			! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+			if (xin < yin) then
+				x = yin
+				y = xin
+			else
+				x = xin
+				y = yin
+			endif
 
-		if (x >= y) then
-			res = x * x + x + y
+			if (x >= y) then
+				res = x * x + x + y
 
-		else
-			res =y * y + x
-		endif
+			else
+				res =y * y + x
+			endif
 
-	end function generatePairing
+		end function generatePairing
 
-	!---------------------------------------------------------------------------
-	!> @brief   szudzik unpairing function in fortran
-	!> @details returns two integers that generated unique number based on pair
-	!> If using tuples, will overflow very quickly.
-	!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-	!---------------------------------------------------------------------------
-	subroutine unPair(num, xout, yout)
-		integer(int64), intent(in) :: num !< number to unPair
-		integer(int32), intent(out) :: xout , yout !< numbers used to get pairing function
+		!---------------------------------------------------------------------------
+		!> @brief   szudzik unpairing function in fortran
+		!> @details returns two integers that generated unique number based on pair
+		!> If using tuples, will overflow very quickly.
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		subroutine unPair(num, xout, yout)
+			integer(int64), intent(in) :: num !< number to unPair
+			integer(int32), intent(out) :: xout , yout !< numbers used to get pairing function
 
-		integer :: x,y
-		real(kind=real32) :: sqrtz, sqrz
-		sqrtz = floor(SQRT(real(num)))
-		sqrz = sqrtz * sqrtz
+			integer :: x,y
+			real(kind=real32) :: sqrtz, sqrz
+			sqrtz = floor(SQRT(real(num)))
+			sqrz = sqrtz * sqrtz
 
-		if ((num-sqrz) >= sqrtz) then
-			x = sqrtz
-			y = num - sqrz - sqrtz
-		else
-			x = num - sqrz
-			y = sqrtz
-		endif
+			if ((num-sqrz) >= sqrtz) then
+				x = sqrtz
+				y = num - sqrz - sqrtz
+			else
+				x = num - sqrz
+				y = sqrtz
+			endif
 
-		! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
-		if (y > x) then
-			xout = y
-			yout = x
-		else
-			xout = x
-			yout = y
-		endif
-	end subroutine unPair
+			! ensures that order (e.g. [1,2] and [2,1]) doesn't matter
+			if (y > x) then
+				xout = y
+				yout = x
+			else
+				xout = x
+				yout = y
+			endif
+		end subroutine unPair
 
-	!###########################################################################
+		!###########################################################################
 
-	!---------------------------------------------------------------------------
-	!> @brief  Append value y at the end of a vector x - real64
-	!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-	!> @date   May 1, 2017
-	!---------------------------------------------------------------------------
-	pure subroutine AppendReal64(x, y)
-		implicit none
-		real(real64), intent(inout), allocatable :: x(:) !< @return Appended vector
-		real(real64), intent(in)                 :: y    !< Value
-		integer(int32) :: n
-		real(real64), allocatable :: Tmp(:)
-		if (allocated(x)) then
-			n = size(x)
-			allocate(Tmp(n))
-			Tmp = x
-			deallocate(x)
-			allocate(x(n + 1))
-			x(1:n) = Tmp
-			n = n + 1
-			x(n) = y
-		else
-			n = 1
-			allocate(x(n))
-			x(n) = y
-		end if
-	end subroutine
+		!---------------------------------------------------------------------------
+		!> @brief  Append value y at the end of a vector x - real64
+		!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date   May 1, 2017
+		!---------------------------------------------------------------------------
+		pure subroutine AppendReal64(x, y)
+			implicit none
+			real(real64), intent(inout), allocatable :: x(:) !< @return Appended vector
+			real(real64), intent(in)                 :: y    !< Value
+			integer(int32) :: n
+			real(real64), allocatable :: Tmp(:)
+			if (allocated(x)) then
+				n = size(x)
+				allocate(Tmp(n))
+				Tmp = x
+				deallocate(x)
+				allocate(x(n + 1))
+				x(1:n) = Tmp
+				n = n + 1
+				x(n) = y
+			else
+				n = 1
+				allocate(x(n))
+				x(n) = y
+			end if
+		end subroutine
 
-	!###########################################################################
+		!###########################################################################
 
-	!---------------------------------------------------------------------------
-	!> @brief  Append value y at the end of a vector x - char
-	!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-	!> @date   May 1, 2017
-	!> @todo   Can we get rid of Len?
-	!---------------------------------------------------------------------------
-	pure subroutine AppendChar(x, y, len)
-		implicit none
-		character(len=len), intent(inout), allocatable :: x(:) !< @return Appended vector
-		character(len=*),   intent(in)                 :: y    !< Value
-		integer(int32), intent(in)                     :: Len  !< Length of character value
-		integer(int32) :: n
-		character(len=len), allocatable :: Tmp(:)
-		if (allocated(x)) then
-			n = size(x)
-			allocate(Tmp(n))
-			Tmp = x
-			deallocate(x)
-			allocate(x(n + 1))
-			x(1:n) = Tmp
-			n = n + 1
-			x(n) = y
-		else
-			n = 1
-			allocate(x(n))
-			x(n) = y
-		end if
-	end subroutine
+		!---------------------------------------------------------------------------
+		!> @brief  Append value y at the end of a vector x - char
+		!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date   May 1, 2017
+		!> @todo   Can we get rid of Len?
+		!---------------------------------------------------------------------------
+		pure subroutine AppendChar(x, y, len)
+			implicit none
+			character(len=len), intent(inout), allocatable :: x(:) !< @return Appended vector
+			character(len=*),   intent(in)                 :: y    !< Value
+			integer(int32), intent(in)                     :: Len  !< Length of character value
+			integer(int32) :: n
+			character(len=len), allocatable :: Tmp(:)
+			if (allocated(x)) then
+				n = size(x)
+				allocate(Tmp(n))
+				Tmp = x
+				deallocate(x)
+				allocate(x(n + 1))
+				x(1:n) = Tmp
+				n = n + 1
+				x(n) = y
+			else
+				n = 1
+				allocate(x(n))
+				x(n) = y
+			end if
+		end subroutine
 
-	!###########################################################################
+		!###########################################################################
 
 end module
+
 
