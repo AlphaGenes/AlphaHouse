@@ -20,6 +20,7 @@ module ConstantModule
     integer, parameter :: DICT_NULL = -2147483647
     character(len=IDLENGTH) :: ID_NULL = "2147483647"
     integer, parameter :: DICT_MULTIPLIER = 17
+    integer, parameter :: LARGECHROMNUMBER = 500
     integer, parameter :: MAXINT32 = 2147483647
     integer, parameter :: MissingPlantArrayCode = -99
     character(len=3), parameter:: DEFAULTNULLVAL = "nan"
@@ -31,4 +32,5 @@ module ConstantModule
     real(real64), parameter :: PI = 4.0d0 * atan(1.0d0)
     real(real64), parameter :: RAD2DEG = 180.0d0 / PI
     real(real64), parameter :: DEG2RAD = PI / 180.0d0
+
 end Module ConstantModule

@@ -116,6 +116,9 @@ module GenotypeModule
         integer(kind=int64), dimension(:), allocatable :: paternalInconsistent, maternalInconsistent, individualInconsistent
         integer(kind=int64), dimension(:), allocatable :: paternalConsistent, maternalConsistent, individualConsistent
     !paternal
+      contains
+
+        final :: destroyMendelian
 
     end type Mendelian
 
@@ -138,6 +141,25 @@ module GenotypeModule
             deallocate(g%locked)
         end if
     end subroutine destroyGenotype
+
+
+    subroutine destroyMendelian(m)
+
+      type(mendelian) :: m
+
+      if (allocated(m%maternalConsistent)) then
+        deallocate(m%paternalInconsistent)
+        deallocate(m%maternalInconsistent)
+        deallocate(m%individualInconsistent)
+        deallocate(m%paternalConsistent)
+        deallocate(m%maternalConsistent)
+        deallocate(m%individualConsistent)
+      endif
+
+
+
+
+    end subroutine destroyMendelian
     !---------------------------------------------------------------------------
     !> @brief	Constructs a new Genotype from a integer array. lock determines
     !>          whether genotypes that are known at creation are locked.
@@ -467,6 +489,7 @@ function numOppose(g1, g2) result(num)
 
     integer :: i
 
+    !$OMP SIMD REDUCTION(+:num)
     do i = 1, g1%sections
         num = num + POPCNT(IAND(IAND(g1%homo(i), g2%homo(i)), &
             IEOR(g1%additional(i), g1%additional(i))))
@@ -486,6 +509,8 @@ function numIncommon(g1, g2) result(num)
     integer :: i
 
     num = 0
+
+    !$OMP SIMD REDUCTION(+:num)
     do i = 1, g1%sections
         num = num + POPCNT(IAND(IOR(g1%homo(i), NOT(g1%additional(i))), &
             IOR(g2%homo(i), NOT(g2%additional(i)))))
@@ -639,6 +664,7 @@ function mismatches(g1, g2) result(c)
     integer :: i
 
     c = 0
+    !$OMP SIMD REDUCTION(+:c)
     do i = 1, g1%sections
         c = c + POPCNT(IAND(IAND(g1%homo(i), g2%homo(i)), &
             IEOR(g1%additional(i), g2%additional(i))))
@@ -672,6 +698,7 @@ function numNotMissing(g) result(c)
     integer :: i
 
     c = 0
+    !$OMP SIMD REDUCTION(+:c)
     do i = 1, g%sections
       c = c + POPCNT(NOT(IAND(NOT(g%homo(i)), g%additional(i))))
   end do
@@ -1109,7 +1136,7 @@ function isHomo(g, pos) result (two)
                 IAND(IAND(g%homo(i), pg%homo(i)), IEOR(g%additional(i), pg%additional(i))) &
                 )
 
-            mend%paternalInconsistent(i) = IOR( &
+            mend%maternalInconsistent(i) = IOR( &
                 ! Individual is het and bad
                 het, &
                 ! Individual is homo and maternal is opposite homo)
@@ -1142,6 +1169,12 @@ function isHomo(g, pos) result (two)
                 ! Not individual inconsistent
                 NOT(mend%individualInconsistent(i)) &
                 )
+        end do
+
+        do i = 64 - g%overhang, 63
+            mend%paternalConsistent(g%sections) = ibclr(mend%paternalConsistent(g%sections), i)
+            mend%maternalConsistent(g%sections) = ibclr(mend%maternalConsistent(g%sections), i)
+            mend%individualConsistent(g%sections) = ibclr(mend%individualConsistent(g%sections), i)
         end do
 
     end function mendelianInconsistencies

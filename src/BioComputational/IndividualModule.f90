@@ -59,6 +59,7 @@ module IndividualModule
         integer :: nOffs  = 0 !number of offspring
         logical(kind=1) :: Founder     = .false.
         logical(kind=1) :: Genotyped   = .false.
+        logical(kind=1) :: Sequenced   = .false.
         logical(kind=1) :: isPhased    = .false.
         logical(kind=1) :: HD          = .false.
         logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
@@ -90,7 +91,7 @@ module IndividualModule
 
         type(IntegerLinkedList) :: families
 
-        integer :: inconsistencies = 0 !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
+        integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
 
 
         contains
@@ -105,6 +106,7 @@ module IndividualModule
             procedure :: SetHD
             procedure :: getSireId
             procedure :: getDamID
+            procedure :: setSequenceArray
             procedure :: GetNumberOffsprings
             procedure :: GetOffsprings
             procedure :: AddOffspring
@@ -204,9 +206,11 @@ contains
             if (nsnps /= 0) then
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
+                allocate(this%inconsistencies(nsnps))
                 this%individualGenotype = newGenotypeMissing(nsnps)
                 this%individualPhase(1) = newHaplotypeMissing(nsnps)
                 this%individualPhase(2) = newHaplotypeMissing(nsnps)
+                this%inconsistencies =  0
             endif
 
             if (present(probabilites)) then
@@ -304,6 +308,9 @@ contains
         if (allocated(this%MyPhaseCorrect)) then
 
             deallocate(this%MyPhaseCorrect)
+        endif
+        if (allocated(this%inconsistencies)) then
+            deallocate(this%inconsistencies)
         endif
 
 
@@ -1094,11 +1101,13 @@ contains
     !---------------------------------------------------------------------------
     subroutine makeIndividualPhaseCompliment(this)
         class(Individual), intent(inout) :: this
-        integer :: i
-        type (haplotype),allocatable :: comp1, comp2
+        type (haplotype) :: comp1, comp2
         
         call this%individualPhase(1)%setErrorToMissing()
         call this%individualPhase(2)%setErrorToMissing()
+
+        ! allocate(comp1)
+        ! allocate(comp2)
         comp2 = this%individualGenotype%complement(this%individualPhase(1))
         comp1 = this%individualGenotype%complement(this%individualPhase(2))
 
@@ -1108,8 +1117,8 @@ contains
         call this%individualPhase(1)%setFromOtherIfMissing(comp1)
         call this%individualPhase(2)%setFromOtherIfMissing(comp2)
         
-        deallocate(comp1)
-        deallocate(comp2)
+        ! deallocate(comp1)
+        ! deallocate(comp2)
 
     end subroutine makeIndividualPhaseCompliment
 
@@ -1138,6 +1147,26 @@ contains
         endif 
         this%individualGenotype = Genotype(Geno)
     end subroutine setGenotypeArray
+
+
+    !---------------------------------------------------------------------------
+    !> @brief Sets the individual to be genotyped.
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine setSequenceArray(this, referAllele, alterAllele)
+        use constantModule
+        
+        class(Individual), intent(inout) :: this
+        integer, dimension(:), intent(in) :: referAllele, alterAllele
+
+        this%Genotyped = .true.
+        this%Sequenced = .true.
+        
+        this%referAllele = referAllele
+        this%alterAllele  = alterAllele
+    end subroutine setSequenceArray
+
 
     !---------------------------------------------------------------------------
     !> @brief For plants, sets subset genotypes to use (for imputation)

@@ -122,7 +122,7 @@ end subroutine clearData
 !     refer to a list. Use list_destroy first to
 !     destroy up an old list.
 !
-subroutine list_create( list, data )
+pure subroutine list_create( list, data )
     type(LinkedList), pointer  :: list
     type(LIST_DATA), intent(in) :: data
 

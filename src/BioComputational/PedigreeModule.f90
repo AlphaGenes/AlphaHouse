@@ -8,7 +8,7 @@
 !> @file     PedigreeModule.f90
 !
 ! DESCRIPTION:
-!> @brief    Module containing definition of pedigree.
+!> @brief    Module` containing definition of pedigree.
 !
 !> @details  Fully doubly linked list with useful procedures for operations on the linked list
 !
@@ -40,6 +40,7 @@ module PedigreeModule
 	type PedigreeHolder
 
 	type(Individual), pointer, dimension(:) :: Pedigree
+
 	type(IndividualLinkedList) :: Founders !linked List holding all founders
 	type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
 	type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
@@ -62,11 +63,10 @@ module PedigreeModule
 	integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top
 
 	type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
-
-
 	type(IndividualLinkedList), allocatable :: uniqueParentList
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
+		procedure :: calculatePedigreeCorrelationWithInbreeding
 		procedure :: copyPedigree
 		procedure :: destroyPedigree
 		procedure :: setPedigreeGenerationsAndBuildArrays
@@ -84,25 +84,31 @@ module PedigreeModule
 		procedure :: printPedigree
 		procedure :: printPedigreeOriginalFormat
 		procedure :: getMatePairsAndOffspring
+		procedure :: addSequenceFromVCFFile
 		procedure :: getAllGenotypesAtPosition
 		procedure :: getAllGenotypesAtPositionWithUngenotypedAnimals
 		procedure :: getPhaseAtPosition
 		procedure :: getPhaseAtPositionUngenotypedAnimals
+		procedure :: getPhaseAsArrayWithMissing
 		procedure :: setAnimalAsGenotyped
 		procedure :: getGenotypesAsArray
 		procedure :: getPhaseAsArray
 		procedure :: getGenotypesAsArrayWitHMissing
 		procedure :: countMissingGenotypesNoDummys
+		procedure :: countMissingPhaseNoDummys
 		procedure :: setGenotypeFromArray
 		procedure :: setPhaseFromArray
 		procedure :: getNumGenotypesMissing
 		procedure :: getGenotypedFounders
+		procedure :: cleanGenotypesBasedOnHaplotypes
 		procedure :: getSireDamGenotypeIDByIndex
 		procedure :: setAnimalAsHD
 		procedure :: getSireDamHDIDByIndex
 		procedure :: getGenotypePercentage
 		procedure :: writeOutGenotypes
 		procedure :: WriteoutPhase
+		procedure :: WriteoutPhaseAll
+		procedure :: WriteoutPhaseNoDummies
 		procedure :: createDummyAnimalAtEndOfPedigree
 		procedure :: addAnimalAtEndOfPedigree
 		procedure :: addSequenceFromFile
@@ -112,13 +118,23 @@ module PedigreeModule
 		procedure :: writeOutGenders
 		procedure :: readInGenders
 		procedure :: MakeGenotype
-		procedure :: writeOutGenotypesForImputed
-        procedure :: writeOutGenotypeProbabilities
-        procedure :: writeOutPhaseProbabilities
 		procedure :: PhaseComplement
 		procedure :: homozygoticFillIn
 		procedure :: wipeGenotypeAndPhaseInfo
 		procedure :: getUniqueParents
+		procedure :: findMendelianInconsistencies
+		procedure :: writeOutGenotypesAll
+		procedure :: writeOutGenotypesNoDummies
+		procedure :: getHDPedigree
+		procedure :: writeOutPedigree
+		procedure :: writeOutGenotypeProbabilities
+		procedure :: writeOutPhaseProbabilities
+		procedure :: writeOutGenotypesForImputed
+
+#ifdef MPIACTIVE
+		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
+#endif
+
 	end type PedigreeHolder
 
 	! TODO - overload == and = functions
@@ -148,6 +164,96 @@ module PedigreeModule
 	end interface Sort
 	contains
 
+				!---------------------------------------------------------------------------
+		!< @brief Output  of animals that are genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypesForImputed(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%pedigreeSize
+				if (this%pedigree(i)%isimputed) then
+					write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+				endif
+			enddo
+			close(fileUnit)
+		end subroutine writeOutGenotypesForImputed
+
+
+		!---------------------------------------------------------------------------
+		!< @brief  writes out phase probabilites
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutPhaseProbabilities(this,filename, indexesToPrint)
+			character(len=*),intent(in)  :: filename
+			class(PedigreeHolder) :: this
+			integer, dimension(:),optional, intent(in) :: indexesToPrint
+            character(len=12) :: StrSnp,OutFmt
+            integer :: fileUnit,i
+			open(newunit=FileUnit, file=filename, status="replace")
+
+			write(StrSnp,*) size(this%pedigree(1)%phaseProbabilities(1,:))
+			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+
+			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
+			if (present(indexesToPrint)) then
+
+				do i=1,size(indexesToPrint)
+					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%phaseProbabilities(1,:)
+					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%phaseProbabilities(2,:)
+				enddo
+			else
+				do i=1,this%pedigreeSize
+					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%phaseProbabilities(1,:)
+					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%phaseProbabilities(2,:)
+				enddo
+			endif
+
+			close(FileUnit)
+
+
+
+		end subroutine writeOutPhaseProbabilities
+
+
+		!---------------------------------------------------------------------------
+		!< @brief  writes out geno probabilites
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypeProbabilities(this,filename, indexesToPrint)
+			character(len=*),intent(in)  :: filename
+			class(PedigreeHolder) :: this
+			integer, dimension(:),optional, intent(in) :: indexesToPrint
+            integer :: i, fileUnit
+            character(len=30) :: StrSnp,OutFmt
+			
+			open(newunit=FileUnit, file=filename, status="replace")
+
+			write(StrSnp,*) size(this%pedigree(1)%genotypeProbabilities)
+			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
+
+			if (present(indexesToPrint)) then
+
+				do i=1,size(indexesToPrint)
+					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%genotypeProbabilities
+				enddo
+			else
+				do i=1,this%pedigreeSize
+					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%genotypeProbabilities
+				enddo
+			endif
+
+			close(FileUnit)
+
+
+		end subroutine writeOutGenotypeProbabilities
 
 		!---------------------------------------------------------------------------
 		!< @brief constructor for creating an empty pedgiree
@@ -161,13 +267,14 @@ module PedigreeModule
 			integer, optional :: nsnps
 
 			pedStructure%dictionary = DictStructure()
+
 			pedStructure%pedigreeSize = 0
 			pedStructure%nDummys = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nHd = 0
 			pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+			allocate(pedStructure%pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%nsnpsPopulation = 0
-
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
@@ -289,167 +396,331 @@ module PedigreeModule
 
 
 
-		! subroutine findMendelianInconsistenciesnew(ped, threshold)
-		!     use GenotypeModule
 
-		!     type(PedigreeHOlder) :: ped
-		!     type(Mendelian) :: mend
-		!     real, intent(in) :: threshold
-
-		!     do i=1,ped%pedigreeSize
-		!         if (ped%pedigree(i)%isFounder) cycle
-		!         mend = ped%pedigree(i)%individualGenotyp%mendelianInconsistencies(ped%pedigree(i)%sirePointer%individualGenotype,ped%pedigree(i)%damPointer%individualGenotype)
-		!             ! TODO cut pedigree
-		!         endif
-		!     enddo
+		function getHDPedigree(this) result(new)
+			class(pedigreeHolder) :: this
+			type(pedigreeHolder) :: new
+			integer :: i, sire,dam,tmpAnimalCount, indiv
 
 
-		! end subroutine findMendelianInconsistenciesnew(ped, threshold)
+			integer, allocatable, dimension(:) :: tmpAnimalArray
+
+			! new%pedigreeSize = this%nHd
+			new = initEmptyPedigree(this%nsnpsPopulation)
+			tmpAnimalCount = 0
+			new%nhd = 0
+
+			allocate(new%hdMap(this%nHd))
+			allocate(new%genotypeMap(this%nGenotyped))
+			allocate(tmpAnimalArray(this%nHd))
+
+			new%hdDictionary = DictStructure()
+			new%genotypeDictionary = DictStructure()
+
+			if (this%nHd == 0) then
+				write(error_unit, * ) "ERROR: No animals defined as HD."
+				return
+			endif
+
+			do i =1,this%nHd
+				sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
+				dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
+				if (this%pedigree(this%hdMap(i))%founder .or.(dam /=DICT_NULL .and. sire /=DICT_NULL) ) then
+					new%pedigreeSize = new%pedigreeSize+1
+					new%nhd = new%nhd + 1
+					new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+					new%pedigree(i)%id = new%pedigreeSize
+					new%hdMap(new%nhd) = new%pedigreeSize
+					call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
+					call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
+					call new%pedigree(i)%resetOffspringInformation
+
+					if (sire /= DICT_NULL) then
+						call new%pedigree(sire)%AddOffspring(new%pedigree(i))
+						! from above condition we know dam is also not null
+						call new%pedigree(dam)%AddOffspring(new%pedigree(i))
+					endif
+
+				else
+					tmpAnimalCount = tmpAnimalCount + 1
+					tmpAnimalArray(tmpAnimalCount) = this%hdmap(i)
+				endif
+			enddo
+
+
+			do i=1,tmpAnimalCount
+				sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
+				dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
+				print *, "adding" ,tmpAnimalCount
+				new%pedigreeSize = new%pedigreeSize+1
+				call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
+				new%nhd = new%nhd + 1
+				new%hdMap(new%nhd) = new%pedigreeSize
+				call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
+				indiv = new%pedigreeSize
+				new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+				call new%pedigree(i)%resetOffspringInformation
+				if (dam ==DICT_NULL) then
+
+					call new%createDummyAnimalAtEndOfPedigree(dam)
+
+					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+					new%pedigree(indiv)%damId = new%pedigree(dam)%originalId
+
+
+				else
+					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+				endif
 
 
 
-		function findMendelianInconsistencies(ped, threshold, file) result(CountChanges)
+				if (sire ==DICT_NULL) then
+
+					call new%createDummyAnimalAtEndOfPedigree(sire)
+
+					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+					new%pedigree(indiv)%sireId = new%pedigree(sire)%originalId
+
+
+				else
+					call new%pedigree(sire)%addOffspring(new%pedigree(indiv))
+				endif
+
+			enddo
+
+			new%nGenotyped = this%nHd
+			new%genotypeMap = new%hdMap
+			new%genotypeDictionary = new%hdDictionary
+			deallocate(tmpAnimalArray)
+		end function getHDPedigree
+
+
+
+		function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(CountChanges)
 			use genotypeModule
 			use BitUtilities
 			implicit none
-			type(pedigreeHolder) :: ped
-			type(Mendelian) :: mend
+			class(pedigreeHolder) :: ped
+			type(Mendelian), dimension(:), allocatable :: mend
 			real, intent(in) :: threshold !< threshold for removing animals
 			integer :: sireInconsistencies, damInconsistencies
-			integer :: outfile
+			integer :: outfile,snpFile
 			type(individual),pointer :: sire, dam
-			integer :: i,g,j
-			integer :: GenConflict(3,ped%pedigreesize)   ! score for 1) paternal link, 2) maternal link, and 3) sum of both
-			integer :: PedConflict(4,ped%pedigreesize)   ! count of father-individual and mother-individual genotype combinations available (1,2) and conflicts thereof (3,4)
+			integer :: i,j
 			character(len=*),intent(in), optional :: file
-			integer :: CountChanges, dumId,tmpGeno
+			character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
+			integer :: CountChanges, dumId
+			integer :: snpChanges
+			logical :: sireRemoved, damRemoved,changedGeno
+
+			changedGeno = .false.
+			sireRemoved = .false.
+			damRemoved = .false.
+
+			snpChanges = 0
+			if (present(snpfilePath)) then
+				open(newunit=snpFile, file=snpfilePath, status='unknown')
+				write (snpFile,'(3a30)') "AnimalId","ParentId", "SNP Position of Mismatch"
+			endif
 			if (present(file)) then
 				open(newunit=outfile, file=file, status='unknown')
+				write (outfile,'(4a30)') "AnimalId","Sire Or Dam", "ParentId","Number Of Inconsistencies"
 			endif
 
 			CountChanges = 0
 
-			if (ped%isSorted == 0) then
+			allocate(mend(ped%pedigreeSize))
 
+			if (ped%isSorted == 0) then
 				write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
 			endif
 
 			do i=1,ped%pedigreeSize
-
 				! if sire is associated, then dam must be too
 				if (associated(ped%pedigree(i)%sirePointer)) then
 
 					sire => ped%pedigree(i)%sirePointer
 					dam => ped%pedigree(i)%damPointer
 
+					mend(i) = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
 
-					mend = ped%pedigree(i)%individualGenotype%mendelianInconsistencies(sire%individualGenotype,dam%individualGenotype)
-
-					sireInconsistencies = bitcount(mend%paternalInconsistent)
-
+					sireInconsistencies = bitcount(mend(i)%paternalInconsistent)
 
 					! update inconsistencies, maybe do this first
 					ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
-					damInconsistencies = bitcount(mend%maternalInconsistent)
+					damInconsistencies = bitcount(mend(i)%maternalInconsistent)
 					ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
 
+					! if (present(file)) then
+					!     write (outfile,'(3a30,2I)') &
+					!     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
 
-					ped%pedigree(i)%inconsistencies = bitcount(mend%individualInconsistent)
-
-
+					! endif
+					! looks like a pedigree error
 					if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 						! remove sire link
 						if (present(file)) then
-							write (outfile,'(2a30,4I, 4E15.7)') &
-							Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
-
+							write (outfile,'(3a30,1I)') Ped%pedigree(i)%originalID, "SIRE", Ped%pedigree(i)%sirePointer%originalID, sireInconsistencies
 						endif
 						CountChanges=CountChanges+1
 						! remove offspring link
 						call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
+						sireRemoved = .true.
+					endif
 
-					else
+					if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 
-
-
-						if ((float(damInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
-
-							! remove dam link
-							if (present(file)) then
-								write (outfile,'(2a30,4I, 4E15.7)') &
-								Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, damInconsistencies
-							endif
-							CountChanges=CountChanges+1
-							! remove offspring link
-							call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
-							call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
-						else
-
-							! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
-
-
-							do j=1,ped%pedigree(i)%individualGenotype%length
-
-								! if both were inconsistent, set to which one is more likely
-								if (testBit(mend%individualInconsistent,j) ) then
-
-									! TODO is it worth checking if this animal is inconsistent?
-									if (ped%pedigree(i)%sirePointer%inconsistencies > ped%pedigree(i)%damPointer%inconsistencies) then
-										tmpGeno = ped%pedigree(i)%damPointer%individualGenotype%getGenotype(j)
-										call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
-									else if(ped%pedigree(i)%sirePointer%inconsistencies < ped%pedigree(i)%damPointer%inconsistencies) then
-										tmpGeno = ped%pedigree(i)%sirePointer%individualGenotype%getGenotype(j)
-										call ped%pedigree(i)%individualGenotype%setGenotype(j,tmpGeno)
-									else
-										call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
-									endif
-								endif
-							enddo
-
+						! remove dam link
+						if (present(file)) then
+							write (outfile,'(3a30,1I)') &
+							Ped%pedigree(i)%originalID, "DAM", Ped%pedigree(i)%damPointer%originalID, damInconsistencies
 						endif
+						CountChanges=CountChanges+1
+						! remove offspring link
+						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
+						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
+						damRemoved =.true.
+					endif
+
+					! means we only Calculate inconsistencies for animals that aren't unlinked
+					if (.not. sireRemoved) then
+						do j=1,ped%pedigree(i)%individualGenotype%length
+
+							if (testBit(mend(i)%paternalInconsistent,j)) then
+								ped%pedigree(i)%sirePointer%inconsistencies(j) = ped%pedigree(i)%sirePointer%inconsistencies(j) + 1
+								ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) + 1
+							else if (testBit(mend(i)%paternalconsistent,j))  then
+								ped%pedigree(i)%sirePointer%inconsistencies(j) = ped%pedigree(i)%sirePointer%inconsistencies(j) - 1
+								ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) - 1
+
+							endif
+						enddo
+					endif
+
+					if (.not. damRemoved) then
+						do j=1,ped%pedigree(i)%individualGenotype%length
+
+							if (testBit(mend(i)%maternalInconsistent,j)) then
+								ped%pedigree(i)%damPointer%inconsistencies(j) = ped%pedigree(i)%damPointer%inconsistencies(j) + 1
+								ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) + 1
+							else if (testBit(mend(i)%maternalconsistent,j))  then
+								ped%pedigree(i)%damPointer%inconsistencies(j) = ped%pedigree(i)%damPointer%inconsistencies(j) - 1
+								ped%pedigree(i)%inconsistencies(j) = ped%pedigree(i)%inconsistencies(j) - 1
+
+							endif
+
+						enddo
 					endif
 				endif
 
 			enddo
+
+			! at this point, we have calculated inconsistenceis
+
+
+			do i=1, ped%pedigreeSize
+				if (ped%pedigree(i)%Founder) cycle
+				! if both parents haven't been removed, check most likely one
+				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
+				do j=1,ped%pedigree(i)%individualGenotype%length
+
+					!< if either is a dummy, likely that individualInconsistent is inccorrect
+					if (.not. ped%pedigree(i)%sirePointer%isDummy .and. .not. ped%pedigree(i)%damPointer%isDummy) then
+						! if both were inconsistent, set to which one is more likely
+						if (testBit(mend(i)%individualInconsistent,j) ) then
+							snpChanges = snpChanges + 1
+							changedGeno = .true.
+							! TODO is it worth checking if this animal is inconsistent?
+
+							! if dam is more likely correct, set to dam value, and set sire to missing
+							if (ped%pedigree(i)%sirePointer%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+								endif
+							else if(ped%pedigree(i)%sirePointer%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+								endif
+							else !< if they are both as unlikely, set all the animals as missing here
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+								endif
+							endif
+						endif
+
+					else !if animal has a dummy parent
+
+						if (.not. ped%pedigree(i)%sirePointer%isDummy  .and.  testBit(mend(i)%paternalInconsistent,j) ) then
+							snpChanges = snpChanges +1
+							if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(1a30,I)') & Ped%pedigree(i)%originalID, j
+								endif
+							else if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%sirePointer%inconsistencies(j)) then
+								call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(1a30,I)') & Ped%pedigree(i)%sirePointer%originalID, j
+								endif
+							else
+								call ped%pedigree(i)%sirePointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID, j
+								endif
+							endif
+						endif
+
+						if (.not. ped%pedigree(i)%damPointer%isDummy  .and.  testBit(mend(i)%maternalInconsistent,j) )  then
+							snpChanges = snpChanges +1
+							if (ped%pedigree(i)%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(1a30,I)') & Ped%pedigree(i)%originalID, j
+								endif
+							else if (ped%pedigree(i)%inconsistencies(j) < ped%pedigree(i)%damPointer%inconsistencies(j)) then
+								call ped%pedigree(i)%dampointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(1a30,I)') & Ped%pedigree(i)%damPointer%originalID, j
+								endif
+							else
+								call ped%pedigree(i)%damPointer%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								call ped%pedigree(i)%individualGenotype%setGenotype(j,MISSINGGENOTYPECODE)
+								if (present(snpfilePath)) then
+									write (snpFile,'(2a30,I)') & Ped%pedigree(i)%originalID, Ped%pedigree(i)%damPointer%originalID, j
+								endif
+							endif
+						endif
+					endif
+
+				enddo
+			enddo
+
+			deallocate(mend)
+
+			if (present(snpfilePath)) then
+				close(snpFile)
+			endif
+
 			if (present(file)) then
 				write (outfile,*) CountChanges," changes were made to the pedigree"
 				close (outfile)
 			endif
 			print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
-
-
+			print*, " ",snpChanges," snps changed throughout pedigree"
 
 		end function findMendelianInconsistencies
 
-
-		! subroutine removeGenotypeMendellian(ped,position, genConflict)
-
-		!     ! integer, dimension(:,:), allocatable :: pedConflicts !< format pedConflicts(pedsize, 1,2)
-
-
-
-
-		!     do i=1,ped%pedigreeSize
-
-		!         if (ped%pedigree(i)%founder) cycle
-
-		!         damId = ped%pedigree(i)%damId%id
-		!         sireId = ped%pedigree(i)%sirePointer%id
-
-		!         if (GenConflict(3,sireId) < GenConflict(3,i) then
-		!             ped%pedigree(i)%setGenotype(position,9)
-
-		!         else if (GenConflict(3,sireId) == GenConflict(3,i) then
-		!             ! set both to missing
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!             ped%pedigree(i)%setGenotype(position,9)
-		!         else
-		!             ped%pedigree(sireId)%setGenotype(position,9)
-		!         endif
-
-		! end subroutine
 
 		!---------------------------------------------------------------------------
 		!< @brief Sets phase information from an array
@@ -514,8 +785,6 @@ module PedigreeModule
 				this%uniqueParentList = res
 			endif
 		end function getUniqueParents
-
-
 
 		subroutine homozygoticFillIn(this)
 
@@ -654,7 +923,6 @@ module PedigreeModule
 			integer :: tmpAnimalArrayCount,i
 			integer(kind=int64) :: sizeDict
 			logical :: sireFound, damFound
-
 			pedStructure%isSorted = 0
 			pedStructure%nDummys = 0
 			pedStructure%nHd = 0
@@ -992,7 +1260,7 @@ module PedigreeModule
 			allocate(pedStructure%inputMap(size(pedArray)))
 			pedStructure%maxGeneration = 0
 
-			do i=1,size(pedArray)
+			do i=1,size(pedArray(1,:))
 
 				sireFound = .false.
 				damFound = .false.
@@ -1002,14 +1270,14 @@ module PedigreeModule
 				pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 				pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
-				if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
+				if (pedArray(2,i) /= EMPTY_PARENT) then !check sire is defined in pedigree
 					tmpSireNum = pedStructure%dictionary%getValue(pedArray(2,i))
 					if (tmpSireNum /= DICT_NULL) then
 						sireFound = .true.
 					endif
 				endif
 
-				if (pedArray(i,3) /= EMPTY_PARENT) then
+				if (pedArray(3,i) /= EMPTY_PARENT) then
 					tmpDamNum = pedStructure%dictionary%getValue(pedArray(3,i))
 					if (tmpDamNum /= DICT_NULL) then !check dam is defined in pedigree
 						damFound = .true.
@@ -1560,9 +1828,7 @@ module PedigreeModule
 			if (present(nAnnisG)) then
 				nAnnis = nAnnisG
 			else
-				! nAnnis = countLines(phaseFile)
-				!SG changed 22/09/17
-				nAnnis = float(countLines(phaseFile)) / 2.0 ! DW / DM check is this correct?
+				nAnnis = countLines(phaseFile)
 			endif
 
 			allocate(tmpSnpArray(nsnps))
@@ -1586,9 +1852,14 @@ module PedigreeModule
 		end subroutine addPhaseInformationFromFile
 
 
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!< @brief     Adds sequence information from VCF file - this was taken out of Roberto's HMM
+		!< @date       June 19, 2017
+		!--------------------------------------------------------------------------
 		subroutine addSequenceFromFile(this, seqFile, nsnps, nAnisGIn,maximumReads, startSnp, endSnp)
 
-			use AlphaHouseMod, only : countLines
+			use AlphaHouseMod, only : countLines,countColumns
 			use ConstantModule, only : IDLENGTH,DICT_NULL
 			implicit none
 			class(PedigreeHolder) :: this
@@ -1603,6 +1874,8 @@ module PedigreeModule
 			integer,allocatable, dimension(:) :: ref, alt
 			integer :: unit, tmpID,i,j
 			character(len=IDLENGTH) :: seqid !placeholder variables
+			character(len=1), dimension(3):: delimiter
+			integer :: nCol
 
 			if (.not. Present(nAnisGIn)) then
 				NanisG = countLines(seqFile)/2
@@ -1610,10 +1883,17 @@ module PedigreeModule
 				nanisG = nAnisGIn
 			endif
 
+			delimiter(1) = ","
+			delimiter(2) = " "
+			delimiter(3) = char(9)
+
+			nCol=countColumns(trim(seqFile), delimiter)-1 ! First column is animal id
+
 			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
-			allocate(ref(nsnps))
-			allocate(alt(nsnps))
-			! tmp = 9
+			allocate(ref(nCol))
+			allocate(alt(nCol))
+
+			tmp = 9
 			print *, "Number of animals in seq file", NanisG
 			do i=1,nAnisG
 				read (unit,*) seqid, ref(:)
@@ -1646,6 +1926,113 @@ module PedigreeModule
 
 			close(unit)
 		end subroutine addSequenceFromFile
+
+
+
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!< @brief     Adds sequence information from VCF file - this was taken out of Mara's code and
+		!< adapted to work with the pedigree class
+		!< @date       June 19, 2017
+		!--------------------------------------------------------------------------
+		subroutine addSequenceFromVCFFile(this,seqFile,nSnpsIn,nAnisIn,position,quality,chr,startPos,EndPos)
+
+			use omp_lib
+			use AlphaHouseMod, only : countLines,countColumns
+			use ConstantModule, only : IDLENGTH,DICT_NULL
+
+			implicit none
+			class(PedigreeHolder)        :: this
+			character(len=*), intent(in) :: seqFile
+			character(len=300),intent(in) :: chr
+			integer,intent(in) :: StartPos,EndPos
+
+			integer,intent(in),optional :: nSnpsIn
+			integer,intent(in),optional :: nAnisIn
+
+
+			integer:: nAnis,nSnp,unit,pos,i,j,tmpID
+			character(len=1), dimension(3):: delimiter
+
+			character(len=IDLENGTH), allocatable, dimension(:)              :: Ids
+			integer(int64), allocatable, dimension(:),intent(out),optional  :: position
+			real(real64), allocatable, dimension(:),intent(out),optional    :: quality
+
+			character(100)  :: tCHROM,tREF,tALT
+			integer(int64)  :: tPOS
+			real(real64)    :: tQUAL
+
+			character(len=100), dimension(:), allocatable:: dumC
+
+			integer(KIND=1), allocatable, dimension(:) :: tmp
+
+			integer, dimension(:,:), allocatable:: tmpSequenceData
+			integer, dimension(:,:,:), allocatable:: SequenceData
+
+			real(kind=8)::tstart,tend
+
+			delimiter(1) = ","
+			delimiter(2) = " "
+			delimiter(3) = char(9)
+
+
+			if (.not. Present(nSnpsIn)) then
+				nSnp = countLines(seqFile)-1 ! First row is the header
+			else
+				nSnp = nSnpsIn
+			endif
+
+			if (.not. Present(nAnisIn)) then
+				nAnis = countColumns(seqFile, delimiter)-5 ! First 5 columns are "CHROM POS REF ALT QUAL"
+			else
+				nAnis = nAnisIn
+			endif
+
+			if (Present(position)) allocate(position(nSnp))
+			if (Present(quality)) allocate(quality(nSnp))
+
+			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
+
+			allocate(Ids(nAnis))
+			allocate(dumC(5))
+			allocate(tmp(nSnp))
+			tmp = 9
+			allocate(SequenceData(nAnis, nSnp, 2))
+			allocate(tmpSequenceData(nAnis,2))
+
+			! Read header and store animals id
+			read (unit,*) dumC,ids
+			deallocate(dumC)
+
+			tstart = omp_get_wtime()
+
+			pos=1
+			do j = 1, nSnp
+				read(unit, *) tCHROM, tPOS, tREF, tALT, tQUAL, (tmpSequenceData(i,1), tmpSequenceData(i,2), i =1, nAnis)
+				if (trim(tCHROM).eq.trim(chr)) then
+					if (((tPos.ge.StartPos).or.(StartPos.eq.0)).and.((tPos.le.EndPos).or.(EndPos.eq.0))) then
+						if (Present(position)) position(pos)=tPOS
+						if (Present(quality)) quality(pos)=tQUAL
+						SequenceData(:,pos,1)=tmpSequenceData(:,1)
+						SequenceData(:,pos,2)=tmpSequenceData(:,2)
+						pos=pos+1
+					endif
+				end if
+			end do
+			close(unit)
+
+			do i=1, nAnis
+				tmpID = this%dictionary%getValue(ids(i))
+				if (tmpID /= DICT_NULL) then
+					call this%setAnimalAsGenotypedSequence(tmpID,tmp,SequenceData(i,:,1),SequenceData(i,:,2))
+				endif
+			enddo
+
+			tend = omp_get_wtime()
+
+			write(*,*) "Total wall time for Importing Reads", tend - tstart
+
+		end subroutine addSequenceFromVCFFile
 
 
 
@@ -2076,7 +2463,7 @@ module PedigreeModule
 				unit = output_unit
 			endif
 			do i= 1, this%pedigreeSize
-				write(unit,*)  this%pedigree(i)%originalId, this%pedigree(i)%sireId, this%pedigree(i)%damId
+				write(unit,'(3a20)')  this%pedigree(i)%originalId, this%pedigree(i)%sireId, this%pedigree(i)%damId
 			enddo
 		end subroutine printPedigreeOriginalFormat
 
@@ -2111,7 +2498,6 @@ module PedigreeModule
 
 			integer ::i, tmpGender,tmp,unit
 			character(len=IDLENGTH) :: tmpId
-
 			open(newunit= unit, file= filepath, status="old")
 			do i= 1, this%pedigreeSize
 				read(unit,*) tmpId, tmpGender
@@ -2135,35 +2521,14 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
 			integer ::i, fileUnit
-
+			character(len=100) :: fmt
 			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
 			do i= 1, this%nGenotyped
-				write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypes
-
-
-
-
-		!---------------------------------------------------------------------------
-		!< @brief Output  of animals that are genotyped
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
-		subroutine writeOutGenotypesForImputed(this, filename)
-			class(PedigreeHolder) :: this
-			character(*), intent(in) :: filename
-			integer ::i, fileUnit
-
-			open(newUnit=fileUnit,file=filename,status="unknown")
-			do i= 1, this%pedigreeSize
-				if (this%pedigree(i)%isimputed) then
-					write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
-				endif
-			enddo
-			close(fileUnit)
-		end subroutine writeOutGenotypesForImputed
 
 
 		!---------------------------------------------------------------------------
@@ -2176,18 +2541,40 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
 			integer ::i, fileUnit
+			character(len=100) :: fmt
 
 			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
 			do i= 1, this%pedigreeSize
-				write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypesAll
 
-
-
 		!---------------------------------------------------------------------------
-		!< @brief Outputs phase to file
+		!< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
+		!< for all animals not just the ones that are genotyped\
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypesNoDummies(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
+			do i= 1, this%pedigreeSize
+				if (this%pedigree(i)%isdummy) cycle
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualGenotype%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine writeOutGenotypesNoDummies
+
+		
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file of only animals that are genotyped
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
@@ -2195,14 +2582,58 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
 			integer ::i, fileUnit
+			character(len=100) :: fmt
 
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
 			open(newUnit=fileUnit,file=filename,status="unknown")
-			do i= 1, this%pedigreeSize
-				write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
-				write(fileUnit,'(a20,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2,20000i2)')  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+			do i= 1, this%nGenotyped
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
 			enddo
 			close(fileUnit)
 		end subroutine WriteoutPhase
+
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine WriteoutPhaseAll(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%pedigreeSize
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine WriteoutPhaseAll
+
+		!---------------------------------------------------------------------------
+		!< @brief Outputs phase to file, excluding dummy animals
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine WriteoutPhaseNoDummies(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+
+			write(fmt, '(a,i10,a)') '(a20,', this%nsnpsPopulation, 'i2)'
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			do i= 1, this%pedigreeSize
+				if (this%pedigree(i)%isDummy) cycle
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				write(fileUnit,fmt)  this%pedigree(i)%originalId, this%pedigree(i)%individualPhase(2)%toIntegerArray()
+			enddo
+			close(fileUnit)
+		end subroutine WriteoutPhaseNoDummies
+
 
 
 
@@ -2280,7 +2711,7 @@ module PedigreeModule
 			end if
 			allocate(this%id(3, 0:n))
 			this%id = 0
-		end subroutine
+		end subroutine initRecodedPedigreeArray
 
 		!---------------------------------------------------------------------------
 		!< @brief Destructor for recodedPedigreeArray
@@ -2526,6 +2957,13 @@ module PedigreeModule
 		end function getGenotypesAsArray
 
 
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< only information is populated where animals have been set as genotyped
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------	
 		function getPhaseAsArray(this) result(res)
 
 			class(pedigreeHolder) :: this
@@ -2541,6 +2979,30 @@ module PedigreeModule
 			enddo
 
 		end function getPhaseAsArray
+
+
+
+		!---------------------------------------------------------------------------
+		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
+		!< This takes the genotype info even if an animal is not genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		function getPhaseAsArrayWithMissing(this) result(res)
+
+			class(pedigreeHolder) :: this
+			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+			integer :: i
+
+
+			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			res = 9
+			do i=1, this%pedigreeSize
+				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+			enddo
+
+		end function getPhaseAsArrayWithMissing
 
 
 		!---------------------------------------------------------------------------
@@ -2698,7 +3160,6 @@ module PedigreeModule
 		end subroutine setAnimalAsGenotyped
 
 
-
 		!---------------------------------------------------------------------------
 		!< @brief Sets the individual to be genotyped.
 		!<If geno array is not given, animal will still be set to genotyped. It is up to the callee
@@ -2733,9 +3194,7 @@ module PedigreeModule
 				call this%pedigree(individualIndex)%setGenotypeArray(geno)
 			endif
 
-			this%pedigree(individualIndex)%referAllele = referAllele
-			this%pedigree(individualIndex)%alterAllele = alterAllele
-
+			call this%pedigree(individualIndex)%setSequenceArray(referAllele,alterAllele)
 			this%genotypeMap(this%nGenotyped) = individualIndex
 
 		end subroutine setAnimalAsGenotypedSequence
@@ -2846,7 +3305,7 @@ module PedigreeModule
 			integer, intent(in) :: indId
 
 			! if index not in pedigree return.
-			if (indId > this%pedigreeSize) then
+			if (indId > this%pedigreeSize .or. indId < 1) then
 				write(error_unit, *) "warning - setAnimalAsHD was given an index that was out of range"
 				return
 			endif
@@ -2977,7 +3436,7 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
 			class(PedigreeHolder) :: this
-			character(len=IDLENGTH) ,intent(in):: OriginalId
+			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
 
 			! change pedigree to no longer be sorted
@@ -3044,6 +3503,27 @@ module PedigreeModule
 
 		end subroutine PhaseComplement
 
+
+
+		!---------------------------------------------------------------------------
+		!> @brief Sets the individual genotypes from the haplotypes. Overwrites anything that was already there in the genotype
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine cleanGenotypesBasedOnHaplotypes(this)
+			use GenotypeModule
+			class(PedigreeHolder) :: this
+			integer :: i
+
+			!$OMP PARALLEL DO &
+			!$OMP PRIVATE(i)
+			do i=1,this%pedigreeSize
+				this%pedigree(i)%individualGenotype = Genotype(this%pedigree(i)%individualPhase(1), this%pedigree(i)%individualPhase(2))
+			enddo
+			!$OMP END PARALLEL DO
+
+		end subroutine cleanGenotypesBasedOnHaplotypes
+
 		!---------------------------------------------------------------------------
 		!< @brief  counts missing snps across all animals at every snp
 		!<Returns a count of missing snps across all animals at every snp
@@ -3064,78 +3544,433 @@ module PedigreeModule
 			end do
 		end function countMissingGenotypesNoDummys
 
-
 		!---------------------------------------------------------------------------
-		!< @brief  writes out phase probabilites
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
+		!< @brief  counts missing alleles (in the 2 gametes) across all animals at every snp
+		!<Returns a count of missing alleles across all animals at every snp
+		!< @author  Mara Battagin mara.battagin@roslin.ed.ac.uk
+		!< @date    August 31, 2017
 		!---------------------------------------------------------------------------
-		subroutine writeOutPhaseProbabilities(this,filename, indexesToPrint)
-			character(len=*),intent(in)  :: filename
+		function countMissingPhaseNoDummys(this) result(res)
+			integer :: res
+			integer :: i
 			class(PedigreeHolder) :: this
-			integer, dimension(:),optional, intent(in) :: indexesToPrint
-            character(len=12) :: StrSnp,OutFmt
-            integer :: fileUnit,i
-			open(newunit=FileUnit, file=filename, status="replace")
 
-			write(StrSnp,*) size(this%pedigree(1)%phaseProbabilities(1,:))
-			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
+			res = 0
 
-			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
-			if (present(indexesToPrint)) then
+			do i=1, this%pedigreeSize
 
-				do i=1,size(indexesToPrint)
-					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%phaseProbabilities(1,:)
-					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%phaseProbabilities(2,:)
-				enddo
+				if (this%pedigree(i)%isDummy) cycle
+
+				res = res + this%pedigree(i)%individualPhase(1)%numberMissing()
+				res = res + this%pedigree(i)%individualPhase(2)%numberMissing()
+			end do
+		end function countMissingPhaseNoDummys
+
+
+		function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
+			use MyLinkedList
+			class(PedigreeHolder), intent(in):: pedIn
+			real(real64), intent(in), optional:: additVarianceIn
+			real(real64), dimension(:,:), allocatable:: values
+			type(MyLL), allocatable:: sireList, damList
+			real(real64), dimension(:,:), allocatable:: lValues
+			real(real64), dimension(:), allocatable:: F
+
+			integer:: knownDummies
+			integer:: i, youngestSire, youngestDam
+			integer:: sireI, damI, temp, ID
+
+			logical:: sireKnown, damKnown
+			logical:: sireJKnown, damJKnown
+			real(real64):: D
+			integer:: numLevels
+
+			numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
+
+			allocate(values(numLevels, numLevels))
+			allocate(F(0:numLevels))
+
+			F(0) = -1
+			F(1:) = 0
+
+
+			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
+
+			values = 0
+
+			!$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
+			do i = 1, numLevels
+				allocate(damList)
+				allocate(sireList)
+				allocate(lValues(numLevels, numLevels))
+				damKnown = .false.
+				sireKnown = .false.
+				lValues = 0
+				F(i) = 0
+				sireI = 0
+				damI = 0
+				ID = pedIn%pedigree(i)%ID
+				if (associated(pedIn%pedigree(i)%sirePointer)) then
+					if (.not. pedIn%pedigree(i)%sirePointer%isUnknownDummy) then
+						sireI = pedIn%pedigree(i)%sirePointer%ID
+						call sireList%list_add(pedIn%pedigree(i)%sirePointer%ID)
+						lValues(sireI, sireI) = 1
+						sireKnown = .true.
+					end if
+				end if
+
+				if (associated(pedIn%pedigree(i)%damPointer)) then
+					if (.not. pedIn%pedigree(i)%damPointer%isUnknownDummy) then
+						damI = pedIn%pedigree(i)%damPointer%ID
+						call damList%list_add(damI)
+						lValues(damI, damI) = 1
+						damKnown=.true.
+					end if
+				end if
+
+				do while (sireList%length>0 .and. damList%length>0)
+					youngestSire = sireList%first%item
+					youngestDam = damList%first%item
+
+					if (youngestSire>youngestDam) then !i.e. the sire is younger
+						call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
+						temp= sireList%pop_first()
+					else if (youngestDam>youngestSire) then !i.e. the dam is younger
+						call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
+						temp = damList%pop_first()
+					else !youngestSire == youngestDam
+						sireJKnown = .false.
+						damJKnown = .false.
+						if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
+							if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
+								sireJKnown = .true.
+							end if
+						end if
+
+						if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
+							if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
+								damJKnown = .true.
+							end if
+						end if
+
+						if (sireJKnown .and. damJKnown) then
+							D= 2
+						else if (sireJKnown .or. damJKnown) then
+							D = 4.0_real64/3.0_real64
+						else
+							D = 1.0_real64
+						end if
+
+						call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
+						call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
+						!$OMP ATOMIC
+						F(i) = F(i) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
+						temp = sireList%pop_first()
+						temp = damList%pop_first()
+					end if
+				end do
+
+				if (sireKnown .and. damKnown) then
+					D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
+				else if (sireKnown) then
+					D = 0.75_real64 -0.25_real64*F(sireI)
+				else if (damKnown) then
+					D = 0.75_real64 -0.25_real64*F(damI)
+				else
+					D = 1_real64
+				end if
+
+				D = 1.0_real64/D
+
+				!$OMP ATOMIC
+				values(ID, ID) = values(ID, ID) + D
+				if (sireKnown) then
+					!$OMP ATOMIC
+					values(sireI, ID) = values(sireI, ID) -0.5_real64*D
+					!$OMP ATOMIC
+					values(ID, sireI) = values(ID, sireI) -0.5_real64*D
+					!$OMP ATOMIC
+					values(sireI, sireI) = values(sireI, sireI) +0.25_real64*D
+				end if
+
+				if (damKnown) then
+					!$OMP ATOMIC
+					values(damI, ID) = values(damI, ID) - 0.5_real64*D
+					!$OMP ATOMIC
+					values(ID, damI) = values(ID, damI) - 0.5_real64*D
+					!$OMP ATOMIC
+					values(damI, damI) = values(damI, damI) + 0.25_real64*D
+				end if
+
+				if (damKnown .and. sireKnown) then
+					!$OMP ATOMIC
+					values(sireI, damI) = values(sireI, damI) + 0.25_real64*D
+					!$OMP ATOMIC
+					values(damI, sireI) = values(damI, sireI) + 0.25_real64*D
+				end if
+				deallocate(damList)
+				deallocate(sireList)
+				deallocate(lValues)
+			end do
+			!    !$OMP END PARALLEL DO
+
+			if (present(additVarianceIn)) then
+				values = values*additVarianceIn
+			end if
+
+		end function calculatePedigreeCorrelationWithInbreeding
+
+#ifdef MPIACTIVE
+		function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
+			use MyLinkedList
+			use mpi
+			use MPIUtilities, only: checkMPI
+			class(PedigreeHolder), intent(in):: pedIn
+			real(real64), intent(in), optional:: additVarianceIn
+			integer, intent(in), optional:: communicatorIn
+			type(MyLL), allocatable:: sireList, damList
+			real(real64), dimension(:,:), allocatable:: lValues
+			real(real64), dimension(:), allocatable:: F, F2
+			real(real64), dimension(:, :), allocatable:: values
+
+			integer:: knownDummies, extras, mpiErr
+			integer:: i, j, youngestSire, youngestDam
+			integer:: sireI, damI, temp, ID
+			integer,dimension(:), allocatable:: gatherSizes, offsetLocation
+
+			logical:: sireKnown, damKnown
+			logical:: sireJKnown, damJKnown
+			real(real64):: D
+			type(IndividualLinkedList):: knownAnimals
+			type(Individual), dimension(:), pointer:: knownAnimalArray
+
+			integer:: numAnimalsInThisgeneration, startAnimal, endAnimal, animalsPerCore, firstGenAnimal, lastGenAnimal
+
+			integer:: mpiSize, mpiRank, mpiCommunicator
+			integer:: numLevels
+
+			if (present(communicatorIn)) then
+				mpiCommunicator = communicatorIn
 			else
-				do i=1,this%pedigreeSize
-					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%phaseProbabilities(1,:)
-					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%phaseProbabilities(2,:)
-				enddo
-			endif
+				mpiCommunicator = MPI_COMM_WORLD
+			end if
 
-			close(FileUnit)
+			call MPI_COMM_SIZE(mpiCommunicator, mpiSize, mpiErr)
+			call checkMPI(mpiErr)
+			call MPI_COMM_RANK(mpiCommunicator, mpiRank, mpiErr)
+			call checkMPI(mpiErr)
+			numLevels = pedIn%pedigreeSize-pedIn%UnknownDummys
 
+			allocate(values(numLevels, numLevels))
 
+			allocate(F(0:numLevels))
+			allocate(gatherSizes(mpiSize))
+			allocate(offsetLocation(mpiSize))
 
-		end subroutine writeOutPhaseProbabilities
-
-		!---------------------------------------------------------------------------
-		!< @brief  writes out geno probabilites
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
-		subroutine writeOutGenotypeProbabilities(this,filename, indexesToPrint)
-			character(len=*),intent(in)  :: filename
-			class(PedigreeHolder) :: this
-			integer, dimension(:),optional, intent(in) :: indexesToPrint
-            integer :: i, fileUnit
-            character(len=30) :: StrSnp,OutFmt
-			
-			open(newunit=FileUnit, file=filename, status="replace")
-
-			write(StrSnp,*) size(this%pedigree(1)%genotypeProbabilities)
-			! OutFmt='(i20,'//trim(adjustl(StrSnp))//'f7.1)'
-			OutFmt='(a,'//trim(adjustl(StrSnp))//'f7.1)'
-
-			if (present(indexesToPrint)) then
-
-				do i=1,size(indexesToPrint)
-					write(FileUnit, OutFmt) this%pedigree(indexesToPrint(i))%originalId, this%pedigree(indexesToPrint(i))%genotypeProbabilities
-				enddo
-			else
-				do i=1,this%pedigreeSize
-					write(FileUnit, OutFmt) this%pedigree(i)%originalId, this%pedigree(i)%genotypeProbabilities
-				enddo
-			endif
-
-			close(FileUnit)
+			F(0) = -1
+			F(1:) = 0
 
 
-		end subroutine writeOutGenotypeProbabilities
+			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
+
+			values = 0
+
+			lastGenAnimal = 0
+			GenerationLoop: do j = 0, size(pedIn%generations)-1
+				knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
+				knownAnimalArray => knownAnimals%convertToArray()
+				numAnimalsInThisgeneration = knownAnimals%length
+
+				animalsPerCore = numAnimalsInThisgeneration/mpiSize
+
+				extras = numAnimalsInThisgeneration - mpiSize*(numAnimalsInThisgeneration/mpiSize) !Integer Arithmatic
+
+				startAnimal = mpiRank*animalsPerCore+1
+				endAnimal = (mpiRank+1)*animalsPerCore
+				if (mpiRank ==mpiSize-1) then
+					endAnimal = endAnimal+extras
+				end if
 
 
+				gatherSizes = animalsPerCore
+				do i =1, mpiSize
+					offsetLocation(i) = animalsPerCore*(i-1)
+				end do
+				gatherSizes(mpiSize) = gatherSizes(mpiSize)+extras
+
+				allocate(F2(gatherSizes(mpiRank+1)))
+				F2=0
+
+				firstGenAnimal = lastGenAnimal+1
+				lastGenAnimal = firstGenAnimal+numAnimalsInThisgeneration-1
+
+				F(FirstGenAnimal: lastGenAnimal) = 0
+
+				!$OMP PARALLEL DO PRIVATE(lValues, i, damKnown, sireKnown, damJKnown, sireJKnown, sireI, damI, ID, damList, sireList, temp, youngestSire, youngestDam, D)
+				AnimalLoop: do i = startAnimal, endAnimal
+
+					allocate(damList)
+					allocate(sireList)
+					allocate(lValues(numLevels, numLevels))
+					damKnown = .false.
+					sireKnown = .false.
+					lValues = 0
+					F2(i-startAnimal+1) = 0
+					sireI = 0
+					damI = 0
+					ID = knownAnimalArray(i)%ID
+					if (associated(knownAnimalArray(i)%sirePointer)) then
+						if (.not. knownAnimalArray(i)%sirePointer%isUnknownDummy) then
+							sireI = knownAnimalArray(i)%sirePointer%ID
+							call sireList%list_add(sireI)!knownAnimalArray(i)%sirePointer%ID)
+							lValues(sireI, sireI) = 1
+							sireKnown = .true.
+						end if
+					end if
+
+					if (associated(knownAnimalArray(i)%damPointer)) then
+						if (.not. knownAnimalArray(i)%damPointer%isUnknownDummy) then
+							damI = knownAnimalArray(i)%damPointer%ID
+							call damList%list_add(damI)
+							lValues(damI, damI) = 1
+							damKnown=.true.
+						end if
+					end if
+
+					do while (sireList%length>0 .and. damList%length>0)
+						youngestSire = sireList%first%item
+						youngestDam = damList%first%item
+
+						if (youngestSire>youngestDam) then !i.e. the sire is younger
+							call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, sireI)
+							temp= sireList%pop_first()
+						else if (youngestDam>youngestSire) then !i.e. the dam is younger
+							call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestDam), lValues, damI)
+							temp = damList%pop_first()
+						else !youngestOnSireSide == youngestOnDamSide
+							sireJKnown = .false.
+							damJKnown = .false.
+							if (associated(pedIn%pedigree(youngestSire)%sirePointer)) then
+								if (pedIn%pedigree(youngestSire)%sirePointer%isUnknownDummy) then
+									sireJKnown = .true.
+								end if
+							end if
+
+							if (associated(pedIn%pedigree(youngestSire)%damPointer)) then
+								if (pedIn%pedigree(youngestSire)%damPointer%isUnknownDummy) then
+									damJKnown = .true.
+								end if
+							end if
+
+							if (sireJKnown .and. damJKnown) then
+								D= 2
+							else if (sireJKnown .or. damJKnown) then
+								D = 4.0_real64/3.0_real64
+							else
+								D = 1.0_real64
+							end if
+
+							call addSireDamToListAndUpdateValues(damList, pedIn%pedigree(youngestSire), lValues, sireI)
+							call addSireDamToListAndUpdateValues(sireList, pedIn%pedigree(youngestSire), lValues, damI)
+							F2(i-startAnimal+1) = F2(i-startAnimal+1) +lValues(sireI, youngestSire)*lValues(damI, youngestSire)*0.5*D
+							temp = sireList%pop_first()
+							temp = damList%pop_first()
+						end if
+					end do
+
+					if (sireKnown .and. damKnown) then
+						D = 0.5_real64 -0.25_real64*(F(sireI)+F(damI))
+					else if (sireKnown) then
+						D = 0.75_real64 -0.25_real64*F(sireI)
+					else if (damKnown) then
+						D = 0.75_real64 -0.25_real64*F(damI)
+					else
+						D = 1.0_real64
+					end if
+
+					D = 1.0_real64/D
+
+					!$OMP ATOMIC
+					values(ID, ID) = values(ID, ID) + D!1.0_real64/(1+F(i))
+					if (sireKnown) then
+						!$OMP ATOMIC
+						values(sireI, ID) =values(sireI, ID) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(ID, sireI) = values(ID, sireI) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(sireI, sireI) = values(sireI, sireI) +0.25*D!F(i)
+					end if
+
+					if (damKnown) then
+						!$OMP ATOMIC
+						values(damI, ID) = values(damI, ID) -0.5*D!F(i)
+						!$OMP ATOMIC
+						values(ID, damI) = values(ID, damI) - 0.5*D!F(i)
+						!$OMP ATOMIC
+						values(damI, damI) = values(damI, damI) + 0.25*D!F(i)
+					end if
+
+					if (damKnown .and. sireKnown) then
+						!$OMP ATOMIC
+						values(sireI, damI) = values(sireI, damI) + 0.25*D
+						!$OMP ATOMIC
+						values(damI, sireI) = values(damI, sireI) + 0.25*D
+					end if
+
+					deallocate(sireList)
+					deallocate(damList)
+					deallocate(lValues)
+
+				end do AnimalLoop
+				!$OMP END PARALLEL DO
+
+				call MPI_ALLGATHERV(F2, gatherSizes(mpiRank+1), MPI_DOUBLE, F(firstGenAnimal:lastGenAnimal), gatherSizes, offsetLocation, MPI_DOUBLE, mpiCommunicator, mpiErr)
+				knownAnimalArray => null()
+				deallocate(F2)
+
+				!      end if
+			end do GenerationLoop
+
+			call MPI_ALLREDUCE(MPI_IN_PLACE, values, size(values), MPI_DOUBLE, MPI_SUM, mpiCommunicator, mpiErr)
+
+			if (present(additVarianceIn)) then
+				values = values*additVarianceIn
+			end if
+		end function calculatePedigreeCorrelationWithInBreedingMPI
+#endif
+
+		subroutine addSireDamToListAndUpdateValues(listIn, IndividualIn, values, firstValue)
+			use MyLinkedList
+			type(MyLL), intent(inout):: listIn
+			type(Individual), intent(in):: IndividualIn
+			real(real64), dimension(:,:), intent(inout):: values
+			integer, intent(in):: firstValue
+			integer:: sireID, damID
+			sireID = 0
+			damID = 0
+			if (associated(IndividualIn%sirePointer)) then
+				if (.not. IndividualIn%sirePointer%isUnknownDummy) then
+					sireID = IndividualIn%sirePointer%ID
+					call listIn%list_add(SireID)
+					!$OMP ATOMIC
+					values(firstValue, sireID) = values(firstValue, sireID) + 0.5* values(firstValue, IndividualIn%ID)
+				end if
+			end if
+
+			if (associated(IndividualIn%damPointer)) then
+				if (.not. IndividualIn%damPointer%isUnknownDummy) then
+					damID = IndividualIn%damPointer%ID
+					call listIn%list_add(IndividualIn%damPointer%ID)
+					!$OMP ATOMIC
+					values(firstValue, damID) = values(firstValue, damID) + 0.5* values(firstValue, IndividualIn%ID)
+				end if
+			end if
+		end subroutine addSireDamToListAndUpdateValues
 end module PedigreeModule
+
+
+
+
+
 
 

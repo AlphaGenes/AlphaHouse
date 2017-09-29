@@ -48,6 +48,7 @@ module LineModule
     procedure, private:: writeFormattedLineType
     procedure, private:: writeUnformattedLineType
     procedure, private:: readLineType
+    procedure:: getMaxLength
     procedure, private:: readUnformattedLineType
     procedure:: removeAll
     procedure:: prepend
@@ -73,6 +74,25 @@ module LineModule
     module procedure addTwoLines
   end interface
 contains
+
+  !> @brief Get the maximum string length currently stored in the line
+  pure function getMaxLength(self) result (maxLength)
+    class(Line), intent(in):: self
+    integer:: maxLength
+
+    integer:: i
+
+    maxLength = 0
+
+    do i = 1, self%getNumWords()
+      if (self%words(i)%getSize()> maxLength) then
+        maxLength = self%words(i)%getSize()
+      end if
+    end do
+
+  end function 
+
+  !> @brief A function to return the line as a single character seperated by seportator
   pure function getAsCharacter(self, seperator) result (iOut)
     class(Line), intent(in):: self
     character(len=:), allocatable:: iOut

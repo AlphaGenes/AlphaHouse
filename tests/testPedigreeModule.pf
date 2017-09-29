@@ -2,6 +2,9 @@ module TestPedigreeModule
   use pFUnit_mod
   use PedigreeModule
   use ISO_Fortran_env
+#ifdef MPIACTIVE
+  use MPIUtilities
+#endif
 
   implicit none
 
@@ -47,6 +50,52 @@ module TestPedigreeModule
         call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
          
     end subroutine
+
+function setUpPedigree(charIn) result (ped)
+type(PedigreeHolder):: ped
+integer:: fileUnit, mpiErr
+character(len=*):: charIn
+
+#ifdef MPIACTIVE
+if (mpiRank==0) then
+#endif
+open(newunit=fileUnit, file="testPedFile", action = "write")
+
+if (charIn == "mine") then
+  write(fileUnit, "(3(I0, x))") 1, 0, 0 
+  write(fileUnit, "(3(I0, x))") 2, 0, 0 
+  write(fileUnit, "(3(I0, x))") 3, 1, 2 
+  write(fileUnit, "(3(I0, x))") 4, 1, 2 
+  write(fileUnit, "(3(I0, x))") 5, 1, 2 
+  write(fileUnit, "(3(I0, x))") 6, 3, 2 
+  write(fileUnit, "(3(I0, x))") 7, 3, 4 
+  write(fileUnit, "(3(I0, x))") 8, 3, 4 
+  write(fileUnit, "(3(I0, x))") 9, 5, 4 
+  write(fileUnit, "(3(I0, x))") 10, 3, 6
+else if (charIn == "table2.1") then
+  write(fileUnit, "(3(I0, x))") 3, 1, 2
+  write(fileUnit, "(3(I0, x))") 4, 1, 0
+  write(fileUnit, "(3(I0, x))") 5, 4, 3
+  write(fileUnit, "(3(I0, x))") 6, 5, 2
+end if
+close(fileUnit)
+#ifdef MPIACTIVE
+end if
+call MPI_BARRIER(mpiCommunicator, mpiErr)
+#endif
+ped = PedigreeHolder("testPedFile")
+
+#ifdef MPIACTIVE
+call MPI_BARRIER(mpiCommunicator, mpiErr)
+if (mpiRank==0) then
+#endif
+open(newunit=fileUnit, file="testPedFile")
+close(fileUnit, status="delete")
+#ifdef MPIACTIVE
+end if
+#endif
+
+end function setUpPedigree
 
     @after
     subroutine Uninit
@@ -129,7 +178,6 @@ module TestPedigreeModule
     expected(3,3) = 8.0_real64/3.0_real64
 
 
-
     call pedigree%sortPedigreeAndOverwrite(1)
 
     gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
@@ -166,6 +214,23 @@ module TestPedigreeModule
          @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
     end subroutine testDummys
 
+
+      @test
+
+    subroutine testHDPed
+        implicit none
+        integer :: tmp,i
+        type(PedigreeHolder) :: hdPed
+        tmp = pedigree%dictionary%getValue("bbb")
+        call pedigree%setAnimalAsHD(tmp)
+        tmp = pedigree%dictionary%getValue("fff")
+        call pedigree%setAnimalAsHD(tmp)
+        hdPed = pedigree%getHDPedigree()
+        @assertEqual(hdPed%pedigreeSize,4)
+        @assertEqual(hdPed%nHd,2)
+        !  @assertFalse(tmp == DICT_NULL)
+        !  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
+    end subroutine testHDPed
 
 
     @test
@@ -260,6 +325,33 @@ module TestPedigreeModule
       end do
     end subroutine
 
+@test
+subroutine testAddParentsToList()
+use MyLinkedList
+type(PedigreeHolder):: ped
+type(MyLL):: LL
+integer:: expected
+real(real64), dimension(10,10):: values
+
+ped = setUpPedigree("mine")
+
+values(3,3) =1
+values(4,4) = 1
+
+call addSireDamToListAndUpdateValues(LL, ped%pedigree(4), values, 4)
+
+@assertEqual(values(4,1), 0.5_real64, 1E-15_real64)
+
+@assertEqual(values(4,2), 0.5_real64, 1E-15_real64)
+
+expected = 2
+
+@assertEqual(expected, LL%first%item)
+expected = 1
+
+@assertEqual(expected, LL%first%next%item)
+
+end subroutine
     ! @test
     ! subroutine testAddOffspring
     !     type(individualPointerContainer), allocatable :: Offsprings(:)

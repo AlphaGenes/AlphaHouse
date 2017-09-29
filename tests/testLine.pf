@@ -5,6 +5,55 @@ implicit none
 
 contains
 !##################################################################################################################################
+! Test getting maximum line lenght
+!##################################################################################################################################
+@test
+subroutine testWithEmptyLine()
+type(Line):: temp
+integer:: expected, gotten
+
+expected = 0
+
+gotten = temp%getMaxLength()
+
+@assertEqual(expected, gotten)
+end subroutine testWithEmptyLine
+
+@test
+subroutine testGetLengthWithOneEntry()
+type(Line):: temp
+integer:: expected, gotten
+
+expected = 3
+
+call temp%add("123")
+
+gotten = temp%getMaxLength()
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetLengthWithOneEntry
+
+@test
+subroutine testGetEntriesMultipleEntries()
+type(Line):: temp
+integer:: expected, gotten
+
+expected = 6 !sizes1
+
+call temp%add("one")
+call temp%add("o")
+call temp%add("ne")
+call temp%add("e")
+call temp%add("newe")
+call temp%add("sizes1")
+
+gotten = temp%getMaxLength()
+
+@assertEqual(expected, gotten)
+
+end subroutine testGetEntriesMultipleEntries
+!##################################################################################################################################
 ! Test getting Line as character
 !##################################################################################################################################
 @test
