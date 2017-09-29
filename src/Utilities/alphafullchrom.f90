@@ -7,8 +7,8 @@ module alphaFullChromModule
 		use baseSpecFileModule
 		use pedigreeModule
 
-		class(baseSpecFile) :: specFileInput
-		type(pedigreeHolder) :: ped
+		class(baseSpecFile),target :: specFileInput
+		type(pedigreeHolder), optional :: ped
 	end subroutine runProgram
 		end interface
 	contains

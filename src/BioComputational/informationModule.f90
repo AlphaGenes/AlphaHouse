@@ -78,7 +78,7 @@ module informationModule
         if (present(snpErrorPath)) then
             close(snpErrorUnit)
         endif
-
+        meanAccuracy = 0
         meanAccuracy = sum(accuracies) / lines
             
 
@@ -111,7 +111,7 @@ module informationModule
         endif
 
         ! set accuracies as 1, so not pedigreed animals won't affect
-        accuracies = 1
+        
         
         lines = countLines(trueFile)
         
@@ -134,7 +134,7 @@ module informationModule
         close(unit)
 
         allocate(accuracies(nsnps))
-
+        accuracies = 1
         do i = 1, nsnps
         ! compare snps for genotyped animals
             accuracies(i) = corAccuracies(pedArray(:,i), tmpArray(:,i))
@@ -167,7 +167,7 @@ module informationModule
     function corAccuracies(one, two, index, unit) result(res)
 
         integer(kind=1), dimension(:),intent(in) :: one,two
-        real(kind=real32) :: res
+        real(kind=real64) :: res
         integer, optional :: index
         integer, optional :: unit
 
