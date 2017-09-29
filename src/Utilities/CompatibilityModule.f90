@@ -59,7 +59,7 @@ module CompatibilityModule
 	type bimHolder
 	character(len=1) :: ref,alt
 	character(len=IDLENGTH) :: id
-	integer :: chrom
+	character(len=2) :: chrom !<either an integer, or 'X'/'Y'/'XY'/'MT'
 	integer(kind=int64) :: pos, chrompos
 end type bimHolder
 
@@ -121,7 +121,7 @@ contains
 	end function readToPedigreeFormat
 
 
-	subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps)
+	subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps, sexChrom)
 		use HashModule
 		use AlphaHouseMod, only : CountLines
 		use PedigreeModule
@@ -129,6 +129,7 @@ contains
 
 		character(len=*),intent(in) :: binaryFilePre
 		type(pedigreeholder), intent(out) :: ped
+		logical, intent(out) :: sexChrom
 		type(DictStructure) :: dict
 		integer:: maxChroms
 		type(bimHolder) , allocatable, dimension(:) :: bimInfo
@@ -139,16 +140,16 @@ contains
 		integer(kind=1), dimension(:,:), allocatable ::  allsnps
 		character(len=128) :: path, outChrFile
 		character(len=128), dimension(:), allocatable :: outputPaths
-		integer result,i,p,h,outChrF
-		integer, intent(out) :: nsnps
+		integer result,i,p,h,outChrF, maxSnps
+		integer,dimension(:), allocatable, intent(out) :: nsnps
 		! integer, allocatable
 
 
 		ped = readToPedigreeFormat(binaryFilePre//".fam")
 
-		call readBim(binaryFilePre//".bim",dict,bimInfo,nsnps,chroms,maxChroms)
+	call readBim(binaryFilePre//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
 		print *,"READ BIM"
-		call readplinkSnps(binaryFilePre//".bed",nsnps,ped,1, allsnps)
+		call readplinkSnps(binaryFilePre//".bed",maxSnps,ped,1, allsnps)
 		print *,"READ BED"
 		allocate(maskedLogi(size(allSnps(1,:))))
 
@@ -187,38 +188,67 @@ contains
 
 
 
-	subroutine readBim(bimFile, dict, bimInfo,nsnps,chroms, maxChroms)
+	subroutine readBim(bimFile, dict, bimInfo,nsnps,maxSnps,chroms, maxChroms, hasSexChrom)
 		use HashModule
 		use AlphaHouseMod
+		use ConstantModule
 
 		character(len=*), intent(in) :: bimFile
 		type(DictStructure) :: dict
+		logical, intent(out) :: hasSexChrom 
 		character :: ref,alt
 		character(len=IDLENGTH) :: id
 
 		integer(kind=int64) :: pos, chrompos
 
-		integer,intent(out) :: nsnps
+
+		integer,intent(out) :: maxSnps
+		integer,intent(out), dimension(:), allocatable :: nsnps
+		integer, dimension(:), allocatable :: temparray
 		integer,intent(out) :: maxChroms
 
-		integer :: i, unit,chrom
+		integer :: i, unit,chromCount,curChromSnpCount
 		type(bimHolder) , allocatable, dimension(:), intent(out) :: bimInfo
 		type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
-		maxChroms = 0
+		character(len=2) :: chrom,prevChrom
 
+		maxChroms = 0
+		hasSexChrom = .false.
+		curChromSnpCount = 0 
+		allocate(nsnps(LARGECHROMNUMBER))
+		nsnps = 0
 		dict = DictStructure()
-		nsnps = countLines(bimFile)
+		maxSnps = countLines(bimFile)
 
 		open(newUnit=unit, file=bimFile, status='old')
 		allocate(chroms(LARGECHROMNUMBER))
-		allocate(bimInfo(nsnps))
-		do i =1, nsnps
+		allocate(bimInfo(maxSnps))
+		do i =1, maxSnps
 
 			read(unit, *) chrom, id,chrompos, pos ,ref, alt
 
-			if (chrom > maxChroms) then
-				maxChroms = chrom
+			! if we've moved on to the next chromsome
+			if (chrom == "X" .or. chrom == 'Y') then
+				hasSexChrom = .true.
 			endif
+			
+			if (chrom == 'XY' .or. chrom == 'MT') then
+				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
+			endif
+				
+			if (chrom /=prevChrom) then
+
+				! set the count to he current numbers
+				nsnps(chromCount) = curChromSnpCount
+				curChromSnpCount = 0
+				chromCount = chromCount + 1
+
+				prevChrom = chrom
+				if (chromCount > maxChroms) then
+					maxChroms = chromCount
+				endif
+			endif
+			curChromSnpCount = curChromSnpCount + 1 
 			call dict%addKey(id, i)
 			bimInfo(i)%chrom = chrom
 			!  TODO what does this do!???
@@ -231,8 +261,15 @@ contains
 			bimInfo(i)%ref = ref
 			bimInfo(i)%alt = alt
 
-			call chroms(chrom)%snps%list_add(i)
+			call chroms(chromCount)%snps%list_add(i)
 		end do
+
+
+		if (chromCount /= LARGECHROMNUMBER) then
+            allocate(temparray(chromCount))
+            temparray(1:chromCount) = nsnps(1:chromCount)
+            call move_alloc(temparray,nsnps)
+        endif
 		close (unit)
 
 
@@ -360,7 +397,7 @@ contains
 	end subroutine readplinkSnps
 
 
-	subroutine readPlinkNoneBinary(filePre, outputPaths, nsnps, ped)
+	subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 		use HashModule
 		use PedigreeModule
 		use AlphaHouseMod
@@ -371,6 +408,7 @@ contains
 		integer, dimension(:) ,allocatable :: nsnps
 		integer :: totalSnps,outChrF
 		type(Chromosome), dimension(:), allocatable :: chroms
+		logical,intent(out) :: sexChrom
 		character(len=128) :: path, outChrFile
 		integer(kind=1), dimension(:,:), allocatable ::  genotypes
 		logical, dimension(:), allocatable :: maskedLogi
@@ -380,7 +418,7 @@ contains
 		type(DictStructure) :: dict
 		type(pedigreeHolder) :: ped
 
-		call readMap(filePre//".map", dict,chroms,maxChroms, nsnps, totalSnps)
+		call readMap(filePre//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom)
 		
 		allocate(maskedLogi(totalSnps))
 		
@@ -415,7 +453,7 @@ contains
 
 
 
-	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps)
+	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom)
                 use HashModule
 		use AlphaHouseMod
 
@@ -425,25 +463,45 @@ contains
 		type(DictStructure), intent(out) :: dict
 		type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
 		integer, intent(out) :: totalSnps
-		integer :: unit,i,chrom,length, basepair
+		integer :: unit,i,chromCount,length, basepair
+		logical :: hasSexChrom
+		character(len=2) :: chrom,prevChrom
 		character(len=128) :: id
 
 		totalSnps = countLines(fileName)
 		open(newunit=unit, file=filename, status='OLD')
 
 		allocate(chroms(LARGECHROMNUMBER))
+		hasSexChrom = .false.
 		maxChroms = 0
 		snpCounts = 0
+		chromCount = 0
 		do i=1,totalSnps
 
 			read(unit, *) chrom, id,length, basepair
-			if (chrom > maxChroms) then
-				maxChroms = chrom
+
+			if (chrom == "X" .or. chrom == 'Y') then
+				hasSexChrom = .true.
+			endif
+			
+			if (chrom == 'XY' .or. chrom == 'MT') then
+				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
+			endif
+				
+
+			if (chrom /=prevChrom) then
+				chromCount = chromCount + 1
+
+				prevChrom = chrom
+				if (chromCount > maxChroms) then
+					maxChroms = chromCount
+				endif
+
 			endif
 
-			snpCounts(chrom) = snpCounts(chrom) + 1
+			snpCounts(chromCount) = snpCounts(chromCount) + 1
 			call dict%addKey(id, i)
-			call chroms(chrom)%snps%list_add(i)
+			call chroms(chromCount)%snps%list_add(i)
 		enddo
 
 	end subroutine readMap

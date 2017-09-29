@@ -25,7 +25,10 @@ module baseSpecFileModule
 	type, abstract :: baseSpecFile
 
 	character(len=512) :: resultFolderPath !< Path where results should go
+	character(len=512) :: plinkinputfile !< prepend to plink file
+	logical :: plinkBinary
 	integer(kind=int32) :: nsnp
+	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
 
 	end type
 

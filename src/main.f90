@@ -7,10 +7,12 @@ program test
 	implicit none
 
 	type(PedigreeHolder) :: ped
-	integer :: nsnp
+	integer,allocatable,dimension(:) :: nsnp
+
+	logical :: sexChrom
   character(len=128), dimension(:), allocatable :: chromPaths
 
-	call readPlink("merge_final", ped,chromPaths,nsnp)
+	call readPlink("merge_final", ped,chromPaths,nsnp,sexChrom)
 
 end program test
 

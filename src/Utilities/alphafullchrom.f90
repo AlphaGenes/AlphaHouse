@@ -67,26 +67,47 @@ module alphaFullChromModule
 			character(len=*) :: plinkPre
 			procedure(runProgram), pointer, intent(in):: funPointer
 			character(len=128), dimension(:), allocatable :: chromPaths
-			integer :: i, nsnps
+			integer :: i
+			integer, dimension(:), allocatable :: nsnps
+			logical :: sexChroms
 			class(baseSpecFile) :: specfile
-			call readPlink(plinkPre, ped, chromPaths,nsnps)
 
-
-
+			if (specfile%plinkBinary) then
+				call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			else
+				call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			endif
 			do i=1, size(chromPaths)
 
 				specFile%resultFolderPath = chromPaths(i)
+				specFile%nsnp = nsnps(i)
 				! write(chromPath,'(a,i0)') "chr",i
 				! result=makedirqq(prepend//trim(chromPath))
 	
+				if (i > size(chromPaths)-2 .and. sexChroms) then
+					if (i == size(chromPaths)-1) then !< x chrom
+						specFile%SexOpt = 1
+						specFile%HetGameticStatus=1
+						specFile%HomGameticStatus=2
+					else !< y chrom
+						specFile%SexOpt = 1
+						specFile%HetGameticStatus=2
+						specFile%HomGameticStatus=1
+					endif
+					endif
 
 				call ped%wipeGenotypeAndPhaseInfo
 
 
-				call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps)
+				call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i))
 
 
 				call funPointer(specFile,ped)
+				
+
+				
+
+
 				! cwd for program should be settable
 				! Can be done using CHDIR command
 
