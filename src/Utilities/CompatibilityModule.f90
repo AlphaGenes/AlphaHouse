@@ -95,7 +95,7 @@ contains
 		integer :: fileUnit,stat, i,lines
 		character(len=IDLENGTH),dimension(:,:), allocatable :: pedArray
 		integer, allocatable, dimension(:) :: genderArray, phenotypeArray
-
+		
 		lines=  countLines(pedFile)
 
 		allocate(pedArray(3,lines))
@@ -145,11 +145,11 @@ contains
 		! integer, allocatable
 
 
-		ped = readToPedigreeFormat(binaryFilePre//".fam")
+		ped = readToPedigreeFormat(trim(binaryFilePre)//".fam")
 
-	call readBim(binaryFilePre//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
+	call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
 		print *,"READ BIM"
-		call readplinkSnps(binaryFilePre//".bed",maxSnps,ped,1, allsnps)
+		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,1, allsnps)
 		print *,"READ BED"
 		allocate(maskedLogi(size(allSnps(1,:))))
 
@@ -223,6 +223,7 @@ contains
 		open(newUnit=unit, file=bimFile, status='old')
 		allocate(chroms(LARGECHROMNUMBER))
 		allocate(bimInfo(maxSnps))
+		chromCount = 1
 		do i =1, maxSnps
 
 			read(unit, *) chrom, id,chrompos, pos ,ref, alt
@@ -418,11 +419,11 @@ contains
 		type(DictStructure) :: dict
 		type(pedigreeHolder) :: ped
 
-		call readMap(filePre//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom)
+		call readMap(trim(filePre)//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom)
 		
 		allocate(maskedLogi(totalSnps))
 		
-		call readPedFile(filePre//".ped",ped, maxSnps, genotypes, "refAlleles.txt")
+		call readPedFile(trim(filePre)//".ped",ped, maxSnps, genotypes, "refAlleles.txt")
 		path = "chromosomeGenotypes/"
 		result=makedirqq(path)
 
