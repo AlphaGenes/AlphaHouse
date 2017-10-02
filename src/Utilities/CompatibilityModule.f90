@@ -244,7 +244,7 @@ contains
 
 				! set the count to he current numbers
 				nsnps(chromCount) = curChromSnpCount
-				print *,"HEREEEE",chromCount, nsnps(chromCount),chrom, prevChrom
+				! print *,"HEREEEE",chromCount, nsnps(chromCount),chrom, prevChrom
 				curChromSnpCount = 0
 				chromCount = chromCount + 1
 
