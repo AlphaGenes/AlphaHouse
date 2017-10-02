@@ -162,9 +162,9 @@ contains
 
 		allocate(outputPaths(maxChroms))
 		do i =1, maxChroms
-			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,DASH
+			write(outChrFile, '(a,a,i0.2)') trim(path),trim("chr"),i
 			outputPaths(i) = outChrFile
-			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="unknown")
+			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="new")
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
