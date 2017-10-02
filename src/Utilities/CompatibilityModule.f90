@@ -244,7 +244,7 @@ contains
 
 				! set the count to he current numbers
 				nsnps(chromCount) = curChromSnpCount
-				! print *,"HEREEEE",nsnps(chromCount),chrom, prevChrom
+				print *,"HEREEEE",chromCount, nsnps(chromCount),chrom, prevChrom
 				curChromSnpCount = 0
 				chromCount = chromCount + 1
 
@@ -269,7 +269,7 @@ contains
 			call chroms(chromCount)%snps%list_add(i)
 		end do
 
-		maxChroms = maxChroms -1
+		! maxChroms = maxChroms -1
 
 		if (chromCount /= LARGECHROMNUMBER) then
             allocate(temparray(chromCount))
