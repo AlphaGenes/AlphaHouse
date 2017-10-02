@@ -269,6 +269,7 @@ contains
 			call chroms(chromCount)%snps%list_add(i)
 		end do
 
+		maxChroms = maxChroms -1
 
 		if (chromCount /= LARGECHROMNUMBER) then
             allocate(temparray(chromCount))
