@@ -1,119 +1,170 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     alphafullchrom.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing definition of pedigree.
+!
+!> @details Functions fro running alphaprograms designed to work on single chromosomes across multiple chromosomes
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2017-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
 module alphaFullChromModule
 
 	use baseSpecFileModule
 
-		interface 
-		subroutine runProgram (specFileInput, ped)
+	interface
+	subroutine runProgram (specFileInput, ped)
 		use baseSpecFileModule
 		use pedigreeModule
 
 		class(baseSpecFile),target :: specFileInput
 		type(pedigreeHolder), optional :: ped
 	end subroutine runProgram
-		end interface
-	contains
+end interface
+contains
 
-		
+#ifdef MPIACTIVE
 
-		! subroutine fullChromSplit(pedigreeFile, specfile, funPointer)
-		! 	use pedigreeModule
-			
-		! 	implicit none
-		! 	character(len=*) :: pedigreeFile
-		! 	integer :: nChroms, result
-		! 	type(specFilebase) :: specfile
-		! 	type(pedigreeHolder) :: ped
-		! 	character(len=300) :: chromPath
+	!---------------------------------------------------------------------------
+	!< @brief Runs plink based on how many chromosomes are on the file. Parallelizes this across clusters
+	!< @details takes in a BASESPECFILE object, and then a function pointer for the main function of an alphaproram
+	!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+	!---------------------------------------------------------------------------
+	subroutine runPlink(plinkPre, specfile, funPointer)
+		use CompatibilityModule
+		use pedigreeModule
+		use baseSpecFileModule
+		use MPIUtilities
 
-		! 	procedure(runProgram), pointer, intent(in):: funPointer
+		type(pedigreeHolder) :: ped
+		character(len=*) :: plinkPre
+		procedure(runProgram), pointer, intent(in):: funPointer
+		character(len=128), dimension(:), allocatable :: chromPaths
+		integer :: i
+		integer, dimension(:), allocatable :: nsnps
+		logical :: sexChroms
+		integer :: totalToDo, curChrom
+		class(baseSpecFile) :: specfile
 
-		! 	! TODO currently only opperate on a single pedigree, can be chnaged to take in more using array
-		! 	! Will use more memory
-		! 	! This means this can be done in parallel, even mpi
-		! 	ped = PedigreeHolder(pedigreeFile)
-
-		! 	do i=1, nChroms
-
-		! 		specFile%resultFolderPath = chromPath
-		! 		write(chromPath,'(a,i0)') "chr",i
-		! 		result=makedirqq(prepend//trim(chromPath))
-		! 		if (result /= 0) then
-		! 			write(error_unit,*) "ERROR - creating directories has failed with error code:", result
-		! 		endif
-
-		! 		call ped%wipeGenotypeAndPhaseInfo
+		call initialiseMPI
 
 
-		! 		call ped%addGenotypeInformationFromFile("genoFile")
+		if (specfile%plinkBinary) then
+			call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+		else
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+		endif
+
+		totalToDo = (size(chromPaths))/mpiSize
+		print *,"TOTALTODO", totalTOdo
+		if (totalToDo <1) then
+			if (mpiRank+1 < nCoreLengths) return
+		endif
+
+		do i=1, totalToDo
+			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 
 
-		! 		call funPointer(specFile,ped)
-		! 		! cwd for program should be settable
-		! 		! Can be done using CHDIR command
+			specFile%resultFolderPath = chromPaths(i)
+			specFile%nsnp = nsnps(i)
+			! write(chromPath,'(a,i0)') "chr",i
+			! result=makedirqq(prepend//trim(chromPath))
 
-		! 	enddo
-
-
-
-		! end subroutine fullChromSplit
-
-
-		subroutine runPlink(plinkPre, specfile, funPointer)
-			use CompatibilityModule
-			use pedigreeModule
-			use baseSpecFileModule
-			
-			type(pedigreeHolder) :: ped
-			character(len=*) :: plinkPre
-			procedure(runProgram), pointer, intent(in):: funPointer
-			character(len=128), dimension(:), allocatable :: chromPaths
-			integer :: i
-			integer, dimension(:), allocatable :: nsnps
-			logical :: sexChroms
-			class(baseSpecFile) :: specfile
-
-			if (specfile%plinkBinary) then
-				call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
-			else
-				call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			if (i > size(chromPaths)-2 .and. sexChroms) then
+				if (i == size(chromPaths)-1) then !< x chrom
+					specFile%SexOpt = 1
+					specFile%HetGameticStatus=1
+					specFile%HomGameticStatus=2
+				else !< y chrom
+					specFile%SexOpt = 1
+					specFile%HetGameticStatus=2
+					specFile%HomGameticStatus=1
+				endif
 			endif
-			do i=1, size(chromPaths)
 
-				specFile%resultFolderPath = chromPaths(i)
-				specFile%nsnp = nsnps(i)
-				! write(chromPath,'(a,i0)') "chr",i
-				! result=makedirqq(prepend//trim(chromPath))
-	
-				if (i > size(chromPaths)-2 .and. sexChroms) then
-					if (i == size(chromPaths)-1) then !< x chrom
-						specFile%SexOpt = 1
-						specFile%HetGameticStatus=1
-						specFile%HomGameticStatus=2
-					else !< y chrom
-						specFile%SexOpt = 1
-						specFile%HetGameticStatus=2
-						specFile%HomGameticStatus=1
-					endif
-					endif
-
-				call ped%wipeGenotypeAndPhaseInfo
+			call ped%wipeGenotypeAndPhaseInfo
 
 
-				call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i))
+			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i))
 
 
-				call funPointer(specFile,ped)
-				
+			call funPointer(specFile,ped)
 
-				
+		enddo
+		call endMPI
 
+	end subroutine runPlink
 
-				! cwd for program should be settable
-				! Can be done using CHDIR command
-
-			enddo
+#else
 
 
-		end subroutine runPlink
+	!---------------------------------------------------------------------------
+	!< @brief Runs plink based on how many chromosomes are on the file.
+	!< @details takes in a BASESPECFILE object, and then a function pointer for the main function of an alphaproram
+	!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+	!---------------------------------------------------------------------------
+	subroutine runPlink(plinkPre, specfile, funPointer)
+		use CompatibilityModule
+		use pedigreeModule
+		use baseSpecFileModule
 
+		type(pedigreeHolder) :: ped
+		character(len=*) :: plinkPre
+		procedure(runProgram), pointer, intent(in):: funPointer
+		character(len=128), dimension(:), allocatable :: chromPaths
+		integer :: i
+		integer, dimension(:), allocatable :: nsnps
+		logical :: sexChroms
+		class(baseSpecFile) :: specfile
+
+		if (specfile%plinkBinary) then
+			call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+		else
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+		endif
+		do i=1, size(chromPaths)
+
+			specFile%resultFolderPath = chromPaths(i)
+			specFile%nsnp = nsnps(i)
+			! write(chromPath,'(a,i0)') "chr",i
+			! result=makedirqq(prepend//trim(chromPath))
+
+			if (i > size(chromPaths)-2 .and. sexChroms) then
+				if (i == size(chromPaths)-1) then !< x chrom
+					specFile%SexOpt = 1
+					specFile%HetGameticStatus=1
+					specFile%HomGameticStatus=2
+				else !< y chrom
+					specFile%SexOpt = 1
+					specFile%HetGameticStatus=2
+					specFile%HomGameticStatus=1
+				endif
+			endif
+
+			call ped%wipeGenotypeAndPhaseInfo
+
+
+			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i))
+
+
+			call funPointer(specFile,ped)
+
+		enddo
+
+
+	end subroutine runPlink
+#endif
 end module alphaFullChromModule
+

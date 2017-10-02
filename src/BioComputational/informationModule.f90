@@ -1,3 +1,26 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     InformationModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing subroutines to get dat information such as yield or accuracy
+!
+!> @details Functions for getting information" 
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2017-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module informationModule
 
 
