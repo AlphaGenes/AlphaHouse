@@ -240,7 +240,7 @@ contains
 				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
 			endif
 				
-			if (chrom /=prevChrom) then
+			if (chrom /=prevChrom .or. i == maxSnps) then
 
 				! set the count to he current numbers
 				nsnps(chromCount) = curChromSnpCount
