@@ -154,7 +154,7 @@ contains
 		allocate(maskedLogi(size(allSnps(1,:))))
 
 
-		nsnps = size(allSnps(1,:))
+		! nsnps = size(allSnps(1,:))
 		path = "chromosomeGenotypes/"
 		result=makedirqq(path)
 
@@ -164,16 +164,15 @@ contains
 		do i =1, maxChroms
 			write(outChrFile, '(a,a,i0.2)') trim(path),trim("chr"),i
 			outputPaths(i) = outChrFile
-			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="new")
+			open(newunit=outChrF, file=trim(outChrFile)//"genotypes.txt", status="unknown")
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
 				maskedLogi(masked(h)) = .true.
 
 			enddo
-			write(fmt, '(a,i10,a)')  '(a20,', nsnps, 'i2)'
+			write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i2)"
 			do p=1,ped%pedigreeSize-ped%nDummys
-				! print *, "in write"
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(allSnps(p,:), maskedLogi)
 			end do
 			close(outChrF)
@@ -228,6 +227,10 @@ contains
 
 			read(unit, *) chrom, id,chrompos, pos ,ref, alt
 
+			if (i == 1) then
+				prevChrom = chrom
+			endif
+				
 			! if we've moved on to the next chromsome
 			if (chrom == "X" .or. chrom == 'Y') then
 				hasSexChrom = .true.
@@ -241,6 +244,7 @@ contains
 
 				! set the count to he current numbers
 				nsnps(chromCount) = curChromSnpCount
+				! print *,"HEREEEE",nsnps(chromCount),chrom, prevChrom
 				curChromSnpCount = 0
 				chromCount = chromCount + 1
 
@@ -433,7 +437,7 @@ contains
 		do i =1, maxChroms
 			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,DASH
 			outputPaths(i) = outChrFile
-			open(newunit=outChrF, file=outChrFile//"genotypes.txt", status="unknown")
+			open(newunit=outChrF, file=trim(outChrFile)//"genotypes.txt", status="unknown")
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
