@@ -1729,7 +1729,7 @@ module PedigreeModule
 			do i=1,size(array,1) !< assumes dummys are at end, otherwise this will NOT work
 				call this%setAnimalAsGenotyped(i, array(i,:))
 			enddo
-			this%nsnpsPopulation = size(array)
+			this%nsnpsPopulation = size(array,1)
 
 			if (present(initAll)) then
 				print *, "NSNPS here", this%nsnpsPopulation

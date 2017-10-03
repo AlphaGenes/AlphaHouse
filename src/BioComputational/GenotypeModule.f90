@@ -489,7 +489,7 @@ function numOppose(g1, g2) result(num)
 
     integer :: i
 
-    !$OMP SIMD REDUCTION(+:num)
+    !$OMP DO SIMD REDUCTION(+:num)
     do i = 1, g1%sections
         num = num + POPCNT(IAND(IAND(g1%homo(i), g2%homo(i)), &
             IEOR(g1%additional(i), g1%additional(i))))
@@ -510,7 +510,7 @@ function numIncommon(g1, g2) result(num)
 
     num = 0
 
-    !$OMP SIMD REDUCTION(+:num)
+    !$OMP DO SIMD REDUCTION(+:num)
     do i = 1, g1%sections
         num = num + POPCNT(IAND(IOR(g1%homo(i), NOT(g1%additional(i))), &
             IOR(g2%homo(i), NOT(g2%additional(i)))))
@@ -664,7 +664,7 @@ function mismatches(g1, g2) result(c)
     integer :: i
 
     c = 0
-    !$OMP SIMD REDUCTION(+:c)
+    !$OMP DO SIMD REDUCTION(+:c)
     do i = 1, g1%sections
         c = c + POPCNT(IAND(IAND(g1%homo(i), g2%homo(i)), &
             IEOR(g1%additional(i), g2%additional(i))))
@@ -698,7 +698,7 @@ function numNotMissing(g) result(c)
     integer :: i
 
     c = 0
-    !$OMP SIMD REDUCTION(+:c)
+    !$OMP DO SIMD REDUCTION(+:c)
     do i = 1, g%sections
       c = c + POPCNT(NOT(IAND(NOT(g%homo(i)), g%additional(i))))
   end do
