@@ -115,7 +115,7 @@ contains
 
     subroutine destroyHaplotype(this)
         type(Haplotype), intent(inout) :: this
-
+        
         if (allocated(this%phase)) then
             deallocate(this%phase)
             deallocate(this%missing)

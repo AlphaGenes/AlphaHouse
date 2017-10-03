@@ -146,6 +146,8 @@ module IndividualModule
             procedure :: addFamily
             procedure :: initialisePlantArrays
             procedure :: getProbabilitiesFromOwnGenotypeAndPhase
+            procedure :: initPhaseAndGenotypes
+            procedure :: initGenotype
             generic:: write(formatted)=> writeIndividual
 
             
@@ -1228,9 +1230,44 @@ contains
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
+        if (allocated(this%individualPhase)) then
+            deallocate(this%individualPhase)
+        endif
+        if (.not. allocated(this%individualPhase)) then
+            allocate(this%individualPhase(2))
+        endif
         this%individualPhase(1) = Haplotype(nSnp)
         this%individualPhase(2) = Haplotype(nSnp)
     end subroutine initPhaseArrays
+
+
+     !---------------------------------------------------------------------------
+    !> @brief initialises an individual genotype given the number of snps
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine initGenotype(this, nsnp)
+        use constantModule
+        class(Individual) :: this
+        integer, intent(in) :: nsnp
+
+        this%individualGenotype = Genotype(nSnp)
+    end subroutine initGenotype
+
+
+    !---------------------------------------------------------------------------
+    !> @brief initialises an individuals phase and genotype
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine initPhaseAndGenotypes(this, nsnp)
+        use constantModule
+        class(Individual) :: this
+        integer, intent(in) :: nsnp
+
+        call this%initGenotype(nsnp)
+        call this%initPhaseArrays(nsnp)
+    end subroutine initPhaseAndGenotypes
 
     !---------------------------------------------------------------------------
     !> @brief returns true if the individual is genotyped at high density.
@@ -1462,10 +1499,12 @@ contains
 
     end subroutine addFamily
 
-
-
-
-
+    !---------------------------------------------------------------------------
+    !> @brief initialises probabilities arrays for both the genotype and the phase
+    !> @details this is done  from the genoptype and phase structure
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
     subroutine getProbabilitiesFromOwnGenotypeAndPhase(this)
         use iso_fortran_env
         class(individual) :: this

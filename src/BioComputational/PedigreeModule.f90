@@ -164,7 +164,7 @@ module PedigreeModule
 	end interface Sort
 	contains
 
-				!---------------------------------------------------------------------------
+		!---------------------------------------------------------------------------
 		!< @brief Output  of animals that are genotyped
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
@@ -193,8 +193,8 @@ module PedigreeModule
 			character(len=*),intent(in)  :: filename
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
-            character(len=12) :: StrSnp,OutFmt
-            integer :: fileUnit,i
+			character(len=12) :: StrSnp,OutFmt
+			integer :: fileUnit,i
 			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%phaseProbabilities(1,:))
@@ -230,9 +230,9 @@ module PedigreeModule
 			character(len=*),intent(in)  :: filename
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
-            integer :: i, fileUnit
-            character(len=30) :: StrSnp,OutFmt
-			
+			integer :: i, fileUnit
+			character(len=30) :: StrSnp,OutFmt
+
 			open(newunit=FileUnit, file=filename, status="replace")
 
 			write(StrSnp,*) size(this%pedigree(1)%genotypeProbabilities)
@@ -1718,17 +1718,25 @@ module PedigreeModule
 		!
 		!< @date       October 25, 2016
 		!---------------------------------------------------------------------------
-		subroutine addGenotypeInformationFromArray(this, array)
+		subroutine addGenotypeInformationFromArray(this, array, initall)
 
 			use AlphaHouseMod, only : countLines
 			implicit none
 			class(PedigreeHolder) :: this
 			integer(kind=1),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
 			integer :: i
-			do i=1,this%pedigreeSize-this%nDummys !< assumes dummys are at end, otherwise this will NOT work
+			integer, intent(in),optional :: initAll !< optional argument- if present initialise whoe pedigree with size of snps
+			do i=1,size(array,1) !< assumes dummys are at end, otherwise this will NOT work
 				call this%setAnimalAsGenotyped(i, array(i,:))
 			enddo
+			this%nsnpsPopulation = size(array(1,:))
 
+			if (present(initAll)) then
+				print *, "NSNPS here", this%nsnpsPopulation
+				do i=1, this%pedigreeSize
+					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+				enddo
+			endif
 		end subroutine addGenotypeInformationFromArray
 
 
@@ -1740,7 +1748,7 @@ module PedigreeModule
 		!
 		!< @date       October 25, 2016
 		!--------------------------------------------------------------------------
-		subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn)
+		subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn, initAll)
 
 			use AlphaHouseMod, only : countLines
 			implicit none
@@ -1751,6 +1759,7 @@ module PedigreeModule
 			integer,intent(in),optional :: nAnnisG
 			integer, intent(in),optional :: startSnp, endSnp
 			logical, intent(in), optional :: lockIn
+			integer, intent(in), optional :: initAll
 			integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
 			integer :: i, j,fileUnit, nAnnis,tmpIdNum
 			integer :: count, end
@@ -1807,6 +1816,13 @@ module PedigreeModule
 			enddo
 
 			this%nsnpsPopulation = nsnps
+
+			if (present(initAll)) then
+				do i=1, this%pedigreeSize
+					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+				enddo
+			endif
+
 			write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
 
 		end subroutine addGenotypeInformationFromFile
@@ -2284,8 +2300,6 @@ module PedigreeModule
 					tmpIndNode => tmpIndNode%next
 				end do
 			enddo
-			! call move_alloc(newPed, this%pedigree)
-			! print *, "size:", size(this%pedigree),":",size(newPed)
 
 			tmpIndNode => dummyList%first
 
@@ -2316,7 +2330,6 @@ module PedigreeModule
 
 				call newGenerationList(0)%list_add(newPed(pedCounter))
 				tmpIndNode => tmpIndNode%next
-
 			enddo
 
 			call dummyList%destroyLinkedList()
@@ -2578,7 +2591,7 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypesNoDummies
 
-		
+
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file of only animals that are genotyped
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -2969,7 +2982,7 @@ module PedigreeModule
 		!< This takes the genotype info even if an animal is not genotyped
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------	
+		!---------------------------------------------------------------------------
 		function getPhaseAsArray(this) result(res)
 
 			class(pedigreeHolder) :: this
@@ -3138,8 +3151,6 @@ module PedigreeModule
 				lock = .false.
 			endif
 
-
-
 			if (this%nGenotyped == 0) then
 				this%genotypeDictionary = DictStructure()
 				allocate(this%genotypeMap(this%pedigreeSize))
@@ -3225,7 +3236,6 @@ module PedigreeModule
 					allocate(res(this%pedigreesize,size(this%pedigree(i)%referAllele),2))
 					res = 0
 				endif
-
 				res(i,:,1) = this%pedigree(i)%referAllele
 				res(i,:,2) = this%pedigree(i)%alterAllele
 			enddo
@@ -3244,9 +3254,7 @@ module PedigreeModule
 
 			res = 0
 			do i =1, this%pedigreeSize
-
 				if (.not. allocated(this%pedigree(i)%referAllele)) cycle
-
 				res(i,1) = this%pedigree(i)%referAllele(index)
 				res(i,2) = this%pedigree(i)%alterAllele(index)
 			enddo
@@ -3574,11 +3582,11 @@ module PedigreeModule
 
 
 		function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
-			use MyLinkedList
+			use SortedIntegerLinkedListModule
 			class(PedigreeHolder), intent(in):: pedIn
 			real(real64), intent(in), optional:: additVarianceIn
 			real(real64), dimension(:,:), allocatable:: values
-			type(MyLL), allocatable:: sireList, damList
+			type(sortedIntegerLinkedList), allocatable:: sireList, damList
 			real(real64), dimension(:,:), allocatable:: lValues
 			real(real64), dimension(:), allocatable:: F
 
@@ -3598,7 +3606,6 @@ module PedigreeModule
 
 			F(0) = -1
 			F(1:) = 0
-
 
 			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
 
@@ -3728,17 +3735,19 @@ module PedigreeModule
 
 #ifdef MPIACTIVE
 		function calculatePedigreeCorrelationWithInBreedingMPI(pedIn, additVarianceIn, communicatorIn) result(values)
-			use MyLinkedList
+			use SortedIntegerLinkedListModule
 			use mpi
 			use MPIUtilities, only: checkMPI
 			class(PedigreeHolder), intent(in):: pedIn
 			real(real64), intent(in), optional:: additVarianceIn
 			integer, intent(in), optional:: communicatorIn
-			type(MyLL), allocatable:: sireList, damList
+			type(sortedIntegerLinkedList), allocatable:: sireList, damList
 			real(real64), dimension(:,:), allocatable:: lValues
 			real(real64), dimension(:), allocatable:: F, F2
-			real(real64), dimension(:, :), allocatable:: values
 
+
+			real(real64), dimension(:, :), allocatable:: values !< symetric matrix that is returned is size of animals (with no UNKNOWN dummys)
+			
 			integer:: knownDummies, extras, mpiErr
 			integer:: i, j, youngestSire, youngestDam
 			integer:: sireI, damI, temp, ID
@@ -3776,11 +3785,8 @@ module PedigreeModule
 			F(0) = -1
 			F(1:) = 0
 
-
 			knownDummies = pedIn%nDummys - pedIn%unKnownDummys
-
 			values = 0
-
 			lastGenAnimal = 0
 			GenerationLoop: do j = 0, size(pedIn%generations)-1
 				knownAnimals = pedIn%generations(j)%convertToListOfKnownAnimals()
@@ -3933,7 +3939,6 @@ module PedigreeModule
 				call MPI_ALLGATHERV(F2, gatherSizes(mpiRank+1), MPI_DOUBLE, F(firstGenAnimal:lastGenAnimal), gatherSizes, offsetLocation, MPI_DOUBLE, mpiCommunicator, mpiErr)
 				knownAnimalArray => null()
 				deallocate(F2)
-
 				!      end if
 			end do GenerationLoop
 
@@ -3946,8 +3951,8 @@ module PedigreeModule
 #endif
 
 		subroutine addSireDamToListAndUpdateValues(listIn, IndividualIn, values, firstValue)
-			use MyLinkedList
-			type(MyLL), intent(inout):: listIn
+			use SortedIntegerLinkedListModule
+			type(sortedIntegerLinkedList), intent(inout):: listIn
 			type(Individual), intent(in):: IndividualIn
 			real(real64), dimension(:,:), intent(inout):: values
 			integer, intent(in):: firstValue
@@ -3972,7 +3977,11 @@ module PedigreeModule
 				end if
 			end if
 		end subroutine addSireDamToListAndUpdateValues
+
+
 end module PedigreeModule
+
+
 
 
 
