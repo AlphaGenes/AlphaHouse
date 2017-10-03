@@ -177,10 +177,14 @@ contains
 			if (i == 1 ) then
 				block
 					integer(kind=1),allocatable,dimension (:,:) :: array
+
+					allocate(array(ped%pedigreeSize-ped%nDummys, size(allSnps,2)))
 					do p=1,ped%pedigreeSize-ped%nDummys
 						array(p,:) = pack(allSnps(p,:), maskedLogi)
 					end do
+					! print *, "ARRAY",array
 					call ped%addGenotypeInformationFromArray(array,1)
+					deallocate(array)
 				end block
 			endif
 			do p=1,ped%pedigreeSize-ped%nDummys
