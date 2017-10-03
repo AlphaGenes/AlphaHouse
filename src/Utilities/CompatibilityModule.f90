@@ -95,7 +95,7 @@ contains
 		integer :: fileUnit,stat, i,lines
 		character(len=IDLENGTH),dimension(:,:), allocatable :: pedArray
 		integer, allocatable, dimension(:) :: genderArray, phenotypeArray
-		
+
 		lines=  countLines(pedFile)
 
 		allocate(pedArray(3,lines))
@@ -147,7 +147,7 @@ contains
 
 		ped = readToPedigreeFormat(trim(binaryFilePre)//".fam")
 
-	call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
+		call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
 		print *,"READ BIM"
 		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,1, allsnps)
 		print *,"READ BED"
@@ -162,6 +162,7 @@ contains
 
 		allocate(outputPaths(maxChroms))
 		do i =1, maxChroms
+
 			write(outChrFile, '(a,a,i0.2)') trim(path),trim("chr"),i
 			outputPaths(i) = outChrFile
 			open(newunit=outChrF, file=trim(outChrFile)//"genotypes.txt", status="unknown")
@@ -172,6 +173,16 @@ contains
 
 			enddo
 			write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i2)"
+			! set up the pedigree to avoid read in
+			if (i == 1 ) then
+				block
+					integer(kind=1),allocatable,dimension (:,:) :: array
+					do p=1,ped%pedigreeSize-ped%nDummys
+						array(p,:) = pack(allSnps(p,:), maskedLogi)
+					end do
+					call ped%addGenotypeInformationFromArray(array)
+				end block
+			endif
 			do p=1,ped%pedigreeSize-ped%nDummys
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(allSnps(p,:), maskedLogi)
 			end do
@@ -194,7 +205,7 @@ contains
 
 		character(len=*), intent(in) :: bimFile
 		type(DictStructure) :: dict
-		logical, intent(out) :: hasSexChrom 
+		logical, intent(out) :: hasSexChrom
 		character :: ref,alt
 		character(len=IDLENGTH) :: id
 
@@ -213,7 +224,7 @@ contains
 
 		maxChroms = 0
 		hasSexChrom = .false.
-		curChromSnpCount = 0 
+		curChromSnpCount = 0
 		allocate(nsnps(LARGECHROMNUMBER))
 		nsnps = 0
 		dict = DictStructure()
@@ -230,21 +241,21 @@ contains
 			if (i == 1) then
 				prevChrom = chrom
 			endif
-				
+
 			! if we've moved on to the next chromsome
 			if (chrom == "X" .or. chrom == 'Y') then
 				hasSexChrom = .true.
 			endif
-			
+
 			if (chrom == 'XY' .or. chrom == 'MT') then
 				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
 			endif
-				
+
 			if (chrom /=prevChrom .or. i == maxSnps) then
 
 				! set the count to he current numbers
 				if (i == maxSnps) then
-					curChromSnpCount = curChromSnpCount + 1 
+					curChromSnpCount = curChromSnpCount + 1
 				endif
 				nsnps(chromCount) = curChromSnpCount
 				print *,"HEREEEE",chromCount, nsnps(chromCount),chrom, prevChrom,maxSnps
@@ -256,7 +267,7 @@ contains
 					maxChroms = chromCount
 				endif
 			endif
-			curChromSnpCount = curChromSnpCount + 1 
+			curChromSnpCount = curChromSnpCount + 1
 			call dict%addKey(id, i)
 			bimInfo(i)%chrom = chrom
 			!  TODO what does this do!???
@@ -273,13 +284,13 @@ contains
 		end do
 
 		maxChroms = maxChroms -1
-		chromCount = chromCount - 1 
+		chromCount = chromCount - 1
 
 		if (chromCount /= LARGECHROMNUMBER) then
-            allocate(temparray(chromCount))
-            temparray(1:chromCount) = nsnps(1:chromCount)
-            call move_alloc(temparray,nsnps)
-        endif
+			allocate(temparray(chromCount))
+			temparray(1:chromCount) = nsnps(1:chromCount)
+			call move_alloc(temparray,nsnps)
+		endif
 		close (unit)
 
 
@@ -429,9 +440,9 @@ contains
 		type(pedigreeHolder) :: ped
 
 		call readMap(trim(filePre)//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom)
-		
+
 		allocate(maskedLogi(totalSnps))
-		
+
 		call readPedFile(trim(filePre)//".ped",ped, maxSnps, genotypes, "refAlleles.txt")
 		path = "chromosomeGenotypes/"
 		result=makedirqq(path)
@@ -450,6 +461,16 @@ contains
 
 			enddo
 			write(fmt, '(a,i10,a)')  '(a20,', nsnps, 'i2)'
+			if (i == 1 ) then
+				block
+					integer(kind=1),allocatable,dimension (:,:) :: array
+					do p=1,ped%pedigreeSize-ped%nDummys
+						array(p,:) = pack(genotypes(p,:), maskedLogi)
+					enddo
+					call ped%addGenotypeInformationFromArray(array)
+				end block
+			endif
+
 			do p=1,ped%pedigreeSize-ped%nDummys
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(genotypes(p,:), maskedLogi)
 			end do
@@ -464,7 +485,7 @@ contains
 
 
 	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom)
-                use HashModule
+		use HashModule
 		use AlphaHouseMod
 
 		character(len=*),intent(in) :: filename
@@ -493,11 +514,11 @@ contains
 			if (chrom == "X" .or. chrom == 'Y') then
 				hasSexChrom = .true.
 			endif
-			
+
 			if (chrom == 'XY' .or. chrom == 'MT') then
 				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
 			endif
-				
+
 
 			if (chrom /=prevChrom) then
 				chromCount = chromCount + 1
@@ -518,7 +539,7 @@ contains
 
 
 	subroutine readPedFile(filename,ped, maxSnps,genotypes, refAlleleOutputFile)
-use PedigreeModule
+		use PedigreeModule
 
 		use AlphaHouseMod
 
@@ -597,6 +618,7 @@ use PedigreeModule
 
 
 end module CompatibilityModule
+
 
 
 

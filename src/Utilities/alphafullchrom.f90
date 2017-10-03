@@ -156,8 +156,10 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 
 			print *,"path:",chromPaths(i)
-			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i))
-
+			! first chrom should already be read in
+			if (i /= 1) then
+				call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i))
+			endif
 
 			call funPointer(specFile,ped)
 
@@ -167,4 +169,5 @@ contains
 	end subroutine runPlink
 #endif
 end module alphaFullChromModule
+
 
