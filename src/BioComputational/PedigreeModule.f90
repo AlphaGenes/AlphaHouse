@@ -1654,9 +1654,13 @@ module PedigreeModule
 			integer :: i
 
 			do i=1,this%pedigreeSize
+				if (allocated(this%pedigree(i)%individualPhase)) then
+					deallocate(this%pedigree(i)%individualPhase)
+				endif
 
-				deallocate(this%pedigree(i)%individualPhase)
-				deallocate(this%pedigree(i)%individualGenotype)
+				if (allocated(this%pedigree(i)%individualGenotype)) then
+					deallocate(this%pedigree(i)%individualGenotype)
+				endif
 			enddo
 
 		end subroutine wipeGenotypeAndPhaseInfo
