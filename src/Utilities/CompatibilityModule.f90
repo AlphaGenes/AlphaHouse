@@ -180,7 +180,7 @@ contains
 					do p=1,ped%pedigreeSize-ped%nDummys
 						array(p,:) = pack(allSnps(p,:), maskedLogi)
 					end do
-					call ped%addGenotypeInformationFromArray(array)
+					call ped%addGenotypeInformationFromArray(array,1)
 				end block
 			endif
 			do p=1,ped%pedigreeSize-ped%nDummys
@@ -467,7 +467,7 @@ contains
 					do p=1,ped%pedigreeSize-ped%nDummys
 						array(p,:) = pack(genotypes(p,:), maskedLogi)
 					enddo
-					call ped%addGenotypeInformationFromArray(array)
+					call ped%addGenotypeInformationFromArray(array, 1)
 				end block
 			endif
 
