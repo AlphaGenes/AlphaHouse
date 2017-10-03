@@ -155,8 +155,8 @@ contains
 
 			call ped%wipeGenotypeAndPhaseInfo
 
-
-			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i))
+			print *,"path:",chromPaths(i)
+			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i))
 
 
 			call funPointer(specFile,ped)
