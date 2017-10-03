@@ -20,7 +20,7 @@ SET(ALPHAHOUSE_src
     Utilities/AlphaSortMod.f90
     Utilities/IntegerLinkedListModule.f90
     Utilities/CharacterLinkedListModule.f90
-    Utilities/PedigreeLinkedList.f90
+    Utilities/SortedIntegerLinkedListModule.f90
     BioComputational/PedigreeModule.f90
     BioComputational/GenotypeModule.f90
     BioComputational/HaplotypeModule.f90
