@@ -1767,6 +1767,8 @@ module PedigreeModule
 			else
 				nAnnis = countLines(genotypeFile)
 			endif
+
+			print *, "DEBUGG:", nAnnis, nSnps
 			allocate(tmpSnpArray(nsnps))
 			open(newUnit=fileUnit, file=genotypeFile, status="old")
 			do i=1, nAnnis
