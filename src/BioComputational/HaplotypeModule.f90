@@ -547,7 +547,7 @@ contains
         integer :: i
 
         num = 0
-        !$OMP DO SIMD REDUCTION(+:num)
+        !$OMP SIMD REDUCTION(+:num)
         do i = 1, h1%sections
             num = num + POPCNT(IAND(NOT(h1%missing(i)), NOT(h2%missing(i))))
         end do
@@ -568,7 +568,7 @@ contains
         integer :: i
 
         num = 0
-        !$OMP DO SIMD REDUCTION(+:num)
+        !$OMP SIMD REDUCTION(+:num)
         do i = 1, h1%sections
             num = num + POPCNT(IAND( IAND(NOT(h1%missing(i)), NOT(h2%missing(i))), &
                 IXOR(h1%phase(i), h2%phase(i)) ))
@@ -590,7 +590,7 @@ contains
 
         num = 0
 
-        !$OMP DO SIMD REDUCTION(+:num)
+        !$OMP SIMD REDUCTION(+:num)
         do i = 1, h1%sections
             num = num + POPCNT(IAND (NOT(h1%missing(i)), &
                 IOR(IXOR(h1%phase(i),h2%phase(i)), IXOR(h1%missing(i),h2%missing(i)))))
@@ -707,7 +707,7 @@ contains
 
         num = 0
 
-        !$OMP DO SIMD REDUCTION(+:num)
+        !$OMP SIMD REDUCTION(+:num)
         do i = 1, h%sections
             num = num + POPCNT(IAND(h%missing(i), NOT(h%phase(i))))
         end do
@@ -728,7 +728,7 @@ contains
 
         num = 0
 
-        !$OMP DO SIMD REDUCTION(+:num)
+        !$OMP SIMD REDUCTION(+:num)
         do i = 1, h%sections
             num = num + POPCNT(h%missing(i))
         end do
