@@ -30,9 +30,18 @@ module informationModule
 
     implicit none
     contains
-    function checkYield(ped) result(res)
 
-        type(PedigreeHolder) :: ped
+
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !< @brief   Function to check the genotype yield of a PEDIGREEHOLDER object
+    !
+    !< @author     David Wilson, david.wilson@roslin.ed.ac.uk
+    !
+    !< @date       October 25, 2016
+    !--------------------------------------------------------------------------
+    function checkYield(ped) result(res)
+        type(PedigreeHolder) :: ped !< input pedigree object
         integer(kind=1) ,dimension(:,:), allocatable  :: array
         real :: res
         array = ped%getGenotypesAsArrayWitHMissing()
