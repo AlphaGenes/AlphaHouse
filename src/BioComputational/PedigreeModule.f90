@@ -1738,7 +1738,7 @@ module PedigreeModule
 			this%nsnpsPopulation = size(array,1)
 
 			if (present(initAll)) then
-				print *, "NSNPS here", this%nsnpsPopulation
+				! print *, "NSNPS here", this%nsnpsPopulation
 				do i=1, this%pedigreeSize
 					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
 				enddo
