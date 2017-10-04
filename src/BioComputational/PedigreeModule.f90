@@ -1653,6 +1653,12 @@ module PedigreeModule
 
 			integer :: i
 
+			this%nGenotyped = 0
+			call this%genotypeDictionary%destroy()
+			this%genotypeMap = 0
+			
+
+
 			do i=1,this%pedigreeSize
 				if (allocated(this%pedigree(i)%individualPhase)) then
 					deallocate(this%pedigree(i)%individualPhase)
