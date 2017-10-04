@@ -134,6 +134,8 @@ contains
 		else
 			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
 		endif
+
+		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
 			specFile%resultFolderPath = chromPaths(i)
