@@ -619,7 +619,7 @@ module PedigreeModule
 
 			! at this point, we have calculated inconsistenceis
 
-
+			print *, "size2 here", this%pedigreeSize
 			do i=1, ped%pedigreeSize
 				if (ped%pedigree(i)%Founder) cycle
 				! if both parents haven't been removed, check most likely one
@@ -1738,7 +1738,8 @@ module PedigreeModule
 			this%nsnpsPopulation = size(array,1)
 
 			if (present(initAll)) then
-				! print *, "NSNPS here", this%nsnpsPopulation
+				print *, "NSNPS here", this%nsnpsPopulation
+				print *, "size here", this%pedigreeSize
 				do i=1, this%pedigreeSize
 					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
 				enddo
