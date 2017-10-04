@@ -619,7 +619,7 @@ module PedigreeModule
 
 			! at this point, we have calculated inconsistenceis
 
-			print *, "size2 here", this%pedigreeSize
+			print *, "size2 here", ped%pedigreeSize
 			do i=1, ped%pedigreeSize
 				if (ped%pedigree(i)%Founder) cycle
 				! if both parents haven't been removed, check most likely one
