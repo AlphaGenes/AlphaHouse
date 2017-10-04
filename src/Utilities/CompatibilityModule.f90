@@ -65,7 +65,7 @@ end type bimHolder
 
 type Chromosome
 
-type(integerLinkedList) :: snps
+type(integerLinkedList), allocatable :: snps
 contains
 	final :: destroyChrom
 end type Chromosome
@@ -75,8 +75,8 @@ contains
 
 
 		type(Chromosome) :: chrom
-
-		call chrom%snps%destroyLinkedList()
+		deallocate(chrom%snps)
+		! call chrom%snps%destroyLinkedList()
 
 	end subroutine
 
@@ -114,7 +114,7 @@ contains
 		enddo
 
 
-		ped = PedigreeHolder(pedArray, genderArray)
+		call initPedigreeArrays(ped,pedArray, genderArray)
 
 		call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
@@ -193,7 +193,7 @@ contains
 			close(outChrF)
 		enddo
 
-		call dict%destroy()
+		! call dict%destroy()
 	end subroutine readPlink
 
 
@@ -481,7 +481,7 @@ contains
 			close(outChrF)
 		enddo
 
-		call dict%destroy()
+		! call dict%destroy()
 
 
 	end subroutine readPlinkNoneBinary
@@ -603,7 +603,7 @@ contains
 			enddo
 		enddo
 
-		ped = pedigreeHolder(pedArray, genderArray)
+		call initPedigreeArrays(ped,pedArray, genderArray)
 		! ped%addGenotypeInformationFromArray(genotypes)
 
 		if (present(refAlleleOutputFile)) then

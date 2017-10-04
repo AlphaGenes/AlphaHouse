@@ -41,9 +41,9 @@ module PedigreeModule
 
 	type(Individual), pointer, dimension(:) :: Pedigree
 
-	type(IndividualLinkedList) :: Founders !linked List holding all founders
+	type(IndividualLinkedList),allocatable :: Founders !linked List holding all founders
 	type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
-	type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
+	type(DictStructure),allocatable :: dictionary ! hashmap of animal ids to index in pedigree
 	integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
 	integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
 	integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
@@ -51,24 +51,24 @@ module PedigreeModule
 	integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree
 
 	integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID
-	type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
+	type(DictStructure),allocatable :: genotypeDictionary ! maps id to location in genotype map
 	integer(kind=int32) :: nGenotyped ! number of animals that are genotyped
 
 	integer, dimension(:) , allocatable :: hdMap ! map going from genotypeMap(1:nHd) = recID
-	type(DictStructure) :: hdDictionary ! maps id to location in genotype map
+	type(DictStructure),allocatable :: hdDictionary ! maps id to location in genotype map
 	integer(kind=int32) :: nHd ! number of animals that are genotyped hd
 	integer :: maxGeneration ! largest generation
 
 	integer :: nsnpsPopulation ! number of snps for
 	integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top
 
-	type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
+	type(IndividualLinkedList),allocatable :: sireList, damList !< lists containing all sires and dams
 	type(IndividualLinkedList), allocatable :: uniqueParentList
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
 		procedure :: calculatePedigreeCorrelationWithInbreeding
 		procedure :: copyPedigree
-		procedure :: destroyPedigree
+		final :: destroyPedigree
 		procedure :: setPedigreeGenerationsAndBuildArrays
 		procedure :: outputSortedPedigree
 		procedure :: setOffspringGeneration
@@ -261,7 +261,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initEmptyPedigree(nsnps) result(pedStructure)
+		subroutine initEmptyPedigree(pedStructure,nsnps)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
@@ -274,11 +274,14 @@ module PedigreeModule
 			pedStructure%nHd = 0
 			pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
 			allocate(pedStructure%pedigree(pedStructure%maxPedigreeSize))
+			allocate(pedStructure%founders)
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
 			pedStructure%nsnpsPopulation = 0
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
-		end function initEmptyPedigree
+		end subroutine initEmptyPedigree
 
 
 		!---------------------------------------------------------------------------
@@ -397,16 +400,16 @@ module PedigreeModule
 
 
 
-		function getHDPedigree(this) result(new)
+		subroutine getHDPedigree(this,new)
 			class(pedigreeHolder) :: this
-			type(pedigreeHolder) :: new
+			type(pedigreeHolder),intent(out) :: new
 			integer :: i, sire,dam,tmpAnimalCount, indiv
 
 
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			! new%pedigreeSize = this%nHd
-			new = initEmptyPedigree(this%nsnpsPopulation)
+			call initEmptyPedigree(new,this%nsnpsPopulation)
 			tmpAnimalCount = 0
 			new%nhd = 0
 
@@ -492,7 +495,7 @@ module PedigreeModule
 			new%genotypeMap = new%hdMap
 			new%genotypeDictionary = new%hdDictionary
 			deallocate(tmpAnimalArray)
-		end function getHDPedigree
+		end subroutine getHDPedigree
 
 
 
@@ -907,7 +910,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigree(fileIn, numberInFile, genderFile, nsnps) result(pedStructure)
+		subroutine initPedigree(pedStructure, fileIn, numberInFile, genderFile, nsnps)
 			use AlphaHouseMod, only : countLines
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -923,6 +926,7 @@ module PedigreeModule
 			integer :: tmpAnimalArrayCount,i
 			integer(kind=int64) :: sizeDict
 			logical :: sireFound, damFound
+
 			pedStructure%isSorted = 0
 			pedStructure%nDummys = 0
 			pedStructure%nHd = 0
@@ -943,12 +947,20 @@ module PedigreeModule
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = nIndividuals
+
+
+			allocate(pedStructure%dictionary)
 			pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+			
 			allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(nIndividuals))
 			pedStructure%maxGeneration = 0
 			open(newUnit=fileUnit, file=fileIn, status="old")
 
+
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 			do i=1,nIndividuals
 				sireFound = .false.
 				damFound = .false.
@@ -1020,8 +1032,7 @@ module PedigreeModule
 			deallocate(tmpAnimalArray)
 			!  write(output_unit, *) "Number of animals in Pedigree:",pedStructure%pedigreeSize-pedStructure%nDummys
 			!  write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-
-		end function initPedigree
+		end  subroutine
 
 
 		!---------------------------------------------------------------------------
@@ -1030,7 +1041,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeFromOutputFile(pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps) result(pedStructure)
+		subroutine initPedigreeFromOutputFile(pedStructure,pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps)
 
 			character(len=*), intent(in) :: pedigreeFile
 			character(len=*), intent(in), optional :: genderFile, pedGenotypeFile, phaseFile
@@ -1038,10 +1049,14 @@ module PedigreeModule
 			type(PedigreeHolder) :: pedStructure
 
 
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
+
 			if (present(genderFile)) then
-				pedStructure = initPedigree(pedigreeFile, nsnps=nsnps, genderFile=genderFile)
+				call initPedigree(pedStructure,pedigreeFile, nsnps=nsnps, genderFile=genderFile)
 			else
-				pedStructure = initPedigree(pedigreeFile, nsnps=nsnps)
+				call initPedigree(pedStructure,pedigreeFile, nsnps=nsnps)
 
 			endif
 
@@ -1054,7 +1069,7 @@ module PedigreeModule
 			endif
 
 
-		end function initPedigreeFromOutputFile
+		end subroutine initPedigreeFromOutputFile
 
 
 		!---------------------------------------------------------------------------
@@ -1063,7 +1078,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeFromOutputFileFolder(folder, nsnps) result(pedStructure)
+		subroutine initPedigreeFromOutputFileFolder(pedStructure,folder, nsnps)
 
 			character(len=*), intent(in) :: folder !< input folder
 			integer, intent(in) :: nsnps
@@ -1075,12 +1090,12 @@ module PedigreeModule
 			genotypeFile = "genotypes.txt"
 			phaseFile = "phase.txt"
 			genderFile = "gender.txt"
-			pedStructure = initPedigree(folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
+			call initPedigree(pedStructure, folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
 			call pedStructure%addGenotypeInformationFromFile(folder//genotypeFile, nsnps)
 			call pedStructure%addPhaseInformationFromFile(folder//phaseFile, nsnps)
 
 
-		end function initPedigreeFromOutputFileFolder
+		end subroutine initPedigreeFromOutputFileFolder
 
 
 		!---------------------------------------------------------------------------
@@ -1118,7 +1133,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile) result(pedStructure)
+		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile)
 			use AlphaHouseMod, only : countLines
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -1139,6 +1154,9 @@ module PedigreeModule
 			integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
 			allocate(tmpGeno(nsnp))
+				allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 			pedStructure%isSorted = 0
 			pedStructure%nHd = 0
 			pedStructure%nGenotyped = 0
@@ -1152,9 +1170,9 @@ module PedigreeModule
 
 			if  (present(pedFile)) then
 				if (present(genderFile)) then
-					pedStructure = PedigreeHolder(pedFile, genderFile=genderFile, nsnps=nSnp)
+					call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
 				else
-					pedStructure = PedigreeHolder(pedFile, nsnps=nSnp)
+					call initPedigree(pedStructure,pedFile, nsnps=nSnp)
 				endif
 			else
 				pedStructure%nDummys = 0
@@ -1217,7 +1235,7 @@ module PedigreeModule
 			enddo
 
 			close(fileUnit)
-		end function initPedigreeGenotypeFiles
+		end subroutine initPedigreeGenotypeFiles
 
 		!---------------------------------------------------------------------------
 		!< @brief Constructor for pedigree class
@@ -1226,7 +1244,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeArrays(pedArray, genderArray, nsnps) result(pedStructure)
+		subroutine initPedigreeArrays(pedStructure, pedArray, genderArray, nsnps)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 
@@ -1245,6 +1263,10 @@ module PedigreeModule
 			pedStructure%nDummys = 0
 			tmpAnimalArrayCount = 0
 			pedStructure%nsnpsPopulation = 0
+			
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
@@ -1321,7 +1343,7 @@ module PedigreeModule
 
 			deallocate(tmpAnimalArray)
 			write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-		end function initPedigreeArrays
+		end subroutine initPedigreeArrays
 
 
 		!---------------------------------------------------------------------------
@@ -1331,7 +1353,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeIntArrays(pedArray, genderArray) result(pedStructure)
+		subroutine initPedigreeIntArrays(pedStructure,pedArray, genderArray)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 
@@ -1422,7 +1444,7 @@ module PedigreeModule
 			call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
 			deallocate(tmpAnimalArray)
 			write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-		end function initPedigreeIntArrays
+		end subroutine initPedigreeIntArrays
 
 		!---------------------------------------------------------------------------
 		!< @brief Helper function to avoid code duplication
@@ -1654,7 +1676,8 @@ module PedigreeModule
 			integer :: i
 
 			this%nGenotyped = 0
-			call this%genotypeDictionary%destroy()
+			! call this%genotypeDictionary%destroy()
+			deallocate(this%genotypeDictionary)
 			this%genotypeMap = 0
 			
 
@@ -1677,35 +1700,52 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine destroyPedigree(this)
-			class(PedigreeHolder) :: this
+			type(PedigreeHolder) :: this
 			integer :: i
 
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
+			! do i=1,this%pedigreeSize
+			! 	call this%Pedigree(i)%destroyIndividual
 
-			enddo
+			! enddo
 			if (allocated(this%generations)) then
 
-				do i=0, this%maxGeneration
-					call this%generations(i)%destroyLinkedList
-				enddo
+				! do i=0, this%maxGeneration
+				! 	call this%generations(i)%destroyLinkedList
+				! enddo
 				deallocate(this%generations)
 			endif
-			call this%sireList%destroyLinkedList
-			call this%damList%destroyLinkedList
-			call this%Founders%destroyLinkedListFinal
+			! call this%sireList%destroyLinkedList
+			! call this%damList%destroyLinkedList
+			! call this%Founders%destroyLinkedListFinal
 
+			if (allocated(this%sireList)) then
+				deallocate(this%sireList)
+			endif
+
+			if (allocated(this%damList)) then
+				deallocate(this%damList)
+			endif
+			
+			if (allocated(this%founders)) then
+				deallocate(this%founders)
+			endif
 			if (allocated(this%inputMap)) then
 				deallocate(this%inputMap)
 			endif
-			call this%dictionary%destroy !destroy dictionary as we no longer need it
+			! call this%dictionary%destroy !destroy dictionary as we no longer need it
+			if (allocated(this%dictionary)) then
+				deallocate(this%dictionary)
+			endif
 			if (this%nGenotyped > 0) then
-				call this%genotypeDictionary%destroy
+				! call this%genotypeDictionary%destroy
+				deallocate(this%genotypeDictionary)
 				deallocate(this%genotypeMap)
 			endif
 
 			if (this%nHd > 0) then
-				call this%hdDictionary%destroy
+				! call this%hdDictionary%destroy
+
+				deallocate(this%hdDictionary)
 				deallocate(this%hdMap)
 			endif
 
@@ -1783,7 +1823,6 @@ module PedigreeModule
 				nAnnis = countLines(genotypeFile)
 			endif
 
-			print *, "DEBUGG:", nAnnis, nSnps
 			allocate(tmpSnpArray(nsnps))
 			open(newUnit=fileUnit, file=genotypeFile, status="old")
 			do i=1, nAnnis
@@ -2223,14 +2262,26 @@ module PedigreeModule
 			endif
 			pedCounter = 0
 
-			call this%dictionary%destroy()
-			call this%founders%destroyLinkedList()
-			call this%sireList%destroyLinkedList()
-			call this%damList%destroyLinkedList()
+			! call this%dictionary%destroy()
+			! call this%founders%destroyLinkedList()
+			! call this%sireList%destroyLinkedList()
+			! call this%damList%destroyLinkedList()
+
+			deallocate(this%sireList)
+			deallocate(this%damList)
+			deallocate(this%founders)
+			deallocate(this%dictionary)
 			sizeDict  =this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
 			this%dictionary = DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
+
+
+			allocate(this%sireList)
+			allocate(this%damList)
+			allocate(this%founders)
+
+
 			do i=0, this%maxGeneration
 				tmpIndNode => this%generations(i)%first
 				do h=1, this%generations(i)%length
@@ -2269,9 +2320,11 @@ module PedigreeModule
 					endif
 					! Set the location to the pedigree to the new value
 					newPed(pedCounter) = tmpIndNode%item
+					print *,"test1",tmpIndNode%item%originalId, i,tmpIndNode%item%id
 
 					! take the original id, and update it
 					if(.not. newPed(pedCounter)%isDummy) then
+						print *, "test", newPed(pedCounter)%originalId,pedCounter
 						this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
 					endif
 					newPed(pedCounter)%id = pedCounter
@@ -2338,18 +2391,19 @@ module PedigreeModule
 				tmpIndNode => tmpIndNode%next
 			enddo
 
-			call dummyList%destroyLinkedList()
+			! call dummyList%destroyLinkedList()
 
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
-			enddo
+			! do i=1,this%pedigreeSize
+			! 	call this%Pedigree(i)%destroyIndividual
+			! enddo
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed
-			do i = 0, this%maxGeneration
-				call this%generations(i)%destroyLinkedList
-			enddo
-			this%generations = newGenerationList
+			! do i = 0, this%maxGeneration
+			! 	call this%generations(i)%destroyLinkedList
+			! enddo
+			! this%generations = newGenerationList
+			this%generations(0:this%maxGeneration) = newGenerationList
 
 			!
 			if (present(unknownDummysAtEnd)) then
@@ -2375,16 +2429,29 @@ module PedigreeModule
 			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
+				print *, "BUILDING GENS"
 			endif
 			pedCounter = 0
-			call this%dictionary%destroy()
-			call this%founders%destroyLinkedList()
-			call this%sireList%destroyLinkedList()
-			call this%damList%destroyLinkedList()
+			! call this%dictionary%destroy()
+			! call this%founders%destroyLinkedList()
+			! call this%sireList%destroyLinkedList()
+			! call this%damList%destroyLinkedList()
+
+			! deallocate to call destructors
+			deallocate(this%dictionary)
+			deallocate(this%founders)
+			deallocate(this%sireList)
+			deallocate(this%damList)
+
 			sizeDict  =this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
 			this%dictionary = DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
+
+			! reallocate to use again
+			allocate(this%founders)
+			allocate(this%sireList)
+			allocate(this%damList)
 			do i=0, this%maxGeneration
 				tmpIndNode => this%generations(i)%first
 				do h=1, this%generations(i)%length
@@ -2444,17 +2511,22 @@ module PedigreeModule
 					tmpIndNode => tmpIndNode%next
 				end do
 			enddo
-			do i = 0, this%maxGeneration
-				call this%generations(i)%destroyLinkedList
-			enddo
-
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
-			enddo
+			! do i = 0, this%maxGeneration
+			! 	call this%generations(i)%destroyLinkedList
+			! enddo
+			deallocate(this%generations)
+			! do i=1,this%pedigreeSize
+			! 	call this%Pedigree(i)%destroyIndividual
+			! enddo
+			
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed
-			this%generations = newGenerationList
+			allocate(this%generations(0:size(newGenerationList)))
+			this%generations(0:size(newGenerationList)) = newGenerationList
+
+
+			print *, "LOWWW",LBOUND(this%generations)
 			this%isSorted = 3
 		end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
@@ -3131,7 +3203,7 @@ module PedigreeModule
 				enddo
 			enddo
 
-			call dictionary%destroy()
+			! call dictionary%destroy()
 
 		end subroutine getMatePairsAndOffspring
 

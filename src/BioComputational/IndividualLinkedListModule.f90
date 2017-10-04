@@ -52,11 +52,11 @@ module IndividualLinkedListModule
             procedure :: list_remove
             procedure :: contains
             procedure :: writeLinkedList
-            procedure :: destroyLinkedList
+            final :: destroyLinkedList
             procedure :: convertToArray
             procedure :: convertToArrayIDs
             procedure :: getGenotypesAtPosition
-            procedure :: destroyLinkedListFinal
+            ! procedure :: destroyLinkedListFinal
             procedure :: removeIndividualsBasedOnThreshold
             procedure :: convertToListOfKnownAnimals
             generic:: write(formatted)=> writeLinkedList
@@ -90,19 +90,24 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
-        class(IndividualLinkedList),intent(inout) :: this
+        type(IndividualLinkedList),intent(inout) :: this
         type(IndividualLinkedListNode),pointer :: node
         type(individual),pointer :: tmp
         if (associated(this%first)) then
-            node => this%first
+            ! node => this%first
+            this%first => null()
+            this%last => null()
 
-            do while(associated(node))
-                call this%list_pop(tmp)
-                node => this%first
-            enddo
+            ! do while(associated(node))
+            !     ! call this%list_pop(tmp)
+            !     node => this%first
+            ! enddo
         endif
-        deallocate(this%first)
-        deallocate(this%last)
+
+        ! this%first => null()
+        ! this%last => null()
+        ! deallocate(this%first)
+        ! deallocate(this%last)
 
     end subroutine destroyLinkedList
 

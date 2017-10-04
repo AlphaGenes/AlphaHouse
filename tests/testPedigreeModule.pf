@@ -1,372 +1,380 @@
 module TestPedigreeModule
-  use pFUnit_mod
-  use PedigreeModule
-  use ISO_Fortran_env
+	use pFUnit_mod
+	use PedigreeModule
+	use ISO_Fortran_env
 #ifdef MPIACTIVE
-  use MPIUtilities
+	use MPIUtilities
 #endif
 
-  implicit none
+	implicit none
 
-  type(PedigreeHolder) :: pedigree, pedigreeUnsorted
-  contains
+	type(PedigreeHolder), allocatable :: pedigree, pedigreeUnsorted
+	contains
 
-    @before
-    subroutine initialise
-        implicit none
-        integer(int32) :: pedUnit, genUnit
+		@before
+		subroutine initialise
+			implicit none
+			integer(int32) :: pedUnit, genUnit
 
-        ! A sorted pedigree with one parent (d1) not given as individual
-        open(newunit=pedUnit, file="testPed.txt", status="unknown")
-        write(pedUnit, "(a)") "aaa 0   0"
-        write(pedUnit, "(a)") "bbb 0   0"
-        write(pedUnit, "(a)") "ccc aaa bbb"
-        write(pedUnit, "(a)") "ddd aaa 0"
-        write(pedUnit, "(a)") "eee ddd bbb"
-        write(pedUnit, "(a)") "fff ddd bbb"
-        write(pedUnit, "(a)") "ggg 0   d1"
-        write(pedUnit, "(a)") "hhh 0   d1"
-        close(pedUnit)
-        pedigree = PedigreeHolder("testPed.txt")
+			! A sorted pedigree with one parent (d1) not given as individual
+			open(newunit=pedUnit, file="testPed.txt", status="unknown")
+			write(pedUnit, "(a)") "aaa 0   0"
+			write(pedUnit, "(a)") "bbb 0   0"
+			write(pedUnit, "(a)") "ccc aaa bbb"
+			write(pedUnit, "(a)") "ddd aaa 0"
+			write(pedUnit, "(a)") "eee ddd bbb"
+			write(pedUnit, "(a)") "fff ddd bbb"
+			write(pedUnit, "(a)") "ggg 0   d1"
+			write(pedUnit, "(a)") "hhh 0   d1"
+			close(pedUnit)
 
-        open(newunit=genUnit, file="testGen.txt", status="unknown")
-        write (genUnit,'(a20,4i2)') "bbb", 0, 2, 1, 9
-        write (genUnit,'(a20,4i2)') "fff", 1, 1, 1, 1
-        close(pedUnit)
+      allocate(pedigree)
+			call PedigreeHolder(pedigree,"testPed.txt")
 
-        ! An unsorted pedigree with two parents (aaa and d1) not given as individuals
-        open(newunit=pedUnit, file="testPedUnsorted.txt", status="unknown")
-        write(pedUnit, "(a)") "ccc aaa bbb"
-        write(pedUnit, "(a)") "ggg 0   d1"
-        write(pedUnit, "(a)") "eee ddd bbb"
-        write(pedUnit, "(a)") "bbb 0   0"
-        write(pedUnit, "(a)") "fff ddd bbb"
-        write(pedUnit, "(a)") "ddd aaa 0"
-        write(pedUnit, "(a)") "hhh 0   d1"
-        close(pedUnit)
+			open(newunit=genUnit, file="testGen.txt", status="unknown")
+			write (genUnit,'(a20,4i2)') "bbb", 0, 2, 1, 9
+			write (genUnit,'(a20,4i2)') "fff", 1, 1, 1, 1
+			close(pedUnit)
 
-        
-        pedigreeUnsorted = PedigreeHolder("testPedUnsorted.txt")
-        call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
-         
-    end subroutine
+			! An unsorted pedigree with two parents (aaa and d1) not given as individuals
+			open(newunit=pedUnit, file="testPedUnsorted.txt", status="unknown")
+			write(pedUnit, "(a)") "ccc aaa bbb"
+			write(pedUnit, "(a)") "ggg 0   d1"
+			write(pedUnit, "(a)") "eee ddd bbb"
+			write(pedUnit, "(a)") "bbb 0   0"
+			write(pedUnit, "(a)") "fff ddd bbb"
+			write(pedUnit, "(a)") "ddd aaa 0"
+			write(pedUnit, "(a)") "hhh 0   d1"
+			close(pedUnit)
 
-function setUpPedigree(charIn) result (ped)
-type(PedigreeHolder):: ped
-integer:: fileUnit, mpiErr
-character(len=*):: charIn
+      allocate(pedigreeUnsorted)
+			call PedigreeHolder(pedigreeUnsorted,"testPedUnsorted.txt")
+			call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
 
-#ifdef MPIACTIVE
-if (mpiRank==0) then
-#endif
-open(newunit=fileUnit, file="testPedFile", action = "write")
+		end subroutine
 
-if (charIn == "mine") then
-  write(fileUnit, "(3(I0, x))") 1, 0, 0 
-  write(fileUnit, "(3(I0, x))") 2, 0, 0 
-  write(fileUnit, "(3(I0, x))") 3, 1, 2 
-  write(fileUnit, "(3(I0, x))") 4, 1, 2 
-  write(fileUnit, "(3(I0, x))") 5, 1, 2 
-  write(fileUnit, "(3(I0, x))") 6, 3, 2 
-  write(fileUnit, "(3(I0, x))") 7, 3, 4 
-  write(fileUnit, "(3(I0, x))") 8, 3, 4 
-  write(fileUnit, "(3(I0, x))") 9, 5, 4 
-  write(fileUnit, "(3(I0, x))") 10, 3, 6
-else if (charIn == "table2.1") then
-  write(fileUnit, "(3(I0, x))") 3, 1, 2
-  write(fileUnit, "(3(I0, x))") 4, 1, 0
-  write(fileUnit, "(3(I0, x))") 5, 4, 3
-  write(fileUnit, "(3(I0, x))") 6, 5, 2
-end if
-close(fileUnit)
-#ifdef MPIACTIVE
-end if
-call MPI_BARRIER(mpiCommunicator, mpiErr)
-#endif
-ped = PedigreeHolder("testPedFile")
-
-#ifdef MPIACTIVE
-call MPI_BARRIER(mpiCommunicator, mpiErr)
-if (mpiRank==0) then
-#endif
-open(newunit=fileUnit, file="testPedFile")
-close(fileUnit, status="delete")
-#ifdef MPIACTIVE
-end if
-#endif
-
-end function setUpPedigree
 
     @after
-    subroutine Uninit
-      integer(int32) :: pedUnit
-      logical:: exists
+		subroutine Uninit
+			integer(int32) :: pedUnit
+			logical:: exists
 
-      call pedigree%destroyPedigree
-      call pedigreeUnsorted%destroyPedigree
+			! call pedigree%destroyPedigree
+			! call pedigreeUnsorted%destroyPedigree
+      deallocate(pedigree)
+      deallocate(pedigreeUnsorted)
+			open(newunit=pedUnit, file="testPed.txt", status="old")
+			close(pedUnit, status="delete")
+			open(newunit=pedUnit, file="testPedUnsorted.txt", status="old")
+			close(pedUnit, status="delete")
 
-      open(newunit=pedUnit, file="testPed.txt", status="old")
-      close(pedUnit, status="delete")
-      open(newunit=pedUnit, file="testPedUnsorted.txt", status="old")
-      close(pedUnit, status="delete")
-
-      inquire(file="testGen.txt", exist = exists)
-      if (exists) then
-        open(100, file="testGen.txt")
-        close(100, status="delete")
-      end if
-    end subroutine
-
-    @test
-    subroutine testGetCorrelationNoInbreeding()
-    real(real64), dimension(9,9):: expected
-    real(real64), dimension(9,9):: gotten
-    integer:: i
-
-    !The pedigree is
-    ! ID, sire, dam
-    ! 9 0 0
-    ! 1 0 0 
-    ! 2 0 0
-    ! 3 1 2 
-    ! 4 1 0
-    ! 5 4 2
-    ! 6 4 2
-    ! 7 0 9
-    ! 8 0 9
-
-    expected = 0
-    !The expected correlation (with no inbreeding) is as follows
-    expected(1,1) = 2.0_real64+ .25_real64+1.0_real64/3_real64
-    expected(1,2) = 0.25_real64
-    expected(1,4) = -0.5_real64
-    expected(1,5) = -2.0_real64/3.0_real64
-
-    expected(2,1) = 0.25_real64
-    expected(2,2) = 2.0+0.75
-    expected(2,4) =-0.5_real64
-    expected(2,5) =0.5_real64
-    expected(2,8) = -0.5_real64
-    expected(2,9) = -0.5_real64
-
-    expected(4,1) = -0.5_real64
-    expected(4,2) = -0.5_real64
-    expected(4,4) = 1.0_real64
-    
-    expected(5,1) = -2.0_real64/3.0_real64
-    expected(5,2) = 0.5_real64
-    expected(5,5) = 4.0_real64/3.0 +0.5_real64 
-    expected(5,8) = -0.5_real64
-    expected(5,9) = -0.5_real64
-
-    expected(8,2) = -0.5_real64
-    expected(8,5) = -0.5_real64
-    expected(8,8) = 1.0_real64
-
-    expected(9,2) = -0.5_real64
-    expected(9,5) = -0.5_real64
-    expected(9,9) = 1.0_real64
-
-    expected(6,6) = 4.0_real64/3.0_real64
-    expected(6,3) = -2.0_real64/3.0_real64
-    
-    expected(7,7) = 4.0_real64/3.0_real64
-    expected(7,3) = -2.0_real64/3.0_real64
-    
-    expected(3,6) = -2.0_real64/3.0_real64
-    expected(3,7) = -2.0_real64/3.0_real64
-    expected(3,3) = 8.0_real64/3.0_real64
+			inquire(file="testGen.txt", exist = exists)
+			if (exists) then
+				open(100, file="testGen.txt")
+				close(100, status="delete")
+			end if
+		end subroutine
 
 
-    call pedigree%sortPedigreeAndOverwrite(1)
+		function setUpPedigree(charIn) result (ped)
+			type(PedigreeHolder) :: ped
+			integer:: fileUnit, mpiErr
+			character(len=*):: charIn
 
-    gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
+#ifdef MPIACTIVE
+			if (mpiRank==0) then
+#endif
+				open(newunit=fileUnit, file="testPedFile", action = "write")
 
-    @assertEqual(expected, gotten, 1E-14_real64)
+				if (charIn == "mine") then
+					write(fileUnit, "(3(I0, x))") 1, 0, 0
+					write(fileUnit, "(3(I0, x))") 2, 0, 0
+					write(fileUnit, "(3(I0, x))") 3, 1, 2
+					write(fileUnit, "(3(I0, x))") 4, 1, 2
+					write(fileUnit, "(3(I0, x))") 5, 1, 2
+					write(fileUnit, "(3(I0, x))") 6, 3, 2
+					write(fileUnit, "(3(I0, x))") 7, 3, 4
+					write(fileUnit, "(3(I0, x))") 8, 3, 4
+					write(fileUnit, "(3(I0, x))") 9, 5, 4
+					write(fileUnit, "(3(I0, x))") 10, 3, 6
+				else if (charIn == "table2.1") then
+					write(fileUnit, "(3(I0, x))") 3, 1, 2
+					write(fileUnit, "(3(I0, x))") 4, 1, 0
+					write(fileUnit, "(3(I0, x))") 5, 4, 3
+					write(fileUnit, "(3(I0, x))") 6, 5, 2
+				end if
+				close(fileUnit)
+#ifdef MPIACTIVE
+			end if
+			call MPI_BARRIER(mpiCommunicator, mpiErr)
+#endif
+			call PedigreeHolder(ped,"testPedFile")
 
-    end subroutine testGetCorrelationNoInbreeding
+#ifdef MPIACTIVE
+			call MPI_BARRIER(mpiCommunicator, mpiErr)
+			if (mpiRank==0) then
+#endif
+				open(newunit=fileUnit, file="testPedFile")
+				close(fileUnit, status="delete")
+#ifdef MPIACTIVE
+			end if
+#endif
 
-    @test
-    subroutine testReadAndSort
-        implicit none
-         @assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
-    end subroutine testReadAndSort
+		end function setUpPedigree
 
 
 
-    @test
-    subroutine testDestroyEmpty
-        implicit none
-           type(pedigreeHOlder) :: empty
+		@test
+		subroutine testGetCorrelationNoInbreeding()
+			real(real64), dimension(9,9):: expected
+			real(real64), dimension(9,9):: gotten
+			integer:: i
 
-        empty = PedigreeHolder()
+			!The pedigree is
+			! ID, sire, dam
+			! 9 0 0
+			! 1 0 0
+			! 2 0 0
+			! 3 1 2
+			! 4 1 0
+			! 5 4 2
+			! 6 4 2
+			! 7 0 9
+			! 8 0 9
 
-        call empty%destroyPedigree()
-    end subroutine testDestroyEmpty
+			expected = 0
+			!The expected correlation (with no inbreeding) is as follows
+			expected(1,1) = 2.0_real64+ .25_real64+1.0_real64/3_real64
+			expected(1,2) = 0.25_real64
+			expected(1,4) = -0.5_real64
+			expected(1,5) = -2.0_real64/3.0_real64
+
+			expected(2,1) = 0.25_real64
+			expected(2,2) = 2.0+0.75
+			expected(2,4) =-0.5_real64
+			expected(2,5) =0.5_real64
+			expected(2,8) = -0.5_real64
+			expected(2,9) = -0.5_real64
+
+			expected(4,1) = -0.5_real64
+			expected(4,2) = -0.5_real64
+			expected(4,4) = 1.0_real64
+
+			expected(5,1) = -2.0_real64/3.0_real64
+			expected(5,2) = 0.5_real64
+			expected(5,5) = 4.0_real64/3.0 +0.5_real64
+			expected(5,8) = -0.5_real64
+			expected(5,9) = -0.5_real64
+
+			expected(8,2) = -0.5_real64
+			expected(8,5) = -0.5_real64
+			expected(8,8) = 1.0_real64
+
+			expected(9,2) = -0.5_real64
+			expected(9,5) = -0.5_real64
+			expected(9,9) = 1.0_real64
+
+			expected(6,6) = 4.0_real64/3.0_real64
+			expected(6,3) = -2.0_real64/3.0_real64
+
+			expected(7,7) = 4.0_real64/3.0_real64
+			expected(7,3) = -2.0_real64/3.0_real64
+
+			expected(3,6) = -2.0_real64/3.0_real64
+			expected(3,7) = -2.0_real64/3.0_real64
+			expected(3,3) = 8.0_real64/3.0_real64
 
 
-    @test
-    subroutine testDummys
-        implicit none
-        integer :: tmp,i
-        tmp = pedigree%dictionary%getValue("d1")
-         @assertFalse(tmp == DICT_NULL)
-         @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
-    end subroutine testDummys
+			call pedigree%sortPedigreeAndOverwrite(1)
+
+			gotten = pedigree%calculatePedigreeCorrelationNoInbreeding()
+
+			@assertEqual(expected, gotten, 1E-14_real64)
+
+		end subroutine testGetCorrelationNoInbreeding
+
+		@test
+		subroutine testReadAndSort
+			implicit none
+			@assertEqual(pedigree%Pedigree(1)%OriginalID,"aaa")
+		end subroutine testReadAndSort
 
 
-      @test
 
-    subroutine testHDPed
-        implicit none
-        integer :: tmp,i
-        type(PedigreeHolder) :: hdPed
-        tmp = pedigree%dictionary%getValue("bbb")
-        call pedigree%setAnimalAsHD(tmp)
-        tmp = pedigree%dictionary%getValue("fff")
-        call pedigree%setAnimalAsHD(tmp)
-        hdPed = pedigree%getHDPedigree()
-        @assertEqual(hdPed%pedigreeSize,4)
-        @assertEqual(hdPed%nHd,2)
-        !  @assertFalse(tmp == DICT_NULL)
-        !  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
-    end subroutine testHDPed
+		! @test
+		! subroutine testDestroyEmpty
+		!     implicit none
+		!        type(pedigreeHOlder) :: empty
+
+		!     empty = PedigreeHolder()
+
+		!     call empty%destroyPedigree()
+		! end subroutine testDestroyEmpty
 
 
-    @test
-    subroutine testRemoveOffspring
-        implicit none
-        integer :: tmp,i, tmp2, tmp3
-        tmp = pedigree%dictionary%getValue("aaa")
-        tmp2 = pedigree%dictionary%getValue("ddd")
-        tmp3 = pedigree%dictionary%getValue("ccc")
-        call pedigree%pedigree(tmp)%removeOffspring(pedigree%pedigree(tmp2))
-         @assertEqual(1,pedigree%pedigree(tmp)%nOffs)
-          @assertEqualUserDefined(pedigree%pedigree(tmp)%Offsprings(1)%p,pedigree%pedigree(tmp3))
-    end subroutine testRemoveOffspring
+		@test
+		subroutine testDummys
+			implicit none
+			integer :: tmp,i
+			tmp = pedigree%dictionary%getValue("d1")
+			@assertFalse(tmp == DICT_NULL)
+			@assertEqual(2,pedigree%pedigree(tmp)%nOffs)
+		end subroutine testDummys
 
-    @test
-    subroutine testGenos
-        implicit none
-        integer :: tmp1, tmp,i
-        integer(kind=1), dimension(:), allocatable :: array
-        integer(kind=1), dimension(4) :: test1
-        integer(kind=1), dimension(4) :: test2
 
-        test1 = [ 0,2,1,9 ]
-        test2 = [ 1,1,1,1 ] 
-        tmp1 = pedigree%dictionary%getValue("bbb")
-        @assertFalse(tmp1 == DICT_NULL)
-        tmp = pedigree%genotypeDictionary%getValue("bbb")
-        @assertFalse(tmp == DICT_NULL)
-        tmp = pedigree%genotypeDictionary%getValue("fff")
-        @assertFalse(tmp == DICT_NULL)
-        array = pedigree%pedigree(tmp1)%individualGenotype%toIntegerArray()
-        print *, array
-        print *, test1
-        @assertEqualUserDefined(array, test1)
-        @assertEqual(pedigree%pedigree(tmp1)%individualGenotype%firstHet(),3)
-        call pedigree%pedigree(tmp1)%individualGenotype%setGenotype(3,2)
-        @assertEqual(pedigree%pedigree(tmp1)%individualGenotype%getGenotype(3),1)
-        array = pedigree%pedigree(tmp)%individualGenotype%toIntegerArray()
-         @assertEqualUserDefined(array, test1)
-    end subroutine testGenos
+		@test
 
-    @test
-    subroutine testSorting
-      integer :: tmp,tmp2, i
-      call pedigree%sortPedigreeAndOverwrite
-       tmp = pedigree%dictionary%getValue("ccc")
-       tmp2 = pedigree%dictionary%getValue("aaa")
-      @assertEqualUserDefined(pedigree%pedigree(tmp)%sirePointer,pedigree%pedigree(tmp2))
-!      do i=1, pedigree%pedigree(tmp2)%nOffs
-!        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
-!      enddo
-      @assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
+		subroutine testHDPed
+			implicit none
+			integer :: tmp,i
+			type(PedigreeHolder) :: hdPed
+			tmp = pedigree%dictionary%getValue("bbb")
+			call pedigree%setAnimalAsHD(tmp)
+			tmp = pedigree%dictionary%getValue("fff")
+			call pedigree%setAnimalAsHD(tmp)
+			call pedigree%getHDPedigree(hdPed)
+			@assertEqual(hdPed%pedigreeSize,4)
+			@assertEqual(hdPed%nHd,2)
+			!  @assertFalse(tmp == DICT_NULL)
+			!  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
+		end subroutine testHDPed
 
-    end subroutine testSorting
 
-    @test
-    subroutine testMakeRecodedPedigreeArray
-      implicit none
-      integer(int32) :: i
-      type(recodedPedigreeArray) :: recPed
-      type(recodedPedigreeArray) :: expRecPed
+		@test
+		subroutine testRemoveOffspring
+			implicit none
+			integer :: tmp,i, tmp2, tmp3
+			tmp = pedigree%dictionary%getValue("aaa")
+			tmp2 = pedigree%dictionary%getValue("ddd")
+			tmp3 = pedigree%dictionary%getValue("ccc")
+			call pedigree%pedigree(tmp)%removeOffspring(pedigree%pedigree(tmp2))
+			@assertEqual(1,pedigree%pedigree(tmp)%nOffs)
+			@assertEqualUserDefined(pedigree%pedigree(tmp)%Offsprings(1)%p,pedigree%pedigree(tmp3))
+		end subroutine testRemoveOffspring
 
-      call pedigree%makeRecodedPedigreeArray(recPed)
-      call expRecPed%init(n=pedigree%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"001", "d1", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
-      expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
-      expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
-      expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
-      expRecPed%id(3,0:)       = [  0,     0,     0,        0,      0,         0,        0,     2,     3,     4,     4,     2,     2]
-      do i = 0, pedigree%pedigreeSize
-        ! print*, recPed%originalId(i), recPed%generation(i), recPed%id(1:3,i)
-        ! print*, expRecPed%originalId(i), expRecPed%generation(i), expRecPed%id(1:3,i)
-        @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
-        @assertEqual(expRecPed%generation(i), recPed%generation(i))
-        @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
-      end do
-      call recPed%destroy()
-      call expRecPed%destroy()
+		@test
+		subroutine testGenos
+			implicit none
+			integer :: tmp1, tmp,i
+			integer(kind=1), dimension(:), allocatable :: array
+			integer(kind=1), dimension(4) :: test1
+			integer(kind=1), dimension(4) :: test2
 
-      call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
-      call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-      expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"001", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
-      expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
-      expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
-      expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]
-      expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     3,     5,     3,     1,     1]
-      do i = 0, pedigree%pedigreeSize
-         @assertEqual(expRecPed%originalId(i), recPed%originalId(i))
-         @assertEqual(expRecPed%generation(i), recPed%generation(i))
-         @assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
-         
-      end do
-    end subroutine
+			test1 = [ 0,2,1,9 ]
+			test2 = [ 1,1,1,1 ]
+			tmp1 = pedigree%dictionary%getValue("bbb")
+			@assertFalse(tmp1 == DICT_NULL)
+			tmp = pedigree%genotypeDictionary%getValue("bbb")
+			@assertFalse(tmp == DICT_NULL)
+			tmp = pedigree%genotypeDictionary%getValue("fff")
+			@assertFalse(tmp == DICT_NULL)
+			array = pedigree%pedigree(tmp1)%individualGenotype%toIntegerArray()
+			print *, array
+			print *, test1
+			@assertEqualUserDefined(array, test1)
+			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%firstHet(),3)
+			call pedigree%pedigree(tmp1)%individualGenotype%setGenotype(3,2)
+			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%getGenotype(3),1)
+			array = pedigree%pedigree(tmp)%individualGenotype%toIntegerArray()
+			@assertEqualUserDefined(array, test1)
+		end subroutine testGenos
 
-@test
-subroutine testAddParentsToList()
-use MyLinkedList
-type(PedigreeHolder):: ped
-type(MyLL):: LL
-integer:: expected
-real(real64), dimension(10,10):: values
+		@test
+		subroutine testSorting
+			integer :: tmp,tmp2, i
+			call pedigree%sortPedigreeAndOverwrite
+			tmp = pedigree%dictionary%getValue("ccc")
+			tmp2 = pedigree%dictionary%getValue("aaa")
+			@assertEqualUserDefined(pedigree%pedigree(tmp)%sirePointer,pedigree%pedigree(tmp2))
+			!      do i=1, pedigree%pedigree(tmp2)%nOffs
+			!        print *, pedigree%pedigree(tmp2)%Offsprings(i)%p%originalID
+			!      enddo
+			@assertEqualUserDefined(pedigree%pedigree(tmp),pedigree%pedigree(tmp2)%Offsprings(1)%p)
 
-ped = setUpPedigree("mine")
+		end subroutine testSorting
 
-values(3,3) =1
-values(4,4) = 1
+		@test
+		subroutine testMakeRecodedPedigreeArray
+			implicit none
+			integer(int32) :: i
+			type(recodedPedigreeArray) :: recPed
+			type(recodedPedigreeArray) :: expRecPed
 
-call addSireDamToListAndUpdateValues(LL, ped%pedigree(4), values, 4)
+			call pedigree%makeRecodedPedigreeArray(recPed)
+			call expRecPed%init(n=pedigree%pedigreeSize)
+			expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"001", "d1", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+			expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
+			expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
+			expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
+			expRecPed%id(3,0:)       = [  0,     0,     0,        0,      0,         0,        0,     2,     3,     4,     4,     2,     2]
+			do i = 0, pedigree%pedigreeSize
+				! print*, recPed%originalId(i), recPed%generation(i), recPed%id(1:3,i)
+				! print*, expRecPed%originalId(i), expRecPed%generation(i), expRecPed%id(1:3,i)
+				@assertEqual(expRecPed%originalId(i), recPed%originalId(i))
+				@assertEqual(expRecPed%generation(i), recPed%generation(i))
+				@assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
+			end do
+			call recPed%destroy()
+			call expRecPed%destroy()
 
-@assertEqual(values(4,1), 0.5_real64, 1E-15_real64)
+			call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
+			call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
+			expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"001", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
+			expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
+			expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
+			expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]
+			expRecPed%id(3,0:)       = [  0,     0,        0,       0,        0,         0,        0,     1,     3,     5,     3,     1,     1]
+			do i = 0, pedigree%pedigreeSize
+				@assertEqual(expRecPed%originalId(i), recPed%originalId(i))
+				@assertEqual(expRecPed%generation(i), recPed%generation(i))
+				@assertEqual(expRecPed%id(1:3,i), recPed%id(1:3,i))
 
-@assertEqual(values(4,2), 0.5_real64, 1E-15_real64)
+			end do
+		end subroutine
 
-expected = 2
+		@test
+		subroutine testAddParentsToList()
+			use SortedIntegerLinkedListModule
+			type(PedigreeHolder):: ped
+			type(SortedIntegerLinkedList):: LL
+			integer:: expected
+			real(real64), dimension(10,10):: values
 
-@assertEqual(expected, LL%first%item)
-expected = 1
+			ped = setUpPedigree("mine")
 
-@assertEqual(expected, LL%first%next%item)
+			values(3,3) =1
+			values(4,4) = 1
 
-end subroutine
-    ! @test
-    ! subroutine testAddOffspring
-    !     type(individualPointerContainer), allocatable :: Offsprings(:)
-    !     type(Individual) :: tmp
-    !     call table(1)%addOffspring(table(2))
-    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
-    !     call table(1)%getOffsprings(Offsprings)
-    !     tmp = Offsprings(1)%p
-    !     @assertEqualUserDefined(tmp, table(2))
-    ! end subroutine testAddOffspring
+			call addSireDamToListAndUpdateValues(LL, ped%pedigree(4), values, 4)
 
-    ! @test
-    ! subroutine testBuildOffspring
-    !     call BuildOffspringInfortmation(table)
-    !     @assertEqual(table(1)%GetNumberOffsprings(), 1)
-    !     @assertEqual(table(2)%GetNumberOffsprings(), 2)
-    ! end subroutine testBuildOffspring
+			@assertEqual(values(4,1), 0.5_real64, 1E-15_real64)
+
+			@assertEqual(values(4,2), 0.5_real64, 1E-15_real64)
+
+			expected = 2
+
+			@assertEqual(expected, LL%first%item)
+			expected = 1
+
+			@assertEqual(expected, LL%first%next%item)
+
+		end subroutine
+		! @test
+		! subroutine testAddOffspring
+		!     type(individualPointerContainer), allocatable :: Offsprings(:)
+		!     type(Individual) :: tmp
+		!     call table(1)%addOffspring(table(2))
+		!     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+		!     call table(1)%getOffsprings(Offsprings)
+		!     tmp = Offsprings(1)%p
+		!     @assertEqualUserDefined(tmp, table(2))
+		! end subroutine testAddOffspring
+
+		! @test
+		! subroutine testBuildOffspring
+		!     call BuildOffspringInfortmation(table)
+		!     @assertEqual(table(1)%GetNumberOffsprings(), 1)
+		!     @assertEqual(table(2)%GetNumberOffsprings(), 2)
+		! end subroutine testBuildOffspring
 end module TestPedigreeModule
+

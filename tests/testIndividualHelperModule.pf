@@ -6,7 +6,7 @@ module TestIndividualHelperModule
 
   implicit none
 
-  type(PedigreeHolder) :: pedigree
+  type(PedigreeHolder), allocatable :: pedigree
   contains
 
   @before
@@ -28,16 +28,21 @@ module TestIndividualHelperModule
         write(pedUnit, "(a)") "iii fff ccc"
         close(pedUnit)
 
-        pedigree = PedigreeHolder("testPed.txt")
+        allocate(pedigree)
+        call PedigreeHolder(pedigree,"testPed.txt")
+
+        print *,"BALLS",pedigree%dictionary%getValue("fff")
 
     end subroutine
 
    @after
     subroutine Uninit
       integer(int32) :: pedUnit
-      call pedigree%destroyPedigree
-      open(newunit=pedUnit, file="testPed.txt", status="old")
-      close(pedUnit, status="delete")
+        print *, "test done"
+        deallocate(pedigree)
+    !   call pedigree%destroyPedigree
+    !   open(newunit=pedUnit, file="testPed.txt", status="old")
+    !   close(pedUnit, status="delete")
     end subroutine
 
     @test
@@ -49,6 +54,7 @@ module TestIndividualHelperModule
 
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
+
         ret = getFullSibs(tmp)
         @assertEqual(ret%length,1)
         tmp => ret%list_get_nth(1)

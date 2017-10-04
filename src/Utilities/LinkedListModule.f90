@@ -11,7 +11,7 @@ type LIST_DATA
 
     contains
 
-        procedure :: clearData
+        final :: clearData
 end type LIST_DATA
 
 
@@ -20,6 +20,9 @@ end type LIST_DATA
 type LinkedList
     type(LinkedList), pointer :: next
     type(LIST_DATA)            :: data
+
+    contains
+        final :: list_destroy
 end type LinkedList
 
 interface operator ( == )
@@ -72,6 +75,7 @@ function copyLinkedList(this) result(list)
 
     if (associated(this)) then
         allocate(list)
+        ! allocate(list%data)
         list%next => null()
         list%data%key = this%data%key
         list%data%value = this%data%value
@@ -103,7 +107,7 @@ end function LIST_DATAEquals
 
 
 subroutine clearData(d)
-    class(LIST_DATA):: d
+    type(LIST_DATA):: d
 
     if (allocated(d%key)) then
         deallocate(d%key)
@@ -140,23 +144,26 @@ end subroutine list_create
 !     pointers within the data that need deallocation
 !
 subroutine list_destroy( list )
-    type(LinkedList), pointer  :: list
+    type(LinkedList)  :: list
 
-    type(LinkedList), pointer  :: current
-    type(LinkedList), pointer  :: next
-
-    current => list
-    if (.not. associated(current%next)) then
-        call current%data%clearData()
-        deallocate(current)
-    else 
-        do while ( associated(current) )
-            next => current%next
-            call current%data%clearData()
-            deallocate( current )
-            current => next
-        enddo
-    endif
+    ! type(LinkedList), pointer  :: current
+    ! type(LinkedList), pointer  :: next
+    
+    ! if (allocated(list%data)) then
+    !     deallocate(list%data)
+    ! endif
+    ! current => list
+    ! if (.not. associated(current%next)) then
+    !     ! call current%data%clearData()
+    !     deallocate(current)
+    ! else 
+    !     do while ( associated(current) )
+    !         next => current%next
+    !         ! call current%data%clearData()
+    !         deallocate( current )
+    !         current => next
+    !     enddo
+    ! endif
     
 end subroutine list_destroy
 

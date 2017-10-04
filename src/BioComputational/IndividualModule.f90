@@ -111,7 +111,7 @@ module IndividualModule
             procedure :: GetOffsprings
             procedure :: AddOffspring
             procedure :: setGender
-            procedure :: destroyIndividual
+            final :: destroyIndividual
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
@@ -231,7 +231,7 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
-        class(Individual) :: this
+        type(Individual) :: this
         if (allocated(this%offsprings)) then
             deallocate(this%offsprings)
         endif
@@ -306,7 +306,6 @@ contains
             deallocate(this%MyPhaseAcc)
         endif
 
-
         if (allocated(this%MyPhaseCorrect)) then
 
             deallocate(this%MyPhaseCorrect)
@@ -314,7 +313,6 @@ contains
         if (allocated(this%inconsistencies)) then
             deallocate(this%inconsistencies)
         endif
-
 
     end subroutine destroyIndividual
 

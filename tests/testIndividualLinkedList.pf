@@ -11,7 +11,7 @@ module TestIndividualLinkedList
 
   implicit none
 
-  type(IndividualLinkedList) :: ll  
+  type(IndividualLinkedList),allocatable :: ll  
   type(individual), target :: testIndiv1, testIndiv2
   contains
 
@@ -19,6 +19,7 @@ module TestIndividualLinkedList
     subroutine initialise
         
         implicit none
+        allocate(ll)
         testIndiv1 = Individual("me","mum","dad",1)
         testIndiv2 = Individual("me2","mum2","dad2",2)
         
@@ -26,7 +27,9 @@ module TestIndividualLinkedList
 
    @after
     subroutine Uninit
-      call ll%destroyLinkedList
+    !   call ll%destroyLinkedList
+        deallocate(ll)
+        print *, "test done"
     end subroutine
 
     @test

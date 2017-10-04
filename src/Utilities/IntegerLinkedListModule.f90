@@ -41,7 +41,7 @@ module IntegerLinkedListModule
             procedure :: list_remove
             procedure :: contains
             procedure :: writeLinkedList
-            procedure :: destroyLinkedList
+            final :: destroyLinkedList
             procedure :: convertToArray
             generic:: write(formatted)=> writeLinkedList
 
@@ -51,6 +51,9 @@ module IntegerLinkedListModule
             integer :: item
             type(IntegerLinkedListNode),pointer :: next =>null()
             type(IntegerLinkedListNode),pointer :: previous =>null()
+            contains
+
+            final :: destroyIntegerLinkedListNode
     end type IntegerLinkedListNode
 
 
@@ -62,23 +65,40 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
-        class(IntegerLinkedList),intent(inout) :: this
-        type(IntegerLinkedListNode),pointer :: node
-        integer,pointer :: tmp
+        type(IntegerLinkedList) :: this
         if (associated(this%first)) then
-            node => this%first
-
-            do while(associated(node))
-                call this%list_pop(tmp)
-                node => this%first
-            enddo
+            ! node => this%first
+            this%first => null()
+            this%last => null()
         endif
-        deallocate(this%first)
-        deallocate(this%last)
+        ! type(IntegerLinkedList),intent(inout) :: this
+        ! type(IntegerLinkedListNode),pointer :: node
+        ! integer,pointer :: tmp
+        ! if (associated(this%first)) then
+        !     node => this%first
+
+        !     do while(associated(node))
+        !         call this%list_pop(tmp)
+        !         node => this%first
+        !     enddo
+        ! endif
+
+        ! this%first => null()
+        ! this%last 
+        ! deallocate(this%first)
+        ! deallocate(this%last)
         ! deallocate(tmp)
 
     end subroutine destroyLinkedList
 
+
+    subroutine destroyIntegerLinkedListNode(node)
+        type(IntegerLinkedListNode) :: node
+
+        node%next => null()
+        node%previous => null()
+        
+    end subroutine destroyIntegerLinkedListNode
     !---------------------------------------------------------------------------
     !> @brief output for Linked List
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
