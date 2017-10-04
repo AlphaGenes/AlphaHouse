@@ -1654,7 +1654,7 @@ module PedigreeModule
 
 			this%nGenotyped = 0
 			call this%genotypeDictionary%destroy()
-			this%genotypeMap = 0
+			deallocate(this%genotypeMap)
 			
 
 
