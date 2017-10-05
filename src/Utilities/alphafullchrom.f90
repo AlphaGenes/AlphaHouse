@@ -161,6 +161,7 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 					! first chrom should already be read in
 			! if (i /= 1) then
+			print *,"using ",trim(chromPaths(i))//"genotypes.txt"
 				call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),1)
 			! endif
 
