@@ -198,13 +198,13 @@ contains
 					
 					! print *, "ARRAY",array
 					call ped%addGenotypeInformationFromArray(array,1)
-					deallocate(array)
 				end block
 			endif
 			do p=1,ped%pedigreeSize-ped%nDummys
 				write(outChrF,fmt) ped%pedigree(p)%originalId,array
 			end do
 			close(outChrF)
+			deallocate(array)
 		enddo
 
 		call dict%destroy()
