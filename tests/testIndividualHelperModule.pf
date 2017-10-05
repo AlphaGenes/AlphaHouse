@@ -95,6 +95,10 @@ module TestIndividualHelperModule
         write(*,*) "deleting out.txt"
         close(1, status="delete")
 
+
+        print *, "HERE1",ret%convertToArrayOriginalIDs()
+
+
         @assertEqual(ret%length,3)
         @assertTrue(ret%contains(tmp2))
         @assertTrue(ret%contains(tmp3))

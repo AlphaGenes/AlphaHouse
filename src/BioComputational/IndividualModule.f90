@@ -95,6 +95,7 @@ module IndividualModule
 
 
         contains
+            procedure :: initIndividual
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
             procedure :: isGenotypedNonMissing
@@ -176,8 +177,8 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps, probabilites) result (this)
-        type(Individual) :: this
+    subroutine initIndividual(this, originalID,sireIDIn,damIDIn, id, generation,gender, nsnps, probabilites)
+        class(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
@@ -209,9 +210,9 @@ contains
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
                 allocate(this%inconsistencies(nsnps))
-                this%individualGenotype = newGenotypeMissing(nsnps)
-                this%individualPhase(1) = newHaplotypeMissing(nsnps)
-                this%individualPhase(2) = newHaplotypeMissing(nsnps)
+                call this%individualGenotype%newGenotypeMissing(nsnps)
+                call this%individualPhase(1)%newHaplotypeMissing(nsnps)
+                call this%individualPhase(2)%newHaplotypeMissing(nsnps)
                 this%inconsistencies =  0
             endif
 
@@ -223,7 +224,7 @@ contains
 
 
 
-    end function initIndividual
+    end subroutine initIndividual
 
      !---------------------------------------------------------------------------
     !> @brief Deallocates individual object
@@ -232,15 +233,18 @@ contains
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
         type(Individual) :: this
+
         if (allocated(this%offsprings)) then
             deallocate(this%offsprings)
         endif
+
 
         if (allocated(this%originalId)) then
             deallocate(this%originalID)
             deallocate(this%sireID)
             deallocate(this%damID)
         endif
+
         if (allocated(this%referAllele)) then
             deallocate(this%referAllele)
             deallocate(this%alterAllele)
@@ -249,18 +253,18 @@ contains
         if (allocated(this%seg)) then
             deallocate(this%seg)
         endif
+
         if (allocated(this%individualPhase)) then
             deallocate(this%individualPhase)
         endif
+
         if (allocated(this%individualGenotype)) then
             deallocate(this%individualGenotype)
         endif
 
-
         if (allocated(this%genotypeProbabilities)) then
             deallocate(this%genotypeProbabilities)
         endif
-
 
          if (allocated(this%phaseProbabilities)) then
             deallocate(this%phaseProbabilities)
@@ -1141,11 +1145,17 @@ contains
         if (present(lockIn)) then
 
             if (lockIn) then
-                this%individualGenotype = Genotype(Geno,lock=1)
+                call this%individualGenotype%Genotype(Geno,lock=1)
                 return
             endif
-        endif 
-        this%individualGenotype = Genotype(Geno)
+        endif
+
+        if (allocated(this%individualGenotype)) then
+            deallocate(this%individualGenotype)
+            allocate(this%individualGenotype)
+        endif
+
+        call this%individualGenotype%Genotype(Geno)
     end subroutine setGenotypeArray
 
 
@@ -1179,7 +1189,7 @@ contains
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
 
-        this%individualGenotypeSubset = Genotype(geno)
+        call this%individualGenotypeSubset%Genotype(geno)
 
     end subroutine setGenotypeArraySubset
 
@@ -1197,7 +1207,7 @@ contains
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
 
         !TODO: Should we be checking that genotype is set and if not set it to missing?
-        this%individualPhase(hap) = Haplotype(phase)
+        call this%individualPhase(hap)%Haplotype(phase)
     end subroutine setPhaseArray
 
 
@@ -1214,7 +1224,7 @@ contains
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
                 
 
-        this%individualPhaseSubset(hap) = Haplotype(phase)
+        call this%individualPhaseSubset(hap)%Haplotype(phase)
 
     end subroutine setPhaseArraySubset
 
@@ -1234,8 +1244,8 @@ contains
         if (.not. allocated(this%individualPhase)) then
             allocate(this%individualPhase(2))
         endif
-        this%individualPhase(1) = Haplotype(nSnp)
-        this%individualPhase(2) = Haplotype(nSnp)
+        call this%individualPhase(1)%Haplotype(nSnp)
+        call this%individualPhase(2)%Haplotype(nSnp)
     end subroutine initPhaseArrays
 
 
@@ -1249,7 +1259,7 @@ contains
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
-        this%individualGenotype = Genotype(nSnp)
+        call this%individualGenotype%Genotype(nSnp)
     end subroutine initGenotype
 
 
@@ -1534,9 +1544,9 @@ contains
         allocate(this%ParentInferredSwitchCount(2))
         allocate(this%ParentalHaplotypesFull(2,nSnpAll))
         allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
-        this%individualGenotypeSubset = newGenotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(1) = newHaplotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(2) = newHaplotypeMissing(nSnpSubset)
+        call this%individualGenotypeSubset%newGenotypeMissing(nSnpSubset)
+        call this%individualPhaseSubset(1)%newHaplotypeMissing(nSnpSubset)
+        call this%individualPhaseSubset(2)%newHaplotypeMissing(nSnpSubset)
         this%ParentalHaplotypes = MissingPlantArrayCode
         this%StrandBreakArray = 0
         this%ParentInferredSwitchCount = 0

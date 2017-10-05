@@ -231,7 +231,7 @@ contains
 		curChromSnpCount = 0
 		allocate(nsnps(LARGECHROMNUMBER))
 		nsnps = 0
-		dict = DictStructure()
+		call dict%DictStructure()
 		maxSnps = countLines(bimFile)
 
 		open(newUnit=unit, file=bimFile, status='old')

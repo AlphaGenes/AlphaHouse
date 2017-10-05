@@ -27,6 +27,7 @@ module IndividualLinkedListModule
     use iso_fortran_env
     use individualModule
 
+    implicit none
 
     abstract interface
 
@@ -58,6 +59,7 @@ module IndividualLinkedListModule
             procedure :: getGenotypesAtPosition
             ! procedure :: destroyLinkedListFinal
             procedure :: removeIndividualsBasedOnThreshold
+            procedure :: convertToArrayOriginalIDs
             procedure :: convertToListOfKnownAnimals
             generic:: write(formatted)=> writeLinkedList
 
@@ -91,50 +93,60 @@ contains
     !---------------------------------------------------------------------------
     subroutine destroyLinkedList(this)
         type(IndividualLinkedList),intent(inout) :: this
+        
         type(IndividualLinkedListNode),pointer :: node
-        type(individual),pointer :: tmp
-        if (associated(this%first)) then
-            ! node => this%first
-            this%first => null()
-            this%last => null()
 
-            ! do while(associated(node))
-            !     ! call this%list_pop(tmp)
-            !     node => this%first
-            ! enddo
-        endif
+        do while (associated(this%first))
+            
+            deallocate(this%first%previous)
+            this%first%previous => null()
+            this%first => this%first%next
 
-        ! this%first => null()
-        ! this%last => null()
+            
+            if ( associated(this%first)) then
+
+                if (.not. associated(this%first%next)) then
+                    this%first%next => null()
+                endif
+            endif
+        end do
+
+
+
+        ! this%first%next => null()
+        !  this%first%previous => null()
+        this%length = 0 
+        this%first => null()
+        this%last => null()
         ! deallocate(this%first)
         ! deallocate(this%last)
 
     end subroutine destroyLinkedList
 
 
-        !---------------------------------------------------------------------------
-    !> @brief Destructor for linked list, note that data set is deallocated as well
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    subroutine destroyLinkedListFinal(this)
-        class(IndividualLinkedList),intent(inout) :: this
-        type(IndividualLinkedListNode),pointer :: node
-        type(individual),pointer :: tmp
-        if (associated(this%first)) then
-            node => this%first
+    !     !---------------------------------------------------------------------------
+    ! !> @brief Destructor for linked list, note that data set is deallocated as well
+    ! !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    ! !> @date    October 26, 2016
+    ! !---------------------------------------------------------------------------
+    ! subroutine destroyLinkedListFinal(this)
+    !     class(IndividualLinkedList),intent(inout) :: this
+    !     type(IndividualLinkedListNode),pointer :: node
+    !     type(individual),pointer :: tmp
+    !     if (associated(this%first)) then
+    !         node => this%first
 
-            do while(associated(node))
-                call this%list_pop(tmp)
+    !         do while(associated(node))
+    !             call this%list_pop(tmp)
                 
 
-                node => this%first
-            enddo
-        endif
-        deallocate(this%first)
-        deallocate(this%last)
+    !             node => this%first
+    !         enddo
+    !     endif
+    !     deallocate(this%first)
+    !     deallocate(this%last)
 
-    end subroutine destroyLinkedListFinal
+    ! end subroutine destroyLinkedListFinal
 
     !---------------------------------------------------------------------------
     !> @brief output for Linked List
@@ -211,13 +223,20 @@ contains
     subroutine list_pop(this, item)
         class(IndividualLinkedList),intent(inout) :: this
         type(individual),pointer,intent(out) :: item !< item at the end of the list
+
         if (associated(this%last)) then
             item => this%last%item         
             this%last => this%last%previous
             if (associated(this%last)) then
-                deallocate(this%last%next)
+                
+                ! deallocate(this%last%next)
+                this%last%next => null()
             else
-                deallocate(this%first)
+                if (associated(this%first)) then
+                    
+                    ! deallocate(this%first)
+                    this%first => null()
+                endif
             end if
             this%length = this%length - 1
         else
@@ -426,6 +445,31 @@ contains
 
 
 
+            !---------------------------------------------------------------------------
+    !> @brief Converts linked list to 1 dimensional array (vector) of integer recoded id's
+    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
+    !> @date    October 26, 2016
+    !---------------------------------------------------------------------------
+    function convertToArrayOriginalIDs(this) result(res)
+        use ConstantModule
+        class(IndividualLinkedList) :: this !< linked list
+        character(len=IDLENGTH), dimension(:), allocatable :: res !< one dimensional array of recoded id's to return
+        integer :: counter
+        type(IndividualLinkedListNode),pointer :: node
+        
+
+        counter = 1
+        allocate(res(this%length))
+        node => this%first
+
+        do while (associated(node))
+            res(counter) = node%item%originalID
+
+            counter = counter+1
+            node => node%next
+
+        enddo
+    end function convertToArrayOriginalIDs    
 
             !---------------------------------------------------------------------------
     !> @brief Across a list of individuals, return all the genotypes at a given position

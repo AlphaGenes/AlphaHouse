@@ -52,6 +52,10 @@ contains
 	procedure :: getSize
 	procedure :: getAllKeys
 	procedure :: hashKey
+	procedure :: dict_create
+	procedure :: dict_create_val
+
+	generic :: DictStructure => dict_create, dict_create_val
 end type DictStructure
 
 interface DictStructure
@@ -146,7 +150,6 @@ contains
 			do while (associated(tmp))
                 
                 if (allocated(tmp%data%key)) then
-                    print *,"tmp%data%key",tmp%data%key
 				    call list%list_add(tmp%data%key)
                 endif
 				tmp => tmp%next
@@ -166,8 +169,8 @@ contains
 	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
 	!> @date    October 26, 2016
 	!---------------------------------------------------------------------------
-	pure function dict_create(size) result(dict)
-		type(DictStructure)  :: dict !< Dictionary Object
+	subroutine dict_create(dict,size)
+		class(DictStructure)  :: dict !< Dictionary Object
 		integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 		integer(kind=int64) :: i
 
@@ -181,15 +184,15 @@ contains
 			dict%table(i)%list => null()
 		enddo
 
-	end function dict_create
+	end subroutine dict_create
 
 	!---------------------------------------------------------------------------
 	!> @brief Constructor for dictionary withkey and value parameters
 	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
 	!> @date    October 26, 2016
 	!---------------------------------------------------------------------------
-	pure function dict_create_val(key, value, size ) result(dict)
-		type(DictStructure)  :: dict !< Dictionary Object
+	subroutine dict_create_val(dict,key, value, size )
+		class(DictStructure)  :: dict !< Dictionary Object
 		character(len=*), intent(in) ::  key !< key for value in dictionary
 		integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 		integer, intent(in)  :: value !< value to be stored in dictionary
@@ -212,7 +215,7 @@ contains
 		hash = dict%hashKey( trim(key ) )
 		call list_create( dict%table(hash)%list, data )
 
-	end function dict_create_val
+	end subroutine dict_create_val
 
 	!---------------------------------------------------------------------------
 	! DESCRIPTION:
@@ -227,9 +230,6 @@ contains
 		type(DictStructure) :: this
 
 		integer(kind=int64) :: i
-
-
-        print *,"DESTROYING HASHTABL"
 
 		if (associated(this%table)) then
 			do i = 1,this%hash_size

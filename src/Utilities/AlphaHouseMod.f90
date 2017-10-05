@@ -95,7 +95,7 @@ module AlphaHouseMod
 			integer:: numColumnsUsed
 			integer:: fileChunkSize, StartChar
 
-			hashModuleOut = DictStructure()
+			call hashModuleOut%DictStructure()
 
 			if (present(fileChunkSizeIn)) then
 				fileChunkSize = fileChunkSizeIn

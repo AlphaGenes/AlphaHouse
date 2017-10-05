@@ -94,17 +94,17 @@ module IndividualHelperModule
             ! loop through sire offsprings
 
             tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
             damNum = indiv%damPointer%nOffs
 
         else if (associated(indiv%sirePointer)) then
             tmpSize = indiv%sirePointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
         else if (associated(indiv%damPointer)) then
             tmpSize = indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             damNum = indiv%damPointer%nOffs
         else
             return !NO parents so return empty list
@@ -151,17 +151,17 @@ module IndividualHelperModule
             ! loop through sire offsprings
 
             tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
             damNum = indiv%damPointer%nOffs
 
         else if (associated(indiv%sirePointer)) then
             tmpSize = indiv%sirePointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
         else if (associated(indiv%damPointer)) then
             tmpSize = indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             damNum = indiv%damPointer%nOffs
         else
             return !NO parents so return empty list
@@ -209,17 +209,17 @@ module IndividualHelperModule
         if (associated(indiv%sirePointer) .and. associated(indiv%damPointer)) then
             ! loop through sire offsprings
             tmpSize = indiv%sirePointer%nOffs + indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
             damNum = indiv%damPointer%nOffs
 
         else if (associated(indiv%sirePointer)) then
             tmpSize = indiv%sirePointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             sireNum = indiv%sirePointer%nOffs
         else if (associated(indiv%damPointer)) then
             tmpSize = indiv%damPointer%nOffs
-            dict = DictStructure(tmpSize)
+            call dict%DictStructure(tmpSize)
             damNum = indiv%damPointer%nOffs
         else
             return !NO parents so return empty list
