@@ -142,6 +142,7 @@ contains
 		character(len=128), dimension(:), allocatable :: outputPaths
 		integer result,i,p,h,outChrF, maxSnps
 		integer,dimension(:), allocatable, intent(out) :: nsnps
+		integer(kind=1),allocatable,dimension (:,:) :: array,arraytemp
 		! integer, allocatable
 
 
@@ -172,23 +173,36 @@ contains
 				maskedLogi(masked(h)) = .true.
 
 			enddo
+
+			allocate(array(ped%pedigreeSize-ped%nDummys, nsnps(i)))
+
+			! allocate(arraytemp(ped%pedigreeSize-ped%nDummys, size(allsnsps,2))
 			write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i2)"
 			! set up the pedigree to avoid read in
+			array = 9
+			do p=1,ped%pedigreeSize-ped%nDummys
+				array(p,:) = pack(allSnps(p,:), maskedLogi)
+			end do
+
+
+			print *,"NSNPS FOR CHROM:",nsnps(i), " and array", size(array,2)
+
+			
+			! do p=1,nsnps(i)
+			! 	array(:,p) = arraytemp(:,p)
+			! enddo
 			if (i == 1 ) then
 				block
-					integer(kind=1),allocatable,dimension (:,:) :: array
+					
 
-					allocate(array(ped%pedigreeSize-ped%nDummys, size(allSnps,2)))
-					do p=1,ped%pedigreeSize-ped%nDummys
-						array(p,:) = pack(allSnps(p,:), maskedLogi)
-					end do
+					
 					! print *, "ARRAY",array
 					call ped%addGenotypeInformationFromArray(array,1)
 					deallocate(array)
 				end block
 			endif
 			do p=1,ped%pedigreeSize-ped%nDummys
-				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(allSnps(p,:), maskedLogi)
+				write(outChrF,fmt) ped%pedigree(p)%originalId,array
 			end do
 			close(outChrF)
 		enddo
