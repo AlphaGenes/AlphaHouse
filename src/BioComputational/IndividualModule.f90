@@ -1159,12 +1159,17 @@ contains
     subroutine setSequenceArray(this, referAllele, alterAllele)
         use constantModule
         
-        class(Individual), intent(inout) :: this
-        integer, dimension(:), intent(in) :: referAllele, alterAllele
+        class(Individual) :: this
+        integer, dimension(:):: referAllele, alterAllele
 
         this%Genotyped = .true.
         this%Sequenced = .true.
         
+        ! allocate(this%referAllele(size(referAllele)))
+        ! allocate(this%alterAllele(size(alterAllele)))
+
+        ! print *, "here", size(referAllele)
+        ! print *, "here", size(this%referAllele)
         this%referAllele = referAllele
         this%alterAllele  = alterAllele
     end subroutine setSequenceArray

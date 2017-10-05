@@ -9,6 +9,7 @@ module GenotypeHelperModule
         !###########################################################################################################################################################
         integer function GiveOppositeGenotype(Geno)
             use iso_fortran_env
+            use IFCORE
             implicit none
 
             integer, intent(in) :: Geno
@@ -20,7 +21,7 @@ module GenotypeHelperModule
 
             else
                 write(error_unit,*) "ERROR: GiveOppositeGenotype given incorrect value"
-                call abort()
+                call TRACEBACKQQ(string= "ERROR: GiveOppositeGenotype given incorrect value",user_exit_code=1)
             endif
 
         end function GiveOppositeGenotype
