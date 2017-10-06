@@ -116,6 +116,8 @@ contains
 
 		ped = PedigreeHolder(pedArray, genderArray)
 
+		print *, "ANS in ped",ped%pedigreeSize," without dum:",ped%pedigreeSize-ped%nDummys
+
 		call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
 	end function readToPedigreeFormat
