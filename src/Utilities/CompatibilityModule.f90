@@ -191,18 +191,20 @@ contains
 			! do p=1,nsnps(i)
 			! 	array(:,p) = arraytemp(:,p)
 			! enddo
-			if (i == 1 ) then
-				block
+			! if (i == 1 ) then
+			! 	block
 					
 
 					
-					! print *, "ARRAY",array
-					call ped%addGenotypeInformationFromArray(array,1)
-				end block
-			endif
+			! 		! print *, "ARRAY",array
+			! 		call ped%addGenotypeInformationFromArray(array,1)
+			! 	end block
+			! endif
 			do p=1,ped%pedigreeSize-ped%nDummys
 				write(outChrF,fmt) ped%pedigree(p)%originalId,array
 			end do
+
+			print *, "after writeout"
 			close(outChrF)
 			deallocate(array)
 		enddo
