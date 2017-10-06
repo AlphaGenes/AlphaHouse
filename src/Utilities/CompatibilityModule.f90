@@ -202,7 +202,7 @@ contains
 			! endif
 			do p=1,ped%pedigreeSize-ped%nDummys
 
-				print *,p
+				! print *,p
 				write(outChrF,fmt) ped%pedigree(p)%originalId,array(p,:)
 			end do
 
