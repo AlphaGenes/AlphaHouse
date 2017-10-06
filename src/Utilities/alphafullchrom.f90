@@ -165,8 +165,10 @@ contains
 				call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
 			! endif
 
-			call funPointer(specFile,ped)
 
+			print *,"starting function run"
+			call funPointer(specFile,ped)
+			print *,"Finished function run"
 			
 
 
