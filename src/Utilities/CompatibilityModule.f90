@@ -203,7 +203,7 @@ contains
 			do p=1,ped%pedigreeSize-ped%nDummys
 
 				print *,p
-				write(outChrF,fmt) ped%pedigree(p)%originalId,array
+				write(outChrF,fmt) ped%pedigree(p)%originalId,array(p,:)
 			end do
 
 			print *, "after writeout"
