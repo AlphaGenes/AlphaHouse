@@ -201,6 +201,8 @@ contains
 			! 	end block
 			! endif
 			do p=1,ped%pedigreeSize-ped%nDummys
+
+				print *,p
 				write(outChrF,fmt) ped%pedigree(p)%originalId,array
 			end do
 
