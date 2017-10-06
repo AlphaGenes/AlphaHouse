@@ -1889,6 +1889,8 @@ module PedigreeModule
 
 			use AlphaHouseMod, only : countLines,countColumns
 			use ConstantModule, only : IDLENGTH,DICT_NULL
+			use iso_fortran_env
+			use IFCORE
 			implicit none
 			class(PedigreeHolder) :: this
 			character(len=*) :: seqFile
@@ -1917,6 +1919,9 @@ module PedigreeModule
 
 			nCol=countColumns(trim(seqFile), delimiter)-1 ! First column is animal id
 
+
+			
+
 			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 			allocate(ref(nCol))
 			allocate(alt(nCol))
@@ -1940,6 +1945,9 @@ module PedigreeModule
 					if (present(startSnp)) then
 						if (present(endSnp)) then
 							end = endsnp
+							if (end > nCol) then
+								call TRACEBACKQQ(string= "ERROR - endSNP is greater than number of columns in sequence file",user_exit_code=1)
+							endif
 						else
 							end = nsnps
 						endif
