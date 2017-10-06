@@ -136,13 +136,14 @@ contains
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
+    print *,"written debug ped"
 		do i=1, size(chromPaths)
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
-
+      print *,"doing chrom ", i
 			if (i > size(chromPaths)-2 .and. sexChroms) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
