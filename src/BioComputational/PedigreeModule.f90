@@ -1250,13 +1250,13 @@ module PedigreeModule
 			endif
 
 			pedStructure%isSorted = 0
-			sizeDict = size(pedArray)
-			pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
+			sizeDict = size(pedArray,2)
+			pedStructure%maxPedigreeSize = size(pedArray,2) + (size(pedArray,2) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
-			pedStructure%pedigreeSize = size(pedArray)
+			pedStructure%pedigreeSize = size(pedArray,2)
 			pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
-			allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
-			allocate(pedStructure%inputMap(size(pedArray)))
+			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+			allocate(pedStructure%inputMap(size(pedArray,2)))
 			pedStructure%maxGeneration = 0
 
 			do i=1,size(pedArray(1,:))
