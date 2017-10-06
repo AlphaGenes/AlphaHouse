@@ -196,7 +196,7 @@ contains
 		character(len=*), intent(in) ::  key !< key for value in dictionary
 		integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 		integer, intent(in)  :: value !< value to be stored in dictionary
-		type(LIST_DATA) :: data
+		type(LIST_DATA), allocatable :: data
 		integer(kind=int64):: i
 		integer(kind=int64):: hash
 
@@ -209,6 +209,8 @@ contains
 			dict%table(i)%list => null()
 		enddo
 
+
+		allocate(data)
 		data%key   = key
 		data%value = value
 
@@ -262,7 +264,7 @@ contains
 		character(len=*), intent(in) :: key
 		integer, intent(in)  :: value
 
-		type(LIST_DATA)              :: data
+		type(LIST_DATA),allocatable              :: data
 		type(LinkedList), pointer   :: elem
 		integer(kind=int64) :: hash
 
@@ -272,6 +274,7 @@ contains
 		if ( associated(elem) ) then
 			elem%data%value = value
 		else
+			allocate(data)
 			data%key   = key
 			data%value = value
 			hash       = this%hashKey( trim(key) )

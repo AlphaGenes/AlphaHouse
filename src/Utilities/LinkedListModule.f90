@@ -19,7 +19,7 @@ end type LIST_DATA
 
 type LinkedList
     type(LinkedList), pointer :: next
-    type(LIST_DATA)            :: data
+    type(LIST_DATA), allocatable            :: data
 
     contains
         final :: list_destroy
@@ -126,9 +126,9 @@ end subroutine clearData
 !     refer to a list. Use list_destroy first to
 !     destroy up an old list.
 !
-pure subroutine list_create( list, data )
+ subroutine list_create( list, data )
     type(LinkedList), pointer  :: list
-    type(LIST_DATA), intent(in) :: data
+    type(LIST_DATA) :: data
 
     allocate( list )
     list%next => null()
@@ -144,11 +144,29 @@ end subroutine list_create
 !     pointers within the data that need deallocation
 !
 subroutine list_destroy( list )
-    type(LinkedList)  :: list
-
-    ! type(LinkedList), pointer  :: current
-    ! type(LinkedList), pointer  :: next
+    type(LinkedList),target  :: list
+    type(LinkedList), pointer  :: current
+    type(LinkedList), pointer  :: tmp
     
+    
+    current => list
+    do while (associated(current%next))
+        
+        tmp => current
+        current => current%next
+        deallocate(tmp%data)
+        deallocate(tmp)
+
+    end do
+    
+
+    ! if (associated(current)) then
+    !     deallocate(current)
+    ! endif
+
+
+    ! deallocate(list%next)
+
     ! if (allocated(list%data)) then
     !     deallocate(list%data)
     ! endif
@@ -212,7 +230,7 @@ end function list_next
 !
 subroutine list_insert( elem, data )
     type(LinkedList), pointer  :: elem
-    type(LIST_DATA) :: data
+    type(LIST_DATA), intent(in) :: data
 
     type(LinkedList), pointer :: next
 
@@ -221,7 +239,7 @@ subroutine list_insert( elem, data )
     next%next => elem%next
     elem%next => next
     next%data =  data
-    deallocate(data%key)
+    ! deallocate(data%key)
 end subroutine list_insert
 
 ! list_insert_head

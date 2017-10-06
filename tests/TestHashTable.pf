@@ -15,7 +15,8 @@ module TestHashTable
 			integer(kind=int64) :: size
 
 			size = 32
-			dictionary = DictStructure(size)
+			allocate(dictionary)
+			call dictionary%DictStructure(size)
 
 
 		end subroutine

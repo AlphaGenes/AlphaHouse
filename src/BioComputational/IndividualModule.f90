@@ -187,6 +187,8 @@ contains
         logical, optional :: probabilites !< if present, allocate probabilites
 
 
+        call destroyIndividual(this)
+
         allocate(character(len=len(originalID)) ::this%originalID)
         allocate(character(len=len(sireIDIn)) ::this%sireID)
         allocate(character(len=len(sireIDIn)) ::this%damID)
@@ -234,6 +236,7 @@ contains
     subroutine destroyIndividual(this)
         type(Individual) :: this
 
+        print *, "in destroy"
         if (allocated(this%offsprings)) then
             deallocate(this%offsprings)
         endif
@@ -318,6 +321,7 @@ contains
             deallocate(this%inconsistencies)
         endif
 
+        print *, "end destroy indiv"
     end subroutine destroyIndividual
 
 
@@ -1145,6 +1149,7 @@ contains
         if (present(lockIn)) then
 
             if (lockIn) then
+                if (.not. allocated(this%individualGenotype)) allocate(this%individualGenotype)
                 call this%individualGenotype%Genotype(Geno,lock=1)
                 return
             endif

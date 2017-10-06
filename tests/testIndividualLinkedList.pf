@@ -20,8 +20,8 @@ module TestIndividualLinkedList
         
         implicit none
         allocate(ll)
-        testIndiv1 = Individual("me","mum","dad",1)
-        testIndiv2 = Individual("me2","mum2","dad2",2)
+        call testIndiv1%initIndividual("me","mum","dad",1)
+        call testIndiv2%initIndividual("me2","mum2","dad2",2)
         
     end subroutine
 
@@ -74,8 +74,8 @@ type(Individual), dimension(:), allocatable:: expected, gotten
 type(Individual):: one, two
 integer:: i
 
-one = Individual("OLD", "dad", "mom", 0)
-two = Individual("OLD2", "dad", "mom", 0)
+call one%initIndividual("OLD", "dad", "mom", 0)
+call two%initIndividual("OLD2", "dad", "mom", 0)
 
 one%isUnknownDummy = .true.
 two%isUnknownDummy = .false.

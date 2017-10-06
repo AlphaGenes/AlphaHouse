@@ -266,6 +266,7 @@ module PedigreeModule
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
 
+			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure()
 
 			pedStructure%pedigreeSize = 0
@@ -416,7 +417,8 @@ module PedigreeModule
 			allocate(new%hdMap(this%nHd))
 			allocate(new%genotypeMap(this%nGenotyped))
 			allocate(tmpAnimalArray(this%nHd))
-
+			allocate(new%hdDictionary)
+			allocate(new%genotypeDictionary)
 			call new%hdDictionary%DictStructure()
 			call new%genotypeDictionary%DictStructure()
 
@@ -934,6 +936,8 @@ module PedigreeModule
 			pedStructure%nGenotyped = 0
 			pedStructure%nsnpsPopulation = 0
 
+			call destroyPedigree(pedStructure)
+			
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
@@ -942,12 +946,13 @@ module PedigreeModule
 			else
 				nIndividuals = countLines(fileIn)
 			endif
+			
+			
 
 			sizeDict = nIndividuals
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = nIndividuals
-
 
 			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
@@ -1707,6 +1712,8 @@ module PedigreeModule
 			! 	this%Pedigree(i) => null()
 
 			! enddo
+
+			print *,"start peddestroy"
 			if (ASSOCIATED(this%pedigree)) then
 				! deallocate(this%pedigree)
 				this%pedigree => null()
@@ -1757,7 +1764,7 @@ module PedigreeModule
 
 				deallocate(this%uniqueParentList)
 			endif
-
+			print *,"stop peddestroy"
 		end subroutine destroyPedigree
 
 
@@ -2451,8 +2458,9 @@ module PedigreeModule
 			deallocate(this%sireList)
 			deallocate(this%damList)
 
-			sizeDict  =this%pedigreeSize
+			sizeDict = this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
+			allocate(this%dictionary)
 			call this%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
 
