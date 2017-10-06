@@ -177,7 +177,7 @@ contains
 			allocate(array(ped%pedigreeSize-ped%nDummys, nsnps(i)))
 
 			! allocate(arraytemp(ped%pedigreeSize-ped%nDummys, size(allsnsps,2))
-			write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i2)"
+			write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i3)"
 			! set up the pedigree to avoid read in
 			array = 9
 			do p=1,ped%pedigreeSize-ped%nDummys
