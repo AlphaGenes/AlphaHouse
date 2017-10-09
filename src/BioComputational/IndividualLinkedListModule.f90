@@ -70,12 +70,56 @@ type(individual), pointer :: item =>null()
 type(IndividualLinkedListNode),pointer :: next =>null()
 type(IndividualLinkedListNode),pointer :: previous =>null()
 
+
+
 contains
 	final:: destroyIndividualLinkedListNodeFinal
 end type IndividualLinkedListNode
-
+interface assignment (=)
+	module procedure deepCopyLinkedList
+end interface
 
 contains
+
+	subroutine deepCopyLinkedList(this, listIn)
+
+		class(IndividualLinkedList), intent(inout)::this
+    	type(IndividualLinkedList), intent(in) ::listIn
+		type(IndividualLinkedListNode) ,pointer :: node, old
+		integer :: i
+		
+		
+		if (associated(this%first)) then
+			call destroyLinkedList(this)
+		endif
+		
+		this%length = listIn%length
+		allocate(node)
+
+		node%item => listin%First%item
+		node%previous => null()
+		this%first=>node
+
+		if (listin%length > 1) then
+		old => listin%first%next
+			do i =1,listIn%length-1
+
+				allocate(node%next)
+				
+				node%next%previous => node
+				node%next%item => old%item
+
+				if (i == listIn%length-1) then
+					this%last => node%next
+				endif
+				old => old%next
+				node => node%next
+			end do 
+		else 
+			this%last =>node
+		endif
+
+	end subroutine deepCopyLinkedList
 
 	subroutine destroyIndividualLinkedListNodeFinal(this)
 		type(IndividualLinkedListNode) :: this
@@ -98,8 +142,7 @@ contains
 
 
 		node => this%first
-
-        print *, "start destruction"
+		if (this%length == 0) return
 		if (associated(node)) then
 			do while (associated(node%next))
 				
@@ -128,7 +171,8 @@ contains
 			node%next=>null()
 			node%item=> null()
 			deallocate(node)
-			print *, "stop destruction"
+			node => null()
+			
 		endif
 
     

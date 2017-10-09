@@ -31,15 +31,15 @@ module HashModule
 
 
 	type HASH_LIST
-	    type(LinkedList), pointer :: list
+	    type(LinkedList), pointer :: list => null()
     contains 
         final :: destroyHASH_LIST
 end type HASH_LIST
 
 type DictStructure
 
-type(HASH_LIST), pointer, dimension(:) :: table
-integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
+type(HASH_LIST), pointer, dimension(:) :: table => null()
+integer(kind=int64) :: hash_size  = 0
 
 contains
 
@@ -176,6 +176,8 @@ contains
 
 		if (present(size)) then
 			dict%hash_size = size
+		else 
+			dict%hash_size = DEFAULTDICTSIZE
 		endif
 		! allocate( dict )
 		allocate( dict%table(dict%hash_size) )
@@ -188,7 +190,7 @@ contains
 
 	!---------------------------------------------------------------------------
 	!> @brief Constructor for dictionary withkey and value parameters
-	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+	!> @author  David Wilson david.wilson@roslin.ed.ac.uk 
 	!> @date    October 26, 2016
 	!---------------------------------------------------------------------------
 	subroutine dict_create_val(dict,key, value, size )
@@ -233,6 +235,8 @@ contains
 
 		integer(kind=int64) :: i
 
+
+		if (this%hash_size == 0) return
 		if (associated(this%table)) then
 			do i = 1,this%hash_size
 
@@ -244,8 +248,9 @@ contains
 				! 	this%table(i)%list => null()
 				! endif
 			enddo
-			
 			deallocate(this%table)
+			this%table => null()
+			this%hash_size = 0
 		endif
 
 	end subroutine destroy

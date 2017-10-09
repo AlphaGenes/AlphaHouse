@@ -1713,7 +1713,6 @@ module PedigreeModule
 
 			! enddo
 
-			print *,"start peddestroy"
 			if (ASSOCIATED(this%pedigree)) then
 				! deallocate(this%pedigree
 				this%pedigree => null()
@@ -1751,20 +1750,23 @@ module PedigreeModule
 				! call this%genotypeDictionary%destroy
 				deallocate(this%genotypeDictionary)
 				deallocate(this%genotypeMap)
+				this%nGenotyped = 0 
 			endif
 
 			if (this%nHd > 0) then
 				! call this%hdDictionary%destroy
 
-				deallocate(this%hdDictionary)
+				! deallocate(this%hdDictionary)
 				deallocate(this%hdMap)
+				this%nHd = 0
 			endif
+
+			this%pedigreeSize = 0
 
 			if (allocated(this%uniqueParentList)) then
 
 				deallocate(this%uniqueParentList)
 			endif
-			print *,"stop peddestroy"
 		end subroutine destroyPedigree
 
 

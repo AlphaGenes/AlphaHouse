@@ -31,8 +31,6 @@ module TestIndividualHelperModule
         allocate(pedigree)
         call PedigreeHolder(pedigree,"testPed.txt")
 
-        print *,"BALLS",pedigree%dictionary%getValue("fff")
-
     end subroutine
 
    @after
@@ -50,17 +48,18 @@ module TestIndividualHelperModule
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2
-        type(individualLinkedList) :: ret
+        type(individualLinkedList) :: ret, t
 
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+
+
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
 
         ret = getFullSibs(tmp)
-        write(*,*) ret
         @assertEqual(ret%length,1)
         tmp => ret%list_get_nth(1)
-        
-        print *,"id",tmp%originalId
+        t= ret
+
         @assertTrue(associated(tmp, tmp2))
     end subroutine testGetFullSibs
 
