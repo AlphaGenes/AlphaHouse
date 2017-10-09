@@ -99,36 +99,37 @@ contains
 
 		node => this%first
 
-        ! print *, "start destruction"
-		! if (associated(node)) then
-		! 	do while (associated(node%next))
+        print *, "start destruction"
+		if (associated(node)) then
+			do while (associated(node%next))
 				
-        !         if (ASSOCIATED(node,this%last)) then
-        !             this%last%next => null()
-        !             this%last%item => null()
-        !             this%last%previous => null()
-        !         endif
-        !         node%previous=> null()
+                if (ASSOCIATED(node,this%last)) then
+                    this%last%next => null()
+                    this%last%item => null()
+                    this%last%previous => null()
+                endif
+                node%previous=> null()
 
-		! 		tmp => node%next
-		! 		node%next=>null()
-		! 		node%item=> null()
-		! 		deallocate(node)
+				tmp => node%next
+				node%next=>null()
+				node%item=> null()
+				deallocate(node)
 
-		! 		node => tmp
-		! 	end do
+				node => tmp
+			end do
 
-		! 	node%previous=> null()
+			node%previous=> null()
 
-		! 	! tmp => node%next
-		! 	node%next=>null()
+			! tmp => node%next
+			node%next=>null()
 
 
-		! 	node%previous=> null()
-		! 	node%next=>null()
-		! 	node%item=> null()
-		! 	! deallocate(node)
-		! endif
+			node%previous=> null()
+			node%next=>null()
+			node%item=> null()
+			deallocate(node)
+			print *, "stop destruction"
+		endif
 
     
 		
@@ -316,30 +317,26 @@ logical function contains(this, ind)
 	type(IndividualLinkedListNode),pointer :: node
 
 	logical :: tmp
-
+	
 	if (associated(this%first)) then
 		node => this%first
+		if (ASSOCIATED(node%item)) then
+			do  
+				tmp = compareIndividual(node%item, ind)
 
-		do  
-            if (ASSOCIATED(this%first%item)) then
-                print *,"hi"
-            endif
-             print *,"ID2:",node%item%originalId
-			tmp = compareIndividual(node%item, ind)
-
-			if (tmp) then
-				contains = .true.
-				return
-			else if (.not.associated(node%next)) then
-				contains = .false.
-				return
-			else
-				node => node%next
-			end if
-		end do
-	else
-		contains = .false.
+				if (tmp) then
+					contains = .true.
+					return
+				else if (.not.associated(node%next)) then
+					contains = .false.
+					return
+				else
+					node => node%next
+				end if
+			end do
+		endif
 	end if
+	contains = .false.
 end function contains
 
 

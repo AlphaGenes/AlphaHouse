@@ -22,7 +22,7 @@ type LinkedList
     type(LIST_DATA), allocatable            :: data
 
     contains
-        final :: list_destroy
+        ! final :: list_destroy
 end type LinkedList
 
 interface operator ( == )
@@ -116,7 +116,7 @@ end subroutine clearData
 ! list_create --
 !     Create and initialise a list
 ! Arguments:
-!     list       Pointer to new linked list
+!     list       Pointer to new linked listp
 !     data       The data for the first element
 ! Note:
 !     This version assumes a shallow copy is enough
@@ -148,18 +148,23 @@ subroutine list_destroy( list )
     type(LinkedList), pointer  :: current
     type(LinkedList), pointer  :: tmp
     
-    
+    ! print *,"DESTROY LL "
     current => list
-    do while (associated(current%next))
+    if (associated(current)) then
+        do while (associated(current%next))
+            
+            tmp => current
+            current => current%next
+            deallocate(tmp%data)
+            deallocate(tmp)
+
+        end do
+
+
+        deallocate(current%data)
+        deallocate(current)
         
-        tmp => current
-        current => current%next
-        deallocate(tmp%data)
-        deallocate(tmp)
-
-    end do
-    
-
+    endif
     ! if (associated(current)) then
     !     deallocate(current)
     ! endif

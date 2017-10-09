@@ -236,7 +236,6 @@ contains
     subroutine destroyIndividual(this)
         type(Individual) :: this
 
-        print *, "in destroy"
         if (allocated(this%offsprings)) then
             deallocate(this%offsprings)
         endif
@@ -321,7 +320,6 @@ contains
             deallocate(this%inconsistencies)
         endif
 
-        print *, "end destroy indiv"
     end subroutine destroyIndividual
 
 

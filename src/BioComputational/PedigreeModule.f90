@@ -1715,7 +1715,7 @@ module PedigreeModule
 
 			print *,"start peddestroy"
 			if (ASSOCIATED(this%pedigree)) then
-				! deallocate(this%pedigree)
+				! deallocate(this%pedigree
 				this%pedigree => null()
 			endif
 			if (allocated(this%generations)) then
@@ -2414,10 +2414,13 @@ module PedigreeModule
 			this%pedigree => newPed
 
 			newPed => null()
-			! do i = 0, this%maxGeneration
-			! 	call this%generations(i)%destroyLinkedList
-			! enddo
+			do i = 0, this%maxGeneration
+				call destroyLinkedList(this%generations(i))
+			enddo
 			! this%generations = newGenerationList
+
+			! deallocate(this%generations)
+			! allocate(this%generations(0:this%maxGeneration))
 			this%generations(0:this%maxGeneration) = newGenerationList
 
 			!
@@ -2444,7 +2447,6 @@ module PedigreeModule
 			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
-				print *, "BUILDING GENS"
 			endif
 			pedCounter = 0
 			! call this%dictionary%destroy()
@@ -2527,9 +2529,9 @@ module PedigreeModule
 					tmpIndNode => tmpIndNode%next
 				end do
 			enddo
-			! do i = 0, this%maxGeneration
-			! 	call this%generations(i)%destroyLinkedList
-			! enddo
+			do i = 0, this%maxGeneration
+				call destroyLinkedList(this%generations(i))
+			enddo
 			deallocate(this%generations)
 			! do i=1,this%pedigreeSize
 			! 	call this%Pedigree(i)%destroyIndividual
