@@ -162,6 +162,13 @@ module PedigreeModule
 		! initPedigreeFromOutputFileFolder initialiser from file
 	end interface PedigreeHolder
 
+	interface assignment (=)
+		module procedure copyPedigree
+	end interface
+
+	interface operator (==)
+		module procedure equality
+	end interface
 	interface Sort !Sorts into generation list
 		module procedure :: setPedigreeGenerationsAndBuildArrays
 	end interface Sort
@@ -185,6 +192,157 @@ module PedigreeModule
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypesForImputed
+
+		!---------------------------------------------------------------------------
+		!< @brief Sorts pedigree, and overwrites all fields to new values
+		!< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
+		!< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine copyPedigree(res,this)
+			use iso_fortran_env, only : output_unit, int64
+			type(PedigreeHolder),intent(in) :: this
+			class(pedigreeHolder), intent(inout) :: res
+			integer :: i, tmpId,tmpGenotypeMapIndex
+			integer(kind=int64) :: sizeDict
+			type(Individual), pointer, dimension(:) :: newPed
+			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+
+			if (.not. allocated(this%generations)) then
+				call this%setPedigreeGenerationsAndBuildArrays
+			endif
+			i = 0
+
+
+			res%pedigreeSize = this%pedigreeSize
+			res%nDummys = this%nDummys
+			res%unknownDummys = this%unknownDummys
+			res%maxPedigreeSize = this%maxPedigreeSize
+			res%inputMap = this%inputMap
+			res%genotypeMap = this%genotypeMap
+			res%genotypeDictionary = this%genotypeDictionary
+			! call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
+			res%nGenotyped =this%nGenotyped
+			res%hdMap = this%hdMap
+			res%hdDictionary = this%hdDictionary
+			! call copyHashTable(res%hdDictionary, this%hdDictionary)
+			res%nHd = this%nHd
+			res%maxGeneration = this%maxGeneration
+			res%nsnpsPopulation = this%nsnpsPopulation
+			res%isSorted =this%isSorted
+
+			! call res%dictionary%destroy()
+			! call res%founders%destroyLinkedList()
+			! call res%sireList%destroyLinkedList()
+			! call res%damList%destroyLinkedList()
+
+
+			sizeDict  =this%pedigreeSize
+			allocate(newPed(this%maxPedigreeSize))
+
+			call res%dictionary%DictStructure(sizeDict)
+			allocate(newGenerationList(0:this%maxGeneration))
+
+			do i=1, this%pedigreeSize
+				! update dictionary index
+				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
+
+				!  update genotype map
+
+				if (res%nGenotyped > 0) then
+					tmpGenotypeMapIndex = res%genotypeDictionary%getValue(this%pedigree(i)%originalID)
+					if (tmpGenotypeMapIndex /= DICT_NULL) then
+						res%genotypeMap(tmpGenotypeMapIndex) = i
+					endif
+				endif
+				! Update hd map
+				if (res%nHd > 0) then
+					tmpGenotypeMapIndex = res%hdDictionary%getValue(this%pedigree(i)%originalID)
+					if (tmpGenotypeMapIndex /= DICT_NULL) then
+						res%hdMap(tmpGenotypeMapIndex) = i
+					endif
+				endif
+				! Set the location to the pedigree to the new value
+				newPed(i) = this%pedigree(i)
+
+				! take the original id, and update it
+				if(.not. newPed(i)%isDummy) then
+					res%inputMap(newPed(i)%originalPosition) = i
+				endif
+				newPed(i)%id = i
+				call newPed(i)%resetOffspringInformation ! reset offsprings
+				if (associated(newPed(i)%sirePointer)) then
+					tmpId =  res%dictionary%getValue(newPed(i)%sirePointer%originalID)
+					if (tmpID /= DICT_NULL) then
+						call newPed(tmpId)%addOffspring(newPed(i))
+						newPed(i)%sirePointer=> newPed(tmpId)
+						if (newPed(tmpId)%nOffs== 1) then
+							call res%sireList%list_add(newPed(tmpId))
+						endif
+					endif
+				endif
+
+				if (associated(newPed(i)%damPointer)) then
+					tmpId =  res%dictionary%getValue(newPed(i)%damPointer%originalID)
+					if (tmpID /= DICT_NULL) then
+						call newPed(tmpId)%addOffspring(newPed(i))
+						newPed(i)%damPointer=> newPed(tmpId)
+						if (newPed(tmpId)%nOffs== 1) then
+							call res%damList%list_add(newPed(tmpId))
+						endif
+					endif
+				endif
+
+				if (i ==0 ) then !if object is afounder add to founder array
+					call  res%founders%list_add(newPed(i))
+				endif
+
+				if (res%isSorted /= 0) then
+					call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
+				endif
+			enddo
+
+			res%pedigree => newPed
+			res%generations = newGenerationList
+
+		end subroutine copyPedigree
+
+
+		logical function equality(pedOne, pedTwo)
+
+			type(pedigreeHolder) , intent(in) :: pedOne, pedTwo
+			integer :: i
+
+			equality = .true.	
+
+			if (pedOne%pedigreeSize /=  pedTwo%pedigreeSize) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%nGenotyped /=  pedTwo%nGenotyped) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%nHd /=  pedTwo%nHd) then
+				equality = .false.
+				return
+			endif
+
+			do i=1, pedOne%pedigreeSize
+				if (.not. (pedOne%pedigree(i) == pedTwo%pedigree(i))) then
+					equality = .false.
+					return
+				endif
+
+
+			end do
+
+
+		end function equality
+
 
 
 		!---------------------------------------------------------------------------
@@ -287,119 +445,6 @@ module PedigreeModule
 			endif
 		end subroutine initEmptyPedigree
 
-
-		!---------------------------------------------------------------------------
-		!< @brief Sorts pedigree, and overwrites all fields to new values
-		!< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
-		!< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
-		function copyPedigree(this) result(res)
-			use iso_fortran_env, only : output_unit, int64
-			class(PedigreeHolder),intent(in) :: this
-			type(pedigreeHolder) :: res
-			integer :: i, tmpId,tmpGenotypeMapIndex
-			integer(kind=int64) :: sizeDict
-			type(Individual), pointer, dimension(:) :: newPed
-			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
-
-			if (.not. allocated(this%generations)) then
-				call this%setPedigreeGenerationsAndBuildArrays
-			endif
-			i = 0
-
-
-			res%pedigreeSize = this%pedigreeSize
-			res%nDummys = this%nDummys
-			res%unknownDummys = this%unknownDummys
-			res%maxPedigreeSize = this%maxPedigreeSize
-			res%inputMap = this%inputMap
-			res%genotypeMap = this%genotypeMap
-			call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
-			res%nGenotyped =this%nGenotyped
-			res%hdMap = this%hdMap
-			call copyHashTable(res%hdDictionary, this%hdDictionary)
-			res%nHd = this%nHd
-			res%maxGeneration = this%maxGeneration
-			res%nsnpsPopulation = this%nsnpsPopulation
-			res%isSorted =this%isSorted
-
-			! call res%dictionary%destroy()
-			! call res%founders%destroyLinkedList()
-			! call res%sireList%destroyLinkedList()
-			! call res%damList%destroyLinkedList()
-
-
-			sizeDict  =this%pedigreeSize
-			allocate(newPed(this%maxPedigreeSize))
-
-			call res%dictionary%DictStructure(sizeDict)
-			allocate(newGenerationList(0:this%maxGeneration))
-
-			do i=1, this%pedigreeSize
-				! update dictionary index
-				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-
-				!  update genotype map
-
-				if (res%nGenotyped > 0) then
-					tmpGenotypeMapIndex = res%genotypeDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%genotypeMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Update hd map
-				if (res%nHd > 0) then
-					tmpGenotypeMapIndex = res%hdDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%hdMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Set the location to the pedigree to the new value
-				newPed(i) = this%pedigree(i)
-
-				! take the original id, and update it
-				if(.not. newPed(i)%isDummy) then
-					res%inputMap(newPed(i)%originalPosition) = i
-				endif
-				newPed(i)%id = i
-				call newPed(i)%resetOffspringInformation ! reset offsprings
-				if (associated(newPed(i)%sirePointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%sirePointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%sirePointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs == 1) then
-							call res%sireList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (associated(newPed(i)%damPointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%damPointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%damPointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs == 1) then
-							call res%damList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (i ==0 ) then !if object is afounder add to founder array
-					call  res%founders%list_add(newPed(i))
-				endif
-
-				if (res%isSorted /= 0) then
-					call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
-				endif
-			enddo
-
-			res%pedigree => newPed
-			res%generations = newGenerationList
-
-		end function copyPedigree
 
 
 

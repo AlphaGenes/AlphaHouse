@@ -63,10 +63,11 @@ interface DictStructure
 	module procedure dict_create_val
 end interface DictStructure
 
-! interface assignment ( = )
-!        module procedure copyHashTable
-!    end interface assignment ( = )
-!
+interface assignment ( = )
+       module procedure deepCopyHash
+end interface assignment ( = )
+
+
 ! We do not want everything to be public
 !
 private :: LIST_DATA
@@ -105,32 +106,21 @@ contains
 	end function getSize
 
 
-	!---------------------------------------------------------------------------
-	!> @brief Returns a copy of the hash table
-	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
-	!> @date    October 26, 2016
-	!---------------------------------------------------------------------------
-	subroutine copyHashTable(res, this)
-		class(DictStructure),intent(in) :: this
-		type(DictStructure),intent(inout) :: res
-		integer :: i
 
+	subroutine deepCopyHash(hash,  old)
+	type(DictStructure) ,intent(inout):: hash
+	type(DictStructure), intent(in) :: old
+	integer :: i
+	
+	hash%hash_size = old%hash_size
+	allocate(hash%table(hash%hash_size))
+	do i=1, hash%hash_size
 
-		res%hash_size = this%hash_size
+		hash%table(i) = old%table(i)
 
-		allocate( res%table(res%hash_size) )
-
-		do i = 1,res%hash_size
-			if (associated(this%table(i)%list)) then
-				res%table(i)%list => copyLinkedList(this%table(i)%list)
-			else
-				res%table(i)%list => null()
-			endif
-		enddo
-
-
-
-	end subroutine copyHashTable
+	enddo
+		
+	end subroutine deepCopyHash
 
 
 	function getAllKeys(this) result(res)
