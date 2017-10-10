@@ -77,7 +77,7 @@ private :: getElement
 private :: hashKey
 
 
-
+! TODO need to write deep copy 
 
 
 contains
@@ -234,6 +234,8 @@ contains
 		type(DictStructure) :: this
 
 		integer(kind=int64) :: i
+		
+		print *,"start destroy"
 
 
 		if (this%hash_size == 0) return
@@ -242,16 +244,17 @@ contains
 
 				call list_destroy(this%table(i)%list )
                 this%table(i)%list => null()
-				
+				! print *,"here"
 				! if ( associated( this%table(i)%list ) ) then
 				! 	! call list_destroy( this%table(i)%list )
 				! 	this%table(i)%list => null()
 				! endif
 			enddo
 			deallocate(this%table)
-			this%table => null()
+			nullify(this%table)
 			this%hash_size = 0
 		endif
+		print *,"STOP"
 
 	end subroutine destroy
 

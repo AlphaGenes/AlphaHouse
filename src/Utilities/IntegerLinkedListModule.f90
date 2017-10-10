@@ -1,4 +1,5 @@
 
+
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -59,37 +60,54 @@ module IntegerLinkedListModule
 
 contains
 
-    !---------------------------------------------------------------------------
-    !> @brief Destructor for linked list
-    !> @author  David Wilson david.wilson@roslin.ed.ac.uk
-    !> @date    October 26, 2016
-    !---------------------------------------------------------------------------
-    subroutine destroyLinkedList(this)
-        type(IntegerLinkedList) :: this
-        if (associated(this%first)) then
-            ! node => this%first
-            this%first => null()
-            this%last => null()
-        endif
-        ! type(IntegerLinkedList),intent(inout) :: this
-        ! type(IntegerLinkedListNode),pointer :: node
-        ! integer,pointer :: tmp
-        ! if (associated(this%first)) then
-        !     node => this%first
+	!---------------------------------------------------------------------------
+	!> @brief Destructor for linked list
+	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+	!> @date    October 26, 2016
+	!---------------------------------------------------------------------------
+	subroutine destroyLinkedList(this)
+		type(IntegerLinkedList),intent(inout) :: this
 
-        !     do while(associated(node))
-        !         call this%list_pop(tmp)
-        !         node => this%first
-        !     enddo
-        ! endif
+		type(IntegerLinkedListNode),pointer :: node, tmp
 
-        ! this%first => null()
-        ! this%last 
-        ! deallocate(this%first)
-        ! deallocate(this%last)
-        ! deallocate(tmp)
 
-    end subroutine destroyLinkedList
+		node => this%first
+		if (this%length == 0) return
+		if (associated(node)) then
+			do while (associated(node%next))
+				
+                if (ASSOCIATED(node,this%last)) then
+                    this%last%next => null()
+                    this%last%previous => null()
+                endif
+                node%previous=> null()
+
+				tmp => node%next
+				node%next=>null()
+				deallocate(node)
+
+				node => tmp
+			end do
+
+			node%previous=> null()
+
+			! tmp => node%next
+			node%next=>null()
+
+
+			node%previous=> null()
+			node%next=>null()
+			deallocate(node)
+			node => null()
+			
+		endif
+        this%length = 0
+        this%first => null()
+        this%last => null()
+
+
+	end subroutine destroyLinkedList
+
 
 
     subroutine destroyIntegerLinkedListNode(node)

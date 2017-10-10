@@ -131,6 +131,9 @@ module PedigreeModule
 		procedure :: writeOutPhaseProbabilities
 		procedure :: writeOutGenotypesForImputed
 
+
+
+		!TODO write a deep copy function 
 #ifdef MPIACTIVE
 		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
@@ -436,7 +439,9 @@ module PedigreeModule
 					new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
 					new%pedigree(i)%id = new%pedigreeSize
 					new%hdMap(new%nhd) = new%pedigreeSize
+					new%genotypeMap(new%nhd) = new%pedigreeSize
 					call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
+					call new%genotypeDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
 					call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
 					call new%pedigree(i)%resetOffspringInformation
 
@@ -494,8 +499,8 @@ module PedigreeModule
 			enddo
 
 			new%nGenotyped = this%nHd
-			new%genotypeMap = new%hdMap
-			new%genotypeDictionary = new%hdDictionary
+			! new%genotypeMap = new%hdMap
+			! new%genotypeDictionary = new%hdDictionary
 			deallocate(tmpAnimalArray)
 		end subroutine getHDPedigree
 

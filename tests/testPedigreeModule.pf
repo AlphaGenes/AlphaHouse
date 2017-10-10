@@ -76,8 +76,8 @@ module TestPedigreeModule
 		end subroutine
 
 
-		function setUpPedigree(charIn) result (ped)
-			type(PedigreeHolder) :: ped
+		subroutine setUpPedigree(ped,charIn)
+			type(PedigreeHolder),intent(out) :: ped
 			integer:: fileUnit, mpiErr
 			character(len=*):: charIn
 
@@ -120,7 +120,7 @@ module TestPedigreeModule
 			end if
 #endif
 
-		end function setUpPedigree
+		end subroutine setUpPedigree
 
 
 
@@ -340,7 +340,7 @@ module TestPedigreeModule
 			integer:: expected
 			real(real64), dimension(10,10):: values
 
-			ped = setUpPedigree("mine")
+			call setUpPedigree(ped,"mine")
 
 			values(3,3) =1
 			values(4,4) = 1
