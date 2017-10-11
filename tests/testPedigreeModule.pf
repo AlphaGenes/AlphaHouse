@@ -269,8 +269,6 @@ module TestPedigreeModule
 			tmp = pedigree%genotypeDictionary%getValue("fff")
 			@assertFalse(tmp == DICT_NULL)
 			array = pedigree%pedigree(tmp1)%individualGenotype%toIntegerArray()
-			print *, array
-			print *, test1
 			@assertEqualUserDefined(array, test1)
 			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%firstHet(),3)
 			call pedigree%pedigree(tmp1)%individualGenotype%setGenotype(3,2)

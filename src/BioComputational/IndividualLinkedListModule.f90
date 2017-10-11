@@ -25,7 +25,7 @@
 
 module IndividualLinkedListModule
 	use iso_fortran_env
-	use individualModule
+	use individualModule, only : individual
 
 	implicit none
 
@@ -397,7 +397,6 @@ subroutine list_remove(this,item)
 	type(individual), pointer :: tmpItem
 	type(IndividualLinkedListNode),pointer :: node
 
-    print *, "start ll destroy"
 	if (associated(this%first)) then
 		node => this%first
 		if (associated(node%item,item)) then
@@ -431,7 +430,6 @@ subroutine list_remove(this,item)
 	else
 		print *, "warning -trying to remove from an empty list"
 	endif
-    print *, "stop ll destroy"
 end subroutine list_remove
 
 !---------------------------------------------------------------------------
@@ -537,7 +535,6 @@ function convertToArrayOriginalIDs(this) result(res)
 	do while (associated(node))
 
 		if (associated(node%item)) then
-            print *,"LENGH",this%length
 			res(counter) = node%item%originalID
 
 			counter = counter+1

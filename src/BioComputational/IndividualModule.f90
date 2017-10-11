@@ -24,16 +24,16 @@
 !-------------------------------------------------------------------------------
 
 module IndividualModule
-    use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
-    use genotypeModule
-    use HaplotypeModule
-    use IntegerLinkedListModule
+    use constantModule
+    use genotypeModule, only : Genotype
+    use HaplotypeModule, only : Haplotype
+    use IntegerLinkedListModule, only : integerLinkedList
 
     use iso_fortran_env
     
     implicit none
 
-    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual, initIndividual
+    public :: Individual,individualPointerContainer,operator ( == ),assignment(=),compareIndividual, initIndividual,copyIndividual
     
     private
 
@@ -162,7 +162,71 @@ module IndividualModule
         module procedure compareIndividual
     end interface operator ( == )
 
+    	interface assignment (=)
+		module procedure copyIndividual
+	end interface
+
 contains
+
+
+
+    subroutine copyIndividual(new, old)
+
+        type(Individual), intent(inout) :: new
+        type(Individual),intent(in) :: old
+
+        new%originalID=old%originalID
+        new%sireID=old%sireID
+        new%damID=old%damID
+        new%generation=old%generation
+        new%id=old%id
+        new%originalPosition=old%originalPosition
+        new%gender=old%gender
+        new%Founder=old%Founder
+        new%Genotyped=old%Genotyped
+        new%Sequenced=old%Sequenced
+        new%isPhased=old%isPhased
+        new%HD=old%HD
+        new%isDummy=old%isDummy
+        new%isUnknownDummy=old%isUnknownDummy
+        allocate(new%OffSprings(OFFSPRINGTHRESHOLD))
+        new%sirePointer => old%sirePointer
+        new%damPointer => old%damPointer
+        ! allocate(new%sirePointer)
+        ! allocate(new%damPointer)
+
+        if (allocated(old%individualGenotype)) then
+            new%individualGenotype=old%individualGenotype
+        endif
+        
+        if (allocated(old%individualGenotypeSubset)) then
+            new%individualGenotypeSubset=old%individualGenotypeSubset
+        endif
+
+        if (allocated(old%individualPhase)) then
+            allocate(new%individualPhase(2))
+            new%individualPhase(1)=old%individualPhase(1)
+            new%individualPhase(2)=old%individualPhase(2)
+        endif
+
+        if (allocated(old%individualPhaseSubset)) then
+            allocate(new%individualPhaseSubset(2))
+            new%individualPhaseSubset(1)=old%individualPhaseSubset(1)
+            new%individualPhaseSubset(2)=old%individualPhaseSubset(2)
+        endif
+
+        if (allocated(old%referAllele)) then
+            new%referAllele=old%referAllele
+        endif
+        if (allocated(old%alterAllele)) then
+            new%AlterAllele=old%AlterAllele
+        endif
+
+        if (allocated(old%inconsistencies)) then
+            new%inconsistencies=old%inconsistencies
+        endif
+
+    end subroutine copyIndividual
 
   subroutine deallocateIndividualPointer(this)
     type(IndividualPointerContainer), intent(inout):: this
@@ -1023,8 +1087,10 @@ contains
     !---------------------------------------------------------------------------
     subroutine resetOffspringInformation(this)
         class(Individual) :: this
-    
-        deallocate(this%offsprings)
+
+        if (allocated(this%offsprings)) then
+            deallocate(this%offsprings)
+        endif
         allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
     
         this%noffs = 0

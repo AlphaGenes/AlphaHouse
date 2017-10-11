@@ -451,7 +451,7 @@ module PedigreeModule
 
 		subroutine getHDPedigree(this,new)
 			class(pedigreeHolder) :: this
-			type(pedigreeHolder),intent(out) :: new
+			type(pedigreeHolder) :: new
 			integer :: i, sire,dam,tmpAnimalCount, indiv
 
 
@@ -506,19 +506,17 @@ module PedigreeModule
 			do i=1,tmpAnimalCount
 				sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
 				dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
-				print *, "adding" ,tmpAnimalCount
 				new%pedigreeSize = new%pedigreeSize+1
 				call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
 				new%nhd = new%nhd + 1
 				new%hdMap(new%nhd) = new%pedigreeSize
 				call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
 				indiv = new%pedigreeSize
-				new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+				call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(this%hdMap(i)))
+				! new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
 				call new%pedigree(i)%resetOffspringInformation
 				if (dam ==DICT_NULL) then
-
 					call new%createDummyAnimalAtEndOfPedigree(dam)
-
 					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%damId = new%pedigree(dam)%originalId
 
@@ -533,7 +531,7 @@ module PedigreeModule
 
 					call new%createDummyAnimalAtEndOfPedigree(sire)
 
-					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+					call new%pedigree(sire)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%sireId = new%pedigree(sire)%originalId
 
 
@@ -1764,7 +1762,7 @@ module PedigreeModule
 			! enddo
 
 			if (ASSOCIATED(this%pedigree)) then
-				! deallocate(this%pedigree
+				deallocate(this%pedigree)
 				this%pedigree => null()
 			endif
 			if (allocated(this%generations)) then
@@ -1842,7 +1840,6 @@ module PedigreeModule
 			this%nsnpsPopulation = size(array,1)
 
 			if (present(initAll)) then
-				print *, "NSNPS here", this%nsnpsPopulation
 				do i=1, this%pedigreeSize
 					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
 				enddo
@@ -2385,11 +2382,9 @@ module PedigreeModule
 					endif
 					! Set the location to the pedigree to the new value
 					newPed(pedCounter) = tmpIndNode%item
-					print *,"test1",tmpIndNode%item%originalId, i,tmpIndNode%item%id
 
 					! take the original id, and update it
 					if(.not. newPed(pedCounter)%isDummy) then
-						print *, "test", newPed(pedCounter)%originalId,pedCounter
 						this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
 					endif
 					newPed(pedCounter)%id = pedCounter
@@ -2596,7 +2591,6 @@ module PedigreeModule
 			this%generations(0:size(newGenerationList)) = newGenerationList
 
 
-			print *, "LOWWW",LBOUND(this%generations)
 			this%isSorted = 3
 		end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 

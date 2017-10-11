@@ -225,8 +225,6 @@ contains
 
 		integer(kind=int64) :: i
 		
-		print *,"start destroy"
-
 
 		if (this%hash_size == 0) return
 		if (associated(this%table)) then
@@ -234,17 +232,12 @@ contains
 
 				call list_destroy(this%table(i)%list )
                 this%table(i)%list => null()
-				! print *,"here"
-				! if ( associated( this%table(i)%list ) ) then
-				! 	! call list_destroy( this%table(i)%list )
-				! 	this%table(i)%list => null()
-				! endif
+
 			enddo
 			deallocate(this%table)
 			nullify(this%table)
 			this%hash_size = 0
 		endif
-		print *,"STOP"
 
 	end subroutine destroy
 
