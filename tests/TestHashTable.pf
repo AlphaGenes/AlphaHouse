@@ -1,79 +1,83 @@
 module TestHashTable
-  use pFUnit_mod
-  use HashModule
-  use ISO_Fortran_env
+	use pFUnit_mod
+	use HashModule
+	use ISO_Fortran_env
 
-  implicit none
+	implicit none
 
-  type(DictStructure) :: dictionary  
-  contains
+	type(DictStructure), allocatable :: dictionary
+	contains
 
- @before
-    subroutine initialise
-        
-         implicit none
-        integer(kind=int64) :: size
+		@before
+		subroutine initialise
 
-        size = 32
-        dictionary = DictStructure(size)
+			implicit none
+			integer(kind=int64) :: size
 
-        
-    end subroutine
-
-   @after
-    subroutine Uninit
-      call dictionary%destroy
-    end subroutine
-
-    @test
-    subroutine testAdd
-        implicit none
-        print *,"in test add"
-        call dictionary%addKey("hi", 5)
-        @assertEqual(dictionary%getValue("hi"), 5)
-    end subroutine testAdd
+			size = 32
+			allocate(dictionary)
+			call dictionary%DictStructure(size)
 
 
-       @test
-    subroutine testGetKeys
-        use ConstantModule
-        implicit none
+		end subroutine
 
-        character(len=IDLENGTH), dimension(:), allocatable :: t
+		@after
+		subroutine Uninit
+			!   call dictionary%destroy
+            deallocate(dictionary)
+			print *,"Test done"
+		end subroutine
 
-        call dictionary%addKey("hi", 5)
-        call dictionary%addKey("there", 5)
-        t = dictionary%getAllKeys()
-        @assertEqual(size(t), 2)
-    end subroutine testGetKeys
+		@test
+		subroutine testAdd
+			implicit none
+			print *,"in test add"
+			call dictionary%addKey("hi", 5)
+			@assertEqual(dictionary%getValue("hi"), 5)
+		end subroutine testAdd
 
-    @test
-    subroutine testHasKey
-        implicit none
 
-        print *,"in test has Keys"
-        call dictionary%addKey("hi", 5)
-        @assertTrue(dictionary%hasKey("hi"))
+		@test
+		subroutine testGetKeys
+			use ConstantModule
+			implicit none
 
-    end subroutine testHasKey
+			character(len=IDLENGTH), dimension(:), allocatable :: t
 
-    @test
-    subroutine testDestroyEmpty
-        type(DictStructure) :: empty
+			call dictionary%addKey("hi", 5)
+			call dictionary%addKey("there", 5)
+			t = dictionary%getAllKeys()
+			@assertEqual(size(t), 2)
+		end subroutine testGetKeys
 
-        empty = DictStructure()
+		@test
+		subroutine testHasKey
+			implicit none
 
-        call empty%destroy()
-    end subroutine testDestroyEmpty
+			print *,"in test has Keys"
+			call dictionary%addKey("hi", 5)
+			@assertTrue(dictionary%hasKey("hi"))
 
-    @test
-    subroutine testDelete
-        implicit none
-        call dictionary%addKey("hi", 5)
-        call dictionary%deleteKey("hi")
-        @assertFalse(dictionary%hasKey("hi"))
+		end subroutine testHasKey
 
-    end subroutine testDelete
+		! @test
+		! subroutine testDestroyEmpty
+		!     type(DictStructure) :: empty
+
+		!     empty = DictStructure()
+
+		!     call empty%destroy()
+		! end subroutine testDestroyEmpty
+
+		@test
+		subroutine testDelete
+			implicit none
+			call dictionary%addKey("hi", 5)
+			call dictionary%deleteKey("hi")
+			@assertFalse(dictionary%hasKey("hi"))
+
+		end subroutine testDelete
 
 
 end module TestHashTable
+

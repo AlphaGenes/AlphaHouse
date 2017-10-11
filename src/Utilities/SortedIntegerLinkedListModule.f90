@@ -11,27 +11,7 @@ module SortedIntegerLinkedListModule
 
   contains
 
-    subroutine destroyLinkedListsortedIntegerLinkedList(this)
-      class(sortedIntegerLinkedList), intent(inout):: this
-      type(IntegerLinkedListNode), pointer:: node
 
-      if (associated(this%last)) then
-!        this%last%next => null()
-!        this%last%previous => null()
-        this%last=> null()
-      end if
-
-      if (associated(this%first)) then
-        node => this%first
-        do while (associated(node))
-          node=> node%next
-          node%previous => null()
-        end do
-      end if
-
-      node=> null()
-
-    end subroutine
 
     subroutine myListlist_add(this, item)
       class(sortedIntegerLinkedList), intent(inout):: this
