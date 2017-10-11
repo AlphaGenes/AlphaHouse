@@ -1094,17 +1094,20 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine initPedigreeFromOutputFile(pedStructure,pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps)
+			use AlphaHouseMod, only : countColumns
 
 			character(len=*), intent(in) :: pedigreeFile
 			character(len=*), intent(in), optional :: genderFile, pedGenotypeFile, phaseFile
-			integer, intent(in) :: nsnps
+			integer, intent(inout) :: nsnps
 			type(PedigreeHolder) :: pedStructure
 
 
 			allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
 			allocate(pedStructure%Founders)
-
+			if (nsnps == 0 .and. present(pedGenotypeFile)) then
+				nsnps = countColumns(pedGenotypeFile,' ') - 1
+			endif
 			if (present(genderFile)) then
 				call initPedigree(pedStructure,pedigreeFile, nsnps=nsnps, genderFile=genderFile)
 			else
@@ -1131,9 +1134,9 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine initPedigreeFromOutputFileFolder(pedStructure,folder, nsnps)
-
+			use AlphaHouseMod, only : countColumns
 			character(len=*), intent(in) :: folder !< input folder
-			integer, intent(in) :: nsnps
+			integer, intent(inout) :: nsnps
 			type(PedigreeHolder) :: pedStructure
 			character(len=:), allocatable :: pedigreeFile, genotypeFile, phaseFile,genderFile
 
@@ -1142,6 +1145,10 @@ module PedigreeModule
 			genotypeFile = "genotypes.txt"
 			phaseFile = "phase.txt"
 			genderFile = "gender.txt"
+
+			if (nsnps == 0) then
+				nsnps = countColumns(genotypeFile,' ') -1
+			endif
 			call initPedigree(pedStructure, folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
 			call pedStructure%addGenotypeInformationFromFile(folder//genotypeFile, nsnps)
 			call pedStructure%addPhaseInformationFromFile(folder//phaseFile, nsnps)
@@ -1186,10 +1193,10 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile)
-			use AlphaHouseMod, only : countLines
+			use AlphaHouseMod, only : countLines, countColumns
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
-			integer, intent(in) :: nSnp !< number of snps to read
+			integer, intent(inout) :: nSnp !< number of snps to read, if 0, will count columns and return
 			integer , intent(in), optional :: GenotypeFileFormatIn
 			character(len=*),intent(in) :: fileIn !< path of Genotype file
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
@@ -1205,6 +1212,10 @@ module PedigreeModule
 			integer(kind=int64) :: sizeDict
 			integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
+
+			if (nsnp == 0) then
+				nsnp = countColumns(fileIn,' ') - 1
+			end if 
 			allocate(tmpGeno(nsnp))
 				allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
@@ -1753,12 +1764,6 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine destroyPedigree(this)
 			type(PedigreeHolder) :: this
-			integer :: i
-
-			! do i=1,this%pedigreeSize
-			! 	this%Pedigree(i) => null()
-
-			! enddo
 
 			if (ASSOCIATED(this%pedigree)) then
 				deallocate(this%pedigree)
@@ -1766,14 +1771,9 @@ module PedigreeModule
 			endif
 			if (allocated(this%generations)) then
 
-				! do i=0, this%maxGeneration
-				! 	call this%generations(i)%destroyLinkedList
-				! enddo
 				deallocate(this%generations)
 			endif
-			! call this%sireList%destroyLinkedList
-			! call this%damList%destroyLinkedList
-			! call this%Founders%destroyLinkedListFinal
+
 			if (allocated(this%sireList)) then
 				deallocate(this%sireList)
 			endif
@@ -1788,22 +1788,18 @@ module PedigreeModule
 			if (allocated(this%inputMap)) then
 				deallocate(this%inputMap)
 			endif
-			! call this%dictionary%destroy !destroy dictionary as we no longer need it
 			if (allocated(this%dictionary)) then
 				deallocate(this%dictionary)
 			endif
 
 			if (this%nGenotyped > 0) then
-				! call this%genotypeDictionary%destroy
 				deallocate(this%genotypeDictionary)
 				deallocate(this%genotypeMap)
 				this%nGenotyped = 0 
 			endif
 
 			if (this%nHd > 0) then
-				! call this%hdDictionary%destroy
 
-				! deallocate(this%hdDictionary)
 				deallocate(this%hdMap)
 				this%nHd = 0
 			endif
@@ -1856,12 +1852,12 @@ module PedigreeModule
 		!--------------------------------------------------------------------------
 		subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn, initAll)
 
-			use AlphaHouseMod, only : countLines
+			use AlphaHouseMod, only : countLines, countColumns
 			implicit none
 			class(PedigreeHolder) :: this
 			character(len=*) :: genotypeFile
 			character(len=IDLENGTH) :: tmpID
-			integer,intent(in) :: nsnps
+			integer,intent(inout) :: nsnps !< if nsnps ==0
 			integer,intent(in),optional :: nAnnisG
 			integer, intent(in),optional :: startSnp, endSnp
 			logical, intent(in), optional :: lockIn
@@ -1881,6 +1877,10 @@ module PedigreeModule
 				nAnnis = nAnnisG
 			else
 				nAnnis = countLines(genotypeFile)
+			endif
+
+			if (nsnps == 0) then
+				nsnps = countColumns(genotypeFile, ' ') - 1
 			endif
 
 			allocate(tmpSnpArray(nsnps))
