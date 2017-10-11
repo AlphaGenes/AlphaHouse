@@ -24,16 +24,16 @@
 !-------------------------------------------------------------------------------
 
 module IndividualModule
-    use constantModule, only : OFFSPRINGTHRESHOLD, NOGENERATIONVALUE
-    use genotypeModule
-    use HaplotypeModule
-    use IntegerLinkedListModule
+    use constantModule
+    use genotypeModule, only : Genotype
+    use HaplotypeModule, only : Haplotype
+    use IntegerLinkedListModule, only : integerLinkedList
 
     use iso_fortran_env
     
     implicit none
 
-    public :: Individual,individualPointerContainer,operator ( == ),compareIndividual, initIndividual
+    public :: Individual,individualPointerContainer,operator ( == ),assignment(=),compareIndividual, initIndividual,copyIndividual
     
     private
 
@@ -95,6 +95,7 @@ module IndividualModule
 
 
         contains
+            procedure :: initIndividual
             procedure :: getSireDamByIndex
             procedure :: isGenotyped
             procedure :: isGenotypedNonMissing
@@ -111,7 +112,7 @@ module IndividualModule
             procedure :: GetOffsprings
             procedure :: AddOffspring
             procedure :: setGender
-            procedure :: destroyIndividual
+            final :: destroyIndividual
             procedure :: setGeneration
             procedure :: getSireDamObjectByIndex
             procedure :: getSireDamNewIDByIndex
@@ -161,7 +162,71 @@ module IndividualModule
         module procedure compareIndividual
     end interface operator ( == )
 
+    	interface assignment (=)
+		module procedure copyIndividual
+	end interface
+
 contains
+
+
+
+    subroutine copyIndividual(new, old)
+
+        type(Individual), intent(inout) :: new
+        type(Individual),intent(in) :: old
+
+        new%originalID=old%originalID
+        new%sireID=old%sireID
+        new%damID=old%damID
+        new%generation=old%generation
+        new%id=old%id
+        new%originalPosition=old%originalPosition
+        new%gender=old%gender
+        new%Founder=old%Founder
+        new%Genotyped=old%Genotyped
+        new%Sequenced=old%Sequenced
+        new%isPhased=old%isPhased
+        new%HD=old%HD
+        new%isDummy=old%isDummy
+        new%isUnknownDummy=old%isUnknownDummy
+        allocate(new%OffSprings(OFFSPRINGTHRESHOLD))
+        new%sirePointer => old%sirePointer
+        new%damPointer => old%damPointer
+        ! allocate(new%sirePointer)
+        ! allocate(new%damPointer)
+
+        if (allocated(old%individualGenotype)) then
+            new%individualGenotype=old%individualGenotype
+        endif
+        
+        if (allocated(old%individualGenotypeSubset)) then
+            new%individualGenotypeSubset=old%individualGenotypeSubset
+        endif
+
+        if (allocated(old%individualPhase)) then
+            allocate(new%individualPhase(2))
+            new%individualPhase(1)=old%individualPhase(1)
+            new%individualPhase(2)=old%individualPhase(2)
+        endif
+
+        if (allocated(old%individualPhaseSubset)) then
+            allocate(new%individualPhaseSubset(2))
+            new%individualPhaseSubset(1)=old%individualPhaseSubset(1)
+            new%individualPhaseSubset(2)=old%individualPhaseSubset(2)
+        endif
+
+        if (allocated(old%referAllele)) then
+            new%referAllele=old%referAllele
+        endif
+        if (allocated(old%alterAllele)) then
+            new%AlterAllele=old%AlterAllele
+        endif
+
+        if (allocated(old%inconsistencies)) then
+            new%inconsistencies=old%inconsistencies
+        endif
+
+    end subroutine copyIndividual
 
   subroutine deallocateIndividualPointer(this)
     type(IndividualPointerContainer), intent(inout):: this
@@ -176,8 +241,8 @@ contains
     !> @author  David Wilson david.wilson@roslin.ed.ac.uk
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
-    function initIndividual(originalID,sireIDIn,damIDIn, id, generation,gender, nsnps, probabilites) result (this)
-        type(Individual) :: this
+    subroutine initIndividual(this, originalID,sireIDIn,damIDIn, id, generation,gender, nsnps, probabilites)
+        class(Individual) :: this
         character(*), intent(in) :: originalID,sireIDIn,damIDIn
         integer, intent(in), Optional :: generation
         integer, intent(in) :: id
@@ -185,6 +250,8 @@ contains
         integer(kind=1), intent(in), Optional :: gender
         logical, optional :: probabilites !< if present, allocate probabilites
 
+
+        call destroyIndividual(this)
 
         allocate(character(len=len(originalID)) ::this%originalID)
         allocate(character(len=len(sireIDIn)) ::this%sireID)
@@ -209,9 +276,9 @@ contains
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
                 allocate(this%inconsistencies(nsnps))
-                this%individualGenotype = newGenotypeMissing(nsnps)
-                this%individualPhase(1) = newHaplotypeMissing(nsnps)
-                this%individualPhase(2) = newHaplotypeMissing(nsnps)
+                call this%individualGenotype%newGenotypeMissing(nsnps)
+                call this%individualPhase(1)%newHaplotypeMissing(nsnps)
+                call this%individualPhase(2)%newHaplotypeMissing(nsnps)
                 this%inconsistencies =  0
             endif
 
@@ -223,7 +290,7 @@ contains
 
 
 
-    end function initIndividual
+    end subroutine initIndividual
 
      !---------------------------------------------------------------------------
     !> @brief Deallocates individual object
@@ -231,16 +298,19 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine destroyIndividual(this)
-        class(Individual) :: this
+        type(Individual) :: this
+
         if (allocated(this%offsprings)) then
             deallocate(this%offsprings)
         endif
+
 
         if (allocated(this%originalId)) then
             deallocate(this%originalID)
             deallocate(this%sireID)
             deallocate(this%damID)
         endif
+
         if (allocated(this%referAllele)) then
             deallocate(this%referAllele)
             deallocate(this%alterAllele)
@@ -249,18 +319,18 @@ contains
         if (allocated(this%seg)) then
             deallocate(this%seg)
         endif
+
         if (allocated(this%individualPhase)) then
             deallocate(this%individualPhase)
         endif
+
         if (allocated(this%individualGenotype)) then
             deallocate(this%individualGenotype)
         endif
 
-
         if (allocated(this%genotypeProbabilities)) then
             deallocate(this%genotypeProbabilities)
         endif
-
 
          if (allocated(this%phaseProbabilities)) then
             deallocate(this%phaseProbabilities)
@@ -306,7 +376,6 @@ contains
             deallocate(this%MyPhaseAcc)
         endif
 
-
         if (allocated(this%MyPhaseCorrect)) then
 
             deallocate(this%MyPhaseCorrect)
@@ -314,7 +383,6 @@ contains
         if (allocated(this%inconsistencies)) then
             deallocate(this%inconsistencies)
         endif
-
 
     end subroutine destroyIndividual
 
@@ -1019,8 +1087,10 @@ contains
     !---------------------------------------------------------------------------
     subroutine resetOffspringInformation(this)
         class(Individual) :: this
-    
-        deallocate(this%offsprings)
+
+        if (allocated(this%offsprings)) then
+            deallocate(this%offsprings)
+        endif
         allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
     
         this%noffs = 0
@@ -1143,11 +1213,18 @@ contains
         if (present(lockIn)) then
 
             if (lockIn) then
-                this%individualGenotype = Genotype(Geno,lock=1)
+                if (.not. allocated(this%individualGenotype)) allocate(this%individualGenotype)
+                call this%individualGenotype%Genotype(Geno,lock=1)
                 return
             endif
-        endif 
-        this%individualGenotype = Genotype(Geno)
+        endif
+
+        if (allocated(this%individualGenotype)) then
+            deallocate(this%individualGenotype)
+            allocate(this%individualGenotype)
+        endif
+
+        call this%individualGenotype%Genotype(Geno)
     end subroutine setGenotypeArray
 
 
@@ -1186,7 +1263,7 @@ contains
         class(Individual), intent(inout) :: this
         integer(KIND=1), dimension(:), intent(in) :: geno !< One dimensional array of genotype information
 
-        this%individualGenotypeSubset = Genotype(geno)
+        call this%individualGenotypeSubset%Genotype(geno)
 
     end subroutine setGenotypeArraySubset
 
@@ -1204,7 +1281,7 @@ contains
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
 
         !TODO: Should we be checking that genotype is set and if not set it to missing?
-        this%individualPhase(hap) = Haplotype(phase)
+        call this%individualPhase(hap)%Haplotype(phase)
     end subroutine setPhaseArray
 
 
@@ -1221,7 +1298,7 @@ contains
         integer(KIND=1), dimension(:), intent(in) :: phase !< One dimensional array of phase information
                 
 
-        this%individualPhaseSubset(hap) = Haplotype(phase)
+        call this%individualPhaseSubset(hap)%Haplotype(phase)
 
     end subroutine setPhaseArraySubset
 
@@ -1241,8 +1318,8 @@ contains
         if (.not. allocated(this%individualPhase)) then
             allocate(this%individualPhase(2))
         endif
-        this%individualPhase(1) = Haplotype(nSnp)
-        this%individualPhase(2) = Haplotype(nSnp)
+        call this%individualPhase(1)%Haplotype(nSnp)
+        call this%individualPhase(2)%Haplotype(nSnp)
     end subroutine initPhaseArrays
 
 
@@ -1256,7 +1333,7 @@ contains
         class(Individual) :: this
         integer, intent(in) :: nsnp
 
-        this%individualGenotype = Genotype(nSnp)
+        call this%individualGenotype%Genotype(nSnp)
     end subroutine initGenotype
 
 
@@ -1541,9 +1618,9 @@ contains
         allocate(this%ParentInferredSwitchCount(2))
         allocate(this%ParentalHaplotypesFull(2,nSnpAll))
         allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
-        this%individualGenotypeSubset = newGenotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(1) = newHaplotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(2) = newHaplotypeMissing(nSnpSubset)
+        call this%individualGenotypeSubset%newGenotypeMissing(nSnpSubset)
+        call this%individualPhaseSubset(1)%newHaplotypeMissing(nSnpSubset)
+        call this%individualPhaseSubset(2)%newHaplotypeMissing(nSnpSubset)
         this%ParentalHaplotypes = MissingPlantArrayCode
         this%StrandBreakArray = 0
         this%ParentInferredSwitchCount = 0

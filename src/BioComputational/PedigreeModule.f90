@@ -41,9 +41,9 @@ module PedigreeModule
 
 	type(Individual), pointer, dimension(:) :: Pedigree
 
-	type(IndividualLinkedList) :: Founders !linked List holding all founders
+	type(IndividualLinkedList),allocatable :: Founders !linked List holding all founders
 	type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
-	type(DictStructure) :: dictionary ! hashmap of animal ids to index in pedigree
+	type(DictStructure),allocatable :: dictionary ! hashmap of animal ids to index in pedigree
 	integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
 	integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
 	integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
@@ -51,24 +51,24 @@ module PedigreeModule
 	integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree
 
 	integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID
-	type(DictStructure) :: genotypeDictionary ! maps id to location in genotype map
+	type(DictStructure),allocatable :: genotypeDictionary ! maps id to location in genotype map
 	integer(kind=int32) :: nGenotyped ! number of animals that are genotyped
 
 	integer, dimension(:) , allocatable :: hdMap ! map going from genotypeMap(1:nHd) = recID
-	type(DictStructure) :: hdDictionary ! maps id to location in genotype map
+	type(DictStructure),allocatable :: hdDictionary ! maps id to location in genotype map
 	integer(kind=int32) :: nHd ! number of animals that are genotyped hd
 	integer :: maxGeneration ! largest generation
 
 	integer :: nsnpsPopulation ! number of snps for
 	integer(kind=1) :: isSorted !integer saying how pedigree is sorted. 0 is not sorted. 1 is sorted with all dummys at end, 2 is sorted with unknown dummys at end, 3 is sorted with dummys at top
 
-	type(IndividualLinkedList) :: sireList, damList !< lists containing all sires and dams
+	type(IndividualLinkedList),allocatable :: sireList, damList !< lists containing all sires and dams
 	type(IndividualLinkedList), allocatable :: uniqueParentList
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
 		procedure :: calculatePedigreeCorrelationWithInbreeding
 		procedure :: copyPedigree
-		procedure :: destroyPedigree
+		final :: destroyPedigree
 		procedure :: setPedigreeGenerationsAndBuildArrays
 		procedure :: outputSortedPedigree
 		procedure :: setOffspringGeneration
@@ -131,6 +131,9 @@ module PedigreeModule
 		procedure :: writeOutPhaseProbabilities
 		procedure :: writeOutGenotypesForImputed
 
+
+
+		!TODO write a deep copy function 
 #ifdef MPIACTIVE
 		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
@@ -159,6 +162,13 @@ module PedigreeModule
 		! initPedigreeFromOutputFileFolder initialiser from file
 	end interface PedigreeHolder
 
+	interface assignment (=)
+		module procedure copyPedigree
+	end interface
+
+	interface operator (==)
+		module procedure equality
+	end interface
 	interface Sort !Sorts into generation list
 		module procedure :: setPedigreeGenerationsAndBuildArrays
 	end interface Sort
@@ -182,6 +192,157 @@ module PedigreeModule
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypesForImputed
+
+		!---------------------------------------------------------------------------
+		!< @brief Sorts pedigree, and overwrites all fields to new values
+		!< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
+		!< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine copyPedigree(res,this)
+			use iso_fortran_env, only : output_unit, int64
+			type(PedigreeHolder),intent(in) :: this
+			class(pedigreeHolder), intent(inout) :: res
+			integer :: i, tmpId,tmpGenotypeMapIndex
+			integer(kind=int64) :: sizeDict
+			type(Individual), pointer, dimension(:) :: newPed
+			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+
+			if (.not. allocated(this%generations)) then
+				call this%setPedigreeGenerationsAndBuildArrays
+			endif
+			i = 0
+
+
+			res%pedigreeSize = this%pedigreeSize
+			res%nDummys = this%nDummys
+			res%unknownDummys = this%unknownDummys
+			res%maxPedigreeSize = this%maxPedigreeSize
+			res%inputMap = this%inputMap
+			res%genotypeMap = this%genotypeMap
+			res%genotypeDictionary = this%genotypeDictionary
+			! call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
+			res%nGenotyped =this%nGenotyped
+			res%hdMap = this%hdMap
+			res%hdDictionary = this%hdDictionary
+			! call copyHashTable(res%hdDictionary, this%hdDictionary)
+			res%nHd = this%nHd
+			res%maxGeneration = this%maxGeneration
+			res%nsnpsPopulation = this%nsnpsPopulation
+			res%isSorted =this%isSorted
+
+			! call res%dictionary%destroy()
+			! call res%founders%destroyLinkedList()
+			! call res%sireList%destroyLinkedList()
+			! call res%damList%destroyLinkedList()
+
+
+			sizeDict  =this%pedigreeSize
+			allocate(newPed(this%maxPedigreeSize))
+
+			call res%dictionary%DictStructure(sizeDict)
+			allocate(newGenerationList(0:this%maxGeneration))
+
+			do i=1, this%pedigreeSize
+				! update dictionary index
+				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
+
+				!  update genotype map
+
+				if (res%nGenotyped > 0) then
+					tmpGenotypeMapIndex = res%genotypeDictionary%getValue(this%pedigree(i)%originalID)
+					if (tmpGenotypeMapIndex /= DICT_NULL) then
+						res%genotypeMap(tmpGenotypeMapIndex) = i
+					endif
+				endif
+				! Update hd map
+				if (res%nHd > 0) then
+					tmpGenotypeMapIndex = res%hdDictionary%getValue(this%pedigree(i)%originalID)
+					if (tmpGenotypeMapIndex /= DICT_NULL) then
+						res%hdMap(tmpGenotypeMapIndex) = i
+					endif
+				endif
+				! Set the location to the pedigree to the new value
+				newPed(i) = this%pedigree(i)
+
+				! take the original id, and update it
+				if(.not. newPed(i)%isDummy) then
+					res%inputMap(newPed(i)%originalPosition) = i
+				endif
+				newPed(i)%id = i
+				call newPed(i)%resetOffspringInformation ! reset offsprings
+				if (associated(newPed(i)%sirePointer)) then
+					tmpId =  res%dictionary%getValue(newPed(i)%sirePointer%originalID)
+					if (tmpID /= DICT_NULL) then
+						call newPed(tmpId)%addOffspring(newPed(i))
+						newPed(i)%sirePointer=> newPed(tmpId)
+						if (newPed(tmpId)%nOffs== 1) then
+							call res%sireList%list_add(newPed(tmpId))
+						endif
+					endif
+				endif
+
+				if (associated(newPed(i)%damPointer)) then
+					tmpId =  res%dictionary%getValue(newPed(i)%damPointer%originalID)
+					if (tmpID /= DICT_NULL) then
+						call newPed(tmpId)%addOffspring(newPed(i))
+						newPed(i)%damPointer=> newPed(tmpId)
+						if (newPed(tmpId)%nOffs== 1) then
+							call res%damList%list_add(newPed(tmpId))
+						endif
+					endif
+				endif
+
+				if (i ==0 ) then !if object is afounder add to founder array
+					call  res%founders%list_add(newPed(i))
+				endif
+
+				if (res%isSorted /= 0) then
+					call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
+				endif
+			enddo
+
+			res%pedigree => newPed
+			res%generations = newGenerationList
+
+		end subroutine copyPedigree
+
+
+		logical function equality(pedOne, pedTwo)
+
+			type(pedigreeHolder) , intent(in) :: pedOne, pedTwo
+			integer :: i
+
+			equality = .true.	
+
+			if (pedOne%pedigreeSize /=  pedTwo%pedigreeSize) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%nGenotyped /=  pedTwo%nGenotyped) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%nHd /=  pedTwo%nHd) then
+				equality = .false.
+				return
+			endif
+
+			do i=1, pedOne%pedigreeSize
+				if (.not. (pedOne%pedigree(i) == pedTwo%pedigree(i))) then
+					equality = .false.
+					return
+				endif
+
+
+			end do
+
+
+		end function equality
+
 
 
 		!---------------------------------------------------------------------------
@@ -261,12 +422,13 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initEmptyPedigree(nsnps) result(pedStructure)
+		subroutine initEmptyPedigree(pedStructure,nsnps)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
 
-			pedStructure%dictionary = DictStructure()
+			allocate(pedStructure%dictionary)
+			call pedStructure%dictionary%DictStructure()
 
 			pedStructure%pedigreeSize = 0
 			pedStructure%nDummys = 0
@@ -274,130 +436,20 @@ module PedigreeModule
 			pedStructure%nHd = 0
 			pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
 			allocate(pedStructure%pedigree(pedStructure%maxPedigreeSize))
+			allocate(pedStructure%founders)
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
 			pedStructure%nsnpsPopulation = 0
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
-		end function initEmptyPedigree
-
-
-		!---------------------------------------------------------------------------
-		!< @brief Sorts pedigree, and overwrites all fields to new values
-		!< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
-		!< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
-		function copyPedigree(this) result(res)
-			use iso_fortran_env, only : output_unit, int64
-			class(PedigreeHolder),intent(in) :: this
-			type(pedigreeHolder) :: res
-			integer :: i, tmpId,tmpGenotypeMapIndex
-			integer(kind=int64) :: sizeDict
-			type(Individual), pointer, dimension(:) :: newPed
-			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
-
-			if (.not. allocated(this%generations)) then
-				call this%setPedigreeGenerationsAndBuildArrays
-			endif
-			i = 0
-
-
-			res%pedigreeSize = this%pedigreeSize
-			res%nDummys = this%nDummys
-			res%unknownDummys = this%unknownDummys
-			res%maxPedigreeSize = this%maxPedigreeSize
-			res%inputMap = this%inputMap
-			res%genotypeMap = this%genotypeMap
-			call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
-			res%nGenotyped =this%nGenotyped
-			res%hdMap = this%hdMap
-			call copyHashTable(res%hdDictionary, this%hdDictionary)
-			res%nHd = this%nHd
-			res%maxGeneration = this%maxGeneration
-			res%nsnpsPopulation = this%nsnpsPopulation
-			res%isSorted =this%isSorted
-
-			! call res%dictionary%destroy()
-			! call res%founders%destroyLinkedList()
-			! call res%sireList%destroyLinkedList()
-			! call res%damList%destroyLinkedList()
-
-
-			sizeDict  =this%pedigreeSize
-			allocate(newPed(this%maxPedigreeSize))
-
-			res%dictionary = DictStructure(sizeDict)
-			allocate(newGenerationList(0:this%maxGeneration))
-
-			do i=1, this%pedigreeSize
-				! update dictionary index
-				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-
-				!  update genotype map
-
-				if (res%nGenotyped > 0) then
-					tmpGenotypeMapIndex = res%genotypeDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%genotypeMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Update hd map
-				if (res%nHd > 0) then
-					tmpGenotypeMapIndex = res%hdDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%hdMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Set the location to the pedigree to the new value
-				newPed(i) = this%pedigree(i)
-
-				! take the original id, and update it
-				if(.not. newPed(i)%isDummy) then
-					res%inputMap(newPed(i)%originalPosition) = i
-				endif
-				newPed(i)%id = i
-				call newPed(i)%resetOffspringInformation ! reset offsprings
-				if (associated(newPed(i)%sirePointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%sirePointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%sirePointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs == 1) then
-							call res%sireList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (associated(newPed(i)%damPointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%damPointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%damPointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs == 1) then
-							call res%damList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (i ==0 ) then !if object is afounder add to founder array
-					call  res%founders%list_add(newPed(i))
-				endif
-
-				if (res%isSorted /= 0) then
-					call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
-				endif
-			enddo
-
-			res%pedigree => newPed
-			res%generations = newGenerationList
-
-		end function copyPedigree
+		end subroutine initEmptyPedigree
 
 
 
 
-		function getHDPedigree(this) result(new)
+
+		subroutine getHDPedigree(this,new)
 			class(pedigreeHolder) :: this
 			type(pedigreeHolder) :: new
 			integer :: i, sire,dam,tmpAnimalCount, indiv
@@ -406,16 +458,17 @@ module PedigreeModule
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			! new%pedigreeSize = this%nHd
-			new = initEmptyPedigree(this%nsnpsPopulation)
+			call initEmptyPedigree(new,this%nsnpsPopulation)
 			tmpAnimalCount = 0
 			new%nhd = 0
 
 			allocate(new%hdMap(this%nHd))
 			allocate(new%genotypeMap(this%nGenotyped))
 			allocate(tmpAnimalArray(this%nHd))
-
-			new%hdDictionary = DictStructure()
-			new%genotypeDictionary = DictStructure()
+			allocate(new%hdDictionary)
+			allocate(new%genotypeDictionary)
+			call new%hdDictionary%DictStructure()
+			call new%genotypeDictionary%DictStructure()
 
 			if (this%nHd == 0) then
 				write(error_unit, * ) "ERROR: No animals defined as HD."
@@ -431,7 +484,9 @@ module PedigreeModule
 					new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
 					new%pedigree(i)%id = new%pedigreeSize
 					new%hdMap(new%nhd) = new%pedigreeSize
+					new%genotypeMap(new%nhd) = new%pedigreeSize
 					call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
+					call new%genotypeDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
 					call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
 					call new%pedigree(i)%resetOffspringInformation
 
@@ -451,19 +506,17 @@ module PedigreeModule
 			do i=1,tmpAnimalCount
 				sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
 				dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
-				print *, "adding" ,tmpAnimalCount
 				new%pedigreeSize = new%pedigreeSize+1
 				call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
 				new%nhd = new%nhd + 1
 				new%hdMap(new%nhd) = new%pedigreeSize
 				call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
 				indiv = new%pedigreeSize
-				new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+				call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(this%hdMap(i)))
+				! new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
 				call new%pedigree(i)%resetOffspringInformation
 				if (dam ==DICT_NULL) then
-
 					call new%createDummyAnimalAtEndOfPedigree(dam)
-
 					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%damId = new%pedigree(dam)%originalId
 
@@ -478,7 +531,7 @@ module PedigreeModule
 
 					call new%createDummyAnimalAtEndOfPedigree(sire)
 
-					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
+					call new%pedigree(sire)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%sireId = new%pedigree(sire)%originalId
 
 
@@ -489,10 +542,10 @@ module PedigreeModule
 			enddo
 
 			new%nGenotyped = this%nHd
-			new%genotypeMap = new%hdMap
-			new%genotypeDictionary = new%hdDictionary
+			! new%genotypeMap = new%hdMap
+			! new%genotypeDictionary = new%hdDictionary
 			deallocate(tmpAnimalArray)
-		end function getHDPedigree
+		end subroutine getHDPedigree
 
 
 
@@ -727,7 +780,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		pure subroutine setPhaseFromArray(this, array)
+		subroutine setPhaseFromArray(this, array)
 
 			use HaplotypeModule
 
@@ -736,8 +789,8 @@ module PedigreeModule
 			integer :: i
 
 			do i=1, size(array,1)
-				this%pedigree(i)%individualPhase(1) = newHaplotypeInt(array(i,:,1))
-				this%pedigree(i)%individualPhase(2) = newHaplotypeInt(array(i,:,2))
+				call this%pedigree(i)%individualPhase(1)%newHaplotypeInt(array(i,:,1))
+				call this%pedigree(i)%individualPhase(2)%newHaplotypeInt(array(i,:,2))
 			enddo
 
 		end subroutine setPhaseFromArray
@@ -764,7 +817,7 @@ module PedigreeModule
 				res= this%uniqueParentList
 			else
 
-				tmpDict= DictStructure()
+				call tmpDict%DictStructure()
 				node => this%sireList%first
 
 				do i=1,this%sireList%length
@@ -894,7 +947,7 @@ module PedigreeModule
 			integer :: i
 
 			do i=1, size(array,1)
-				this%pedigree(i)%individualGenotype = newGenotypeInt(array(i,:))
+				call this%pedigree(i)%individualGenotype%newGenotypeInt(array(i,:))
 			enddo
 
 		end subroutine setGenotypeFromArray
@@ -906,7 +959,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigree(fileIn, numberInFile, genderFile, nsnps) result(pedStructure)
+		subroutine initPedigree(pedStructure, fileIn, numberInFile, genderFile, nsnps)
 			use AlphaHouseMod, only : countLines
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -922,6 +975,7 @@ module PedigreeModule
 			integer :: tmpAnimalArrayCount,i
 			integer(kind=int64) :: sizeDict
 			logical :: sireFound, damFound
+
 			pedStructure%isSorted = 0
 			pedStructure%nDummys = 0
 			pedStructure%nHd = 0
@@ -929,6 +983,8 @@ module PedigreeModule
 			pedStructure%nGenotyped = 0
 			pedStructure%nsnpsPopulation = 0
 
+			call destroyPedigree(pedStructure)
+			
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
@@ -937,17 +993,26 @@ module PedigreeModule
 			else
 				nIndividuals = countLines(fileIn)
 			endif
+			
+			
 
 			sizeDict = nIndividuals
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = nIndividuals
-			pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+
+			allocate(pedStructure%dictionary)
+			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+			
 			allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(nIndividuals))
 			pedStructure%maxGeneration = 0
 			open(newUnit=fileUnit, file=fileIn, status="old")
 
+
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 			do i=1,nIndividuals
 				sireFound = .false.
 				damFound = .false.
@@ -960,7 +1025,7 @@ module PedigreeModule
 				endif
 				call pedStructure%dictionary%addKey(tmpId, i)
 
-				pedStructure%Pedigree(i) = Individual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+				call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 				pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
 				if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -1019,8 +1084,7 @@ module PedigreeModule
 			deallocate(tmpAnimalArray)
 			!  write(output_unit, *) "Number of animals in Pedigree:",pedStructure%pedigreeSize-pedStructure%nDummys
 			!  write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-
-		end function initPedigree
+		end  subroutine
 
 
 		!---------------------------------------------------------------------------
@@ -1029,18 +1093,25 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeFromOutputFile(pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps) result(pedStructure)
+		subroutine initPedigreeFromOutputFile(pedStructure,pedigreeFile, genderFile, pedGenotypeFile, phaseFile, nsnps)
+			use AlphaHouseMod, only : countColumns
 
 			character(len=*), intent(in) :: pedigreeFile
 			character(len=*), intent(in), optional :: genderFile, pedGenotypeFile, phaseFile
-			integer, intent(in) :: nsnps
+			integer, intent(inout) :: nsnps
 			type(PedigreeHolder) :: pedStructure
 
 
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
+			if (nsnps == 0 .and. present(pedGenotypeFile)) then
+				nsnps = countColumns(pedGenotypeFile,' ') - 1
+			endif
 			if (present(genderFile)) then
-				pedStructure = initPedigree(pedigreeFile, nsnps=nsnps, genderFile=genderFile)
+				call initPedigree(pedStructure,pedigreeFile, nsnps=nsnps, genderFile=genderFile)
 			else
-				pedStructure = initPedigree(pedigreeFile, nsnps=nsnps)
+				call initPedigree(pedStructure,pedigreeFile, nsnps=nsnps)
 
 			endif
 
@@ -1053,7 +1124,7 @@ module PedigreeModule
 			endif
 
 
-		end function initPedigreeFromOutputFile
+		end subroutine initPedigreeFromOutputFile
 
 
 		!---------------------------------------------------------------------------
@@ -1062,10 +1133,10 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeFromOutputFileFolder(folder, nsnps) result(pedStructure)
-
+		subroutine initPedigreeFromOutputFileFolder(pedStructure,folder, nsnps)
+			use AlphaHouseMod, only : countColumns
 			character(len=*), intent(in) :: folder !< input folder
-			integer, intent(in) :: nsnps
+			integer, intent(inout) :: nsnps
 			type(PedigreeHolder) :: pedStructure
 			character(len=:), allocatable :: pedigreeFile, genotypeFile, phaseFile,genderFile
 
@@ -1074,12 +1145,16 @@ module PedigreeModule
 			genotypeFile = "genotypes.txt"
 			phaseFile = "phase.txt"
 			genderFile = "gender.txt"
-			pedStructure = initPedigree(folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
+
+			if (nsnps == 0) then
+				nsnps = countColumns(genotypeFile,' ') -1
+			endif
+			call initPedigree(pedStructure, folder//pedigreeFile, nsnps=nsnps, genderFile=folder//genderFile)
 			call pedStructure%addGenotypeInformationFromFile(folder//genotypeFile, nsnps)
 			call pedStructure%addPhaseInformationFromFile(folder//phaseFile, nsnps)
 
 
-		end function initPedigreeFromOutputFileFolder
+		end subroutine initPedigreeFromOutputFileFolder
 
 
 		!---------------------------------------------------------------------------
@@ -1117,11 +1192,11 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeGenotypeFiles(fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile) result(pedStructure)
-			use AlphaHouseMod, only : countLines
+		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile)
+			use AlphaHouseMod, only : countLines, countColumns
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
-			integer, intent(in) :: nSnp !< number of snps to read
+			integer, intent(inout) :: nSnp !< number of snps to read, if 0, will count columns and return
 			integer , intent(in), optional :: GenotypeFileFormatIn
 			character(len=*),intent(in) :: fileIn !< path of Genotype file
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
@@ -1137,7 +1212,14 @@ module PedigreeModule
 			integer(kind=int64) :: sizeDict
 			integer(kind=1), dimension(nSnp * 2) :: WorkVec
 
+
+			if (nsnp == 0) then
+				nsnp = countColumns(fileIn,' ') - 1
+			end if 
 			allocate(tmpGeno(nsnp))
+				allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 			pedStructure%isSorted = 0
 			pedStructure%nHd = 0
 			pedStructure%nGenotyped = 0
@@ -1151,9 +1233,9 @@ module PedigreeModule
 
 			if  (present(pedFile)) then
 				if (present(genderFile)) then
-					pedStructure = PedigreeHolder(pedFile, genderFile=genderFile, nsnps=nSnp)
+					call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
 				else
-					pedStructure = PedigreeHolder(pedFile, nsnps=nSnp)
+					call initPedigree(pedStructure,pedFile, nsnps=nSnp)
 				endif
 			else
 				pedStructure%nDummys = 0
@@ -1162,7 +1244,7 @@ module PedigreeModule
 				pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 				allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 				pedStructure%pedigreeSize = nIndividuals
-				pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+				call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 				allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
 				allocate(pedStructure%inputMap(nIndividuals))
 				pedStructure%maxGeneration = 0
@@ -1207,7 +1289,7 @@ module PedigreeModule
 					endif
 				else
 					call pedStructure%dictionary%addKey(tmpId, i)
-					pedStructure%Pedigree(i) =  Individual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 					pedStructure%Pedigree(i)%originalPosition = i
 					pedStructure%inputMap(i) = i
 					call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
@@ -1216,7 +1298,7 @@ module PedigreeModule
 			enddo
 
 			close(fileUnit)
-		end function initPedigreeGenotypeFiles
+		end subroutine initPedigreeGenotypeFiles
 
 		!---------------------------------------------------------------------------
 		!< @brief Constructor for pedigree class
@@ -1225,7 +1307,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeArrays(pedArray, genderArray, nsnps) result(pedStructure)
+		subroutine initPedigreeArrays(pedStructure, pedArray, genderArray, nsnps)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 
@@ -1244,6 +1326,10 @@ module PedigreeModule
 			pedStructure%nDummys = 0
 			tmpAnimalArrayCount = 0
 			pedStructure%nsnpsPopulation = 0
+			
+			allocate(pedStructure%sireList)
+			allocate(pedStructure%damList)
+			allocate(pedStructure%Founders)
 
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
@@ -1254,7 +1340,7 @@ module PedigreeModule
 			pedStructure%maxPedigreeSize = size(pedArray,2) + (size(pedArray,2) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = size(pedArray,2)
-			pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(size(pedArray,2)))
 			pedStructure%maxGeneration = 0
@@ -1266,7 +1352,7 @@ module PedigreeModule
 
 				call pedStructure%dictionary%addKey(pedArray(1,i), i)
 
-				pedStructure%Pedigree(i) =  Individual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+				call pedStructure%Pedigree(i)%initIndividual(pedArray(1,i),pedArray(2,i),pedArray(3,i), i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 				pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
 				if (pedArray(2,i) /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -1320,7 +1406,7 @@ module PedigreeModule
 
 			deallocate(tmpAnimalArray)
 			write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-		end function initPedigreeArrays
+		end subroutine initPedigreeArrays
 
 
 		!---------------------------------------------------------------------------
@@ -1330,7 +1416,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		function initPedigreeIntArrays(pedArray, genderArray) result(pedStructure)
+		subroutine initPedigreeIntArrays(pedStructure,pedArray, genderArray)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 
@@ -1355,7 +1441,7 @@ module PedigreeModule
 			pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = size(pedArray)
-			pedStructure%dictionary = DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(size(pedArray)))
 			pedStructure%maxGeneration = 0
@@ -1368,7 +1454,7 @@ module PedigreeModule
 				write(tmpSireId,*) pedArray(2,i)
 				write(tmpDamID,*) pedArray(3,i)
 				call pedStructure%dictionary%addKey(tmpId, i)
-				pedStructure%Pedigree(i) = Individual(tmpId,tmpSireId,tmpDamID, i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+				call pedStructure%Pedigree(i)%initIndividual(tmpId,tmpSireId,tmpDamID, i,nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 				pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
 				if (pedArray(i,2) /= EMPTY_PARENT) then !check sire is defined in pedigree
@@ -1421,7 +1507,7 @@ module PedigreeModule
 			call addOffspringsAfterReadIn(pedStructure, tmpAnimalArray,tmpAnimalArrayCount)
 			deallocate(tmpAnimalArray)
 			write (error_unit,*) "NOTE: Number of Dummy Animals: ",pedStructure%nDummys
-		end function initPedigreeIntArrays
+		end subroutine initPedigreeIntArrays
 
 		!---------------------------------------------------------------------------
 		!< @brief Helper function to avoid code duplication
@@ -1474,7 +1560,7 @@ module PedigreeModule
 								write(error_unit,*) "ERROR: too many undefined animals"
 								stop
 							endif
-							pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 							call pedStructure%dictionary%addKey(trim(tmpSire), pedStructure%pedigreeSize)
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
 							pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
@@ -1518,7 +1604,7 @@ module PedigreeModule
 								write(error_unit,*) "ERROR: too many undefined animals"
 								stop
 							endif
-							pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 							call pedStructure%dictionary%addKey(trim(tmpDam), pedStructure%pedigreeSize)
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
 							pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
@@ -1556,7 +1642,7 @@ module PedigreeModule
 							write(error_unit,*) "ERROR: too many undefined animals"
 							stop
 						endif
-						pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
 						if (tmpDam == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
@@ -1586,7 +1672,7 @@ module PedigreeModule
 							write(error_unit,*) "ERROR: too many undefined animals"
 							stop
 						endif
-						pedStructure%Pedigree(pedStructure%pedigreeSize) =  Individual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 						if (tmpSire == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
@@ -1653,11 +1739,9 @@ module PedigreeModule
 			integer :: i
 
 			this%nGenotyped = 0
-			call this%genotypeDictionary%destroy()
-
-			if (allocated(this%genotypeMap)) then
-				deallocate(this%genotypeMap)
-			endif
+			! call this%genotypeDictionary%destroy()
+			deallocate(this%genotypeDictionary)
+			this%genotypeMap = 0
 			
 
 
@@ -1679,37 +1763,48 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine destroyPedigree(this)
-			class(PedigreeHolder) :: this
-			integer :: i
+			type(PedigreeHolder) :: this
 
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
-
-			enddo
+			if (ASSOCIATED(this%pedigree)) then
+				deallocate(this%pedigree)
+				this%pedigree => null()
+			endif
 			if (allocated(this%generations)) then
 
-				do i=0, this%maxGeneration
-					call this%generations(i)%destroyLinkedList
-				enddo
 				deallocate(this%generations)
 			endif
-			call this%sireList%destroyLinkedList
-			call this%damList%destroyLinkedList
-			call this%Founders%destroyLinkedListFinal
+
+			if (allocated(this%sireList)) then
+				deallocate(this%sireList)
+			endif
+
+			if (allocated(this%damList)) then
+				deallocate(this%damList)
+			endif
+			if (allocated(this%founders)) then
+				deallocate(this%founders)
+			endif
 
 			if (allocated(this%inputMap)) then
 				deallocate(this%inputMap)
 			endif
-			call this%dictionary%destroy !destroy dictionary as we no longer need it
+			if (allocated(this%dictionary)) then
+				deallocate(this%dictionary)
+			endif
+
 			if (this%nGenotyped > 0) then
-				call this%genotypeDictionary%destroy
+				deallocate(this%genotypeDictionary)
 				deallocate(this%genotypeMap)
+				this%nGenotyped = 0 
 			endif
 
 			if (this%nHd > 0) then
-				call this%hdDictionary%destroy
+
 				deallocate(this%hdMap)
+				this%nHd = 0
 			endif
+
+			this%pedigreeSize = 0
 
 			if (allocated(this%uniqueParentList)) then
 
@@ -1740,8 +1835,6 @@ module PedigreeModule
 			this%nsnpsPopulation = size(array,1)
 
 			if (present(initAll)) then
-				print *, "NSNPS here", this%nsnpsPopulation
-				print *, "size here", this%pedigreeSize
 				do i=1, this%pedigreeSize
 					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
 				enddo
@@ -1759,12 +1852,12 @@ module PedigreeModule
 		!--------------------------------------------------------------------------
 		subroutine addGenotypeInformationFromFile(this, genotypeFile, nsnps, nAnnisG, startSnp, endSnp, lockIn, initAll)
 
-			use AlphaHouseMod, only : countLines
+			use AlphaHouseMod, only : countLines, countColumns
 			implicit none
 			class(PedigreeHolder) :: this
 			character(len=*) :: genotypeFile
 			character(len=IDLENGTH) :: tmpID
-			integer,intent(in) :: nsnps
+			integer,intent(inout) :: nsnps !< if nsnps ==0
 			integer,intent(in),optional :: nAnnisG
 			integer, intent(in),optional :: startSnp, endSnp
 			logical, intent(in), optional :: lockIn
@@ -1786,7 +1879,10 @@ module PedigreeModule
 				nAnnis = countLines(genotypeFile)
 			endif
 
-			print *, "DEBUGG:", nAnnis, nSnps
+			if (nsnps == 0) then
+				nsnps = countColumns(genotypeFile, ' ') - 1
+			endif
+
 			allocate(tmpSnpArray(nsnps))
 			open(newUnit=fileUnit, file=genotypeFile, status="old")
 			do i=1, nAnnis
@@ -1921,9 +2017,6 @@ module PedigreeModule
 			delimiter(3) = char(9)
 
 			nCol=countColumns(trim(seqFile), delimiter)-1 ! First column is animal id
-
-
-			
 
 			open(newunit=unit,FILE=trim(seqFile),STATUS="old") !INPUT FILE
 			allocate(ref(nCol))
@@ -2234,14 +2327,27 @@ module PedigreeModule
 			endif
 			pedCounter = 0
 
-			call this%dictionary%destroy()
-			call this%founders%destroyLinkedList()
-			call this%sireList%destroyLinkedList()
-			call this%damList%destroyLinkedList()
-			sizeDict  =this%pedigreeSize
+			! call this%dictionary%destroy()
+			! call this%founders%destroyLinkedList()
+			! call this%sireList%destroyLinkedList()
+			! call this%damList%destroyLinkedList()
+
+			deallocate(this%sireList)
+			deallocate(this%damList)
+			deallocate(this%founders)
+			deallocate(this%dictionary)
+			sizeDict = this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
-			this%dictionary = DictStructure(sizeDict)
+			allocate(this%dictionary)
+			call this%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
+
+
+			allocate(this%sireList)
+			allocate(this%damList)
+			allocate(this%founders)
+
+
 			do i=0, this%maxGeneration
 				tmpIndNode => this%generations(i)%first
 				do h=1, this%generations(i)%length
@@ -2349,18 +2455,24 @@ module PedigreeModule
 				tmpIndNode => tmpIndNode%next
 			enddo
 
-			call dummyList%destroyLinkedList()
+			! call dummyList%destroyLinkedList()
 
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
-			enddo
+			! do i=1,this%pedigreeSize
+			! 	call this%Pedigree(i)%destroyIndividual
+			! enddo
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed
+
+			newPed => null()
 			do i = 0, this%maxGeneration
-				call this%generations(i)%destroyLinkedList
+				call destroyLinkedList(this%generations(i))
 			enddo
-			this%generations = newGenerationList
+			! this%generations = newGenerationList
+
+			! deallocate(this%generations)
+			! allocate(this%generations(0:this%maxGeneration))
+			this%generations(0:this%maxGeneration) = newGenerationList
 
 			!
 			if (present(unknownDummysAtEnd)) then
@@ -2388,14 +2500,27 @@ module PedigreeModule
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
 			pedCounter = 0
-			call this%dictionary%destroy()
-			call this%founders%destroyLinkedList()
-			call this%sireList%destroyLinkedList()
-			call this%damList%destroyLinkedList()
-			sizeDict  =this%pedigreeSize
+			! call this%dictionary%destroy()
+			! call this%founders%destroyLinkedList()
+			! call this%sireList%destroyLinkedList()
+			! call this%damList%destroyLinkedList()
+
+			! deallocate to call destructors
+			deallocate(this%dictionary)
+			deallocate(this%founders)
+			deallocate(this%sireList)
+			deallocate(this%damList)
+
+			sizeDict = this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
-			this%dictionary = DictStructure(sizeDict)
+			allocate(this%dictionary)
+			call this%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
+
+			! reallocate to use again
+			allocate(this%founders)
+			allocate(this%sireList)
+			allocate(this%damList)
 			do i=0, this%maxGeneration
 				tmpIndNode => this%generations(i)%first
 				do h=1, this%generations(i)%length
@@ -2456,16 +2581,20 @@ module PedigreeModule
 				end do
 			enddo
 			do i = 0, this%maxGeneration
-				call this%generations(i)%destroyLinkedList
+				call destroyLinkedList(this%generations(i))
 			enddo
-
-			do i=1,this%pedigreeSize
-				call this%Pedigree(i)%destroyIndividual
-			enddo
+			deallocate(this%generations)
+			! do i=1,this%pedigreeSize
+			! 	call this%Pedigree(i)%destroyIndividual
+			! enddo
+			
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed
-			this%generations = newGenerationList
+			allocate(this%generations(0:size(newGenerationList)))
+			this%generations(0:size(newGenerationList)) = newGenerationList
+
+
 			this%isSorted = 3
 		end subroutine sortPedigreeAndOverwriteWithDummyAtTheTop
 
@@ -3101,7 +3230,7 @@ module PedigreeModule
 			character(len=20) :: tmpPairingKeyStr ! 19 is largest characters for int64 so 20 just to be safe [and that its round]
 			integer :: i,h,j
 
-			dictionary = DictStructure()
+			call dictionary%DictStructure()
 			nMatingPairs = 0
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
@@ -3142,7 +3271,7 @@ module PedigreeModule
 				enddo
 			enddo
 
-			call dictionary%destroy()
+			! call dictionary%destroy()
 
 		end subroutine getMatePairsAndOffspring
 
@@ -3169,7 +3298,8 @@ module PedigreeModule
 			endif
 
 			if (this%nGenotyped == 0) then
-				this%genotypeDictionary = DictStructure()
+				allocate(this%genotypeDictionary)
+				call this%genotypeDictionary%DictStructure()
 				allocate(this%genotypeMap(this%pedigreeSize))
 				this%genotypeMap = 0
 
@@ -3208,7 +3338,7 @@ module PedigreeModule
 			integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
 			integer, dimension(:), intent(in) :: referAllele, alterAllele
 			if (this%nGenotyped == 0) then
-				this%genotypeDictionary = DictStructure()
+				call this%genotypeDictionary%DictStructure()
 				allocate(this%genotypeMap(this%pedigreeSize))
 
 			else if (this%nGenotyped > this%pedigreeSize) then
@@ -3345,7 +3475,8 @@ module PedigreeModule
 				write(error_unit, *) "animal has ID:", trim(this%pedigree(indId)%originalID), " and recoded ID:", indid
 			endif
 			if (this%nHd == 0) then
-				this%hdDictionary = DictStructure()
+				allocate(this%hdDictionary)
+				call this%hdDictionary%DictStructure()
 				allocate(this%hdMap(this%pedigreeSize))
 				this%hdMap = 0
 			endif
@@ -3431,7 +3562,7 @@ module PedigreeModule
 			this%isSorted = 0
 
 			write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,this%nDummys
-			this%Pedigree(this%pedigreeSize) =  Individual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
+			call this%Pedigree(this%pedigreeSize)%initIndividual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
@@ -3475,7 +3606,7 @@ module PedigreeModule
 			this%issorted = 0
 
 			this%pedigreeSize = this%pedigreeSize+1
-			this%Pedigree(this%pedigreeSize) =  Individual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
+			call this%Pedigree(this%pedigreeSize)%initIndividual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(OriginalId, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .false.
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
@@ -3549,7 +3680,7 @@ module PedigreeModule
 			!$OMP PARALLEL DO &
 			!$OMP PRIVATE(i)
 			do i=1,this%pedigreeSize
-				this%pedigree(i)%individualGenotype = Genotype(this%pedigree(i)%individualPhase(1), this%pedigree(i)%individualPhase(2))
+				call this%pedigree(i)%individualGenotype%Genotype(this%pedigree(i)%individualPhase(1), this%pedigree(i)%individualPhase(2))
 			enddo
 			!$OMP END PARALLEL DO
 

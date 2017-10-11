@@ -80,7 +80,7 @@ module HaplotypeLibraryModule
 			allocate(library%newstore(library%storeSize))
 
 			do i = 1, storeSize
-				library%newstore(i) = newHaplotypeMissing(nSnps)
+				call library%newstore(i)%newHaplotypeMissing(nSnps)
 			end do
 		end function newHaplotypeLibrary
 
@@ -94,6 +94,7 @@ module HaplotypeLibraryModule
 			logical, optional, intent(in) :: text
 
 			integer(kind=1), dimension(:), allocatable ::holdHap
+			type(haplotype) :: h
 			integer :: i, j, f
 			character(len=10000) :: line
 			logical :: binary
@@ -121,7 +122,8 @@ module HaplotypeLibraryModule
 				allocate(holdHap(library%nSnps))
 				do i=1,library%storeSize
 					read(2001) holdHap
-					j = library%addHap(Haplotype(holdHap))
+					call h%Haplotype(holdHap)
+					j = library%addHap(h)
 				enddo
 				close (2001)
 			else
@@ -147,7 +149,8 @@ module HaplotypeLibraryModule
 				rewind(2001)
 				do i = 1, library%storeSize
 					read(2001,'(6X,I6,2X,'//itoa(library%nSnps)//'I1)') f, holdHap
-					j = library%addHap(Haplotype(holdHap))
+					call h%Haplotype(holdHap)
+					j = library%addHap(h)
 					library%hapFreq(i) = f
 				end do
 				close(2001)
@@ -579,7 +582,7 @@ module HaplotypeLibraryModule
 			all = 0
 			all = NOT(all)
 
-			hap = Haplotype(library%nSnps)
+			call hap%Haplotype(library%nSnps)
 
 			do i = 1, size(ids)
 				hap = library%newstore(ids(i))
@@ -606,7 +609,7 @@ module HaplotypeLibraryModule
 			all = 0
 			all = NOT(all)
 
-			hap = Haplotype(library%nSnps)
+			call hap%Haplotype(library%nSnps)
 
 			do i = 1, size(ids)
 				hap = library%newstore(ids(i))
@@ -638,7 +641,7 @@ module HaplotypeLibraryModule
 			all = 0
 			all = NOT(all)
 
-			hap = Haplotype(library%nSnps)
+			call hap%Haplotype(library%nSnps)
 
 			do i = 1, size(ids)
 				hap = library%newstore(ids(i))
@@ -665,7 +668,7 @@ module HaplotypeLibraryModule
 			all = 0
 			all = NOT(all)
 
-			hap = Haplotype(library%nSnps)
+			call hap%haplotype(library%nSnps)
 
 			do i = 1, size(ids)
 				hap = library%newstore(ids(i))
@@ -697,7 +700,7 @@ module HaplotypeLibraryModule
 			all = 0
 			all = NOT(all)
 
-			hap = Haplotype(library%nSnps)
+			call hap%haplotype(library%nSnps)
 
 			do i = 1, size(ids)
 				hap = library%newstore(ids(i))
@@ -830,7 +833,7 @@ module HaplotypeLibraryModule
 
 			type(Haplotype) :: libhap
 
-			libhap = newHaplotypeMissing(library%nSnps)
+			call libhap%newHaplotypeMissing(library%nSnps)
 
 			! Here for speed!
 			if (size(CandHaps) == 1) then

@@ -11,22 +11,26 @@ module TestIndividualLinkedList
 
   implicit none
 
-  type(IndividualLinkedList) :: ll  
-  type(individual), target :: testIndiv1, testIndiv2
+  type(IndividualLinkedList),allocatable :: ll  
+  type(individual), target :: testIndiv1, testIndiv2,testIndiv3
   contains
 
  @before
     subroutine initialise
         
         implicit none
-        testIndiv1 = Individual("me","mum","dad",1)
-        testIndiv2 = Individual("me2","mum2","dad2",2)
+        allocate(ll)
+        call testIndiv1%initIndividual("me","mum","dad",1)
+        call testIndiv2%initIndividual("me2","mum2","dad2",2)
+        call testIndiv3%initIndividual("me3","mum3","dad3",3)
         
     end subroutine
 
    @after
     subroutine Uninit
-      call ll%destroyLinkedList
+    !   call ll%destroyLinkedList
+        deallocate(ll)
+        print *, "test done"
     end subroutine
 
     @test
@@ -39,6 +43,41 @@ module TestIndividualLinkedList
         ! @assertTrue(associated(ll%make d(1), testIndiv1))
         @assertEqual(ll%length, 1)
     end subroutine testAdd
+
+     @test
+    subroutine testCopy
+        type(IndividualLinkedList) :: copy
+        
+        
+        call ll%list_add(testIndiv1)
+
+        copy = ll
+        call ll%list_add(testIndiv2)
+
+        @assertEqual(copy%length, 1)
+
+        @assertTrue(associated(copy%first%item, testIndiv1))
+        @assertTrue(associated(copy%last%item, testIndiv1))
+        
+        copy = ll
+        @assertEqual(copy%length, 2)
+         @assertTrue(associated(copy%first%item, testIndiv1))
+        @assertTrue(associated(copy%last%item, testIndiv2))
+
+
+        call ll%list_add(testIndiv3)
+        copy = ll
+        @assertEqual(copy%length, 3)
+
+         @assertTrue(associated(copy%first%item, testIndiv1))
+        @assertTrue(associated(copy%last%item, testIndiv3))
+       
+
+
+        ! @assertTrue(associated(ll%make d(1), testIndiv1))
+        
+    end subroutine testCopy
+
 
 
     @test
@@ -71,8 +110,8 @@ type(Individual), dimension(:), allocatable:: expected, gotten
 type(Individual):: one, two
 integer:: i
 
-one = Individual("OLD", "dad", "mom", 0)
-two = Individual("OLD2", "dad", "mom", 0)
+call one%initIndividual("OLD", "dad", "mom", 0)
+call two%initIndividual("OLD2", "dad", "mom", 0)
 
 one%isUnknownDummy = .true.
 two%isUnknownDummy = .false.

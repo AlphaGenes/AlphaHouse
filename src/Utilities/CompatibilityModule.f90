@@ -65,7 +65,7 @@ end type bimHolder
 
 type Chromosome
 
-type(integerLinkedList) :: snps
+type(integerLinkedList), allocatable :: snps
 contains
 	final :: destroyChrom
 end type Chromosome
@@ -75,8 +75,8 @@ contains
 
 
 		type(Chromosome) :: chrom
-
-		call chrom%snps%destroyLinkedList()
+		deallocate(chrom%snps)
+		! call chrom%snps%destroyLinkedList()
 
 	end subroutine
 
@@ -114,7 +114,7 @@ contains
 		enddo
 
 
-		ped = PedigreeHolder(pedArray, genderArray)
+		call initPedigreeArrays(ped,pedArray, genderArray)
 
 		print *, "ANS in ped",ped%pedigreeSize," without dum:",ped%pedigreeSize-ped%nDummys
 
@@ -213,7 +213,7 @@ contains
 			deallocate(array)
 		enddo
 
-		call dict%destroy()
+		! call dict%destroy()
 	end subroutine readPlink
 
 
@@ -251,7 +251,7 @@ contains
 		curChromSnpCount = 0
 		allocate(nsnps(LARGECHROMNUMBER))
 		nsnps = 0
-		dict = DictStructure()
+		call dict%DictStructure()
 		maxSnps = countLines(bimFile)
 
 		open(newUnit=unit, file=bimFile, status='old')
@@ -501,7 +501,7 @@ contains
 			close(outChrF)
 		enddo
 
-		call dict%destroy()
+		! call dict%destroy()
 
 
 	end subroutine readPlinkNoneBinary
@@ -623,7 +623,7 @@ contains
 			enddo
 		enddo
 
-		ped = pedigreeHolder(pedArray, genderArray)
+		call initPedigreeArrays(ped,pedArray, genderArray)
 		! ped%addGenotypeInformationFromArray(genotypes)
 
 		if (present(refAlleleOutputFile)) then
