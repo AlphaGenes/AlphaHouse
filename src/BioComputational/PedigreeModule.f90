@@ -1749,7 +1749,10 @@ module PedigreeModule
 
 			this%nGenotyped = 0
 			! call this%genotypeDictionary%destroy()
-			deallocate(this%genotypeDictionary)
+
+			if (allocated(this%genotypeDictionary)) then
+				deallocate(this%genotypeDictionary)
+			endif
 			this%genotypeMap = 0
 			
 
