@@ -1333,7 +1333,10 @@ contains
         use constantModule
         class(Individual) :: this
         integer, intent(in) :: nsnp
-
+        
+        if (.not. allocated(this%individualGenotype)) then
+            allocate(this%individualGenotype)
+        endif
         call this%individualGenotype%Genotype(nSnp)
     end subroutine initGenotype
 
