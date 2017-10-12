@@ -86,8 +86,13 @@ contains
     subroutine destroyHASH_LIST(hashList)
 
         type(HASH_LIST) :: hashList
+
+
+		if (associated(hashList%list)) then
+			deallocate(hashList%list)
+		endif
         hashList%list => null()
-        deallocate(hashList%list)
+        
 
     end subroutine
 	!
