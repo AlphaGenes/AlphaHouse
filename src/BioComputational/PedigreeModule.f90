@@ -1321,6 +1321,8 @@ module PedigreeModule
 			integer(kind=int64) :: sizeDict
 			logical :: sireFound, damFound
 
+			call destroyPedigree(pedStructure)
+			
 			pedStructure%nHd = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nDummys = 0
@@ -1330,7 +1332,7 @@ module PedigreeModule
 			allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
 			allocate(pedStructure%Founders)
-
+			allocate(pedStructure%dictionary)
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
@@ -1440,6 +1442,7 @@ module PedigreeModule
 			sizeDict = size(pedArray)
 			pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+			allocate(pedStructure%dictionary)
 			pedStructure%pedigreeSize = size(pedArray)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
