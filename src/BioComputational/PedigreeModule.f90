@@ -3357,6 +3357,9 @@ module PedigreeModule
 			integer(KIND=1), dimension(:),optional, intent(in) :: geno !< One dimensional array of genotype information
 			integer, dimension(:), intent(in) :: referAllele, alterAllele
 			if (this%nGenotyped == 0) then
+				if (.not. allocated(this%genotypeDictionary)) then
+					allocate(this%genotypeDictionary)
+				endif
 				call this%genotypeDictionary%DictStructure()
 				allocate(this%genotypeMap(this%pedigreeSize))
 
