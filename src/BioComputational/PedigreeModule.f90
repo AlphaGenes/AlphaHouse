@@ -221,12 +221,15 @@ module PedigreeModule
 			res%maxPedigreeSize = this%maxPedigreeSize
 			res%inputMap = this%inputMap
 			res%genotypeMap = this%genotypeMap
-			res%genotypeDictionary = this%genotypeDictionary
-			! call copyHashTable(res%genotypeDictionary, this%genotypeDictionary)
+
+			if (allocated(this%genotypeDictionary)) then
+				res%genotypeDictionary = this%genotypeDictionary
+			endif
 			res%nGenotyped =this%nGenotyped
 			res%hdMap = this%hdMap
-			res%hdDictionary = this%hdDictionary
-			! call copyHashTable(res%hdDictionary, this%hdDictionary)
+			if (allocated(this%hdDictionary)) then
+				res%hdDictionary = this%hdDictionary
+			endif
 			res%nHd = this%nHd
 			res%maxGeneration = this%maxGeneration
 			res%nsnpsPopulation = this%nsnpsPopulation
@@ -240,10 +243,13 @@ module PedigreeModule
 
 			sizeDict  =this%pedigreeSize
 			allocate(newPed(this%maxPedigreeSize))
-
+			allocate(res%dictionary)
 			call res%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
 
+			allocate(res%sireList)
+			allocate(res%damList)
+			allocate(res%founders)
 			do i=1, this%pedigreeSize
 				! update dictionary index
 				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
