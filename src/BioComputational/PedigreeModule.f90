@@ -153,14 +153,14 @@ module PedigreeModule
 		procedure :: write   => writeRecodedPedigreeArray
 	end type
 
-	interface PedigreeHolder
-		module procedure initPedigree
-		module procedure initPedigreeArrays
-		module procedure initEmptyPedigree
-		module procedure initPedigreeGenotypeFiles
-		module procedure initPedigreeIntArrays
-		! initPedigreeFromOutputFileFolder initialiser from file
-	end interface PedigreeHolder
+	! interface PedigreeHolder
+	! 	module procedure initPedigree
+	! 	module procedure initPedigreeArrays
+	! 	module procedure initEmptyPedigree
+	! 	module procedure initPedigreeGenotypeFiles
+	! 	module procedure initPedigreeIntArrays
+	! 	! initPedigreeFromOutputFileFolder initialiser from file
+	! end interface PedigreeHolder
 
 	interface assignment (=)
 		module procedure copyPedigree
