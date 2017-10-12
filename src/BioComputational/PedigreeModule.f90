@@ -133,7 +133,7 @@ module PedigreeModule
 
 
 
-		!TODO write a deep copy function 
+		!TODO write a deep copy function
 #ifdef MPIACTIVE
 		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
@@ -222,12 +222,19 @@ module PedigreeModule
 			res%inputMap = this%inputMap
 			res%genotypeMap = this%genotypeMap
 
+			
 			if (allocated(this%genotypeDictionary)) then
+				if (.not. allocated(res%genotypeDictionary)) then
+					allocate(res%genotypeDictionary)
+				endif
 				res%genotypeDictionary = this%genotypeDictionary
 			endif
 			res%nGenotyped =this%nGenotyped
 			res%hdMap = this%hdMap
 			if (allocated(this%hdDictionary)) then
+				if (.not. allocated(res%hdDictionary)) then
+					allocate(res%hdDictionary)
+				endif
 				res%hdDictionary = this%hdDictionary
 			endif
 			res%nHd = this%nHd
@@ -320,7 +327,7 @@ module PedigreeModule
 			type(pedigreeHolder) , intent(in) :: pedOne, pedTwo
 			integer :: i
 
-			equality = .true.	
+			equality = .true.
 
 			if (pedOne%pedigreeSize /=  pedTwo%pedigreeSize) then
 				equality = .false.
@@ -990,7 +997,7 @@ module PedigreeModule
 			pedStructure%nsnpsPopulation = 0
 
 			call destroyPedigree(pedStructure)
-			
+
 			if (present(nsnps)) then
 				pedStructure%nsnpsPopulation = nsnps
 			endif
@@ -999,8 +1006,8 @@ module PedigreeModule
 			else
 				nIndividuals = countLines(fileIn)
 			endif
-			
-			
+
+
 
 			sizeDict = nIndividuals
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
@@ -1009,7 +1016,7 @@ module PedigreeModule
 
 			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
-			
+
 			allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(nIndividuals))
 			pedStructure%maxGeneration = 0
@@ -1221,9 +1228,9 @@ module PedigreeModule
 
 			if (nsnp == 0) then
 				nsnp = countColumns(fileIn,' ') - 1
-			end if 
+			end if
 			allocate(tmpGeno(nsnp))
-				allocate(pedStructure%sireList)
+			allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
 			allocate(pedStructure%Founders)
 			pedStructure%isSorted = 0
@@ -1328,13 +1335,13 @@ module PedigreeModule
 			logical :: sireFound, damFound
 
 			call destroyPedigree(pedStructure)
-			
+
 			pedStructure%nHd = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nDummys = 0
 			tmpAnimalArrayCount = 0
 			pedStructure%nsnpsPopulation = 0
-			
+
 			allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
 			allocate(pedStructure%Founders)
@@ -1754,7 +1761,7 @@ module PedigreeModule
 				deallocate(this%genotypeDictionary)
 			endif
 			this%genotypeMap = 0
-			
+
 
 
 			do i=1,this%pedigreeSize
@@ -1807,7 +1814,7 @@ module PedigreeModule
 			if (this%nGenotyped > 0) then
 				deallocate(this%genotypeDictionary)
 				deallocate(this%genotypeMap)
-				this%nGenotyped = 0 
+				this%nGenotyped = 0
 			endif
 
 			if (this%nHd > 0) then
@@ -2599,7 +2606,7 @@ module PedigreeModule
 			! do i=1,this%pedigreeSize
 			! 	call this%Pedigree(i)%destroyIndividual
 			! enddo
-			
+
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed
@@ -3907,7 +3914,7 @@ module PedigreeModule
 
 
 			real(real64), dimension(:, :), allocatable:: values !< symetric matrix that is returned is size of animals (with no UNKNOWN dummys)
-			
+
 			integer:: knownDummies, extras, mpiErr
 			integer:: i, j, youngestSire, youngestDam
 			integer:: sireI, damI, temp, ID
@@ -4140,6 +4147,7 @@ module PedigreeModule
 
 
 end module PedigreeModule
+
 
 
 
