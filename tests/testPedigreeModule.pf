@@ -29,7 +29,7 @@ module TestPedigreeModule
 			close(pedUnit)
 
       allocate(pedigree)
-			call PedigreeHolder(pedigree,"testPed.txt")
+			call initPedigree(pedigree,"testPed.txt")
 
 			open(newunit=genUnit, file="testGen.txt", status="unknown")
 			write (genUnit,'(a20,4i2)') "bbb", 0, 2, 1, 9
@@ -48,7 +48,7 @@ module TestPedigreeModule
 			close(pedUnit)
 
       allocate(pedigreeUnsorted)
-			call PedigreeHolder(pedigreeUnsorted,"testPedUnsorted.txt")
+			call initPedigree(pedigreeUnsorted,"testPedUnsorted.txt")
 			call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
 
 		end subroutine
@@ -108,7 +108,7 @@ module TestPedigreeModule
 			end if
 			call MPI_BARRIER(mpiCommunicator, mpiErr)
 #endif
-			call PedigreeHolder(ped,"testPedFile")
+			call initPedigree(ped,"testPedFile")
 
 #ifdef MPIACTIVE
 			call MPI_BARRIER(mpiCommunicator, mpiErr)

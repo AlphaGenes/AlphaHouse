@@ -66,19 +66,9 @@ end type bimHolder
 type Chromosome
 
 type(integerLinkedList) :: snps
-contains
-	final :: destroyChrom
 end type Chromosome
 contains
 
-	subroutine destroyChrom(chrom)
-
-
-		type(Chromosome) :: chrom
-		! deallocate(chrom%snps)
-		! call chrom%snps%destroyLinkedList()
-
-	end subroutine
 
 
 
@@ -144,7 +134,7 @@ contains
 		character(len=128), dimension(:), allocatable :: outputPaths
 		integer result,i,p,h,outChrF, maxSnps
 		integer,dimension(:), allocatable, intent(out) :: nsnps
-		integer(kind=1),allocatable,dimension (:,:) :: array,arraytemp
+		integer(kind=1),allocatable,dimension (:,:) :: array
 		! integer, allocatable
 
 

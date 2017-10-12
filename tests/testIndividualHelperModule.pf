@@ -29,7 +29,7 @@ module TestIndividualHelperModule
         close(pedUnit)
 
         allocate(pedigree)
-        call PedigreeHolder(pedigree,"testPed.txt")
+        call initPedigree(pedigree,"testPed.txt")
 
     end subroutine
 
