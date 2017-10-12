@@ -1221,8 +1221,9 @@ contains
 
         if (allocated(this%individualGenotype)) then
             deallocate(this%individualGenotype)
-            allocate(this%individualGenotype)
+            
         endif
+        allocate(this%individualGenotype)
 
         call this%individualGenotype%Genotype(Geno)
     end subroutine setGenotypeArray
