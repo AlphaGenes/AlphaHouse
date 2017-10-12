@@ -65,7 +65,7 @@ end type bimHolder
 
 type Chromosome
 
-type(integerLinkedList), allocatable :: snps
+type(integerLinkedList) :: snps
 contains
 	final :: destroyChrom
 end type Chromosome
@@ -75,7 +75,7 @@ contains
 
 
 		type(Chromosome) :: chrom
-		deallocate(chrom%snps)
+		! deallocate(chrom%snps)
 		! call chrom%snps%destroyLinkedList()
 
 	end subroutine
