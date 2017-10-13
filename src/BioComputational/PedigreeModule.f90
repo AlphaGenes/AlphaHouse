@@ -243,6 +243,8 @@ subroutine copyPedigree(res,this)
 	res%nsnpsPopulation = this%nsnpsPopulation
 	res%isSorted =this%isSorted
 
+	allocate(res%sireList)
+	allocate(res%damList)
 	res%sireList = this%sireList
 	res%damList = this%damList
 
