@@ -313,12 +313,12 @@ module PedigreeModule
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
 					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
 				else
-					call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
+					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
 					if (res%pedigree(tmpSire)%nOffs== 1) then
 						call res%sireList%list_add(newPed(tmpSire))
 					endif
-					call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+					call res%pedigree(tmpDam)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
 					if (res%pedigree(tmpDam)%nOffs== 1) then
 						call res%damList%list_add(newPed(tmpDam))
