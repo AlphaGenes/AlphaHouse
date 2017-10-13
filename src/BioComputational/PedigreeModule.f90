@@ -245,8 +245,13 @@ subroutine copyPedigree(res,this)
 
 	allocate(res%sireList)
 	allocate(res%damList)
-	res%sireList = this%sireList
-	res%damList = this%damList
+	if (allocated(this%sireList)) then
+		res%sireList = this%sireList
+	endif
+
+	if (allocated(this%damList)) then
+		res%damList = this%damList
+	endif
 
 	! copy generations if they are allocated
 
@@ -258,8 +263,7 @@ subroutine copyPedigree(res,this)
 	call res%dictionary%DictStructure(sizeDict)
 	allocate(res%Generations(0:this%maxGeneration))
 
-	allocate(res%sireList)
-	allocate(res%damList)
+
 	allocate(res%founders)
 	tmpAnimalArrayCount = 0
 
