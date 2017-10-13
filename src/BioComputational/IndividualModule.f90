@@ -1394,8 +1394,8 @@ contains
         motherId = this%getSireDamNewIDByIndexNoDummy(3)
         fatherId = this%getSireDamNewIDByIndexNoDummy(2)
         if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
-
-            write(message,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd, " as both parent and offspring"
+            print *, offspringTOAdd%id, motherId, fatherId
+            write(message,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd%originalId, " as both parent and offspring"
             call TRACEBACKQQ(string= message,user_exit_code=1)
         
         endif

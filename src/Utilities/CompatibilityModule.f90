@@ -137,7 +137,7 @@ contains
 		integer(kind=1),allocatable,dimension (:,:) :: array
 		! integer, allocatable
 
-
+		! TODO change to pointer rather than copy
 		ped = readToPedigreeFormat(trim(binaryFilePre)//".fam")
 
 		call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
