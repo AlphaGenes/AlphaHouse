@@ -1383,18 +1383,20 @@ contains
     !> @date    October 26, 2016
     !---------------------------------------------------------------------------
     subroutine AddOffspring(this, offspringToAdd)
+        use IFCORE
         class(Individual), intent(inout) :: this
         class(Individual),target, intent(in) :: offspringToAdd
         type(individualPointerContainer), allocatable :: tmp(:)
         integer :: motherId, fatherId
+        character(len=300) :: message
         this%nOffs = this%nOffs + 1
         
         motherId = this%getSireDamNewIDByIndexNoDummy(3)
         fatherId = this%getSireDamNewIDByIndexNoDummy(2)
         if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
 
-            write(error_unit,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd, " as both parent and offspring"
-            stop
+            write(message,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd, " as both parent and offspring"
+            call TRACEBACKQQ(string= message,user_exit_code=1)
         
         endif
         if (this%nOffs > OFFSPRINGTHRESHOLD) then
