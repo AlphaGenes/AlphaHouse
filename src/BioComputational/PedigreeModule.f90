@@ -491,6 +491,7 @@ module PedigreeModule
 			call initEmptyPedigree(new,this%nsnpsPopulation)
 			tmpAnimalCount = 0
 			new%nhd = 0
+			new%nDummys = 0
 
 			allocate(new%hdMap(this%nHd))
 			allocate(new%genotypeMap(this%nGenotyped))
