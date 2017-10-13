@@ -199,134 +199,136 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-subroutine copyPedigree(res,this)
-	use iso_fortran_env, only : output_unit, int64
-	type(PedigreeHolder),intent(in) :: this
-	class(pedigreeHolder), intent(inout) :: res
-	integer :: i, tmpId, tmpSire, tmpDam, tmpAnimalArrayCount
-	integer(kind=int64) :: sizeDict
-	type(Individual), pointer, dimension(:) :: newPed
-	type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
-    integer, allocatable, dimension(:) :: tmpAnimalArray
+		subroutine copyPedigree(res,this)
+			use iso_fortran_env, only : output_unit, int64
+			type(PedigreeHolder),intent(in) :: this
+			class(pedigreeHolder), intent(inout) :: res
+			integer :: i, tmpId, tmpSire, tmpDam, tmpAnimalArrayCount
+			integer(kind=int64) :: sizeDict
+			type(Individual), pointer, dimension(:) :: newPed
+			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+			integer, allocatable, dimension(:) :: tmpAnimalArray
 
-	res%pedigreeSize = this%pedigreeSize
-	res%nDummys = this%nDummys
-	res%unknownDummys = this%unknownDummys
-	res%maxPedigreeSize = this%maxPedigreeSize
-	res%inputMap = this%inputMap
-	res%genotypeMap = this%genotypeMap
-
-
-    allocate(tmpAnimalArray(this%pedigreeSize))
-
-	res%nGenotyped =this%nGenotyped
-	res%hdMap = this%hdMap
-
-	! can copy genotype and hd dictionaries as order will be the same,
-	! can't do main dictionary as we have to know if parents exist
-	if (allocated(this%hdDictionary)) then
-		if (.not. allocated(res%hdDictionary)) then
-			allocate(res%hdDictionary)
-		endif
-		res%hdDictionary = this%hdDictionary
-	endif
-
-	if (allocated(this%genotypeDictionary)) then
-		if (.not. allocated(res%genotypeDictionary)) then
-			allocate(res%genotypeDictionary)
-		endif
-		res%genotypeDictionary = this%genotypeDictionary
-	endif
-
-	res%nHd = this%nHd
-	res%maxGeneration = this%maxGeneration
-	res%nsnpsPopulation = this%nsnpsPopulation
-	res%isSorted =this%isSorted
-
-	allocate(res%sireList)
-	allocate(res%damList)
-	if (allocated(this%sireList)) then
-		res%sireList = this%sireList
-	endif
-
-	if (allocated(this%damList)) then
-		res%damList = this%damList
-	endif
-
-	! copy generations if they are allocated
+			res%pedigreeSize = this%pedigreeSize
+			res%nDummys = this%nDummys
+			res%unknownDummys = this%unknownDummys
+			res%maxPedigreeSize = this%maxPedigreeSize
+			res%inputMap = this%inputMap
+			res%genotypeMap = this%genotypeMap
 
 
-	sizeDict  =this%pedigreeSize*2
+			allocate(tmpAnimalArray(this%pedigreeSize))
 
-	allocate(res%pedigree(this%maxPedigreeSize))
-	allocate(res%dictionary)
-	call res%dictionary%DictStructure(sizeDict)
-	allocate(res%Generations(0:this%maxGeneration))
+			res%nGenotyped =this%nGenotyped
+			res%hdMap = this%hdMap
 
-
-	allocate(res%founders)
-	tmpAnimalArrayCount = 0
-
-	do i=1, this%pedigreeSize
-
-		call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-		res%pedigree(i) = this%pedigree(i)
-		call res%pedigree(i)%resetOffspringInformation
-		if (.not. res%pedigree(i)%Founder) then
-			! we know that sire and dam id should be set
-			tmpSire= res%dictionary%getValue(res%pedigree(i)%sirePointer%originalId)
-			tmpDam = res%dictionary%getValue(res%pedigree(i)%damPointer%originalId)
-
-			! if either sire or dam is null - we need to wait for all the animals are in the new ped to set them
-			if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
-				tmpAnimalArrayCount = tmpAnimalArrayCount + 1
-				tmpAnimalArray(tmpAnimalArrayCount) = i
-			else
-				call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
-				if (res%pedigree(tmpSire)%nOffs== 1) then
-					call res%sireList%list_add(newPed(tmpSire))
+			! can copy genotype and hd dictionaries as order will be the same,
+			! can't do main dictionary as we have to know if parents exist
+			if (allocated(this%hdDictionary)) then
+				if (.not. allocated(res%hdDictionary)) then
+					allocate(res%hdDictionary)
 				endif
-				call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
-				if (res%pedigree(tmpDam)%nOffs== 1) then
-					call res%damList%list_add(newPed(tmpDam))
+				res%hdDictionary = this%hdDictionary
+			endif
+
+			if (allocated(this%genotypeDictionary)) then
+				if (.not. allocated(res%genotypeDictionary)) then
+					allocate(res%genotypeDictionary)
+				endif
+				res%genotypeDictionary = this%genotypeDictionary
+			endif
+
+			res%nHd = this%nHd
+			res%maxGeneration = this%maxGeneration
+			res%nsnpsPopulation = this%nsnpsPopulation
+			res%isSorted =this%isSorted
+
+			allocate(res%sireList)
+			allocate(res%damList)
+			if (allocated(this%sireList)) then
+				res%sireList = this%sireList
+			endif
+
+			if (allocated(this%damList)) then
+				res%damList = this%damList
+			endif
+
+			! copy generations if they are allocated
+
+
+			sizeDict  =this%pedigreeSize*2
+
+			allocate(res%pedigree(this%maxPedigreeSize))
+			allocate(res%dictionary)
+			call res%dictionary%DictStructure(sizeDict)
+			allocate(res%Generations(0:this%maxGeneration))
+
+
+			allocate(res%founders)
+			tmpAnimalArrayCount = 0
+
+			do i=1, this%pedigreeSize
+
+				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
+				res%pedigree(i) = this%pedigree(i)
+				call res%pedigree(i)%resetOffspringInformation
+				if (.not. res%pedigree(i)%Founder) then
+					! we know that sire and dam id should be set
+					tmpSire= res%dictionary%getValue(res%pedigree(i)%sireId)
+					tmpDam = res%dictionary%getValue(res%pedigree(i)%damId)
+
+					! if either sire or dam is null - we need to wait for all the animals are in the new ped to set them
+					if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
+						tmpAnimalArrayCount = tmpAnimalArrayCount + 1
+						tmpAnimalArray(tmpAnimalArrayCount) = i
+					else
+						call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
+						res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
+						if (res%pedigree(tmpSire)%nOffs== 1) then
+							call res%sireList%list_add(newPed(tmpSire))
+						endif
+						call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+						res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
+						if (res%pedigree(tmpDam)%nOffs== 1) then
+							call res%damList%list_add(newPed(tmpDam))
+						endif
+
+					endif
+				else
+					call res%founders%list_add(res%pedigree(i))
 				endif
 
-			endif
-		else
-			call res%founders%list_add(res%pedigree(i))
-		endif
+
+				if (res%isSorted /= 0) then
+					call newGenerationList(res%pedigree(i)%generation)%list_add(res%pedigree(i))
+				endif
+
+			enddo
 
 
-		if (res%isSorted /= 0) then
-			call newGenerationList(res%pedigree(i)%generation)%list_add(res%pedigree(i))
-		endif
+			do i=1, tmpAnimalArrayCount
+				tmpId = tmpAnimalArray(i)
+				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sireId)
+				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damId)
+				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
+					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
+				else
+					call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
+					res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
+					if (res%pedigree(tmpSire)%nOffs== 1) then
+						call res%sireList%list_add(newPed(tmpSire))
+					endif
+					call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+					res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
+					if (res%pedigree(tmpDam)%nOffs== 1) then
+						call res%damList%list_add(newPed(tmpDam))
+					endif
 
-	enddo
+				endif
 
+			enddo
 
-	do i=1, tmpAnimalArrayCount
-		tmpId = tmpAnimalArray(i)
-		tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
-		tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
-		if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
-			tmpAnimalArrayCount = tmpAnimalArrayCount + 1
-			tmpAnimalArray(tmpAnimalArrayCount) = i
-		else
-			call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
-			call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
-			if (res%pedigree(tmpSire)%nOffs== 1) then
-				call res%sireList%list_add(newPed(tmpSire))
-			endif
-			call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
-			if (res%pedigree(tmpDam)%nOffs== 1) then
-				call res%damList%list_add(newPed(tmpDam))
-			endif
-
-		endif
-
-	enddo
-
-end subroutine copyPedigree
+		end subroutine copyPedigree
 
 
 		!---------------------------------------------------------------------------
@@ -4162,6 +4164,7 @@ end subroutine copyPedigree
 
 
 end module PedigreeModule
+
 
 
 
