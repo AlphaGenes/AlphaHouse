@@ -205,7 +205,6 @@ module PedigreeModule
 			class(pedigreeHolder), intent(inout) :: res
 			integer :: i, tmpId, tmpSire, tmpDam, tmpAnimalArrayCount
 			integer(kind=int64) :: sizeDict
-			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			res%pedigreeSize = this%pedigreeSize
@@ -252,7 +251,6 @@ module PedigreeModule
 				res%damList = this%damList
 			endif
 
-			! copy generations if they are allocated
 
 
 			sizeDict  =this%pedigreeSize*2
@@ -260,8 +258,10 @@ module PedigreeModule
 			allocate(res%pedigree(this%maxPedigreeSize))
 			allocate(res%dictionary)
 			call res%dictionary%DictStructure(sizeDict)
-			allocate(res%Generations(0:this%maxGeneration))
 
+			if (allocated(this%generations)) then
+				allocate(res%Generations(0:this%maxGeneration))
+			endif
 
 			allocate(res%founders)
 			tmpAnimalArrayCount = 0
@@ -299,7 +299,7 @@ module PedigreeModule
 
 
 				if (res%isSorted /= 0) then
-					call newGenerationList(res%pedigree(i)%generation)%list_add(res%pedigree(i))
+					call res%generations(res%pedigree(i)%generation)%list_add(res%pedigree(i))
 				endif
 
 			enddo
@@ -316,12 +316,12 @@ module PedigreeModule
 					print *,res%pedigree(tmpId)%damPointer%originalId
 				else
 					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
-					res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
+					res%pedigree(tmpId)%sirePointer =>  res%pedigree(tmpSire)
 					if (res%pedigree(tmpSire)%nOffs== 1) then
 						call res%sireList%list_add(res%pedigree(tmpSire))
 					endif
 					call res%pedigree(tmpDam)%addOffspring(res%pedigree(tmpId))
-					res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
+					res%pedigree(tmpId)%damPointer =>  res%pedigree(tmpDam)
 					if (res%pedigree(tmpDam)%nOffs== 1) then
 						call res%damList%list_add(res%pedigree(tmpDam))
 					endif
@@ -329,6 +329,7 @@ module PedigreeModule
 				endif
 
 			enddo
+
 
 		end subroutine copyPedigree
 
@@ -616,7 +617,7 @@ module PedigreeModule
 			if (ped%isSorted == 0) then
 				write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
 			endif
-
+			
 			do i=1,ped%pedigreeSize
 				! if sire is associated, then dam must be too
 				if (associated(ped%pedigree(i)%sirePointer)) then
@@ -705,6 +706,7 @@ module PedigreeModule
 				if (ped%pedigree(i)%Founder) cycle
 				! if both parents haven't been removed, check most likely one
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
+
 				do j=1,ped%pedigree(i)%individualGenotype%length
 
 					!< if either is a dummy, likely that individualInconsistent is inccorrect
@@ -2386,7 +2388,6 @@ module PedigreeModule
 			do i=0, this%maxGeneration
 				tmpIndNode => this%generations(i)%first
 				do h=1, this%generations(i)%length
-
 					if (present(unknownDummysAtEnd)) then
 						if (tmpIndNode%item%isUnknownDummy) then
 							call dummyList%list_add(tmpIndNode%item)
@@ -2420,8 +2421,8 @@ module PedigreeModule
 						endif
 					endif
 					! Set the location to the pedigree to the new value
-					newPed(pedCounter) = tmpIndNode%item
-
+					! newPed(pedCounter) = tmpIndNode%item
+					call copyIndividual(newPed(pedCounter),tmpIndNode%item)
 					! take the original id, and update it
 					if(.not. newPed(pedCounter)%isDummy) then
 						this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
@@ -2465,7 +2466,7 @@ module PedigreeModule
 			do i=1, dummyList%length
 				pedCounter = pedCounter +1
 				call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
-				newPed(pedCounter) = tmpIndNode%item
+				call copyIndividual(newPed(pedCounter),tmpIndNode%item)
 				newPed(pedCounter)%id = pedCounter
 				call newPed(pedCounter)%resetOffspringInformation() ! reset offsprings
 
@@ -2490,11 +2491,6 @@ module PedigreeModule
 				tmpIndNode => tmpIndNode%next
 			enddo
 
-			! call dummyList%destroyLinkedList()
-
-			! do i=1,this%pedigreeSize
-			! 	call this%Pedigree(i)%destroyIndividual
-			! enddo
 			deallocate(this%pedigree)
 
 			this%pedigree => newPed

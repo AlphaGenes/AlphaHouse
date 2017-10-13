@@ -195,6 +195,7 @@ contains
         ! allocate(new%sirePointer)
         ! allocate(new%damPointer)
 
+        allocate(new%individualGenotype)
         if (allocated(old%individualGenotype)) then
             new%individualGenotype=old%individualGenotype
         endif
@@ -1394,7 +1395,6 @@ contains
         motherId = this%getSireDamNewIDByIndexNoDummy(3)
         fatherId = this%getSireDamNewIDByIndexNoDummy(2)
         if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
-            print *, offspringTOAdd%id, motherId, fatherId
             write(message,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd%originalId, " as both parent and offspring"
             call TRACEBACKQQ(string= message,user_exit_code=1)
         
