@@ -205,7 +205,6 @@ module PedigreeModule
 			class(pedigreeHolder), intent(inout) :: res
 			integer :: i, tmpId, tmpSire, tmpDam, tmpAnimalArrayCount
 			integer(kind=int64) :: sizeDict
-			type(Individual), pointer, dimension(:) :: newPed
 			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
@@ -285,12 +284,12 @@ module PedigreeModule
 						call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
 						res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
 						if (res%pedigree(tmpSire)%nOffs== 1) then
-							call res%sireList%list_add(newPed(tmpSire))
+							call res%sireList%list_add(res%pedigree(tmpSire))
 						endif
 						call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
 						res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
 						if (res%pedigree(tmpDam)%nOffs== 1) then
-							call res%damList%list_add(newPed(tmpDam))
+							call res%damList%list_add(res%pedigree(tmpDam))
 						endif
 
 					endif
@@ -319,12 +318,12 @@ module PedigreeModule
 					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
 					if (res%pedigree(tmpSire)%nOffs== 1) then
-						call res%sireList%list_add(newPed(tmpSire))
+						call res%sireList%list_add(res%pedigree(tmpSire))
 					endif
 					call res%pedigree(tmpDam)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(i)%damPointer =>  res%pedigree(tmpDam)
 					if (res%pedigree(tmpDam)%nOffs== 1) then
-						call res%damList%list_add(newPed(tmpDam))
+						call res%damList%list_add(res%pedigree(tmpDam))
 					endif
 
 				endif
