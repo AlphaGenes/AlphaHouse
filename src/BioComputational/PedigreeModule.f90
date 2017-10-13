@@ -196,132 +196,138 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		!< @brief Sorts pedigree, and overwrites all fields to new values
 		!< @details effectively, does a deep copy to sort pedigree based on generation, but puts dummys at bottom
-		!< If value is given for unknownDummysAtEnd, then only unknown dummys will be put at the end
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine copyPedigree(res,this)
-			use iso_fortran_env, only : output_unit, int64
-			type(PedigreeHolder),intent(in) :: this
-			class(pedigreeHolder), intent(inout) :: res
-			integer :: i, tmpId,tmpGenotypeMapIndex
-			integer(kind=int64) :: sizeDict
-			type(Individual), pointer, dimension(:) :: newPed
-			type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+subroutine copyPedigree(res,this)
+	use iso_fortran_env, only : output_unit, int64
+	type(PedigreeHolder),intent(in) :: this
+	class(pedigreeHolder), intent(inout) :: res
+	integer :: i, tmpId, tmpSire, tmpDam, tmpAnimalArrayCount
+	integer(kind=int64) :: sizeDict
+	type(Individual), pointer, dimension(:) :: newPed
+	type(IndividualLinkedList),allocatable, dimension(:) :: newGenerationList
+    integer, allocatable, dimension(:) :: tmpAnimalArray
 
-			if (.not. allocated(this%generations)) then
-				call this%setPedigreeGenerationsAndBuildArrays
+	res%pedigreeSize = this%pedigreeSize
+	res%nDummys = this%nDummys
+	res%unknownDummys = this%unknownDummys
+	res%maxPedigreeSize = this%maxPedigreeSize
+	res%inputMap = this%inputMap
+	res%genotypeMap = this%genotypeMap
+
+
+    allocate(tmpAnimalArray(this%pedigreeSize))
+
+	res%nGenotyped =this%nGenotyped
+	res%hdMap = this%hdMap
+
+	! can copy genotype and hd dictionaries as order will be the same,
+	! can't do main dictionary as we have to know if parents exist
+	if (allocated(this%hdDictionary)) then
+		if (.not. allocated(res%hdDictionary)) then
+			allocate(res%hdDictionary)
+		endif
+		res%hdDictionary = this%hdDictionary
+	endif
+
+	if (allocated(this%genotypeDictionary)) then
+		if (.not. allocated(res%genotypeDictionary)) then
+			allocate(res%genotypeDictionary)
+		endif
+		res%genotypeDictionary = this%genotypeDictionary
+	endif
+
+	res%nHd = this%nHd
+	res%maxGeneration = this%maxGeneration
+	res%nsnpsPopulation = this%nsnpsPopulation
+	res%isSorted =this%isSorted
+
+	res%sireList = this%sireList
+	res%damList = this%damList
+
+	! copy generations if they are allocated
+
+
+	sizeDict  =this%pedigreeSize*2
+
+	allocate(res%pedigree(this%maxPedigreeSize))
+	allocate(res%dictionary)
+	call res%dictionary%DictStructure(sizeDict)
+	allocate(res%Generations(0:this%maxGeneration))
+
+	allocate(res%sireList)
+	allocate(res%damList)
+	allocate(res%founders)
+	tmpAnimalArrayCount = 0
+
+	do i=1, this%pedigreeSize
+
+		call res%dictionary%addKey(this%pedigree(i)%originalID,i)
+		res%pedigree(i) = this%pedigree(i)
+		call res%pedigree(i)%resetOffspringInformation
+		if (.not. res%pedigree(i)%Founder) then
+			! we know that sire and dam id should be set
+			tmpSire= res%dictionary%getValue(res%pedigree(i)%sirePointer%originalId)
+			tmpDam = res%dictionary%getValue(res%pedigree(i)%damPointer%originalId)
+
+			! if either sire or dam is null - we need to wait for all the animals are in the new ped to set them
+			if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
+				tmpAnimalArrayCount = tmpAnimalArrayCount + 1
+				tmpAnimalArray(tmpAnimalArrayCount) = i
+			else
+				call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
+				if (res%pedigree(tmpSire)%nOffs== 1) then
+					call res%sireList%list_add(newPed(tmpSire))
+				endif
+				call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+				if (res%pedigree(tmpDam)%nOffs== 1) then
+					call res%damList%list_add(newPed(tmpDam))
+				endif
+
 			endif
-			i = 0
+		else
+			call res%founders%list_add(res%pedigree(i))
+		endif
 
 
-			res%pedigreeSize = this%pedigreeSize
-			res%nDummys = this%nDummys
-			res%unknownDummys = this%unknownDummys
-			res%maxPedigreeSize = this%maxPedigreeSize
-			res%inputMap = this%inputMap
-			res%genotypeMap = this%genotypeMap
+		if (res%isSorted /= 0) then
+			call newGenerationList(res%pedigree(i)%generation)%list_add(res%pedigree(i))
+		endif
 
-			
-			if (allocated(this%genotypeDictionary)) then
-				if (.not. allocated(res%genotypeDictionary)) then
-					allocate(res%genotypeDictionary)
-				endif
-				res%genotypeDictionary = this%genotypeDictionary
+	enddo
+
+
+	do i=1, tmpAnimalArrayCount
+		tmpId = tmpAnimalArray(i)
+		tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
+		tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
+		if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
+			tmpAnimalArrayCount = tmpAnimalArrayCount + 1
+			tmpAnimalArray(tmpAnimalArrayCount) = i
+		else
+			call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
+			call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+			if (res%pedigree(tmpSire)%nOffs== 1) then
+				call res%sireList%list_add(newPed(tmpSire))
 			endif
-			res%nGenotyped =this%nGenotyped
-			res%hdMap = this%hdMap
-			if (allocated(this%hdDictionary)) then
-				if (.not. allocated(res%hdDictionary)) then
-					allocate(res%hdDictionary)
-				endif
-				res%hdDictionary = this%hdDictionary
+			call res%pedigree(tmpDam)%addOffspring(res%pedigree(i))
+			if (res%pedigree(tmpDam)%nOffs== 1) then
+				call res%damList%list_add(newPed(tmpDam))
 			endif
-			res%nHd = this%nHd
-			res%maxGeneration = this%maxGeneration
-			res%nsnpsPopulation = this%nsnpsPopulation
-			res%isSorted =this%isSorted
 
-			! call res%dictionary%destroy()
-			! call res%founders%destroyLinkedList()
-			! call res%sireList%destroyLinkedList()
-			! call res%damList%destroyLinkedList()
+		endif
+
+	enddo
+
+end subroutine copyPedigree
 
 
-			sizeDict  =this%pedigreeSize
-			allocate(newPed(this%maxPedigreeSize))
-			allocate(res%dictionary)
-			call res%dictionary%DictStructure(sizeDict)
-			allocate(newGenerationList(0:this%maxGeneration))
-
-			allocate(res%sireList)
-			allocate(res%damList)
-			allocate(res%founders)
-			do i=1, this%pedigreeSize
-				! update dictionary index
-				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-
-				!  update genotype map
-
-				if (res%nGenotyped > 0) then
-					tmpGenotypeMapIndex = res%genotypeDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%genotypeMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Update hd map
-				if (res%nHd > 0) then
-					tmpGenotypeMapIndex = res%hdDictionary%getValue(this%pedigree(i)%originalID)
-					if (tmpGenotypeMapIndex /= DICT_NULL) then
-						res%hdMap(tmpGenotypeMapIndex) = i
-					endif
-				endif
-				! Set the location to the pedigree to the new value
-				newPed(i) = this%pedigree(i)
-
-				! take the original id, and update it
-				if(.not. newPed(i)%isDummy) then
-					res%inputMap(newPed(i)%originalPosition) = i
-				endif
-				newPed(i)%id = i
-				call newPed(i)%resetOffspringInformation ! reset offsprings
-				if (associated(newPed(i)%sirePointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%sirePointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%sirePointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs== 1) then
-							call res%sireList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (associated(newPed(i)%damPointer)) then
-					tmpId =  res%dictionary%getValue(newPed(i)%damPointer%originalID)
-					if (tmpID /= DICT_NULL) then
-						call newPed(tmpId)%addOffspring(newPed(i))
-						newPed(i)%damPointer=> newPed(tmpId)
-						if (newPed(tmpId)%nOffs== 1) then
-							call res%damList%list_add(newPed(tmpId))
-						endif
-					endif
-				endif
-
-				if (i ==0 ) then !if object is afounder add to founder array
-					call  res%founders%list_add(newPed(i))
-				endif
-
-				if (res%isSorted /= 0) then
-					call newGenerationList(newPed(i)%generation)%list_add(newPed(i))
-				endif
-			enddo
-
-			res%pedigree => newPed
-			res%generations = newGenerationList
-
-		end subroutine copyPedigree
-
-
+		!---------------------------------------------------------------------------
+		!< @brief Checks for array equality
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
 		logical function equality(pedOne, pedTwo)
 
 			type(pedigreeHolder) , intent(in) :: pedOne, pedTwo

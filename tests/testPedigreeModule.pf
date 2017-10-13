@@ -14,7 +14,7 @@ module TestPedigreeModule
 		@before
 		subroutine initialise
 			implicit none
-			integer(int32) :: pedUnit, genUnit
+			integer(int32) :: pedUnit, genUnit, nsnp
 
 			! A sorted pedigree with one parent (d1) not given as individual
 			open(newunit=pedUnit, file="testPed.txt", status="unknown")
@@ -49,7 +49,8 @@ module TestPedigreeModule
 
       allocate(pedigreeUnsorted)
 			call initPedigree(pedigreeUnsorted,"testPedUnsorted.txt")
-			call pedigree%addGenotypeInformationFromFile("testGen.txt", 4, lockIn=.true.)
+			nsnp = 4
+			call pedigree%addGenotypeInformationFromFile("testGen.txt", nsnp, lockIn=.true.)
 
 		end subroutine
 
