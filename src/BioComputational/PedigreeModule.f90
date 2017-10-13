@@ -308,10 +308,13 @@ module PedigreeModule
 
 			do i=1, tmpAnimalArrayCount
 				tmpId = tmpAnimalArray(i)
-				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sireId)
-				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damId)
+				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
+				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
 					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
+
+					print *,res%pedigree(tmpId)%sirePointer%originalId
+					print *,res%pedigree(tmpId)%damPointer%originalId
 				else
 					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
