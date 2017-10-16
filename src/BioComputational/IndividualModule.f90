@@ -385,9 +385,9 @@ contains
 
     !         deallocate(this%MyPhaseCorrect)
     !     endif
-        if (allocated(this%inconsistencies)) then
-            deallocate(this%inconsistencies)
-        endif
+        ! if (allocated(this%inconsistencies)) then
+        !     deallocate(this%inconsistencies)
+        ! endif
 
     end subroutine destroyIndividual
 
@@ -1251,8 +1251,6 @@ contains
         ! allocate(this%referAllele(size(referAllele)))
         ! allocate(this%alterAllele(size(alterAllele)))
 
-        ! print *, "here", size(referAllele)
-        ! print *, "here", size(this%referAllele)
         this%referAllele = referAllele
         this%alterAllele  = alterAllele
     end subroutine setSequenceArray
