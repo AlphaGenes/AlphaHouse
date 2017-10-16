@@ -342,10 +342,10 @@ contains
         endif
 
     
-        if (allocated(this%BestSwitchPosArray)) then
+        ! if (allocated(this%BestSwitchPosArray)) then
 
-            deallocate(this%BestSwitchPosArray)
-        endif
+        !     deallocate(this%BestSwitchPosArray)
+        ! endif
         
         if (allocated(this%ParentInferredSwitchCount)) then
 
