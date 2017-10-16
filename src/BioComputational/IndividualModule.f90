@@ -305,9 +305,9 @@ contains
     subroutine destroyIndividual(this)
         type(Individual) :: this
 
-        if (allocated(this%offsprings)) then
-            deallocate(this%offsprings)
-        endif
+        ! if (allocated(this%offsprings)) then
+        !     deallocate(this%offsprings)
+        ! endif
 
 
         if (allocated(this%originalId)) then
