@@ -347,44 +347,44 @@ contains
         !     deallocate(this%BestSwitchPosArray)
         ! endif
         
-        if (allocated(this%ParentInferredSwitchCount)) then
+    !     if (allocated(this%ParentInferredSwitchCount)) then
 
-            deallocate(this%ParentInferredSwitchCount)
-        endif
-    if (allocated(this%StrandBreakArray)) then
+    !         deallocate(this%ParentInferredSwitchCount)
+    !     endif
+    ! if (allocated(this%StrandBreakArray)) then
 
-            deallocate(this%StrandBreakArray)
-        endif
+    !         deallocate(this%StrandBreakArray)
+    !     endif
 
-        if (allocated(this%PartialInformativeHaplotype)) then
+    !     if (allocated(this%PartialInformativeHaplotype)) then
 
-            deallocate(this%PartialInformativeHaplotype)
-        endif
+    !         deallocate(this%PartialInformativeHaplotype)
+    !     endif
 
-          if (allocated(this%PartialInformativeHaplotypeFull)) then
+    !       if (allocated(this%PartialInformativeHaplotypeFull)) then
 
-            deallocate(this%PartialInformativeHaplotypeFull)
-        endif
+    !         deallocate(this%PartialInformativeHaplotypeFull)
+    !     endif
 
-        if (allocated(this%ParentInferredSwitchCount)) then
+    !     if (allocated(this%ParentInferredSwitchCount)) then
 
-            deallocate(this%ParentInferredSwitchCount)
-        endif
+    !         deallocate(this%ParentInferredSwitchCount)
+    !     endif
 
-        if (allocated(this%MyPhaseYield)) then
+    !     if (allocated(this%MyPhaseYield)) then
 
-            deallocate(this%MyPhaseYield)
-        endif
+    !         deallocate(this%MyPhaseYield)
+    !     endif
 
-         if (allocated(this%MyPhaseAcc)) then
+    !      if (allocated(this%MyPhaseAcc)) then
 
-            deallocate(this%MyPhaseAcc)
-        endif
+    !         deallocate(this%MyPhaseAcc)
+    !     endif
 
-        if (allocated(this%MyPhaseCorrect)) then
+    !     if (allocated(this%MyPhaseCorrect)) then
 
-            deallocate(this%MyPhaseCorrect)
-        endif
+    !         deallocate(this%MyPhaseCorrect)
+    !     endif
         if (allocated(this%inconsistencies)) then
             deallocate(this%inconsistencies)
         endif
