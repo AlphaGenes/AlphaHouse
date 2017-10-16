@@ -89,7 +89,6 @@ module informationModule
 
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
-                ! print *,ped%pedigree(animal)%individualGenotype%getgenotype(232)
                 if (present(snpErrorPath)) then
                     accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i, snpErrorUnit)
                 else

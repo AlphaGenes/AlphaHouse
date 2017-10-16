@@ -184,7 +184,6 @@ module LinkedListModule
 			type(LinkedList), pointer  :: current
 			type(LinkedList), pointer  :: tmp
 
-			! print *,"DESTROY LL "
 			current => list
 			if (associated(current)) then
 				do while (associated(current%next))
@@ -201,28 +200,6 @@ module LinkedListModule
 				deallocate(current)
 
 			endif
-			! if (associated(current)) then
-			!     deallocate(current)
-			! endif
-
-
-			! deallocate(list%next)
-
-			! if (allocated(list%data)) then
-			!     deallocate(list%data)
-			! endif
-			! current => list
-			! if (.not. associated(current%next)) then
-			!     ! call current%data%clearData()
-			!     deallocate(current)
-			! else
-			!     do while ( associated(current) )
-			!         next => current%next
-			!         ! call current%data%clearData()
-			!         deallocate( current )
-			!         current => next
-			!     enddo
-			! endif
 
 		end subroutine list_destroy
 
