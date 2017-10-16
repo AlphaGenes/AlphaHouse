@@ -276,6 +276,10 @@ contains
             if (nsnps /= 0) then
                 allocate(this%individualPhase(2))
                 allocate(this%individualGenotype)
+
+                if (allocated(this%inconsistencies)) then
+                    deallocate(this%inconsistencies)
+                endif
                 allocate(this%inconsistencies(nsnps))
                 call this%individualGenotype%newGenotypeMissing(nsnps)
                 call this%individualPhase(1)%newHaplotypeMissing(nsnps)
