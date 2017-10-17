@@ -200,7 +200,7 @@ module IndividualModule
 			! allocate(new%sirePointer)
 			! allocate(new%damPointer)
 
-			allocate(new%individualGenotype)
+			! allocate(new%individualGenotype)
 			if (allocated(old%individualGenotype)) then
 				new%individualGenotype=old%individualGenotype
 			endif
