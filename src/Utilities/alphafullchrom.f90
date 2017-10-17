@@ -136,7 +136,6 @@ contains
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
-    print *,"written debug ped"
 		do i=1, size(chromPaths)
 
 			specFile%resultFolderPath = chromPaths(i)

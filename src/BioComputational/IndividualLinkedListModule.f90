@@ -184,7 +184,6 @@ contains
         ! endif
         ! this%first => null()
 
-        ! print *, "end destruction"
         this%length = 0
         this%first => null()
         this%last => null()
@@ -404,14 +403,12 @@ subroutine list_remove(this,item)
 			this%length = this%length - 1
 			if (.not. associated(this%first)) then
 				deallocate(this%last)
-				!print *, "LIST EMPTY:", this%length
 			else
 				this%first%previous => null()
 			endif
 		else
 			do while (associated(node%next))
 				tmpItem => node%next%item
-				! print *,"loop"
 				if(associated(tmpItem,item)) then
 					if(associated(node%next%next)) then
 						deallocate(node%next%next%previous)
