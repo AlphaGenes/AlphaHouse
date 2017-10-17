@@ -142,7 +142,7 @@ contains
 
 		call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
 		print *,"READ BIM"
-		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,1, allsnps)
+		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,4, allsnps)
 		print *,"READ BED"
 		allocate(maskedLogi(size(allSnps(1,:))))
 
