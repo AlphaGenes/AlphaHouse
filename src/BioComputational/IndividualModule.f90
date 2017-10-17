@@ -176,7 +176,7 @@ module IndividualModule
 			type(Individual),intent(in) :: old
 
             call destroyIndividual(new)
-            
+
 			new%originalID=old%originalID
 			new%sireID=old%sireID
 			new%damID=old%damID
@@ -191,6 +191,9 @@ module IndividualModule
 			new%HD=old%HD
 			new%isDummy=old%isDummy
 			new%isUnknownDummy=old%isUnknownDummy
+            if (allocated(new%offsprings)) then
+                deallocate(new%offsprings)
+            endif
 			allocate(new%OffSprings(OFFSPRINGTHRESHOLD))
 			new%sirePointer => old%sirePointer
 			new%damPointer => old%damPointer
