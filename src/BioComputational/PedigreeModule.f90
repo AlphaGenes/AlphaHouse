@@ -3586,12 +3586,20 @@ module PedigreeModule
 		! PARAMETERS:
 		!---------------------------------------------------------------------------
 		subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
+			use IFCORE
 			class(PedigreeHolder) :: this
 			integer, optional :: offspringId !< offspring recoded id canbe given here
 			integer, intent(out) :: dummyId
 			character(len=IDLENGTH) :: tmpCounterStr
 
 			this%pedigreeSize = this%pedigreeSize+1
+
+			if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+				write(error_unit,*) "ERROR: too many undefined animals"
+				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+
+			endif
+
 			this%nDummys = this%nDummys + 1
 
 			this%isSorted = 0
@@ -3632,6 +3640,7 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
+			use IFCORE
 			class(PedigreeHolder) :: this
 			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
@@ -3641,6 +3650,12 @@ module PedigreeModule
 			this%issorted = 0
 
 			this%pedigreeSize = this%pedigreeSize+1
+
+			if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+				write(error_unit,*) "ERROR: too many undefined animals"
+				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+
+			endif
 			call this%Pedigree(this%pedigreeSize)%initIndividual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(OriginalId, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .false.
