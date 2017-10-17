@@ -456,7 +456,7 @@ module PedigreeModule
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
-			integer, optional :: minSize !< pedigree will be this size
+			integer, optional :: minSize !< pedigree will be this size * 4 
 
 			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure()
@@ -467,7 +467,7 @@ module PedigreeModule
 			pedStructure%nHd = 0
 
 			if (present(minSize)) then
-				pedStructure%maxPedigreeSize = minSize
+				pedStructure%maxPedigreeSize = minSize * 4 
 			else
 				pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
 			endif
