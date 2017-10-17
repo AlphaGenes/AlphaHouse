@@ -175,6 +175,8 @@ module IndividualModule
 			type(Individual), intent(inout) :: new
 			type(Individual),intent(in) :: old
 
+            call destroyIndividual(new)
+            
 			new%originalID=old%originalID
 			new%sireID=old%sireID
 			new%damID=old%damID
