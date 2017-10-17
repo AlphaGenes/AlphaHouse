@@ -452,10 +452,11 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine initEmptyPedigree(pedStructure,nsnps)
+		subroutine initEmptyPedigree(pedStructure,nsnps, minSize)
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
+			integer, optional :: minSize !< pedigree will be this size
 
 			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure()
@@ -464,7 +465,12 @@ module PedigreeModule
 			pedStructure%nDummys = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nHd = 0
-			pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+
+			if (present(minSize)) then
+				pedStructure%maxPedigreeSize = minSize
+			else
+				pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
+			endif
 			allocate(pedStructure%pedigree(pedStructure%maxPedigreeSize))
 			allocate(pedStructure%founders)
 			allocate(pedStructure%sireList)
@@ -488,7 +494,7 @@ module PedigreeModule
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			! new%pedigreeSize = this%nHd
-			call initEmptyPedigree(new,this%nsnpsPopulation)
+			call initEmptyPedigree(new,this%nsnpsPopulation, this%pedigreeSize)
 			tmpAnimalCount = 0
 			new%nhd = 0
 			new%nDummys = 0
@@ -3594,7 +3600,7 @@ module PedigreeModule
 
 			this%pedigreeSize = this%pedigreeSize+1
 
-			if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+			if (this%pedigreeSize > this%maxPedigreeSize) then
 				write(error_unit,*) "ERROR: too many undefined animals"
 				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 
@@ -3651,7 +3657,7 @@ module PedigreeModule
 
 			this%pedigreeSize = this%pedigreeSize+1
 
-			if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+			if (this%pedigreeSize > this%maxPedigreeSize) then
 				write(error_unit,*) "ERROR: too many undefined animals"
 				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 
