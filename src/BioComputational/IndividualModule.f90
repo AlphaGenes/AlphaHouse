@@ -73,22 +73,11 @@ module IndividualModule
         integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
         integer, allocatable :: nHighDensityOffspring
         ! plant stuff
-        integer :: MyFamilyAsOffspring = -99
-        real(kind=real64) :: MendelianInconsistenciesPercFamily = 0
         logical(kind=1):: isInbred
         logical(kind=1)::isImputed
         logical(kind=1) :: IgnoreMe =.false.
 
-        integer, allocatable, dimension(:) :: StrandBreakArray
-        integer(kind=1), allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
-        integer(kind=1), allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
-        ! plant stuff testing 
-        integer :: NumberOfSwitches = 0
-        integer, allocatable, dimension(:) :: BestSwitchPosArray, ParentInferredSwitchCount
-        double precision :: MyGenoYield, MyGenoAccuracy, MyGenoAccuracyInf, MyGenoYieldInf, MyGenoCorrect, MyGenoCorrectInf
-        double precision :: MyPhase1YieldInf, MyPhase1AccInf,  MyPhase1CorrectInf, MyPhase2YieldInf, MyPhase2AccInf, MyPhase2CorrectInf
-        double precision, allocatable, dimension( :,:) :: MyPhaseYield, MyPhaseAcc, MyPhaseCorrect
-
+ 
         type(IntegerLinkedList) :: families
 
         integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
@@ -144,7 +133,6 @@ module IndividualModule
             procedure :: makeIndividualGenotypeFromPhase
             procedure :: countHighDensityOffspring
             procedure :: addFamily
-            procedure :: initialisePlantArrays
             procedure :: getProbabilitiesFromOwnGenotypeAndPhase
             generic:: write(formatted)=> writeIndividual
 
@@ -265,50 +253,6 @@ contains
         endif
 
     
-        if (allocated(this%BestSwitchPosArray)) then
-
-            deallocate(this%BestSwitchPosArray)
-        endif
-        
-        if (allocated(this%ParentInferredSwitchCount)) then
-
-            deallocate(this%ParentInferredSwitchCount)
-        endif
-    if (allocated(this%StrandBreakArray)) then
-
-            deallocate(this%StrandBreakArray)
-        endif
-
-        if (allocated(this%PartialInformativeHaplotype)) then
-
-            deallocate(this%PartialInformativeHaplotype)
-        endif
-
-          if (allocated(this%PartialInformativeHaplotypeFull)) then
-
-            deallocate(this%PartialInformativeHaplotypeFull)
-        endif
-
-        if (allocated(this%ParentInferredSwitchCount)) then
-
-            deallocate(this%ParentInferredSwitchCount)
-        endif
-
-        if (allocated(this%MyPhaseYield)) then
-
-            deallocate(this%MyPhaseYield)
-        endif
-
-         if (allocated(this%MyPhaseAcc)) then
-
-            deallocate(this%MyPhaseAcc)
-        endif
-
-
-        if (allocated(this%MyPhaseCorrect)) then
-
-            deallocate(this%MyPhaseCorrect)
-        endif
         if (allocated(this%inconsistencies)) then
             deallocate(this%inconsistencies)
         endif
@@ -1477,36 +1421,6 @@ contains
 
     end subroutine getProbabilitiesFromOwnGenotypeAndPhase
 
-    !---------------------------------------------------------------------------
-    !> @brief arrays for plant imputation
-    !> @author  serap gonen serap.gonen@roslin.ed.ac.uk
-    !> @date    September 08, 2017
-    !---------------------------------------------------------------------------
-
-    subroutine initialisePlantArrays(this, nSnpSubset, nSnpAll)
-        use constantModule, only: MissingPlantArrayCode
-
-        class(individual) :: this
-        integer, intent(in) :: nSnpSubset, nSnpAll
-        
-        ! allocate(this%individualGenotypeSubset)
-        allocate(this%individualPhaseSubset(2))
-        allocate(this%ParentalHaplotypes(2,nSnpSubset))
-        allocate(this%StrandBreakArray(nSnpSubset))
-        allocate(this%PartialInformativeHaplotype(2,nSnpSubset))
-        allocate(this%ParentInferredSwitchCount(2))
-        allocate(this%ParentalHaplotypesFull(2,nSnpAll))
-        allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
-        this%individualGenotypeSubset = newGenotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(1) = newHaplotypeMissing(nSnpSubset)
-        this%individualPhaseSubset(2) = newHaplotypeMissing(nSnpSubset)
-        this%ParentalHaplotypes = MissingPlantArrayCode
-        this%StrandBreakArray = 0
-        this%ParentInferredSwitchCount = 0
-        this%PartialInformativeHaplotype = MissingPlantArrayCode
-        this%ParentalHaplotypesFull = MissingPlantArrayCode
-        this%PartialInformativeHaplotypeFull =MissingPlantArrayCode
-    end subroutine initialisePlantArrays
 
 end module IndividualModule
 

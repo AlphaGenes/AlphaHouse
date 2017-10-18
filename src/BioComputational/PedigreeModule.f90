@@ -1828,7 +1828,7 @@ module PedigreeModule
 			if (present(nAnnisG)) then
 				nAnnis = nAnnisG
 			else
-				nAnnis = countLines(phaseFile)
+				nAnnis = int(float(countLines(phaseFile)) / 2.0)
 			endif
 
 			allocate(tmpSnpArray(nsnps))
