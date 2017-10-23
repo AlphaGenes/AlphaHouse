@@ -380,8 +380,6 @@ contains
 		hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
         elem => this%table(hash)%list
         do while ( associated(elem) )
-            ! if ( associated(elem)) then
-                ! if (allocated(elem%data)) then
                     if (allocated(elem%data%key)) then
                         if ( elem%data%key .eq. key ) then
                             exit
@@ -389,8 +387,6 @@ contains
                             elem => list_next( elem )
                         endif
                     endif
-                ! endif
-            ! endif
 		enddo
 
 	end function getElement
