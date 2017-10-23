@@ -41,21 +41,25 @@ module LinkedListModule
 
 
 		subroutine copyLinkedList(list, this)
-			type(LinkedList), target, intent(inout) :: list
-			type(LinkedList), target, intent(in) :: this
+			type(LinkedList), pointer, intent(inout) :: list
+			type(LinkedList), pointer, intent(in) :: this
 			type(LinkedList), pointer :: cur, l, t
 			type(LinkedList), pointer :: next
 
-			l => list
+			! l => list
 			t => this
 			if (associated(t)) then
-				allocate(l)
-				allocate(l%data)
-				l%next => null()
+
+				if (.not. ASSOCIATED(list)) then
+					allocate(list)
+				endif
+				! allocate(l)
+				allocate(list%data)
+				list%next => null()
 				! print *,"here",t%data%key
-				l%data%key = t%data%key
-				l%data%value = t%data%value
-				cur =>l
+				list%data%key = t%data%key
+				list%data%value = t%data%value
+				cur =>list
 				do while (associated(t%next))
 					allocate( next )
 					cur%next => next
@@ -65,8 +69,6 @@ module LinkedListModule
 					cur => cur%next
 					t=> t%next
 				end do
-			else
-				l => null()
 			endif
 
 		end subroutine copyLinkedList
