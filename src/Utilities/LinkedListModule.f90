@@ -50,14 +50,16 @@ module LinkedListModule
 			t => this
 			if (associated(t)) then
 				allocate(l)
-				! allocate(list%data)
+				allocate(l%data)
 				l%next => null()
+				! print *,"here",t%data%key
 				l%data%key = t%data%key
 				l%data%value = t%data%value
-				cur =>list
-				do while (associated(this%next))
+				cur =>l
+				do while (associated(t%next))
 					allocate( next )
 					cur%next => next
+					allocate( next%data)
 					next%data%key = t%data%key
 					next%data%value = t%data%value
 					cur => cur%next

@@ -120,9 +120,7 @@ contains
 	hash%hash_size = old%hash_size
 	allocate(hash%table(hash%hash_size))
 	do i=1, hash%hash_size
-
-		hash%table(i) = old%table(i)
-
+		call copyLinkedList(hash%table(i)%list,old%table(i)%list)
 	enddo
 		
 	end subroutine deepCopyHash
@@ -382,7 +380,7 @@ contains
 		hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
         elem => this%table(hash)%list
         do while ( associated(elem) )
-            if ( associated(elem)) then
+            ! if ( associated(elem)) then
                 ! if (allocated(elem%data)) then
                     if (allocated(elem%data%key)) then
                         if ( elem%data%key .eq. key ) then
@@ -392,7 +390,7 @@ contains
                         endif
                     endif
                 ! endif
-            endif
+            ! endif
 		enddo
 
 	end function getElement
