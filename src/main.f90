@@ -8,16 +8,16 @@ program test
 
 	type(PedigreeHolder) :: ped
 	integer,allocatable,dimension(:) :: nsnp
-	integer :: inconsistencies
-    character(len=300) :: inputFile,
+	integer :: inconsistencies, nsnps
+    character(len=300) :: inputFile,genotypeFile
 
     inputFile = "pedigree.txt"
     genotypeFile = "genotypes.txt"
     
 
 	call initPedigree(ped,inputFile)
-	
-    call ped%addGenotypeInformationFromFile(genotypeFile,0)
+	nsnps = 0 
+    call ped%addGenotypeInformationFromFile(genotypeFile,nsnps)
     call ped%sortPedigreeAndOverwrite()
 
 	inconsistencies = ped%findMendelianInconsistencies(file="mendInfo.txt", snpFilePath="snpinfo.txt")
