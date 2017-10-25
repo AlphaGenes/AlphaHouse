@@ -587,18 +587,19 @@ module PedigreeModule
 
 
 
-		function findMendelianInconsistencies(ped, threshold,file,snpfilePath) result(CountChanges)
+		function findMendelianInconsistencies(ped, thresholdIn,file,snpfilePath) result(CountChanges)
 			use genotypeModule
 			use BitUtilities
 			implicit none
 			class(pedigreeHolder) :: ped
 			type(Mendelian), dimension(:), allocatable :: mend
-			real, intent(in) :: threshold !< threshold for removing animals
+			real, intent(in), optional :: thresholdIn !< threshold for removing animals
+			real :: threshold
 			integer :: sireInconsistencies, damInconsistencies
 			integer :: outfile,snpFile
 			type(individual),pointer :: sire, dam
 			integer :: i,j
-			character(len=*),intent(in), optional :: file
+			character(len=*),intent(in), optional :: file !< path to 
 			character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
 			integer :: CountChanges, dumId
 			integer :: snpChanges
@@ -608,6 +609,12 @@ module PedigreeModule
 			sireRemoved = .false.
 			damRemoved = .false.
 
+
+			if (present(thresholdIn)) then
+				threshold = thresholdIn
+			else
+				threshold = 0.05
+			endif
 			snpChanges = 0
 			if (present(snpfilePath)) then
 				open(newunit=snpFile, file=snpfilePath, status='unknown')
