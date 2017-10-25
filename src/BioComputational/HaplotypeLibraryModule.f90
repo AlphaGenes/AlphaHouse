@@ -577,7 +577,7 @@ module HaplotypeLibraryModule
 			integer :: i, j, sections
 			type(Haplotype) :: hap
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			all = 0
 			all = NOT(all)
@@ -604,7 +604,7 @@ module HaplotypeLibraryModule
 			integer :: i, j, sections, overhang
 			type(Haplotype) :: hap
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			all = 0
 			all = NOT(all)
@@ -636,7 +636,7 @@ module HaplotypeLibraryModule
 			integer :: i, j, sections
 			type(Haplotype) :: hap
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			all = 0
 			all = NOT(all)
@@ -663,7 +663,7 @@ module HaplotypeLibraryModule
 			integer :: i, j, sections, overhang
 			type(Haplotype) :: hap
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			all = 0
 			all = NOT(all)
@@ -695,7 +695,7 @@ module HaplotypeLibraryModule
 			integer :: i, j, sections
 			type(Haplotype) :: hap
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			all = 0
 			all = NOT(all)
@@ -719,7 +719,7 @@ module HaplotypeLibraryModule
 
 			integer :: i, sections
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			azm = library%allZeroOrMissing(ids)
 			am = library%allMissing(ids)
@@ -738,7 +738,7 @@ module HaplotypeLibraryModule
 
 			integer :: i, sections
 
-			sections = library%nSnps/64+1
+			sections = (library%nSnps-1)/64+1
 
 			aom = library%allOneOrMissing(ids)
 			am = library%allMissing(ids)
@@ -846,4 +846,5 @@ module HaplotypeLibraryModule
 		end function getConsensusHap
 
 end module HaplotypeLibraryModule
+
 
