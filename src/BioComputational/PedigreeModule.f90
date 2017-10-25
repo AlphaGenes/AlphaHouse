@@ -307,6 +307,7 @@ module PedigreeModule
 
 			do i=1, tmpAnimalArrayCount
 				tmpId = tmpAnimalArray(i)
+
 				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
 				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
@@ -456,7 +457,7 @@ module PedigreeModule
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
 			integer, optional :: nsnps
-			integer, optional :: minSize !< pedigree will be this size * 4 
+			integer, optional :: minSize !< pedigree will be this size * 4
 
 			allocate(pedStructure%dictionary)
 			call pedStructure%dictionary%DictStructure()
@@ -467,7 +468,7 @@ module PedigreeModule
 			pedStructure%nHd = 0
 
 			if (present(minSize)) then
-				pedStructure%maxPedigreeSize = minSize * 4 
+				pedStructure%maxPedigreeSize = minSize * 4
 			else
 				pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
 			endif
@@ -624,7 +625,7 @@ module PedigreeModule
 			if (ped%isSorted == 0) then
 				write(error_unit, *) "WARNING - mendelian Inconsistency checks are being run without the pedigree being sorted. This could have weird effects"
 			endif
-			
+
 			do i=1,ped%pedigreeSize
 				! if sire is associated, then dam must be too
 				if (associated(ped%pedigree(i)%sirePointer)) then
@@ -1254,15 +1255,12 @@ module PedigreeModule
 			if (nsnp == 0) then
 				nsnp = countColumns(fileIn,' ') - 1
 			end if
-			allocate(tmpGeno(nsnp))
-			allocate(pedStructure%sireList)
-			allocate(pedStructure%damList)
-			allocate(pedStructure%Founders)
+
 			pedStructure%isSorted = 0
 			pedStructure%nHd = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nsnpsPopulation = nsnp
-
+			allocate(tmpGeno(nsnp))
 			if (present(numberInFile)) then
 				nIndividuals = numberInFile
 			else
@@ -1276,6 +1274,11 @@ module PedigreeModule
 					call initPedigree(pedStructure,pedFile, nsnps=nSnp)
 				endif
 			else
+
+				allocate(pedStructure%sireList)
+				allocate(pedStructure%damList)
+				allocate(pedStructure%Founders)
+				allocate(pedStructure%dictionary)
 				pedStructure%nDummys = 0
 				tmpAnimalArrayCount = 0
 				sizeDict = nIndividuals
@@ -1328,7 +1331,9 @@ module PedigreeModule
 				else
 					call pedStructure%dictionary%addKey(tmpId, i)
 					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
-					pedStructure%Pedigree(i)%originalPosition = i
+					pedStructure%Pedigree(i)%founder = .true.
+                    call pedStructure%founders%list_add(pedStructure%pedigree(i))
+                    pedStructure%Pedigree(i)%originalPosition = i
 					pedStructure%inputMap(i) = i
 					call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
 					call pedStructure%setAnimalAsHd(i)
@@ -4184,6 +4189,7 @@ module PedigreeModule
 
 
 end module PedigreeModule
+
 
 
 

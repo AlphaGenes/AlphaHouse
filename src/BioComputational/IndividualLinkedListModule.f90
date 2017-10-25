@@ -96,9 +96,12 @@ contains
 		this%length = listIn%length
 		allocate(node)
 
-		node%item => listin%First%item
-		node%previous => null()
-		this%first=>node
+
+		if (associated(listIn%First)) then
+			node%item => listin%First%item
+			node%previous => null()
+			this%first=>node
+		endif
 
 		if (listin%length > 1) then
 		old => listin%first%next
@@ -115,7 +118,7 @@ contains
 				old => old%next
 				node => node%next
 			end do 
-		else 
+		else if (listIn%length > 0) then
 			this%last =>node
 		endif
 
