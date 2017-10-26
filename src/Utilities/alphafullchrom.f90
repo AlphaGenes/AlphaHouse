@@ -47,6 +47,7 @@ contains
 		use pedigreeModule
 		use baseSpecFileModule
 		use MPIUtilities
+		use ifport
 
 		type(pedigreeHolder) :: ped
 		character(len=*) :: plinkPre
@@ -68,14 +69,18 @@ contains
 		endif
 
 		totalToDo = (size(chromPaths))/mpiSize
-		print *,"TOTALTODO", totalTOdo
 		if (totalToDo <1) then
 			if (mpiRank+1 < nCoreLengths) return
 		endif
 
 		do i=1, totalToDo
-			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 
+			
+			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
+			result=makedirqq("MultiChromResults")
+			path = "MultiChromResults/" // curChrom
+			result=makedirqq(path)			
+			CALL chdir(path)
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)

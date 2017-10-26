@@ -272,7 +272,6 @@ contains
 					curChromSnpCount = curChromSnpCount + 1
 				endif
 				nsnps(chromCount) = curChromSnpCount
-				print *,"HEREEEE",chromCount, nsnps(chromCount),chrom, prevChrom,maxSnps
 				curChromSnpCount = 0
 				chromCount = chromCount + 1
 
