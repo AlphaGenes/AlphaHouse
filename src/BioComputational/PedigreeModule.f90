@@ -1806,7 +1806,7 @@ module PedigreeModule
 			if (allocated(this%hdMap)) then
 				deallocate(this%hdMap)
 			endif
-			this%genotypeMap = 0
+			! this%genotypeMap = 0
 
 
 
@@ -1901,7 +1901,14 @@ module PedigreeModule
 
 			if (present(initAll)) then
 				do i=1, this%pedigreeSize
-					call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+					if (.not. this%pedigree(i)%genotyped) then
+						call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+						allocate(this%pedigree(i)%inconsistencies(this%nsnpsPopulation))
+						this%pedigree(i)%inconsistencies = 0
+						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
+					endif
+
+
 				enddo
 			endif
 		end subroutine addGenotypeInformationFromArray
@@ -1993,13 +2000,10 @@ module PedigreeModule
 						call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
 						allocate(this%pedigree(i)%inconsistencies(this%nsnpsPopulation))
 						this%pedigree(i)%inconsistencies = 0
+						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
 					endif
 
-					if (.not. ALLOCATED(this%pedigree(i)%individualPhase)) then
-						allocate(this%pedigree(i)%individualPhase(2))
-					endif
-					call this%pedigree(i)%individualPhase(1)%newHaplotypeMissing(this%nsnpsPopulation)
-					call this%pedigree(i)%individualPhase(2)%newHaplotypeMissing(this%nsnpsPopulation)
+					
 				enddo
 			endif
 

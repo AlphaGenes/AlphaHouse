@@ -1245,6 +1245,8 @@ module IndividualModule
 
 			allocate(this%inconsistencies(size(geno)))
 			this%inconsistencies = 0
+
+			call this%initPhaseArrays(size(geno))
 			if (present(lockIn)) then
 
 				if (lockIn) then
