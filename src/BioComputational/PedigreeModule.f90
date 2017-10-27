@@ -2746,6 +2746,45 @@ module PedigreeModule
 		end subroutine writeOutGenotypes
 
 
+		
+			!---------------------------------------------------------------------------
+		!< @brief Output  of animals with genotype info passed in from array.
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypesArray(this, filename,  array, toPrint)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer, intent(in) :: toPrint !< 1 is all, 2 is genotyped animals, 3 is hd animals 
+			integer ::i, fileUnit
+			integer, dimension(:,:) ,allocatable, intent(in) :: array
+			character(len=100) :: fmt
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
+
+			select case (toPrint)
+
+
+			case(1)
+				do i= 1, this%pedigreesize
+					write(fileUnit,fmt)  this%pedigree(i)%originalId, array(i,:)
+				enddo
+
+			case(2)
+				do i= 1, this%nGenotyped
+					write(fileUnit,fmt)  this%pedigree(this%genotypeMap(i))%originalId, array(i,:)
+				enddo
+			case(3)
+				do i= 1, this%nHd
+					write(fileUnit,fmt)  this%pedigree(this%hdMap(i))%originalId, array(i,:)
+				enddo
+			end select
+
+
+			close(fileUnit)
+		end subroutine writeOutGenotypesArray
+
+
 		!---------------------------------------------------------------------------
 		!< @brief Output genotypes to stdout in the format originalID,recodedID,recodedSireID,recodedDamID
 		!< for all animals not just the ones that are genotyped\
