@@ -1797,6 +1797,15 @@ module PedigreeModule
 			if (allocated(this%genotypeDictionary)) then
 				deallocate(this%genotypeDictionary)
 			endif
+			if (allocated(this%genotypeMap)) then
+				deallocate(this%genotypeMap)
+			endif
+			if (allocated(this%hdDictionary)) then
+				deallocate(this%hdDictionary)
+			endif
+			if (allocated(this%hdMap)) then
+				deallocate(this%hdMap)
+			endif
 			this%genotypeMap = 0
 
 
