@@ -1998,6 +1998,10 @@ module PedigreeModule
 				do i=1, this%pedigreeSize
 					if (.not. this%pedigree(i)%genotyped) then
 						call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+
+						if (allocated(this%pedigree(i)%inconsistencies)) then
+							deallocate(this%pedigree(i)%inconsistencies)
+						endif
 						allocate(this%pedigree(i)%inconsistencies(this%nsnpsPopulation))
 						this%pedigree(i)%inconsistencies = 0
 						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
