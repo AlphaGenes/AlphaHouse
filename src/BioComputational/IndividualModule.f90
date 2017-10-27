@@ -1239,6 +1239,12 @@ module IndividualModule
 			!TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
 			! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
 
+			if (allocated(this%inconsistencies)) then
+				deallocate(this%inconsistencies)
+			endif
+
+			allocate(this%inconsistencies(size(geno)))
+			this%inconsistencies = 0
 			if (present(lockIn)) then
 
 				if (lockIn) then
