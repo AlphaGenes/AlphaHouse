@@ -207,6 +207,9 @@ module PedigreeModule
 			integer(kind=int64) :: sizeDict
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
+
+			call destroyPedigree(res)
+
 			res%pedigreeSize = this%pedigreeSize
 			res%nDummys = this%nDummys
 			res%unknownDummys = this%unknownDummys
@@ -241,6 +244,7 @@ module PedigreeModule
 			res%nsnpsPopulation = this%nsnpsPopulation
 			res%isSorted =this%isSorted
 
+			
 			allocate(res%sireList)
 			allocate(res%damList)
 			if (allocated(this%sireList)) then
@@ -3594,8 +3598,12 @@ module PedigreeModule
 				write(error_unit, *) "animal has ID:", trim(this%pedigree(indId)%originalID), " and recoded ID:", indid
 			endif
 			if (this%nHd == 0) then
-				allocate(this%hdDictionary)
+				if (.not. allocated(this%hdDictionary)) then
+					allocate(this%hdDictionary)
+				endif
 				call this%hdDictionary%DictStructure()
+				if (allocated(this%hdMap)) deallocate(this%hdMap)
+				
 				allocate(this%hdMap(this%pedigreeSize))
 				this%hdMap = 0
 			endif
