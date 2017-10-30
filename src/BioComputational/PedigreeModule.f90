@@ -3233,10 +3233,10 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+			allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
 			res = 9
 			do i=1, this%nGenotyped
-				res(this%genotypeMap(i),:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
+				res(i,:) = this%pedigree(this%genotypeMap(i))%individualGenotype%toIntegerArray()
 			enddo
 
 		end function getGenotypesAsArray
@@ -3256,11 +3256,11 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%nGenotyped
-				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
-				res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+				res(i,:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
+				res(i,:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
 			enddo
 
 		end function getPhaseAsArray
