@@ -13,6 +13,12 @@ contains
         integer :: i, nCores, left
 
         nCores = nSnp / Jump
+
+        ! Catch the case where Jump (i.e. wanted core length) is greater than nsnps
+        if (nCores == 0) then
+            nCores = 1
+        end if
+        
         corelength = nSnp / nCores
         left = nSnp - nCores * corelength
 
