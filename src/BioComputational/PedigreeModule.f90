@@ -2400,6 +2400,7 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine sortPedigreeAndOverwrite(this, unknownDummysAtEnd)
 			use iso_fortran_env, only : output_unit, int64
+			use IFCORE
 			class(PedigreeHolder) :: this
 			integer :: i,h, pedCounter, tmpId,tmpGenotypeMapIndex
 			integer(kind=int64) :: sizeDict
@@ -2409,6 +2410,7 @@ module PedigreeModule
 			type(IndividualLinkedList) :: dummyList
 			integer, intent(in) , optional :: unknownDummysAtEnd !< if this option is specified, then only unknown dummies are put at end
 
+			if (allocated(this%generations)) deallocate(this%generations)
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
@@ -2454,6 +2456,7 @@ module PedigreeModule
 
 					pedCounter = pedCounter +1
 					! update dictionary index
+
 					call this%dictionary%addKey(tmpIndNode%item%originalID,pedCounter)
 
 					!  update genotype map
@@ -2520,8 +2523,19 @@ module PedigreeModule
 				newPed(pedCounter)%id = pedCounter
 				call newPed(pedCounter)%resetOffspringInformation() ! reset offsprings
 
+				if (newPed(pedCounter)%generation == NOGENERATIONVALUE) then
+
+					call TRACEBACKQQ(string= "ERROR: Circular pedigree structure given on animal "//newPed(pedCounter)%originalId,user_exit_code=1)
+
+				endif
 				do h=1, tmpIndNode%item%nOffs
 					tmpId =  this%dictionary%getValue(tmpIndNode%item%offsprings(h)%p%originalID)
+
+					if (tmpId == DICT_NULL .or. tmpIndNode%item%offsprings(h)%p%generation == NOGENERATIONVALUE) then
+
+					call TRACEBACKQQ(string= "ERROR: Circular pedigree structure given on animal "//tmpIndNode%item%offsprings(h)%p%originalID,user_exit_code=1)
+
+						endif
 					call newPed(pedCounter)%addOffspring(newPed(tmpID))
 					if(associated(tmpIndNode%item%offsprings(h)%p%sirePointer, tmpIndNode%item)) then
 						newPed(tmpId)%sirePointer => newPed(pedCounter)
@@ -2702,6 +2716,7 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			character(len=*), optional :: filePath
 			integer ::i,unit
+			character(IDLENGTH) :: res(3)
 
 			if(present(filepath)) then
 				open(newunit=unit, file=filePath, status="unknown")
@@ -2709,7 +2724,8 @@ module PedigreeModule
 				unit = output_unit
 			endif
 			do i= 1, this%pedigreeSize
-				write(unit,'(3a20)')  this%pedigree(i)%originalId, this%pedigree(i)%sireId, this%pedigree(i)%damId
+				res =  this%pedigree(i)%getCharacterVectorOfRecodedIds()
+				write(unit,'(3a20)')  this%pedigree(i)%originalId, res(2), res(3)
 			enddo
 		end subroutine printPedigreeOriginalFormat
 
@@ -2724,7 +2740,7 @@ module PedigreeModule
 			character(len=*), intent(in) :: filepath
 			integer ::i, unit
 
-			open(newunit= unit, file= filepath, status="new")
+			open(newunit= unit, file= filepath, status="unknown")
 			do i= 1, this%pedigreeSize
 				write(unit,*) this%pedigree(i)%originalId, this%pedigree(i)%gender
 			enddo
