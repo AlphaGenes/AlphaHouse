@@ -3256,7 +3256,7 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(0:this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			allocate(res(this%nGenotyped, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%nGenotyped
 				res(i,:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
@@ -3280,7 +3280,7 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
 				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
@@ -3303,7 +3303,7 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(0:this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
 			do i=1, this%pedigreeSize
 				res(i,:) = this%pedigree(i)%individualGenotype%toIntegerArray()
 			enddo
