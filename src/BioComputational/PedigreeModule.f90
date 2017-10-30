@@ -244,7 +244,7 @@ module PedigreeModule
 			res%nsnpsPopulation = this%nsnpsPopulation
 			res%isSorted =this%isSorted
 
-			
+
 			allocate(res%sireList)
 			allocate(res%damList)
 			if (allocated(this%sireList)) then
@@ -603,7 +603,7 @@ module PedigreeModule
 			integer :: outfile,snpFile
 			type(individual),pointer :: sire, dam
 			integer :: i,j
-			character(len=*),intent(in), optional :: file !< path to 
+			character(len=*),intent(in), optional :: file !< path to
 			character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
 			integer :: CountChanges, dumId
 			integer :: snpChanges
@@ -2011,7 +2011,7 @@ module PedigreeModule
 						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
 					endif
 
-					
+
 				enddo
 			endif
 
@@ -2793,7 +2793,7 @@ module PedigreeModule
 		end subroutine writeOutGenotypes
 
 
-		
+
 			!---------------------------------------------------------------------------
 		!< @brief Output  of animals with genotype info passed in from array.
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -2802,7 +2802,7 @@ module PedigreeModule
 		subroutine writeOutGenotypesArray(this, filename,  array, toPrint)
 			class(PedigreeHolder) :: this
 			character(*), intent(in) :: filename
-			integer, intent(in) :: toPrint !< 1 is all, 2 is genotyped animals, 3 is hd animals 
+			integer, intent(in) :: toPrint !< 1 is all, 2 is genotyped animals, 3 is hd animals
 			integer ::i, fileUnit
 			integer, dimension(:,:) ,allocatable, intent(in) :: array
 			character(len=100) :: fmt
@@ -3619,7 +3619,7 @@ module PedigreeModule
 				endif
 				call this%hdDictionary%DictStructure()
 				if (allocated(this%hdMap)) deallocate(this%hdMap)
-				
+
 				allocate(this%hdMap(this%pedigreeSize))
 				this%hdMap = 0
 			endif
