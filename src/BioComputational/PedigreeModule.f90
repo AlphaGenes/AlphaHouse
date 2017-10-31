@@ -819,7 +819,7 @@ module PedigreeModule
 				close (outfile)
 			endif
 			print*, " ",CountChanges," errors in the pedigree due to Mendelian inconsistencies"
-			print*, " ",snpChanges," snps changed throughout pedigree"
+			print*, " ",snpChanges," snps changed across individuals"
 
 		end function findMendelianInconsistencies
 
