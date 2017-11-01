@@ -1277,6 +1277,8 @@ module IndividualModule
 			class(Individual) :: this
 			integer, dimension(:):: referAllele, alterAllele
 
+			integer :: i, snps
+
 			this%Genotyped = .true.
 			this%Sequenced = .true.
 
@@ -1284,7 +1286,18 @@ module IndividualModule
 			! allocate(this%alterAllele(size(alterAllele)))
 
 			this%referAllele = referAllele
-			this%alterAllele  = alterAllele
+			this%alterAllele = alterAllele
+
+			snps = size(referAllele)
+			do i=1, snps
+				if(referAllele(i) >= MAX_READS_COUNT) then
+					this%referAllele(i) = MAX_READS_COUNT - 1
+				end if
+
+				if(alterAllele(i) >= MAX_READS_COUNT) then
+					this%alterAllele(i) = MAX_READS_COUNT - 1
+				end if
+			end do
 		end subroutine setSequenceArray
 
 
