@@ -58,6 +58,8 @@ contains
 		logical :: sexChroms
 		integer :: totalToDo, curChrom
 		class(baseSpecFile) :: specfile
+		real(kind=real64), dimension(:) ,allocatable :: lengths
+		integer, dimension(:) ,allocatable :: basepairs
 
 		call initialiseMPI
 
@@ -75,11 +77,11 @@ contains
 
 		do i=1, totalToDo
 
-			
+
 			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
 			path = "MultiChromResults/" // curChrom
-			result=makedirqq(path)			
+			result=makedirqq(path)
 			CALL chdir(path)
 
 			specFile%resultFolderPath = chromPaths(i)
@@ -102,7 +104,8 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 
 			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i),initAll=1)
-
+			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
+			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
 
 			call funPointer(specFile,ped)
 
@@ -131,6 +134,7 @@ contains
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
 		logical :: sexChroms
+		integer, dimension(:,:) ,allocatable :: basepairs
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
@@ -146,7 +150,7 @@ contains
 			specFile%nsnp = nsnps(i)
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
-      print *,"doing chrom ", i
+			print *,"doing chrom ", i
 			if (i > size(chromPaths)-2 .and. sexChroms) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
@@ -163,20 +167,20 @@ contains
 
 			print *,"path:",chromPaths(i)
 			call ped%wipeGenotypeAndPhaseInfo
-					! first chrom should already be read in
+			! first chrom should already be read in
 			! if (i /= 1) then
 			print *,"using ",trim(chromPaths(i))//"genotypes.txt",nsnps(i)
 
-				call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
+			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
+			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
+			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
 
-				call ped%writeoutGenotypes("text.txt")
-			! endif
 
 
 			print *,"starting function run"
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
-			
+
 
 
 		enddo
@@ -185,5 +189,6 @@ contains
 	end subroutine runPlink
 #endif
 end module alphaFullChromModule
+
 
 

@@ -56,6 +56,8 @@ module CompatibilityModule
 	use HashModule
 	use PedigreeModule
 
+	implicit none 
+
 	type bimHolder
 	character(len=1) :: ref,alt
 	character(len=IDLENGTH) :: id
@@ -65,7 +67,7 @@ end type bimHolder
 
 type Chromosome
 
-type(integerLinkedList) :: snps
+	type(integerLinkedList) :: snps
 end type Chromosome
 contains
 
@@ -132,17 +134,20 @@ contains
 		integer(kind=1), dimension(:,:), allocatable ::  allsnps
 		character(len=128) :: path, outChrFile
 		character(len=128), dimension(:), allocatable :: outputPaths
-		integer result,i,p,h,outChrF, maxSnps
+		integer result,i,p,h,outChrF,outChrP, maxSnps,bpFile,lengthFile
 		integer,dimension(:), allocatable, intent(out) :: nsnps
 		integer(kind=1),allocatable,dimension (:,:) :: array
-		! integer, allocatable
+		integer(kind=1), dimension(:,:,:), allocatable ::  phase
+
+		real(kind=real64), dimension(:,:) ,allocatable:: lengths
+		integer, dimension(:,:) ,allocatable :: basepairs
 
 		! TODO change to pointer rather than copy
 		ped = readToPedigreeFormat(trim(binaryFilePre)//".fam")
 
-		call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom)
+		call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,maxSnps,chroms,maxChroms, sexChrom,lengths,basepairs)
 		print *,"READ BIM"
-		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,4, allsnps)
+		call readplinkSnps(trim(binaryFilePre)//".bed",maxSnps,ped,4, allsnps, phase)
 		print *,"READ BED"
 		allocate(maskedLogi(size(allSnps(1,:))))
 
@@ -156,9 +161,15 @@ contains
 		allocate(outputPaths(maxChroms))
 		do i =1, maxChroms
 
-			write(outChrFile, '(a,a,i0.2)') trim(path),trim("chr"),i
+			write(outChrFile, '(a,a,i0.2,a)') trim(path),trim("chr"),i,DASH
 			outputPaths(i) = outChrFile
 			open(newunit=outChrF, file=trim(outChrFile)//"genotypes.txt", status="unknown")
+
+			open(newunit=outChrP, file=trim(outChrFile)//"phase.txt", status="unknown")
+
+			open(newunit=lengthFile, file=trim(outChrFile)//"snplengths.txt", status="unknown")
+			open(newunit=bpFile, file=trim(outChrFile)//"snpBasepairs.txt", status="unknown")
+
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
@@ -185,8 +196,8 @@ contains
 			! enddo
 			! if (i == 1 ) then
 			! 	block
-					
-
+			write(lengthFile, *) pack(lengths(i,:), maskedLogi)		
+			write(bpFile, *) pack(basepairs(i,:), maskedLogi)	
 					
 			! 		! print *, "ARRAY",array
 			! 		call ped%addGenotypeInformationFromArray(array,1)
@@ -196,10 +207,16 @@ contains
 
 				! print *,p
 				write(outChrF,fmt) ped%pedigree(p)%originalId,array(p,:)
+				write(outChrp,fmt) ped%pedigree(p)%originalId,pack(phase(p,:,1), maskedLogi)
+				write(outChrp,fmt) ped%pedigree(p)%originalId,pack(phase(p,:,2), maskedLogi)
 			end do
 
 			print *, "after writeout"
 			close(outChrF)
+			close(outChrF)
+			close(outChrP)
+			close(lengthFile)
+			close(bpFile)
 			deallocate(array)
 		enddo
 
@@ -212,7 +229,7 @@ contains
 
 
 
-	subroutine readBim(bimFile, dict, bimInfo,nsnps,maxSnps,chroms, maxChroms, hasSexChrom)
+	subroutine readBim(bimFile, dict, bimInfo,nsnps,maxSnps,chroms, maxChroms, hasSexChrom,lengths,basepairs)
 		use HashModule
 		use AlphaHouseMod
 		use ConstantModule
@@ -223,11 +240,14 @@ contains
 		character :: ref,alt
 		character(len=IDLENGTH) :: id
 
-		integer(kind=int64) :: pos, chrompos
-
+		integer(kind=int64) :: pos
+		real(kind=real64) :: chrompos
 
 		integer,intent(out) :: maxSnps
 		integer,intent(out), dimension(:), allocatable :: nsnps
+		real(kind=real64), dimension(:,:) ,allocatable :: lengths,tmpLengths 
+		integer, dimension(:,:) ,allocatable :: basepairs,tmpbasePairs
+		
 		integer, dimension(:), allocatable :: temparray
 		integer,intent(out) :: maxChroms
 
@@ -247,6 +267,8 @@ contains
 		open(newUnit=unit, file=bimFile, status='old')
 		allocate(chroms(LARGECHROMNUMBER))
 		allocate(bimInfo(maxSnps))
+		allocate(lengths(LARGECHROMNUMBER,maxSnps))
+		allocate(basepairs(LARGECHROMNUMBER,maxSnps))
 		chromCount = 1
 		do i =1, maxSnps
 
@@ -265,6 +287,7 @@ contains
 				write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
 			endif
 
+			! if we 've moved on to the next chromosome
 			if (chrom /=prevChrom .or. i == maxSnps) then
 
 				! set the count to he current numbers
@@ -280,10 +303,16 @@ contains
 					maxChroms = chromCount
 				endif
 			endif
+			
 			curChromSnpCount = curChromSnpCount + 1
+			
+			lengths(chromCount,curChromSnpCount) = chromPos
+			basepairs(chromCount,curChromSnpCount) = pos
+			
 			call dict%addKey(id, i)
+						
 			bimInfo(i)%chrom = chrom
-			!  TODO what does this do!???
+			!  TODO clean this up
 
 			bimInfo(i)%id = id
 
@@ -303,6 +332,15 @@ contains
 			allocate(temparray(chromCount))
 			temparray(1:chromCount) = nsnps(1:chromCount)
 			call move_alloc(temparray,nsnps)
+
+			allocate(tmpLengths(chromCount,maxSnps))
+			tmpLengths(1:chromCount,:) = lengths(1:chromCount,:)
+			call move_alloc(tmpLengths,lengths)
+
+
+			allocate(tmpbasePairs(chromCount,maxSnps))
+			tmpbasePairs(1:chromCount,:) = basepairs(1:chromCount,:)
+			call move_alloc(tmpbasePairs,basepairs)
 		endif
 		close (unit)
 
@@ -310,7 +348,7 @@ contains
 	end subroutine readBim
 
 	! Stores entire genotype file in memory
-	subroutine readplinkSnps(bed, ncol,ped, minor,snps)
+	subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
 
 		use PedigreeModule
 		use genotypeModule
@@ -333,6 +371,7 @@ contains
 		integer, dimension(4) :: codes
 		!integer, dimension(:), allocatable :: domasksnps
 		integer(kind=1), dimension(:,:), allocatable,intent(out) ::  snps
+		integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
 		real :: allelefreq
 		integer :: na
 		integer :: bedInUnit
@@ -343,7 +382,7 @@ contains
 
 		print *,"start BED read"
 		allocate(snps(ped%pedigreeSize-ped%nDummys,ncol))
-
+		allocate(phase(ped%pedigreeSize-ped%nDummys,ncol,2))
 		na = 9
 		snps(:,:) = 9
 
@@ -384,14 +423,20 @@ contains
 				select case(IBITS(element, i, 2))
 					case (0) ! homozygote
 					snps(j,k) = codes(1)
+					phase(j,k,:) = codes(1) 
 					case (1) ! missing
 					snps(j,k) = codes(4)
+					phase(j,k,:) = codes(4) 
 					snpcount = snpcount - 1
 					case (2) ! heterozygote
 					snps(j,k) = codes(2)
+					! Set to missing - as we don't know which snp is which
+					phase(j,k,1) = MISSINGPHASECODE
+					phase(j,k,2) = MISSINGPHASECODE
 					majorcount = majorcount + 1
 					case (3) ! homozygote, minor
 					snps(j,k) = codes(3)
+					phase(j,k,:) = codes(3)
 					majorcount = majorcount + 2
 				endselect
 				if (j == ped%pedigreeSize-ped%nDummys) then
@@ -413,21 +458,6 @@ contains
 
 		print *, "finished"
 
-
-		! Write output
-		! fmt='(i20,'//trim(adjustl(nChar))//'I2)'
-		!print *, fmt
-
-
-
-		! do i=1,nlines
-		! 	ped%pedigree(i)%individualGenotype = NewGenotypeInt(pack(snps(i,:), masksnps))
-		! enddo
-
-		! deallocate(snps)
-
-		!print *, 'readplinksimple is done.'
-
 	end subroutine readplinkSnps
 
 
@@ -440,11 +470,14 @@ contains
 		character(len=*),intent(in) :: filePre
 		character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
 		integer, dimension(:) ,allocatable :: nsnps
-		integer :: totalSnps,outChrF
+		real(kind=real64), dimension(:,:) ,allocatable :: lengths
+		integer, dimension(:,:) ,allocatable :: basepairs
+		integer :: totalSnps,outChrF, outChrP,bpFile,lengthFile
 		type(Chromosome), dimension(:), allocatable :: chroms
 		logical,intent(out) :: sexChrom
 		character(len=128) :: path, outChrFile
 		integer(kind=1), dimension(:,:), allocatable ::  genotypes
+		integer(kind=1), dimension(:,:,:), allocatable ::  phase
 		logical, dimension(:), allocatable :: maskedLogi
 		integer, dimension(:), allocatable :: masked
 		integer :: i,h,maxChroms,maxSnps,result,p
@@ -452,11 +485,11 @@ contains
 		type(DictStructure) :: dict
 		type(pedigreeHolder) :: ped
 
-		call readMap(trim(filePre)//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom)
+		call readMap(trim(filePre)//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom, lengths, basepairs)
 
 		allocate(maskedLogi(totalSnps))
 
-		call readPedFile(trim(filePre)//".ped",ped, maxSnps, genotypes, "refAlleles.txt")
+		call readPedFile(trim(filePre)//".ped",ped, maxSnps, genotypes,phase, "refAlleles.txt")
 		path = "chromosomeGenotypes/"
 		result=makedirqq(path)
 
@@ -467,6 +500,14 @@ contains
 			write(outChrFile, '(a,a,i2,a)') trim(path),trim("chr"),i,DASH
 			outputPaths(i) = outChrFile
 			open(newunit=outChrF, file=trim(outChrFile)//"genotypes.txt", status="unknown")
+			open(newunit=outChrP, file=trim(outChrFile)//"phase.txt", status="unknown")
+
+			open(newunit=lengthFile, file=trim(outChrFile)//"snplengths.txt", status="unknown")
+			open(newunit=bpFile, file=trim(outChrFile)//"snpBasepairs.txt", status="unknown")
+
+			write(lengthFile, *) pack(lengths(i,:), maskedLogi)		
+			write(bpFile, *) pack(basepairs(i,:), maskedLogi)	
+
 			masked = chroms(i)%snps%convertToArray()
 			maskedLogi = .false.
 			do h =1, size(masked)
@@ -486,28 +527,37 @@ contains
 
 			do p=1,ped%pedigreeSize-ped%nDummys
 				write(outChrF,fmt) ped%pedigree(p)%originalId,pack(genotypes(p,:), maskedLogi)
+				write(outChrp,fmt) ped%pedigree(p)%originalId,pack(phase(p,:,1), maskedLogi)
+				write(outChrp,fmt) ped%pedigree(p)%originalId,pack(phase(p,:,2), maskedLogi)
 			end do
 			close(outChrF)
+			close(outChrP)
+			close(lengthFile)
+			close(bpFile)
 		enddo
-
-		! call dict%destroy()
-
 
 	end subroutine readPlinkNoneBinary
 
 
 
-	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom)
+	subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom,lengths, basepairs)
 		use HashModule
 		use AlphaHouseMod
 
 		character(len=*),intent(in) :: filename
 		integer, dimension(:) ,allocatable, intent(out) :: snpCounts
+		integer, dimension(:) ,allocatable :: tempArray
 		integer, intent(out) :: maxChroms
 		type(DictStructure), intent(out) :: dict
 		type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
 		integer, intent(out) :: totalSnps
-		integer :: unit,i,chromCount,length, basepair
+		real(real64), dimension(:,:) ,allocatable,intent(out) :: lengths
+		real(real64), dimension(:,:) ,allocatable ::tmpLengths
+		integer, dimension(:,:) ,allocatable,intent(out) :: basepairs
+		integer, dimension(:,:) ,allocatable :: tmpbasePairs
+		integer :: unit,i,chromCount,basepair
+
+		real(kind=real64) :: length
 		logical :: hasSexChrom
 		character(len=2) :: chrom,prevChrom
 		character(len=128) :: id
@@ -516,6 +566,8 @@ contains
 		open(newunit=unit, file=filename, status='OLD')
 
 		allocate(chroms(LARGECHROMNUMBER))
+		allocate(lengths(LARGECHROMNUMBER, totalSnps))
+		allocate(basepairs(LARGECHROMNUMBER, totalSnps))
 		hasSexChrom = .false.
 		maxChroms = 0
 		snpCounts = 0
@@ -543,15 +595,33 @@ contains
 
 			endif
 
+			
 			snpCounts(chromCount) = snpCounts(chromCount) + 1
+			lengths(chromCount,snpCounts(chromCount)) = length
+			basepairs(chromCount,snpCounts(chromCount)) = basepair
 			call dict%addKey(id, i)
 			call chroms(chromCount)%snps%list_add(i)
 		enddo
 
+		if (chromCount /= LARGECHROMNUMBER) then
+			allocate(temparray(chromCount))
+			temparray(1:chromCount) = snpCounts(1:chromCount)
+			call move_alloc(temparray,snpCounts)
+
+			allocate(tmpLengths(chromCount,totalSnps))
+			tmpLengths(1:chromCount,:) = lengths(1:chromCount,:)
+			call move_alloc(tmpLengths,lengths)
+
+
+			allocate(tmpbasePairs(chromCount,totalSnps))
+			tmpbasePairs(1:chromCount,:) = basepairs(1:chromCount,:)
+			call move_alloc(tmpbasePairs,basepairs)
+		endif
+
 	end subroutine readMap
 
 
-	subroutine readPedFile(filename,ped, maxSnps,genotypes, refAlleleOutputFile)
+	subroutine readPedFile(filename,ped, maxSnps,genotypes,phase, refAlleleOutputFile)
 		use PedigreeModule
 
 		use AlphaHouseMod
@@ -567,22 +637,25 @@ contains
 		character(len=1),dimension(:), allocatable :: referenceAllelePerSnps !<array saying for which snp the reference allele is
 		character(len=1),dimension(:,:), allocatable :: alleles !< size nsnp x2 (for each allele,)
 		integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes
+		integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
 		integer, allocatable, dimension(:) :: genderArray, phenotypeArray
 		integer :: size,cursnp,i,j,stat, fileUnit,gender,phenotype
 		character(len=1) :: all1, all2
-		character(len=IDLENGTH) :: FAMILYID
+		character(len=IDLENGTH),dimension(:),allocatable :: FAMILYID
 		size = countlines(filename)
 
+		allocate(familyID(size))
 		allocate(pedArray(3,size))
 		allocate(genderArray(size))
 		allocate(phenotypeArray(size))
 		allocate(referenceAllelePerSnps(maxSnps))
 		allocate(alleles(size, maxSnps*2))
-
+		allocate(phase(size,maxSnps,2))
+		allocate(genotypes(size,maxSnps))
 
 
 		do i=1,size
-			read(fileUnit,*) familyID,pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype, alleles(i,:)
+			read(fileUnit,*) familyID(i),pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype, alleles(i,:)
 
 			read(gender,*,iostat=stat)  genderArray(i)
 			read(phenotype,*,iostat=stat)  phenotypeArray(i)
@@ -592,6 +665,8 @@ contains
 
 		do j=1,maxSnps*2,2
 			cursnp = (j/2) + 1
+
+			! ref is always the first - allele in snp -
 			referenceAllelePerSnps(cursnp) = alleles(1,j)
 			do i=1,size
 				all1 = alleles(i,j)
@@ -603,11 +678,24 @@ contains
 
 					if (all1 == referenceAllelePerSnps(curSnp) ) then
 						genotypes(i,curSnp) = 2
+						phase(i,cursnp,1) = 1
+						phase(i,cursnp,2) = 1
 					else
 						genotypes(i,curSnp) = 0
+						phase(i,cursnp,1) = 0
+						phase(i,cursnp,2) = 0
 					endif
 				else !< means they are different
 					genotypes(i,curSnp) = 1
+
+					if (all1 == referenceAllelePerSnps(cursnp)) then
+						phase(i,cursnp,1) = 1
+						phase(i,cursnp,2) = 0
+					else
+						phase(i,cursnp,1) = 0
+						phase(i,cursnp,2) = 1
+					endif
+
 				endif
 			enddo
 		enddo

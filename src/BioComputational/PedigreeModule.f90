@@ -64,6 +64,11 @@ module PedigreeModule
 
 	type(IndividualLinkedList),allocatable :: sireList, damList !< lists containing all sires and dams
 	type(IndividualLinkedList), allocatable :: uniqueParentList
+
+	real(kind=real64), dimension(:), allocatable :: snpLengths !< length in morgans (size nsnp)
+	integer, dimension(:), allocatable :: snpBasePairs !< base pairs size nsnp
+	type(DictStructure),allocatable :: familyIdDict !< dictionary mapping family id to integer value
+
 	contains
 		procedure :: calculatePedigreeCorrelationNoInbreeding
 		procedure :: calculatePedigreeCorrelationWithInbreeding
@@ -130,6 +135,8 @@ module PedigreeModule
 		procedure :: writeOutGenotypeProbabilities
 		procedure :: writeOutPhaseProbabilities
 		procedure :: writeOutGenotypesForImputed
+		procedure :: setSnpBasePairs
+		procedure :: setSnpLengths
 
 
 
@@ -192,6 +199,65 @@ module PedigreeModule
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypesForImputed
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets length array and overwrites if already set
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		subroutine setSnpLengths(this, filepath, nsnpIn)
+			use AlphaHouseMod, only : countColumns
+			class(PedigreeHolder) :: this
+			character(len=*),intent(in) :: filePath
+			integer, optional :: nsnpIn
+			integer :: unit,nsnp
+
+			if (allocated(this%snpLengths)) then
+				deallocate(this%snpLengths)
+			endif
+			if (present(nsnpIn)) then
+				allocate(this%snpLengths(nsnpIn))
+			else if (this%nsnpsPopulation /= 0) then
+				allocate(this%snpLengths(this%nsnpsPopulation))
+			else
+				nsnp = countColumns(filePath,' ')
+			endif
+
+			open(newunit=unit, file=filePath, status="old")
+
+			read(unit,*) this%snpLengths
+
+			close(unit)
+		end subroutine setSnpLengths
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets base pair array and overwrites if already set
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		subroutine setSnpBasePairs(this, filePath, nsnpIn)
+			use AlphaHouseMod, only : countColumns
+			class(PedigreeHolder) :: this
+			character(len=*),intent(in) :: filePath
+			integer, optional :: nsnpIn
+			integer :: unit,nsnp
+			if (allocated(this%snpBasePairs)) then
+				deallocate(this%snpBasePairs)
+			endif
+
+			if (present(nsnpIn)) then
+				allocate(this%snpBasePairs(nsnpIn))
+			else if (this%nsnpsPopulation /= 0) then
+				allocate(this%snpBasePairs(this%nsnpsPopulation))
+			else
+				nsnp = countColumns(filePath,' ')
+			endif
+
+			open(newunit=unit, file=filePath, status="old")
+
+			read(unit,*) this%snpBasePairs
+
+			close(unit)
+		end subroutine setSnpBasePairs
 
 		!---------------------------------------------------------------------------
 		!< @brief Sorts pedigree, and overwrites all fields to new values
@@ -1343,8 +1409,8 @@ module PedigreeModule
 					call pedStructure%dictionary%addKey(tmpId, i)
 					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
 					pedStructure%Pedigree(i)%founder = .true.
-                    call pedStructure%founders%list_add(pedStructure%pedigree(i))
-                    pedStructure%Pedigree(i)%originalPosition = i
+					call pedStructure%founders%list_add(pedStructure%pedigree(i))
+					pedStructure%Pedigree(i)%originalPosition = i
 					pedStructure%inputMap(i) = i
 					call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
 					call pedStructure%setAnimalAsHd(i)
@@ -2019,6 +2085,38 @@ module PedigreeModule
 
 		end subroutine addGenotypeInformationFromFile
 
+
+
+		subroutine addFamilyIds(this, familyIds)
+
+			class(PedigreeHolder) :: this
+			character(len=IDLENGTH),dimension(:),allocatable :: familyIds !< assumed to be same order as pedigree
+			integer :: i, familyIdCount
+
+			if (allocated(this%familyIdDict)) then
+				deallocate(this%familyIdDict)
+			endif
+			allocate(this%familyIdDict)
+			call this%familyIdDict%dict_create()
+
+			familyIdCount = 0
+
+			do i=1, size(familyIds)
+
+				if (this%familyIdDict%getValue(familyIds(i))==  DICT_NULL) then
+					familyIdCount = familyIdCount + 1
+					call this%familyIdDict%addKey(familyIds(i), familyIdCount)
+
+				endif
+				this%pedigree(i)%familyId = familyids(i)
+
+			enddo
+
+
+
+
+		end subroutine addFamilyIds
+
 		!---------------------------------------------------------------------------
 		! DESCRIPTION:
 		!< @brief     Adds phase information to pedigree from a file
@@ -2533,9 +2631,9 @@ module PedigreeModule
 
 					if (tmpId == DICT_NULL .or. tmpIndNode%item%offsprings(h)%p%generation == NOGENERATIONVALUE) then
 
-					call TRACEBACKQQ(string= "ERROR: Circular pedigree structure given on animal "//tmpIndNode%item%offsprings(h)%p%originalID,user_exit_code=1)
+						call TRACEBACKQQ(string= "ERROR: Circular pedigree structure given on animal "//tmpIndNode%item%offsprings(h)%p%originalID,user_exit_code=1)
 
-						endif
+					endif
 					call newPed(pedCounter)%addOffspring(newPed(tmpID))
 					if(associated(tmpIndNode%item%offsprings(h)%p%sirePointer, tmpIndNode%item)) then
 						newPed(tmpId)%sirePointer => newPed(pedCounter)
@@ -2794,7 +2892,7 @@ module PedigreeModule
 
 
 
-			!---------------------------------------------------------------------------
+		!---------------------------------------------------------------------------
 		!< @brief Output  of animals with genotype info passed in from array.
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
@@ -4286,6 +4384,8 @@ module PedigreeModule
 
 
 end module PedigreeModule
+
+
 
 
 

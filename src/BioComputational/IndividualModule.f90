@@ -93,6 +93,7 @@ module IndividualModule
 
 	integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
 
+    character(len=IDLENGTH) :: familyId
 
 	contains
 		procedure :: initIndividual
