@@ -134,7 +134,6 @@ contains
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
 		logical :: sexChroms
-		integer, dimension(:,:) ,allocatable :: basepairs
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then

@@ -1110,8 +1110,6 @@ module PedigreeModule
 				nIndividuals = countLines(fileIn)
 			endif
 
-
-
 			sizeDict = nIndividuals
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))

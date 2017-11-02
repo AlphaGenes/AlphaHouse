@@ -43,7 +43,7 @@ module LinkedListModule
 		subroutine copyLinkedList(list, this)
 			type(LinkedList), pointer, intent(inout) :: list
 			type(LinkedList), pointer, intent(in) :: this
-			type(LinkedList), pointer :: cur, l, t
+			type(LinkedList), pointer :: cur, t
 			type(LinkedList), pointer :: next
 
 			! l => list

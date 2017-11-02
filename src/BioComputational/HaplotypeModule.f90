@@ -1205,8 +1205,6 @@ contains
 
         logical :: equal
 
-        integer :: i
-
         equal = h1%compareHaplotype(h2)
     end function equalHap
 

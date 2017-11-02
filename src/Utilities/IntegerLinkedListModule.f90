@@ -363,7 +363,9 @@ module IntegerLinkedListModule
 			node => this%first
 
 			do while (associated(node))
+				! print *,"counter", counter
 				res(counter) = node%item
+				
 
 				counter = counter+1
 				node => node%next
