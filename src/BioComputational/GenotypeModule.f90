@@ -788,6 +788,8 @@ module GenotypeModule
                     IAND(NOT(g%homo(i)), NOT(g%additional(i))), &
                     NOT(h%missing(i))))
             end do
+
+            c = c - g%overhang
         end function hetPresent
 
 		!---------------------------------------------------------------------------
