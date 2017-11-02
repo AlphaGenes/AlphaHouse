@@ -17,6 +17,7 @@ module ConstantModule
     integer, parameter :: SPECOPTIONLENGTH = 300
     integer, parameter :: MISSINGGENDERCODE = -9
     integer , parameter ::  DEFAULTDICTSIZE = 4993
+    integer, parameter :: LARGESNUMBER  = 2147483647
     integer, parameter :: DICT_NULL = -2147483647
     character(len=IDLENGTH) :: ID_NULL = "2147483647"
     integer, parameter :: DICT_MULTIPLIER = 17
@@ -32,5 +33,7 @@ module ConstantModule
     real(real64), parameter :: PI = 4.0d0 * atan(1.0d0)
     real(real64), parameter :: RAD2DEG = 180.0d0 / PI
     real(real64), parameter :: DEG2RAD = PI / 180.0d0
+
+    integer, parameter :: MAX_READS_COUNT=100 ! Maximum number of reads for reference and alternative alleles
 
 end Module ConstantModule

@@ -1,3 +1,26 @@
+
+!###############################################################################
+
+!-------------------------------------------------------------------------------
+! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
+!-------------------------------------------------------------------------------
+!
+!> @file     InformationModule.f90
+!
+! DESCRIPTION:
+!> @brief    Module containing subroutines to get dat information such as yield or accuracy
+!
+!> @details Functions for getting information" 
+!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+!
+!
+!> @version  0.0.1 (alpha)
+!
+! REVISION HISTORY:
+! 2017-09-26 Dwilson - Initial Version
+
+!-------------------------------------------------------------------------------
+
 module informationModule
 
 
@@ -7,9 +30,18 @@ module informationModule
 
     implicit none
     contains
-    function checkYield(ped) result(res)
 
-        type(PedigreeHolder) :: ped
+
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    !< @brief   Function to check the genotype yield of a PEDIGREEHOLDER object
+    !
+    !< @author     David Wilson, david.wilson@roslin.ed.ac.uk
+    !
+    !< @date       October 25, 2016
+    !--------------------------------------------------------------------------
+    function checkYield(ped) result(res)
+        type(PedigreeHolder) :: ped !< input pedigree object
         integer(kind=1) ,dimension(:,:), allocatable  :: array
         real :: res
         array = ped%getGenotypesAsArrayWitHMissing()
@@ -57,7 +89,6 @@ module informationModule
 
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
-                ! print *,ped%pedigree(animal)%individualGenotype%getgenotype(232)
                 if (present(snpErrorPath)) then
                     accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i, snpErrorUnit)
                 else
@@ -78,7 +109,7 @@ module informationModule
         if (present(snpErrorPath)) then
             close(snpErrorUnit)
         endif
-
+        meanAccuracy = 0
         meanAccuracy = sum(accuracies) / lines
             
 
@@ -111,7 +142,7 @@ module informationModule
         endif
 
         ! set accuracies as 1, so not pedigreed animals won't affect
-        accuracies = 1
+        
         
         lines = countLines(trueFile)
         
@@ -134,7 +165,7 @@ module informationModule
         close(unit)
 
         allocate(accuracies(nsnps))
-
+        accuracies = 1
         do i = 1, nsnps
         ! compare snps for genotyped animals
             accuracies(i) = corAccuracies(pedArray(:,i), tmpArray(:,i))
@@ -167,7 +198,7 @@ module informationModule
     function corAccuracies(one, two, index, unit) result(res)
 
         integer(kind=1), dimension(:),intent(in) :: one,two
-        real(kind=real32) :: res
+        real(kind=real64) :: res
         integer, optional :: index
         integer, optional :: unit
 

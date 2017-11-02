@@ -94,6 +94,13 @@ module HaplotypeModule
         procedure :: writeunFormattedHaplotype
         procedure :: compareHaplotypeToArrayNoMiss
         procedure :: allMissingOrError
+        procedure newHaplotypeInt
+        procedure newHaplotypeBits
+        procedure newHaplotypeBitsWithLocked
+        procedure newHaplotypeMissing
+        procedure newHaplotypeHaplotype
+
+        generic :: haplotype => newHaplotypeInt,newHaplotypeBits,newHaplotypeBitsWithLocked,newHaplotypeMissing,newHaplotypeHaplotype
         final :: destroyHaplotype
 
         generic:: write(formatted)=> writeFormattedHaplotype
@@ -115,7 +122,7 @@ contains
 
     subroutine destroyHaplotype(this)
         type(Haplotype), intent(inout) :: this
-
+        
         if (allocated(this%phase)) then
             deallocate(this%phase)
             deallocate(this%missing)
@@ -134,11 +141,11 @@ contains
     !> @date    May 25, 2017
     !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    pure function newHaplotypeInt(hap, lock) result(h)
+    subroutine newHaplotypeInt(h, hap, lock)
         integer(kind=1), dimension(:), intent(in) :: hap
         integer, optional, intent(in) :: lock
 
-        type(Haplotype) :: h
+        class(Haplotype) :: h
 
         integer :: i, cursection, curpos
 
@@ -147,6 +154,16 @@ contains
         h%sections = (h%length - 1) / 64 + 1
         h%overhang = 64 - (h%length - (h%sections - 1) * 64)
 
+        if (allocated(h%phase)) then
+            deallocate(h%phase)
+            deallocate(h%missing)
+            
+        endif
+
+        if (allocated(h%locked)) then
+            deallocate(h%locked)
+        endif
+        
         allocate(h%phase(h%sections))
         allocate(h%missing(h%sections))
         cursection = 1
@@ -181,7 +198,7 @@ contains
         else
             h%hasLock = .false.
         end if
-    end function newHaplotypeInt
+    end subroutine newHaplotypeInt
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype from bit arrays.  lock determines
@@ -189,18 +206,29 @@ contains
     !> @date    May 25, 2017
     !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    function newHaplotypeBits(phase, missing, length, lock) result(h)
+    subroutine newHaplotypeBits(h,phase, missing, length, lock)
         integer(kind=int64), dimension(:), allocatable, intent(in) :: phase, missing
         integer :: length
         integer, optional, intent(in) :: lock
 
-        type(Haplotype) :: h
+        class(Haplotype) :: h
 
         integer :: i
 
         h%length = length
         h%sections = size(phase,1)
         h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+
+
+        if (allocated(h%phase)) then
+            deallocate(h%phase)
+            deallocate(h%missing)
+            
+        endif
+
+        if (allocated(h%locked)) then
+            deallocate(h%locked)
+        endif
 
         allocate(h%phase(h%sections))
         allocate(h%missing(h%sections))
@@ -221,7 +249,7 @@ contains
         else
             h%hasLock = .false.
         end if
-    end function newHaplotypeBits
+    end subroutine newHaplotypeBits
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype from bit arrays with the given lock
@@ -229,19 +257,27 @@ contains
     !> @date    May 25, 2017
     !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    function newHaplotypeBitsWithLocked(phase, missing, length, locked) result(h)
+    subroutine newHaplotypeBitsWithLocked(h,phase, missing, length, locked)
         integer(kind=int64), dimension(:), allocatable, intent(in) :: phase, missing, locked
 
         integer :: length
 
-        type(Haplotype) :: h
+        class(Haplotype) :: h
 
         integer :: i
 
         h%length = length
         h%sections = size(phase,1)
         h%overhang = 64 - (h%length - (h%sections - 1) * 64)
+        if (allocated(h%phase)) then
+            deallocate(h%phase)
+            deallocate(h%missing)
+            
+        endif
 
+        if (allocated(h%locked)) then
+            deallocate(h%locked)
+        endif
         allocate(h%phase(h%sections))
         allocate(h%missing(h%sections))
         allocate(h%locked(h%sections))
@@ -253,20 +289,20 @@ contains
             h%phase(h%sections) = ibclr(h%phase(h%sections), i)
             h%missing(h%sections) = ibclr(h%missing(h%sections), i)
         end do
-    end function newHaplotypeBitsWithLocked
+    end subroutine newHaplotypeBitsWithLocked
 
     !---------------------------------------------------------------------------
     !> @brief   Constructs a new Haplotype as  a copy of another Haplotype
     !> @date    May 25, 2017
     !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    function newHaplotypeHaplotype(oh) result(h)
+    subroutine newHaplotypeHaplotype(h,oh)
         class(Haplotype) :: oh
 
-        type(Haplotype) :: h
+        class(Haplotype) :: h
 
-        h = Haplotype(oh%phase, oh%missing, oh%length, oh%locked)
-    end function newHaplotypeHaplotype
+        call h%newHaplotypeBitsWithLocked(oh%phase, oh%missing, oh%length, oh%locked)
+    end subroutine newHaplotypeHaplotype
 
 
     !---------------------------------------------------------------------------
@@ -274,12 +310,23 @@ contains
     !> @date    May 25, 2017
     !> @return  New haplotype object
     !---------------------------------------------------------------------------
-    function newHaplotypeMissing(length) result(h)
+    subroutine newHaplotypeMissing(h,length)
         integer, intent(in) :: length
 
-        type(Haplotype) :: h
+        class(Haplotype) :: h
 
         integer :: i
+
+
+        if (allocated(h%phase)) then
+            deallocate(h%phase)
+            deallocate(h%missing)
+            
+        endif
+
+        if (allocated(h%locked)) then
+            deallocate(h%locked)
+        endif
 
         h%length = length
         h%sections = (h%length - 1) / 64 + 1
@@ -295,7 +342,7 @@ contains
             h%phase(h%sections) = ibclr(h%phase(h%sections), i)
             h%missing(h%sections) = ibclr(h%missing(h%sections), i)
         end do
-    end function newHaplotypeMissing
+    end subroutine newHaplotypeMissing
 
 
     !---------------------------------------------------------------------------
@@ -1158,8 +1205,6 @@ contains
 
         logical :: equal
 
-        integer :: i
-
         equal = h1%compareHaplotype(h2)
     end function equalHap
 
@@ -1246,12 +1291,12 @@ contains
 
 
 
-    pure subroutine wrapper(hap, array) 
+        subroutine wrapper(hap, array) 
 
         type(haplotype), intent(out) :: hap
         integer(kind=1), dimension(:),intent(in), allocatable :: array
 
-        hap = newHaplotypeInt(array)
+        call hap%newHaplotypeInt(array)
 
     end subroutine wrapper
 

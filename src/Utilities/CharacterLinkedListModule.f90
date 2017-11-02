@@ -242,7 +242,6 @@ contains
             else
                 do while (associated(node%next))
                     tmpItem = node%next%item
-                    ! print *,"loop"
                     if(tmpItem == trim(item)) then
                         if(associated(node%next%next)) then
                             deallocate(node%next%next%previous)

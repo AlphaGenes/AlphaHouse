@@ -1,40 +1,20 @@
-module MyLinkedList
+module SortedIntegerLinkedListModule
   use IntegerLinkedListModule
   implicit none
 
-  type, extends(IntegerLinkedList):: myLL
+  type, extends(IntegerLinkedList):: sortedIntegerLinkedList
     contains
       procedure:: list_add => myListlist_add
       procedure:: pop_first
-!      procedure:: destroyLinkedList => destroyLinkedListMyLL
+!      procedure:: destroyLinkedList => destroyLinkedListsortedIntegerLinkedList
   end type
 
   contains
 
-    subroutine destroyLinkedListMyLL(this)
-      class(myLL), intent(inout):: this
-      type(IntegerLinkedListNode), pointer:: node
 
-      if (associated(this%last)) then
-!        this%last%next => null()
-!        this%last%previous => null()
-        this%last=> null()
-      end if
-
-      if (associated(this%first)) then
-        node => this%first
-        do while (associated(node))
-          node=> node%next
-          node%previous => null()
-        end do
-      end if
-
-      node=> null()
-
-    end subroutine
 
     subroutine myListlist_add(this, item)
-      class(myLL), intent(inout):: this
+      class(sortedIntegerLinkedList), intent(inout):: this
       integer, intent(in):: item
 
       type(IntegerLinkedListNode), pointer:: node, previous
@@ -84,7 +64,7 @@ module MyLinkedList
    end subroutine myListlist_add
 
    function pop_first(self) result(itemOut)
-     class(myLL), intent(inout):: self
+     class(sortedIntegerLinkedList), intent(inout):: self
      integer:: itemOut
 
      if (associated(self%first)) then
@@ -105,4 +85,4 @@ module MyLinkedList
 
     end function pop_first
 
-end module MyLinkedList
+end module SortedIntegerLinkedListModule

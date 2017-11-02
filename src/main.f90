@@ -8,11 +8,23 @@ program test
 
 	type(PedigreeHolder) :: ped
 	integer,allocatable,dimension(:) :: nsnp
+	integer :: inconsistencies, nsnps
+    character(len=300) :: inputFile,genotypeFile
 
-	logical :: sexChrom
-  character(len=128), dimension(:), allocatable :: chromPaths
+    inputFile = "pedigree.txt"
+    genotypeFile = "genotypes.txt"
+    
 
-	call readPlink("merge_final", ped,chromPaths,nsnp,sexChrom)
+	call initPedigree(ped,inputFile)
+	nsnps = 0 
+    call ped%addGenotypeInformationFromFile(genotypeFile,nsnps)
+    call ped%sortPedigreeAndOverwrite()
+
+	inconsistencies = ped%findMendelianInconsistencies(file="mendInfo.txt", snpFilePath="snpinfo.txt")
+
+
+    call ped%writeOutgenotypes("genotypesAfterMendellian.txt")
+
 
 end program test
 

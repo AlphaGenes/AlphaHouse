@@ -6,7 +6,7 @@ module TestIndividualHelperModule
 
   implicit none
 
-  type(PedigreeHolder) :: pedigree
+  type(PedigreeHolder), allocatable :: pedigree
   contains
 
   @before
@@ -28,16 +28,19 @@ module TestIndividualHelperModule
         write(pedUnit, "(a)") "iii fff ccc"
         close(pedUnit)
 
-        pedigree = PedigreeHolder("testPed.txt")
+        allocate(pedigree)
+        call initPedigree(pedigree,"testPed.txt")
 
     end subroutine
 
    @after
     subroutine Uninit
       integer(int32) :: pedUnit
-      call pedigree%destroyPedigree
-      open(newunit=pedUnit, file="testPed.txt", status="old")
-      close(pedUnit, status="delete")
+        print *, "test done"
+        deallocate(pedigree)
+    !   call pedigree%destroyPedigree
+    !   open(newunit=pedUnit, file="testPed.txt", status="old")
+    !   close(pedUnit, status="delete")
     end subroutine
 
     @test
@@ -45,13 +48,18 @@ module TestIndividualHelperModule
         use IndividualModule
         implicit none
         type(Individual), pointer :: tmp, tmp2
-        type(individualLinkedList) :: ret
+        type(individualLinkedList) :: ret, t
 
         tmp => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
+
+
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
+
         ret = getFullSibs(tmp)
         @assertEqual(ret%length,1)
         tmp => ret%list_get_nth(1)
+        t= ret
+
         @assertTrue(associated(tmp, tmp2))
     end subroutine testGetFullSibs
 
@@ -83,13 +91,19 @@ module TestIndividualHelperModule
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
         tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
         tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("ddd"))
-        ret = getSibs(tmp)
+        
 
         open(1,file="out.txt", action="readwrite", status="old")
         write(*,*) "deleting out.txt"
         close(1, status="delete")
 
+
+        ! print *, "HERE1",ret%convertToArrayOriginalIDs()
+                
+        print *,"ID:",tmp2%originalId
+        ret = getSibs(tmp)
         @assertEqual(ret%length,3)
+
         @assertTrue(ret%contains(tmp2))
         @assertTrue(ret%contains(tmp3))
         @assertTrue(ret%contains(tmp4))
