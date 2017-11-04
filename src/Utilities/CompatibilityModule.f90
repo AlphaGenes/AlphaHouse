@@ -650,52 +650,52 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	enddo
 
 	close(fileUnit)
-	do j=1,totalSnps*2,2
+	! do j=1,totalSnps*2,2
 		
 
 		
 
-		block 
-			character(len=2) :: one,two
-			integer :: onec,twoc
-		one = getFirstNonMissing(alleles, j)
-		onec = 0
-		twoc = 0
-		do i=1,size
-			all1 = alleles(i,j)
-			all2 = alleles(i,j+1)
-			! check for first allele
-			if (all1 == one ) then
-				onec = onec + 1
-			else
-				if (twoc == 0) then
-					two = all1
-				endif 
-			endif
-			! check for second allele
-			if (all2 == one ) then
-				onec = onec + 1
-			else
-				if (twoc == 0) then
-					two = all1
-				endif 
-			endif
-		enddo
+	! 	block 
+	! 		character(len=2) :: one,two
+	! 		integer :: onec,twoc
+	! 	one = getFirstNonMissing(alleles, j)
+	! 	onec = 0
+	! 	twoc = 0
+	! 	do i=1,size
+	! 		all1 = alleles(i,j)
+	! 		all2 = alleles(i,j+1)
+	! 		! check for first allele
+	! 		if (all1 == one ) then
+	! 			onec = onec + 1
+	! 		else
+	! 			if (twoc == 0) then
+	! 				two = all1
+	! 			endif 
+	! 		endif
+	! 		! check for second allele
+	! 		if (all2 == one ) then
+	! 			onec = onec + 1
+	! 		else
+	! 			if (twoc == 0) then
+	! 				two = all1
+	! 			endif 
+	! 		endif
+	! 	enddo
 
-		if (onec <= twoc) then
-			referenceAllelePerSnps(cursnp) = one 
-		else
-			referenceAllelePerSnps(cursnp) = two
-		endif
-		end block
-	enddo
+	! 	if (onec <= twoc) then
+	! 		referenceAllelePerSnps(cursnp) = one 
+	! 	else
+	! 		referenceAllelePerSnps(cursnp) = two
+	! 	endif
+	! 	end block
+	! enddo
 
 
 	
 	do j=1,totalSnps*2,2
 		cursnp = (j/2) + 1
 		! ref is always the first - allele in snp -
-		! referenceAllelePerSnps(cursnp) = getFirstNonMissing(alleles, j)
+		referenceAllelePerSnps(cursnp) = alleles(i,j+1)
 		do i=1,size !< loop through animals
 			all1 = alleles(i,j)
 			all2 = alleles(i,j+1)
