@@ -159,7 +159,7 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 	integer,dimension(:), allocatable, intent(in) :: nsnps
 	type(Chromosome), dimension(:), allocatable, intent(in) :: chroms
 	character(len=1),dimension(:), allocatable,optional, intent(in) :: referenceAllelePerSnps !<array saying for which snp the reference allele is
-	character(len=1),dimension(:), allocatable :: alleles
+	! character(len=1),dimension(:), allocatable :: alleles
 	type(pedigreeholder), intent(in) :: ped
 	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
 
@@ -167,7 +167,7 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 	character(len=128) :: path, outChrFile,fmt
 	logical, dimension(:), allocatable :: maskedLogi
 	integer, dimension(:), allocatable :: masked
-	integer :: result, i, h,p,refAlleleUnit
+	integer :: result, i, h,p,refAlleleUnit,count
 	integer(kind=1),allocatable,dimension (:,:) :: array
 	path = "fullGenome/"
 	result=makedirqq(path)
@@ -198,11 +198,17 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 			if (present(referenceAllelePerSnps)) then
 				open(newunit=refAlleleUnit, file=trim(outChrFile)//"refAlleles", status="unknown")
 
-				alleles = pack(referenceAllelePerSnps, maskedLogi)
-				do p=1,size(alleles)
+				! alleles = pack(referenceAllelePerSnps, maskedLogi)
 
-					write(refAlleleUnit, '(2a5)') "snp","Ref Allele"
-					write(refAlleleUnit, '(i5,a5)') p, alleles(p)
+				write(refAlleleUnit, '(3a5)') "snp in Chrom", "snp pos","Ref Allele"
+				count = 0
+				do p=1, size(referenceAllelePerSnps)
+				! do p=1,size(alleles)
+					! write(refAlleleUnit, '(1i5,a5)') p, referenceAllelePerSnps(p)
+					if (maskedLogi(p)) then
+						count = count +1						
+						write(refAlleleUnit, '(2i5,a5)') count,p, referenceAllelePerSnps(p)
+					endif
 				enddo
 				close(refAlleleUnit)
 			endif
@@ -542,6 +548,7 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 	maxChroms = 0
 	snpCounts = 0
 	chromCount = 0
+	prevChrom = 'MT'
 	do i=1,totalSnps
 
 		read(unit, *) chrom, id,length, basepair
@@ -556,11 +563,8 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 
 		if (chrom /=prevChrom) then
 			chromCount = chromCount + 1
-
+			print *,"count",chromCount
 			prevChrom = chrom
-			if (chromCount > maxChroms) then
-				maxChroms = chromCount
-			endif
 
 		endif
 
@@ -586,6 +590,8 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 		tmpbasePairs(1:chromCount,:) = basepairs(1:chromCount,:)
 		call move_alloc(tmpbasePairs,basepairs)
 	endif
+
+	maxChroms = chromCount
 
 end subroutine readMap
 
@@ -644,12 +650,52 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	enddo
 
 	close(fileUnit)
+	! do j=1,totalSnps*2,2
+		
 
+		
+
+	! 	block 
+	! 		character(len=2) :: one,two
+	! 		integer :: onec,twoc
+	! 	one = getFirstNonMissing(alleles, j)
+	! 	onec = 0
+	! 	twoc = 0
+	! 	do i=1,size
+	! 		all1 = alleles(i,j)
+	! 		all2 = alleles(i,j+1)
+	! 		! check for first allele
+	! 		if (all1 == one ) then
+	! 			onec = onec + 1
+	! 		else
+	! 			if (twoc == 0) then
+	! 				two = all1
+	! 			endif 
+	! 		endif
+	! 		! check for second allele
+	! 		if (all2 == one ) then
+	! 			onec = onec + 1
+	! 		else
+	! 			if (twoc == 0) then
+	! 				two = all1
+	! 			endif 
+	! 		endif
+	! 	enddo
+
+	! 	if (onec <= twoc) then
+	! 		referenceAllelePerSnps(cursnp) = one 
+	! 	else
+	! 		referenceAllelePerSnps(cursnp) = two
+	! 	endif
+	! 	end block
+	! enddo
+
+
+	
 	do j=1,totalSnps*2,2
 		cursnp = (j/2) + 1
-		print *, "here",cursnp
 		! ref is always the first - allele in snp -
-		referenceAllelePerSnps(cursnp) = getFirstNonMissing(alleles, j)
+		referenceAllelePerSnps(cursnp) = alleles(i,j+1)
 		do i=1,size !< loop through animals
 			all1 = alleles(i,j)
 			all2 = alleles(i,j+1)
@@ -682,8 +728,6 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	enddo
 
 	call initPedigreeArrays(ped,pedArray, genderArray)
-	! ped%addGenotypeInformationFromArray(genotypes)
-	! TODO write output map showing which snp was reference allele
 
 end subroutine readPedFile
 
