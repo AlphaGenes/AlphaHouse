@@ -380,14 +380,13 @@ module AlphaHouseMod
 
 			! Other
 			integer(int32) :: f,Unit
-
 			character(len=300) :: DumC
 
 			nLines=0
 			f=0
 			open(newunit=Unit,file=trim(FileName),status="old")
 			do
-				read(Unit,*,iostat=f) DumC
+				read(Unit,'(a)',iostat=f,err=300, end=300) DumC
 				nLines=nLines+1
 				if (f /= 0) then
 					nLines=nLines-1
@@ -396,6 +395,9 @@ module AlphaHouseMod
 			end do
 			close(Unit)
 			return
+		300 nLines=nLines-1
+			
+
 		end function
 
 		!###########################################################################
