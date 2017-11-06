@@ -566,6 +566,7 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 	character(len=128) :: id
 
 	totalSnps = countLines(fileName)
+	print *,"TOTAL SNPS IN MAP:", totalSnps
 	open(newunit=unit, file=filename, status='OLD')
 
 	allocate(chroms(LARGECHROMNUMBER))
