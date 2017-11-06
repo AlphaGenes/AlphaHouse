@@ -58,7 +58,7 @@ module CompatibilityModule
 
 	implicit none
 
-	type bimHolder
+	type :: bimHolder
 	character(len=1) :: ref,alt
 	character(len=IDLENGTH) :: id
 	character(len=2) :: chrom !<either an integer, or 'X'/'Y'/'XY'/'MT'
@@ -76,7 +76,12 @@ contains
 
 
 
-function readToPedigreeFormat(pedFile) result(ped)
+!---------------------------------------------------------------------------
+!< @brief reads fam file to pedigree object
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
+function readFamFile(pedFile) result(ped)
 	use ConstantModule, only : IDLENGTH
 	use AlphaHouseMod, only : countLines
 	use PedigreeModule
@@ -112,47 +117,54 @@ function readToPedigreeFormat(pedFile) result(ped)
 
 	call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
-end function readToPedigreeFormat
+end function readFamFile
 
-
+!---------------------------------------------------------------------------
+!< @brief Reads PLINK binary format into ped datastructures
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
 subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps, sexChrom)
 	use HashModule
 	use PedigreeModule
 
+	character(len=*),intent(in) :: binaryFilePre !< part before file extension
+	type(pedigreeholder), intent(out) :: ped !< pedigree object returned
+	logical, intent(out) :: sexChrom !< true if a sex chromosome is present
+	integer,dimension(:), allocatable, intent(out) :: nsnps !< number of snps per chromosome
+	character(len=128), dimension(:), allocatable, intent(out) :: outputPaths !< output paths for each chromosome
 
-	character(len=*),intent(in) :: binaryFilePre
-	type(pedigreeholder), intent(out) :: ped
-	logical, intent(out) :: sexChrom
 	type(DictStructure) :: dict
 	integer:: maxChroms
 	type(bimHolder) , allocatable, dimension(:) :: bimInfo
 	type(Chromosome), dimension(:), allocatable :: chroms
-
 	integer(kind=1), dimension(:,:), allocatable ::  genotypes
-	character(len=128), dimension(:), allocatable :: outputPaths
-	integer,dimension(:), allocatable, intent(out) :: nsnps
 	integer(kind=1), dimension(:,:,:), allocatable ::  phase
 	integer :: totalSnps
 	real(kind=real64), dimension(:,:) ,allocatable:: lengths
 	integer, dimension(:,:) ,allocatable :: basepairs
 
 	! TODO change to pointer rather than copy
-	ped = readToPedigreeFormat(trim(binaryFilePre)//".fam")
+	ped = readFamFile(trim(binaryFilePre)//".fam")
 	call readBim(trim(binaryFilePre)//".bim",dict,bimInfo,nsnps,totalSnps,chroms,maxChroms, sexChrom,lengths,basepairs)
 	print *,"READ BIM"
-	call readplinkSnps(trim(binaryFilePre)//".bed",totalSnps,ped,4, genotypes, phase)
+	call readBED(trim(binaryFilePre)//".bed",totalSnps,ped,4, genotypes, phase)
 	print *,"READ BED"
 
 	call createOutputFiles(genotypes,chroms, phase,lengths,basepairs,maxChroms,nsnps,ped, outputPaths)
 end subroutine readPlink
 
-
+!---------------------------------------------------------------------------
+!< @brief writes output files
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2017
+!---------------------------------------------------------------------------
 subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChroms,nsnps,ped, outputPaths,referenceAllelePerSnps)
 	use ifport
 	use ALphaHouseMod, only : countLines
 
-	integer(kind=1), dimension(:,:), allocatable,intent(in) ::  genotypes
-	integer(kind=1), dimension(:,:,:), allocatable,intent(in) ::  phase
+	integer(kind=1), dimension(:,:), allocatable,intent(in) ::  genotypes	 !<  genotypes for all chroms (nanimals, totalsnps)
+	integer(kind=1), dimension(:,:,:), allocatable,intent(in) ::  phase !< array of phase (nanimals, totalsnps,2 )
 	real(kind=real64), dimension(:,:) ,allocatable,intent(in) :: lengths
 	integer, dimension(:,:) ,allocatable,intent(in) :: basepairs
 	integer, intent(in) :: maxChroms
@@ -160,8 +172,8 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 	type(Chromosome), dimension(:), allocatable, intent(in) :: chroms
 	character(len=1),dimension(:), allocatable,optional, intent(in) :: referenceAllelePerSnps !<array saying for which snp the reference allele is
 	! character(len=1),dimension(:), allocatable :: alleles
-	type(pedigreeholder), intent(in) :: ped
-	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
+	type(pedigreeholder), intent(in) :: ped !< pedigree object taken in
+	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths !< returns the output path for each chromosome
 
 	integer :: outChrF, outChrP,bpFile,lengthFile
 	character(len=128) :: path, outChrFile,fmt
@@ -188,30 +200,30 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 		open(newunit=lengthFile, file=trim(outChrFile)//"snplengths.txt", status="unknown")
 		open(newunit=bpFile, file=trim(outChrFile)//"snpBasepairs.txt", status="unknown")
 
+		!< uses genotype mask to determine which snps to use
 		masked = chroms(i)%snps%convertToArray()
 		maskedLogi = .false.
 		do h =1, size(masked)
 			maskedLogi(masked(h)) = .true.
 		enddo
 
+		if (present(referenceAllelePerSnps)) then
+			open(newunit=refAlleleUnit, file=trim(outChrFile)//"refAlleles", status="unknown")
 
-			if (present(referenceAllelePerSnps)) then
-				open(newunit=refAlleleUnit, file=trim(outChrFile)//"refAlleles", status="unknown")
+			! alleles = pack(referenceAllelePerSnps, maskedLogi)
 
-				! alleles = pack(referenceAllelePerSnps, maskedLogi)
-
-				write(refAlleleUnit, '(3a5)') "snp in Chrom", "snp pos","Ref Allele"
-				count = 0
-				do p=1, size(referenceAllelePerSnps)
+			write(refAlleleUnit, '(3a5)') "snp in Chrom", "snp pos","Ref Allele"
+			count = 0
+			do p=1, size(referenceAllelePerSnps)
 				! do p=1,size(alleles)
-					! write(refAlleleUnit, '(1i5,a5)') p, referenceAllelePerSnps(p)
-					if (maskedLogi(p)) then
-						count = count +1						
-						write(refAlleleUnit, '(2i5,a5)') count,p, referenceAllelePerSnps(p)
-					endif
-				enddo
-				close(refAlleleUnit)
-			endif
+				! write(refAlleleUnit, '(1i5,a5)') p, referenceAllelePerSnps(p)
+				if (maskedLogi(p)) then
+					count = count +1
+					write(refAlleleUnit, '(2i5,a5)') count,p, referenceAllelePerSnps(p)
+				endif
+			enddo
+			close(refAlleleUnit)
+		endif
 
 		allocate(array(ped%pedigreeSize-ped%nDummys, nsnps(i)))
 		write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i3)"
@@ -244,18 +256,26 @@ end subroutine createOutputFiles
 
 
 
-
-
-
-
+		!---------------------------------------------------------------------------
+		!< @brief Reads bim file to datastructures
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
 subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, hasSexChrom,lengths,basepairs)
 	use HashModule
 	use AlphaHouseMod
 	use ConstantModule
 
 	character(len=*), intent(in) :: bimFile
-	type(DictStructure) :: dict
-	logical, intent(out) :: hasSexChrom
+	type(DictStructure),intent(out) :: dict !< dicitionary tying identifier to snp
+	type(bimHolder) , allocatable, dimension(:), intent(out) :: bimInfo !< extra info provided by BIM file
+	type(Chromosome),dimension(:), allocatable, intent(out) :: chroms !< chromosome info
+	integer,intent(out), dimension(:), allocatable :: nsnps !< nsnps per chromosome
+	logical, intent(out) :: hasSexChrom !< true if there is a sex chrom
+	integer,intent(out) :: maxChroms
+	real(kind=real64), dimension(:,:) ,allocatable, intent(out) :: lengths !< lengths of nsnp in morgan format is (chrom, totalsnp)
+	integer, dimension(:,:) ,allocatable,intent(out) :: basepairs !< basepairs format is (chrom, totalsnp)
+
 	character :: ref,alt
 	character(len=IDLENGTH) :: id
 
@@ -263,16 +283,11 @@ subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, has
 	real(kind=real64) :: chrompos
 
 	integer,intent(out) :: totalSnps
-	integer,intent(out), dimension(:), allocatable :: nsnps
-	real(kind=real64), dimension(:,:) ,allocatable :: lengths,tmpLengths
-	integer, dimension(:,:) ,allocatable :: basepairs,tmpbasePairs
-
+	real(kind=real64), dimension(:,:) ,allocatable :: tmpLengths
+	integer, dimension(:,:) ,allocatable :: tmpbasePairs
 	integer, dimension(:), allocatable :: temparray
-	integer,intent(out) :: maxChroms
 
 	integer :: i, unit,chromCount,curChromSnpCount
-	type(bimHolder) , allocatable, dimension(:), intent(out) :: bimInfo
-	type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
 	character(len=2) :: chrom,prevChrom
 
 	maxChroms = 0
@@ -366,18 +381,25 @@ subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, has
 
 end subroutine readBim
 
-! Stores entire genotype file in memory
-subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
+!---------------------------------------------------------------------------
+!< @brief Reads BED Files
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2017
+!---------------------------------------------------------------------------
+subroutine readBED(bed, totalSnps,ped, minor,genotypes, phase)
 
 	use PedigreeModule
 	use genotypeModule
 	implicit none
 
 	! Arguments
-	character(*), intent(in) :: bed
-	integer, intent(in) :: ncol, minor
+	character(*), intent(in) :: bed !< bed file name 
+	type(PedigreeHolder), intent(in) :: ped !< pedigree read in from .fam
+	integer, intent(in) :: totalSnps, minor !< totalsnps, and if the first allele is minor or major
+	integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes !< total genotypes (nanimals, nsnps) 
+	integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
+
 	integer :: status
-	type(PedigreeHolder), intent(in) :: ped
 
 	!! Types
 	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
@@ -389,8 +411,6 @@ subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
 	integer :: stat, i, j, k, snpcount, majorcount
 	integer, dimension(4) :: codes, phasecodes
 	!integer, dimension(:), allocatable :: domasksnps
-	integer(kind=1), dimension(:,:), allocatable,intent(out) ::  snps
-	integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
 	real :: allelefreq
 	integer :: bedInUnit
 	! Supported formats as per plink 1.9.
@@ -399,9 +419,9 @@ subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
 
 
 	print *,"start BED read"
-	allocate(snps(ped%pedigreeSize-ped%nDummys,ncol))
-	allocate(phase(ped%pedigreeSize-ped%nDummys,ncol,2))
-	snps(:,:) = 9
+	allocate(genotypes(ped%pedigreeSize-ped%nDummys,totalSnps))
+	allocate(phase(ped%pedigreeSize-ped%nDummys,totalSnps,2))
+	genotypes(:,:) = 9
 
 
 	if (minor == 1) then
@@ -441,20 +461,20 @@ subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
 			snpcount = snpcount + 1
 			select case(IBITS(element, i, 2))
 				case (0) ! homozygote
-				snps(j,k) = codes(1)
+				genotypes(j,k) = codes(1)
 				phase(j,k,:) = phasecodes(1)
 				case (1) ! missing
-				snps(j,k) = codes(4)
+				genotypes(j,k) = codes(4)
 				phase(j,k,:) = phaseCodes(4)
 				snpcount = snpcount - 1
 				case (2) ! heterozygote
-				snps(j,k) = codes(2)
+				genotypes(j,k) = codes(2)
 				! Set to missing - as we don't know which snp is which
 				phase(j,k,1) = MISSINGPHASECODE
 				phase(j,k,2) = MISSINGPHASECODE
 				majorcount = majorcount + 1
 				case (3) ! homozygote, minor
-				snps(j,k) = codes(3)
+				genotypes(j,k) = codes(3)
 				phase(j,k,:) = phasecodes(3)
 				majorcount = majorcount + 2
 			endselect
@@ -477,9 +497,13 @@ subroutine readplinkSnps(bed, ncol,ped, minor,snps, phase)
 
 	print *, "finished"
 
-end subroutine readplinkSnps
+end subroutine readBED
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Reads PLINK non binary version .map, .ref(optional) and .ped files
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 	use HashModule
 	use PedigreeModule
@@ -494,7 +518,7 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 	integer :: totalSnps
 	type(Chromosome), dimension(:), allocatable :: chroms
 	logical,intent(out) :: sexChrom
-	character(len=1),dimension(:), allocatable :: referenceAllelePerSnps !<array saying for which snp the reference allele is
+	character(len=2),dimension(:), allocatable :: referenceAllelePerSnps !<array saying for which snp the reference allele is
 
 
 	integer(kind=1), dimension(:,:), allocatable ::  genotypes
@@ -505,27 +529,34 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 	type(pedigreeHolder) :: ped
 
 	call readMap(trim(filePre)//".map", dict,chroms,maxChroms, nsnps, totalSnps,sexChrom, lengths, basepairs)
+	call readRef(trim(filePre)//".ref", dict, referenceAllelePerSnps)
 	call readPedFile(trim(filePre)//".ped",ped, totalSnps, genotypes,phase, referenceAllelePerSnps)
 	call createOutputFiles(genotypes,chroms, phase,lengths,basepairs,maxChroms,nsnps,ped, outputPaths,referenceAllelePerSnps)
 
 end subroutine readPlinkNoneBinary
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Reads plink map file into datastructures
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
 subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom,lengths, basepairs)
 	use HashModule
 	use AlphaHouseMod
 
 	character(len=*),intent(in) :: filename
-	integer, dimension(:) ,allocatable, intent(out) :: snpCounts
-	integer, dimension(:) ,allocatable :: tempArray
+	integer, dimension(:) ,allocatable, intent(out) :: snpCounts !< number of snps for each chromosome 
 	integer, intent(out) :: maxChroms
-	type(DictStructure), intent(out) :: dict
-	type(Chromosome),dimension(:), allocatable, intent(out) :: chroms
-	integer, intent(out) :: totalSnps
-	real(real64), dimension(:,:) ,allocatable,intent(out) :: lengths
+	type(DictStructure), intent(out) :: dict !< map dictionary to accompany ref file
+	type(Chromosome),dimension(:), allocatable, intent(out) :: chroms !< individual info for each chromosome
+	real(real64), dimension(:,:) ,allocatable,intent(out) :: lengths !< array of snp lengths in morgans, in format (chrom, snps)
+	integer, dimension(:,:) ,allocatable,intent(out) :: basepairs !< array of basepair positions, in format (chrom, snps)
+
+
+	integer, dimension(:) ,allocatable :: tempArray
 	real(real64), dimension(:,:) ,allocatable ::tmpLengths
-	integer, dimension(:,:) ,allocatable,intent(out) :: basepairs
+	integer, intent(out) :: totalSnps
 	integer, dimension(:,:) ,allocatable :: tmpbasePairs
 	integer :: unit,i,chromCount,basepair
 
@@ -549,6 +580,8 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 	snpCounts = 0
 	chromCount = 0
 	prevChrom = 'MT'
+
+	write(*,*) "Start reading map file"
 	do i=1,totalSnps
 
 		read(unit, *) chrom, id,length, basepair
@@ -556,18 +589,13 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 		if (chrom == "X" .or. chrom == 'Y') then
 			hasSexChrom = .true.
 		endif
-
 		if (chrom == 'XY' .or. chrom == 'MT') then
 			write(error_unit,*) "WARNING - No support currently for XY or MT chromosomes"
 		endif
-
 		if (chrom /=prevChrom) then
 			chromCount = chromCount + 1
-			print *,"count",chromCount
 			prevChrom = chrom
-
 		endif
-
 
 		snpCounts(chromCount) = snpCounts(chromCount) + 1
 		lengths(chromCount,snpCounts(chromCount)) = length
@@ -592,10 +620,15 @@ subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexCh
 	endif
 
 	maxChroms = chromCount
-
+	write(*,*) "Finished reading map file"
 end subroutine readMap
 
 
+!---------------------------------------------------------------------------
+!< @brief Sets the individual to be genotyped at high density.
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
 subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAllelePerSnps)
 	use PedigreeModule
 
@@ -605,11 +638,10 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	type(pedigreeHolder), intent(out) :: ped
 	integer, intent(in) :: totalSnps
 
-
 	character(len=IDLENGTH), dimension(:,:), allocatable :: pedArray
 
-	character(len=1),dimension(:), allocatable, intent(out) :: referenceAllelePerSnps !<array saying for which snp the reference allele is
-	character(len=1),dimension(:,:), allocatable :: alleles !<(nanimals. nsnp*2) size nsnp x2 (for each allele,)
+	character(len=2),dimension(:), allocatable, intent(inout) :: referenceAllelePerSnps !<array saying for which snp the reference allele is
+	character(len=2),dimension(:,:), allocatable :: alleles !<(nanimals. nsnp*2) size nsnp x2 (for each allele,)
 	integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes
 	integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
 	integer, allocatable, dimension(:) :: genderArray, phenotypeArray
@@ -625,7 +657,12 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	allocate(pedArray(3,size))
 	allocate(genderArray(size))
 	allocate(phenotypeArray(size))
-	allocate(referenceAllelePerSnps(totalSnps))
+
+
+	! check if reference alleles have been passed in
+	if (.not. allocated(referenceAllelePerSnps)) then
+		allocate(referenceAllelePerSnps(totalSnps))
+	endif
 	allocate(alleles(size, totalSnps*2))
 	allocate(phase(size,totalSnps,2))
 	allocate(genotypes(size,totalSnps))
@@ -641,7 +678,7 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 		codes = (/ 2, 1, 0, MISSINGGENOTYPECODE /)
 		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
 	endif
-
+	write(*,*) "Start Reading Ped File"
 	do i=1,size
 		read(fileUnit,*) familyID(i),pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype, alleles(i,:)
 
@@ -650,52 +687,14 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	enddo
 
 	close(fileUnit)
-	! do j=1,totalSnps*2,2
-		
 
-		
-
-	! 	block 
-	! 		character(len=2) :: one,two
-	! 		integer :: onec,twoc
-	! 	one = getFirstNonMissing(alleles, j)
-	! 	onec = 0
-	! 	twoc = 0
-	! 	do i=1,size
-	! 		all1 = alleles(i,j)
-	! 		all2 = alleles(i,j+1)
-	! 		! check for first allele
-	! 		if (all1 == one ) then
-	! 			onec = onec + 1
-	! 		else
-	! 			if (twoc == 0) then
-	! 				two = all1
-	! 			endif 
-	! 		endif
-	! 		! check for second allele
-	! 		if (all2 == one ) then
-	! 			onec = onec + 1
-	! 		else
-	! 			if (twoc == 0) then
-	! 				two = all1
-	! 			endif 
-	! 		endif
-	! 	enddo
-
-	! 	if (onec <= twoc) then
-	! 		referenceAllelePerSnps(cursnp) = one 
-	! 	else
-	! 		referenceAllelePerSnps(cursnp) = two
-	! 	endif
-	! 	end block
-	! enddo
-
-
-	
 	do j=1,totalSnps*2,2
 		cursnp = (j/2) + 1
 		! ref is always the first - allele in snp -
-		referenceAllelePerSnps(cursnp) = alleles(i,j+1)
+		! referenceAllelePerSnps(cursnp) = alleles(i,j+1)
+		if (.not. allocated(referenceAllelePerSnps)) then
+			referenceAllelePerSnps(cursnp) = getFirstHetPosition(alleles, cursnp)
+		endif
 		do i=1,size !< loop through animals
 			all1 = alleles(i,j)
 			all2 = alleles(i,j+1)
@@ -726,20 +725,23 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 			endif
 		enddo
 	enddo
-
+	write(*,*) "Finished Reading Ped File"
 	call initPedigreeArrays(ped,pedArray, genderArray)
 
 end subroutine readPedFile
 
 
+!---------------------------------------------------------------------------
+!< @brief Returns the first non missing character in allele array
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
 character function getFirstNonMissing(alleles, snp)
-	character(len=1),dimension(:,:), allocatable, intent(in) :: alleles
+	character(len=2),dimension(:,:), allocatable, intent(in) :: alleles !< alleles, in format (nanimals, nsnps)
 	integer, intent(in) :: snp
 	integer :: i, h
 	do i=1, size(alleles,1) !< loops through number of animals
-
 		do h=snp,snp+1
-
 			if (alleles(i,h) /= '0') then
 				getFirstNonMissing = alleles(i,h)
 				return
@@ -751,7 +753,89 @@ character function getFirstNonMissing(alleles, snp)
 	getFirstNonMissing = '0'
 end function getFirstNonMissing
 
+
+
+
+!---------------------------------------------------------------------------
+!< @brief returns the first snp that is a het at position pos
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2017
+!---------------------------------------------------------------------------
+character function getFirstHetPosition(alleles, snp)
+	character(len=2),dimension(:,:), allocatable, intent(in) :: alleles
+	character(len=2) :: all1, all2
+	integer, intent(in) :: snp !< snp position
+	integer :: i, h
+
+	do i=1, size(alleles,1) !< loops through number of animals
+		all1 = alleles(i,snp)
+		all2 = alleles(i,snp+1)
+
+		! adds support for number format
+		if (all1 == "1" .or. all2 == "1") then
+			getFirstHetPosition = "1"
+			return
+		endif
+		if (all1 == all2) then
+			cycle
+		else
+			getFirstHetPosition = all1
+			return
+		endif
+	enddo
+
+	write(error_unit,*) "WARNING - no reference alleles for snp!"
+	getFirstHetPosition = all1
+end function getFirstHetPosition
+
+
+!---------------------------------------------------------------------------
+!< @brief gets reference alleles from ref file if it exists there
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2017
+!---------------------------------------------------------------------------
+subroutine readRef(file, dict, referenceAllelePerSnps)
+	use AlphaHouseMod, only :countLines
+	character(len=*),intent(in) :: file
+	type(DictStructure), intent(in) :: dict
+	character(len=2), dimension(:), allocatable, intent(out) :: referenceAllelePerSnps
+
+	character(len=2) :: refAllele, minor,id
+	logical :: fileExists
+	integer :: lines,i, unit,snpId
+
+	inquire( file=file, exist=fileExists )
+
+
+	if (fileExists) then
+
+		lines = countLines(file)
+		open(newunit=unit, file=file, status="old")
+		allocate(referenceAllelePerSnps(lines))
+		do i=1,lines
+			read(unit, *) id, refAllele, minor
+			snpId = dict%getValue(id)
+			if (snpId /= DICT_NULL) then
+				referenceAllelePerSnps(snpId) = refAllele
+			else
+				write(error_unit, *) "WARNING: snp " , id, " not found in map file"
+			endif
+		enddo
+		close(unit)
+	else
+		write(error_unit,*) "Warning: no .ref file found for this dataset"
+	endif
+
+end subroutine readRef
+
 end module CompatibilityModule
+
+
+
+
+
+
+
 
 
 
