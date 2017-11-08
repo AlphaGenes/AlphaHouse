@@ -140,14 +140,12 @@ module PedigreeModule
 
 
 
-		!TODO write a deep copy function
 #ifdef MPIACTIVE
 		procedure:: calculatePedigreeCorrelationWithInBreedingMPI
 #endif
 
 	end type PedigreeHolder
 
-	! TODO - overload == and = functions
 
 	type RecodedPedigreeArray
 	integer(kind=int32) :: nInd

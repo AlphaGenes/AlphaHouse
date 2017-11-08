@@ -78,9 +78,6 @@ private :: getElement
 private :: hashKey
 
 
-! TODO need to write deep copy 
-
-
 contains
 
     subroutine destroyHASH_LIST(hashList)

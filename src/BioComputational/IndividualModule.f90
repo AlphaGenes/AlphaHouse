@@ -1237,8 +1237,6 @@ module IndividualModule
 			logical, intent(in), optional :: lockIn
 
 			this%Genotyped = .true.
-			!TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
-			! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
 
 			if (allocated(this%inconsistencies)) then
 				deallocate(this%inconsistencies)
