@@ -105,6 +105,12 @@ function readFamFile(pedFile) result(ped)
 		read(fileUnit,*) familyID,pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype
 
 
+
+		! TODO potentially add family ID here to animals
+		! pedArray(1,i) = familyID // ":" // pedArray(1,i)
+		! pedArray(2,i) = familyID // ":" // pedArray(2,i)
+		! pedArray(3,i) = familyID // ":" // pedArray(3,i)
+
 		! write(*,'(3a20)') pedArray(1,i),pedArray(2,i),pedArray(3,i)
 		read(gender,*,iostat=stat)  genderArray(i)
 		read(phenotype,*,iostat=stat)  phenotypeArray(i)
@@ -256,11 +262,11 @@ end subroutine createOutputFiles
 
 
 
-		!---------------------------------------------------------------------------
-		!< @brief Reads bim file to datastructures
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!< @brief Reads bim file to datastructures
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
 subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, hasSexChrom,lengths,basepairs)
 	use HashModule
 	use AlphaHouseMod
@@ -393,10 +399,10 @@ subroutine readBED(bed, totalSnps,ped, minor,genotypes, phase)
 	implicit none
 
 	! Arguments
-	character(*), intent(in) :: bed !< bed file name 
+	character(*), intent(in) :: bed !< bed file name
 	type(PedigreeHolder), intent(in) :: ped !< pedigree read in from .fam
 	integer, intent(in) :: totalSnps, minor !< totalsnps, and if the first allele is minor or major
-	integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes !< total genotypes (nanimals, nsnps) 
+	integer(kind=1), dimension(:,:), allocatable,intent(out) ::  genotypes !< total genotypes (nanimals, nsnps)
 	integer(kind=1), dimension(:,:,:), allocatable,intent(out) ::  phase
 
 	integer :: status
@@ -499,11 +505,11 @@ subroutine readBED(bed, totalSnps,ped, minor,genotypes, phase)
 
 end subroutine readBED
 
-		!---------------------------------------------------------------------------
-		!< @brief Reads PLINK non binary version .map, .ref(optional) and .ped files
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2017
-		!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!< @brief Reads PLINK non binary version .map, .ref(optional) and .ped files
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2017
+!---------------------------------------------------------------------------
 subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 	use HashModule
 	use PedigreeModule
@@ -536,17 +542,17 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 end subroutine readPlinkNoneBinary
 
 
-		!---------------------------------------------------------------------------
-		!< @brief Reads plink map file into datastructures
-		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
-		!< @date    October 26, 2016
-		!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!< @brief Reads plink map file into datastructures
+!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+!< @date    October 26, 2016
+!---------------------------------------------------------------------------
 subroutine readMap(filename,dict,chroms,maxChroms, snpCounts, totalSnps,hasSexChrom,lengths, basepairs)
 	use HashModule
 	use AlphaHouseMod
 
 	character(len=*),intent(in) :: filename
-	integer, dimension(:) ,allocatable, intent(out) :: snpCounts !< number of snps for each chromosome 
+	integer, dimension(:) ,allocatable, intent(out) :: snpCounts !< number of snps for each chromosome
 	integer, intent(out) :: maxChroms
 	type(DictStructure), intent(out) :: dict !< map dictionary to accompany ref file
 	type(Chromosome),dimension(:), allocatable, intent(out) :: chroms !< individual info for each chromosome
@@ -663,6 +669,43 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	! check if reference alleles have been passed in
 	if (.not. allocated(referenceAllelePerSnps)) then
 		allocate(referenceAllelePerSnps(totalSnps))
+
+
+		do j=1,totalSnps*2,2
+
+			block
+				character(len=2) :: one,two
+				integer :: onec,twoc
+				one = getFirstNonMissing(alleles, j)
+				onec = 0
+				twoc = 0
+				do i=1,size
+					all1 = alleles(i,j)
+					all2 = alleles(i,j+1)
+					! check for first allele
+					if (all1 == one ) then
+						onec = onec + 1
+					else
+						if (twoc == 0) then
+							two = all1
+						endif
+					endif
+					! check for second allele
+					if (all2 == one ) then
+						onec = onec + 1
+					else
+						if (twoc == 0) then
+							two = all1
+						endif
+					endif
+				enddo
+				if (onec <= twoc) then
+					referenceAllelePerSnps(cursnp) = one
+				else
+					referenceAllelePerSnps(cursnp) = two
+				endif
+			end block
+		enddo
 	endif
 	allocate(alleles(size, totalSnps*2))
 	allocate(phase(size,totalSnps,2))
@@ -830,6 +873,8 @@ subroutine readRef(file, dict, referenceAllelePerSnps)
 end subroutine readRef
 
 end module CompatibilityModule
+
+
 
 
 

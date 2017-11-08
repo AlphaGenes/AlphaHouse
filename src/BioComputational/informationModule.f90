@@ -53,11 +53,12 @@ module informationModule
 
 
 
-    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath, snpErrorPath) result(meanAccuracy)
+    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath, snpErrorPath, lowDensityOnly) result(meanAccuracy)
         
         type(PedigreeHolder) :: ped
         character(len=*),intent(in) :: trueFile
         character(len=*),intent(in),optional :: outputPerAnimalPath, snpErrorPath
+        integer, optional :: lowDensityOnly
 
         integer(kind=1), allocatable, dimension(:) :: tmpArray
         integer :: animal,i, unit, lines, snpErrorUnit
@@ -86,9 +87,13 @@ module informationModule
         do i=1,lines
 
             read(unit,*) tmpIDs(i), tmpArray
-
+        
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
+
+                if (present(lowDensityOnly)) then
+                    if (ped%pedigree(animal)%hd) cycle
+                endif
                 if (present(snpErrorPath)) then
                     accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i, snpErrorUnit)
                 else
