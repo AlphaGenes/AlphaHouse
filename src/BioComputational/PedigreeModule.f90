@@ -1304,7 +1304,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile)
+		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile,initAll)
 			use AlphaHouseMod, only : countLines, countColumns
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -1314,6 +1314,8 @@ module PedigreeModule
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
 			character(len=*),intent(in), optional :: pedFile !< path of pedigree file
 			character(len=*),intent(in), optional :: genderfile !< path of gender file
+			integer, intent(in), optional :: initAll !< if genotype and phase of all animals should be initialised
+
 			character(len=IDLENGTH) :: tmpId
 			integer(kind=int32) :: fileUnit
 			integer(kind=int64) :: nIndividuals
@@ -1399,7 +1401,6 @@ module PedigreeModule
 						call pedStructure%addAnimalAtEndOfPedigree(tmpID,tmpGeno)
 					else
 						call pedStructure%setAnimalAsGenotyped(j,tmpGeno)
-						call pedStructure%setAnimalAsHd(j)
 					endif
 				else
 					call pedStructure%dictionary%addKey(tmpId, i)
@@ -1409,9 +1410,25 @@ module PedigreeModule
 					pedStructure%Pedigree(i)%originalPosition = i
 					pedStructure%inputMap(i) = i
 					call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
-					call pedStructure%setAnimalAsHd(i)
 				endif
 			enddo
+
+			if (present(initAll)) then
+				do i=1, pedStructure%pedigreeSize
+					if (.not. pedStructure%pedigree(i)%genotyped) then
+						call pedStructure%pedigree(i)%initPhaseAndGenotypes(pedStructure%nsnpsPopulation)
+
+						if (allocated(pedStructure%pedigree(i)%inconsistencies)) then
+							deallocate(pedStructure%pedigree(i)%inconsistencies)
+						endif
+						allocate(pedStructure%pedigree(i)%inconsistencies(pedStructure%nsnpsPopulation))
+						pedStructure%pedigree(i)%inconsistencies = 0
+						call pedStructure%pedigree(i)%initPhaseArrays(pedStructure%nsnpsPopulation)
+					endif
+
+
+				enddo
+			endif
 
 			close(fileUnit)
 		end subroutine initPedigreeGenotypeFiles
@@ -3867,7 +3884,7 @@ module PedigreeModule
 			if (present(geno)) then
 				call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
 				!   TODO make sure animal is actually hd
-				call this%setAnimalAsHD(this%pedigreeSize)
+				! call this%setAnimalAsHD(this%pedigreeSize)
 			endif
 		end subroutine addAnimalAtEndOfPedigree
 
