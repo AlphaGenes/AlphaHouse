@@ -278,6 +278,7 @@ module IndividualModule
 			allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
 			this%originalID = originalID
 			this%id = id
+			this%hd = .false.
 			this%gender = -9
 			this%sireId = sireIDIn
 			this%damId = damIDIn
