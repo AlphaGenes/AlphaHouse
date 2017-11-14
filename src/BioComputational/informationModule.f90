@@ -72,10 +72,12 @@ module informationModule
         endif
 
         ! set accuracies as 1, so not pedigreed animals won't affect
-        accuracies = 1
+        
         
         lines = countLines(trueFile)
         allocate(accuracies(lines))
+
+        accuracies = 1
         allocate(tmpIds(lines))
         ! allocate the
         allocate(tmpArray(ped%pedigree(ped%genotypeMap(1))%individualgenotype%length))
@@ -114,7 +116,7 @@ module informationModule
         if (present(snpErrorPath)) then
             close(snpErrorUnit)
         endif
-        meanAccuracy = 0
+        
         meanAccuracy = sum(accuracies) / lines
             
 
