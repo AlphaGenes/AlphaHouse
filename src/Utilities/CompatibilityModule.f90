@@ -699,7 +699,7 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 						endif
 					endif
 				enddo
-				if (onec <= twoc) then
+				if (onec < twoc) then
 					referenceAllelePerSnps(cursnp) = one
 				else
 					referenceAllelePerSnps(cursnp) = two
