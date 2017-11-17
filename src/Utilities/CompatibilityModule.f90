@@ -666,47 +666,7 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	allocate(phenotypeArray(size))
 
 
-	! check if reference alleles have been passed in
-	if (.not. allocated(referenceAllelePerSnps)) then
-		allocate(referenceAllelePerSnps(totalSnps))
 
-
-		do j=1,totalSnps*2,2
-
-			block
-				character(len=2) :: one,two
-				integer :: onec,twoc
-				one = getFirstNonMissing(alleles, j)
-				onec = 0
-				twoc = 0
-				do i=1,size
-					all1 = alleles(i,j)
-					all2 = alleles(i,j+1)
-					! check for first allele
-					if (all1 == one ) then
-						onec = onec + 1
-					else
-						if (twoc == 0) then
-							two = all1
-						endif
-					endif
-					! check for second allele
-					if (all2 == one ) then
-						onec = onec + 1
-					else
-						if (twoc == 0) then
-							two = all1
-						endif
-					endif
-				enddo
-				if (onec < twoc) then
-					referenceAllelePerSnps(cursnp) = one
-				else
-					referenceAllelePerSnps(cursnp) = two
-				endif
-			end block
-		enddo
-	endif
 	allocate(alleles(size, totalSnps*2))
 	allocate(phase(size,totalSnps,2))
 	allocate(genotypes(size,totalSnps))
@@ -731,6 +691,53 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	enddo
 
 	close(fileUnit)
+
+		! check if reference alleles have been passed in
+	if (.not. allocated(referenceAllelePerSnps)) then
+		allocate(referenceAllelePerSnps(totalSnps))
+
+
+		do j=1,totalSnps*2,2
+			cursnp = (j/2) + 1
+			block
+				character(len=2) :: one,two
+				integer :: onec,twoc
+				one = getFirstNonMissing(alleles, j)
+				onec = 0
+				twoc = 0
+				do i=1,size
+					all1 = alleles(i,j)
+					all2 = alleles(i,j+1)
+					! check for first allele
+					if (all1 == one ) then
+						onec = onec + 1
+					else
+						if (all2 == '0') cycle
+						if (twoc == 0) then
+							two = all1
+						endif
+
+						twoc = twoc + 1
+					endif
+					! check for second allele
+					if (all2 == one ) then
+						onec = onec + 1
+					else
+					if (all2 == '0') cycle
+						if (twoc == 0) then
+							two = all1
+						endif
+						twoc = twoc + 1
+					endif
+				enddo
+				if (onec < twoc) then
+					referenceAllelePerSnps(cursnp) = one
+				else
+					referenceAllelePerSnps(cursnp) = two
+				endif
+			end block
+		enddo
+	endif
 
 	do j=1,totalSnps*2,2
 		cursnp = (j/2) + 1
