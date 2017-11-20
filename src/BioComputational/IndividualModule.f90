@@ -266,6 +266,7 @@ module IndividualModule
 			allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
 			this%originalID = originalID
 			this%id = id
+			this%hd = .false.
 			this%gender = -9
 			this%sireId = sireIDIn
 			this%damId = damIDIn
@@ -1181,8 +1182,6 @@ module IndividualModule
 			logical, intent(in), optional :: lockIn
 
 			this%Genotyped = .true.
-			!TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
-			! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
 
 			if (allocated(this%inconsistencies)) then
 				deallocate(this%inconsistencies)
