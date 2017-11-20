@@ -3277,12 +3277,12 @@ module PedigreeModule
 			res = MISSINGPHASECODE
 			counter = 0
 
-			do i=1, this%nGenotyped
+			do i=1, this%pedigreeSize
 
 				counter = counter +1
-				res(this%genotypeMap(i)) = this%pedigree(this%genotypeMap(i))%individualPhase(allele)%getPhase(position)
-				if (res(this%genotypeMap(i)) /= 0 .and. res(this%genotypeMap(i)) /= 1 .and. res(this%genotypeMap(i)) /= 2 .and. res(this%genotypeMap(i)) /= MISSINGPHASECODE) then
-					res(this%genotypeMap(i)) = MISSINGPHASECODE
+				res(i) = this%pedigree(i)%individualPhase(allele)%getPhase(position)
+				if (res(i) /= 0 .and. res(i) /= 1 .and. res(i) /= 2 .and. res(i) /= MISSINGPHASECODE) then
+					res(i) = MISSINGPHASECODE
 				endif
 
 			enddo
@@ -3308,8 +3308,8 @@ module PedigreeModule
 			do i=1, this%pedigreeSize
 
 				res(i) = this%pedigree(i)%individualGenotype%getGenotype(position)
-				if (res(i) /= 0 .and. res(i) /= 1 .and. res(i) /= 2 .and. res(i) /= MISSINGPHASECODE) then
-					res(i) = MISSINGPHASECODE
+				if (res(i) /= 0 .and. res(i) /= 1 .and. res(i) /= 2 .and. res(i) /= MISSINGGENOTYPECODE) then
+					res(i) = MISSINGGENOTYPECODE
 				endif
 
 			enddo

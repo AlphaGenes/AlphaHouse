@@ -228,7 +228,7 @@ module informationModule
         enddo 
 
         res = 1 - real(incorrect) / real(count)
-
+        if(count == 0) res = 1
     end function corAccuracies
     ! subroutine checkPhaseYield
 
