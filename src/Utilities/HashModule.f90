@@ -39,7 +39,7 @@ end type HASH_LIST
 type DictStructure
 
 type(HASH_LIST), pointer, dimension(:) :: table => null()
-integer(kind=int64) :: hash_size  = 0
+integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
 
 contains
 

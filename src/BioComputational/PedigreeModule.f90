@@ -948,6 +948,7 @@ module PedigreeModule
 					endif
 					node => node%next
 				enddo
+				allocate(this%uniqueParentList)
 				this%uniqueParentList = res
 			endif
 		end function getUniqueParents
