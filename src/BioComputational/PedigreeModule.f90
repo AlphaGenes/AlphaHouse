@@ -2589,7 +2589,7 @@ module PedigreeModule
 					! newPed(pedCounter) = tmpIndNode%item
 					call copyIndividual(newPed(pedCounter),tmpIndNode%item)
 					! take the original id, and update it
-					if(.not. newPed(pedCounter)%isDummy) then
+					if(.not. newPed(pedCounter)%isDummy .and. newPed(pedCounter)%originalPosition /= 0) then
 						this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
 					endif
 					newPed(pedCounter)%id = pedCounter
@@ -2750,7 +2750,7 @@ module PedigreeModule
 					endif
 
 					newPed(pedCounter) = tmpIndNode%item
-					if (.not. newPed(pedCounter)%isDummy) then
+					if (.not. newPed(pedCounter)%isDummy .and.  newPed(pedCounter)%originalPosition /= 0) then
 						! take the original id, and update it - we don't want dummies in this list
 						this%inputMap(newPed(pedCounter)%originalPosition) = pedCounter
 					endif
