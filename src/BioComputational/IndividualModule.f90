@@ -362,6 +362,10 @@ module IndividualModule
 			if (allocated(this%individualGenotypeSubset)) then
 				deallocate(this%individualGenotypeSubset)
 			endif
+			
+			if (allocated(this%individualPhaseSubset)) then
+				deallocate(this%individualPhaseSubset)
+			endif
 
 		end subroutine destroyIndividual
 
