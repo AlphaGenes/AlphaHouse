@@ -359,6 +359,10 @@ module IndividualModule
 				deallocate(this%inconsistencies)
 			endif
 
+			if (allocated(this%individualGenotypeSubset)) then
+				deallocate(this%individualGenotypeSubset)
+			endif
+
 		end subroutine destroyIndividual
 
 

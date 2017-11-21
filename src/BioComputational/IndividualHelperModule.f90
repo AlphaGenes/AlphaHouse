@@ -259,11 +259,11 @@ module IndividualHelperModule
     !> @param[in] type(individual) parent1, parent2
     !> @return linked list of shared children between input parents
     !---------------------------------------------------------------------------
-    function getSharedKids(individualOne, IndividualTwo) result(res)
+    subroutine getSharedKids(individualOne, IndividualTwo,res)
         use IndividualModule
         use IndividualLinkedListModule
-        type(Individual),target, intent(in) :: individualOne, IndividualTwo !< individuals to compare kids
-        type(IndividualLinkedList) :: res !< linked list of shared kids between both parents
+        type(Individual),pointer, intent(in) :: individualOne, IndividualTwo !< individuals to compare kids
+        type(IndividualLinkedList), intent(out) :: res !< linked list of shared kids between both parents
         integer ::  i
         do i=1, individualOne%nOffs
 
@@ -279,7 +279,7 @@ module IndividualHelperModule
         enddo
 
 
-    end function getSharedKids
+    end subroutine getSharedKids
 
 
 
