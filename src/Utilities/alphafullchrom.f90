@@ -55,7 +55,7 @@ contains
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		integer :: sexChroms
 		integer :: totalToDo, curChrom
 		class(baseSpecFile) :: specfile
 		real(kind=real64), dimension(:) ,allocatable :: lengths
@@ -89,7 +89,7 @@ contains
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. sexChroms /= 0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -133,7 +133,7 @@ contains
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		integer  :: sexChroms
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
@@ -150,7 +150,7 @@ contains
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 			print *,"doing chrom ", i
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. sexChroms /=0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
