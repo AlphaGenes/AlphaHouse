@@ -131,6 +131,7 @@ module IndividualModule
 		procedure :: getSeg
 		procedure :: setSeg
 		procedure :: setSegToMissing
+		procedure :: isFounder
 		procedure :: makeIndividualPhaseCompliment
 		procedure :: makeIndividualGenotypeFromPhase
 		procedure :: countHighDensityOffspring
@@ -284,13 +285,22 @@ module IndividualModule
 					if (allocated(this%individualPhase)) then
 						deallocate(this%individualPhase)
 					endif
+					if (allocated(this%individualPhaseSubset)) then
+						deallocate(this%individualPhaseSubset)
+					endif
 
 					if (allocated(this%individualGenotype)) then
 						deallocate(this%individualGenotype)
 					endif
+
+					if (allocated(this%individualGenotypeSubset)) then
+						deallocate(this%individualGenotypeSubset)
+					endif
+
 					allocate(this%individualPhase(2))
 					allocate(this%individualGenotype)
-
+					allocate(this%individualPhaseSubset(2))
+					allocate(this%individualGenotypeSubset)
 					if (allocated(this%inconsistencies)) then
 						deallocate(this%inconsistencies)
 					endif
@@ -298,6 +308,9 @@ module IndividualModule
 					call this%individualGenotype%newGenotypeMissing(nsnps)
 					call this%individualPhase(1)%newHaplotypeMissing(nsnps)
 					call this%individualPhase(2)%newHaplotypeMissing(nsnps)
+					call this%individualGenotypeSubset%newGenotypeMissing(nsnps)
+					call this%individualPhaseSubset(1)%newHaplotypeMissing(nsnps)
+					call this%individualPhaseSubset(2)%newHaplotypeMissing(nsnps)
 					this%inconsistencies =  0
 				endif
 
@@ -361,6 +374,10 @@ module IndividualModule
 
 			if (allocated(this%individualGenotypeSubset)) then
 				deallocate(this%individualGenotypeSubset)
+			endif
+			
+			if (allocated(this%individualPhaseSubset)) then
+				deallocate(this%individualPhaseSubset)
 			endif
 
 		end subroutine destroyIndividual
