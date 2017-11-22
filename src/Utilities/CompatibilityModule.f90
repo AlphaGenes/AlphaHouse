@@ -427,8 +427,8 @@ subroutine readBED(bed, totalSnps,ped, minor,genotypes, phase)
 	print *,"start BED read"
 	allocate(genotypes(ped%pedigreeSize-ped%nDummys,totalSnps))
 	allocate(phase(ped%pedigreeSize-ped%nDummys,totalSnps,2))
-	genotypes(:,:) = 9
-
+	genotypes(:,:) = MISSINGGENOTYPECODE
+	phase(:,:,:) = MISSINGPHASECODE
 
 	if (minor == 1) then
 		codes = (/ 0, 1, 2, MISSINGGENOTYPECODE /)
@@ -638,7 +638,7 @@ end subroutine readMap
 !---------------------------------------------------------------------------
 subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAllelePerSnps)
 	use PedigreeModule
-
+	use ConstantModule
 	use AlphaHouseMod
 
 	character(len=*), intent(in) :: filename
@@ -671,16 +671,18 @@ subroutine readPedFile(filename,ped, totalSnps,genotypes,phase, referenceAlleleP
 	allocate(phase(size,totalSnps,2))
 	allocate(genotypes(size,totalSnps))
 
+	genotypes(:,:) = MISSINGGENOTYPECODE
+	phase(:,:,:) = MISSINGPHASECODE
 	open(newunit=fileUnit, file=fileName, status="unknown")
 
 	! minor is always false atm - this is because we always want the same ref allele to be used here - potentially used for future
 	minor = 4
 	if (minor == 1) then
 		codes = (/ 0, 1, 2, MISSINGGENOTYPECODE /)
-		phaseCodes = (/ 0, 1, 1, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 0, 1, 1, MISSINGPHASECODE /)
 	else
 		codes = (/ 2, 1, 0, MISSINGGENOTYPECODE /)
-		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 1, 1, 0, MISSINGPHASECODE /)
 	endif
 	write(*,*) "Start Reading Ped File"
 	do i=1,size
