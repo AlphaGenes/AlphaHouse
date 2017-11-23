@@ -45,6 +45,7 @@ module PedigreeModule
 	type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
 	type(DictStructure),allocatable :: dictionary ! hashmap of animal ids to index in pedigree
 	integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
+	integer(kind=int32) :: addedRealAnimals !< animals that have been added, that aren't dummys 
 	integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
 	integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
 
@@ -534,6 +535,7 @@ module PedigreeModule
 			pedStructure%nDummys = 0
 			pedStructure%nGenotyped = 0
 			pedStructure%nHd = 0
+			pedStructure%addedRealAnimals = 0
 
 			if (present(minSize)) then
 				pedStructure%maxPedigreeSize = minSize * 4
@@ -1109,6 +1111,8 @@ module PedigreeModule
 				nIndividuals = countLines(fileIn)
 			endif
 
+			pedStructure%addedRealAnimals = nIndividuals
+
 			sizeDict = nIndividuals
 			pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
@@ -1118,7 +1122,10 @@ module PedigreeModule
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 
 			allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
-			allocate(pedStructure%inputMap(nIndividuals))
+			allocate(pedStructure%inputMap(pedStructure%maxPedigreeSize))
+
+			pedStructure%inputMap = 0
+
 			pedStructure%maxGeneration = 0
 			open(newUnit=fileUnit, file=fileIn, status="old")
 
@@ -1342,7 +1349,7 @@ module PedigreeModule
 			else
 				nIndividuals = countLines(fileIn)
 			endif
-
+			pedStructure%addedRealAnimals = nIndividuals
 			if  (present(pedFile)) then
 				if (present(genderFile)) then
 					call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
@@ -1476,6 +1483,7 @@ module PedigreeModule
 			pedStructure%maxPedigreeSize = size(pedArray,2) + (size(pedArray,2) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			pedStructure%pedigreeSize = size(pedArray,2)
+			pedStructure%addedRealAnimals = size(pedArray,2)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
 			allocate(pedStructure%inputMap(size(pedArray,2)))
@@ -1573,17 +1581,17 @@ module PedigreeModule
 			tmpAnimalArrayCount = 0
 
 			pedStructure%isSorted = 0
-			sizeDict = size(pedArray)
-			pedStructure%maxPedigreeSize = size(pedArray) + (size(pedArray) * 4)
+			sizeDict = size(pedArray,2)
+			pedStructure%maxPedigreeSize = size(pedArray,2) + (size(pedArray,2) * 4)
 			allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
 			allocate(pedStructure%dictionary)
-			pedStructure%pedigreeSize = size(pedArray)
+			pedStructure%pedigreeSize = size(pedArray,2)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
-			allocate(tmpAnimalArray(size(pedArray))) !allocate to nIndividuals in case all animals are in incorrect order of generations
-			allocate(pedStructure%inputMap(size(pedArray)))
+			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
+			allocate(pedStructure%inputMap(size(pedArray,2)))
 			pedStructure%maxGeneration = 0
-
-			do i=1,size(pedArray)
+			pedStructure%addedRealAnimals  =size(PedArray,2)
+			do i=1,size(pedArray,2)
 
 				sireFound = .false.
 				damFound = .false.
@@ -1655,6 +1663,7 @@ module PedigreeModule
 		!---------------------------------------------------------------------------
 		subroutine addOffspringsAfterReadIn(pedStructure, tmpAnimalArray, tmpAnimalArrayCount)
 			use ConstantModule, only : IDLENGTH,EMPTY_PARENT
+			use IFCORE
 			class(PedigreeHolder), intent(inout) :: pedStructure
 			integer, dimension(:), intent(in) :: tmpAnimalArray !< array containing indexes of tmp animals
 			integer, intent(in) :: tmpAnimalArrayCount !< number of animals actually in tmpAnimalArray
@@ -1694,8 +1703,7 @@ module PedigreeModule
 							pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
 							pedStructure%nDummys = pedStructure%nDummys + 1
 							if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-								write(error_unit,*) "ERROR: too many undefined animals"
-								stop
+								call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 							endif
 							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 							call pedStructure%dictionary%addKey(trim(tmpSire), pedStructure%pedigreeSize)
@@ -1738,8 +1746,7 @@ module PedigreeModule
 							pedStructure%nDummys = pedStructure%nDummys + 1
 							pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
 							if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-								write(error_unit,*) "ERROR: too many undefined animals"
-								stop
+								call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 							endif
 							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 							call pedStructure%dictionary%addKey(trim(tmpDam), pedStructure%pedigreeSize)
@@ -1776,8 +1783,7 @@ module PedigreeModule
 						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
 						pedStructure%nDummys = pedStructure%nDummys + 1
 						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							write(error_unit,*) "ERROR: too many undefined animals"
-							stop
+							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 						endif
 						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
@@ -1806,8 +1812,7 @@ module PedigreeModule
 						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
 						pedStructure%nDummys = pedStructure%nDummys + 1
 						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							write(error_unit,*) "ERROR: too many undefined animals"
-							stop
+							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 						endif
 						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 						if (tmpSire == EMPTY_PARENT) then
@@ -2021,8 +2026,10 @@ module PedigreeModule
 			integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
 			integer :: i, j,fileUnit, nAnnis,tmpIdNum
 			integer :: count, end
+			integer :: addCount
 			logical :: lock
 
+			addCount = 0
 			if (present(lockIn)) then
 				lock = lockIn
 			else
@@ -2051,6 +2058,7 @@ module PedigreeModule
 
 				tmpIdNum = this%dictionary%getValue(tmpId)
 				if (tmpIdNum == DICT_NULL) then
+					addCount = addCount +1
 					write(error_unit, *) "WARNING: Genotype info for non existing animal here:",trim(tmpId), " file:", trim(genotypeFile), " line:",i
 					write(error_unit, *) "Animal will be added as a founder to pedigree"
 
@@ -2096,6 +2104,7 @@ module PedigreeModule
 			endif
 
 			write(output_unit,*) "NOTE: Number of Genotyped animals: ",this%nGenotyped
+			write(output_unit,*) "NOTE: Number of Founders added to pedigree: ",addCount
 
 		end subroutine addGenotypeInformationFromFile
 
@@ -3870,6 +3879,7 @@ module PedigreeModule
 			this%issorted = 0
 
 			this%pedigreeSize = this%pedigreeSize+1
+			this%addedRealAnimals = this%addedRealAnimals + 1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
 				write(error_unit,*) "ERROR: too many undefined animals"
@@ -3879,6 +3889,9 @@ module PedigreeModule
 			call this%Pedigree(this%pedigreeSize)%initIndividual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(OriginalId, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .false.
+			this%Pedigree(this%pedigreeSize)%originalPosition = this%addedRealAnimals
+			this%inputMap(this%pedigreeSize) = this%addedRealAnimals
+		
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
 
