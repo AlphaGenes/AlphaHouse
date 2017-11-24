@@ -3897,8 +3897,11 @@ module PedigreeModule
 
 			if (present(geno)) then
 				call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
+				call this%pedigree(this%pedigreeSize)%initPhaseArrays(size(geno))
 				!   TODO make sure animal is actually hd
 				! call this%setAnimalAsHD(this%pedigreeSize)
+			else if (this%nsnpsPopulation /=0) then
+				call this%pedigree(this%pedigreeSize)%initPhaseAndGenotypes(size(geno))
 			endif
 		end subroutine addAnimalAtEndOfPedigree
 
