@@ -136,7 +136,7 @@ subroutine readFamFile(ped,pedFile)
 
 	call initPedigreeArrays(ped,pedArray, genderArray)
 
-	print *, "ANS in ped",ped%pedigreeSize," without dum:",ped%pedigreeSize-ped%nDummys
+	print *, "ANS in ped",ped%pedigreeSize," without dum:",ped%addedRealAnimals
 
 	call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
@@ -236,18 +236,18 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo)
 			close(refAlleleUnit)
 		
 
-		allocate(array(ped%pedigreeSize-ped%nDummys, plinkInfo%nsnpsPerChromosome(i)))
+		allocate(array(ped%addedRealAnimals, plinkInfo%nsnpsPerChromosome(i)))
 		write(fmt, '(a,i10,a)')  "(a20,", plinkInfo%nsnpsPerChromosome(i), "i3)"
 		! set up the pedigree to avoid read in
 		! array = 9
-		! do p=1,ped%pedigreeSize-ped%nDummys
+		! do p=1,ped%addedRealAnimals
 		! 	array(p,:) = pack(plinkInfo%genotypes(p,:), maskedLogi)
 		! end do
 
 		write(lengthFile, *) pack(plinkInfo%lengths(i,:), maskedLogi)
 		write(bpFile, *) pack(plinkInfo%basepairs(i,:), maskedLogi)
 
-		do p=1,ped%pedigreeSize-ped%nDummys
+		do p=1,ped%addedRealAnimals
 			write(outChrF,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%genotypes(p,:), maskedLogi)
 			write(outChrp,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%phase(p,:,1), maskedLogi)
 			write(outChrp,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%phase(p,:,2), maskedLogi)
@@ -421,8 +421,8 @@ subroutine readBED(bed, ped, minor, plinkInfo)
 
 
 	print *,"start BED read"
-	allocate(plinkInfo%genotypes(ped%pedigreeSize-ped%nDummys,plinkInfo%totalSnps))
-	allocate(plinkInfo%phase(ped%pedigreeSize-ped%nDummys,plinkInfo%totalSnps,2))
+	allocate(plinkInfo%genotypes(ped%addedRealAnimals,plinkInfo%totalSnps))
+	allocate(plinkInfo%phase(ped%addedRealAnimals,plinkInfo%totalSnps,2))
 	plinkInfo%genotypes(:,:) = MISSINGGENOTYPECODE
 	plinkInfo%phase(:,:,:) = MISSINGPHASECODE
 
@@ -480,7 +480,7 @@ subroutine readBED(bed, ped, minor, plinkInfo)
 				plinkInfo%phase(j,k,:) = phasecodes(3)
 				majorcount = majorcount + 2
 			endselect
-			if (j == ped%pedigreeSize-ped%nDummys) then
+			if (j == ped%addedRealAnimals) then
 				if (snpcount /= 0) then
 					allelefreq = majorcount / (snpcount*2.)
 				endif
@@ -676,7 +676,7 @@ subroutine readPedFile(filename,ped, plinkInfo)
 		! check if reference alleles have been passed in
 	if (.not. allocated(plinkInfo%referenceAllelePerSnps)) then
 		allocate(plinkInfo%referenceAllelePerSnps(plinkInfo%totalSnps))
-
+		allocate(plinkInfo%alternateAllelePerSnps(plinkInfo%totalSnps))
 
 		do j=1,plinkInfo%totalSnps*2,2
 			cursnp = (j/2) + 1
@@ -845,6 +845,7 @@ subroutine readRef(file, plinkInfo)
 		lines = countLines(file)
 		open(newunit=unit, file=file, status="old")
 		allocate(plinkInfo%referenceAllelePerSnps(lines))
+		allocate(plinkInfo%alternateAllelePerSnps(lines))
 		do i=1,lines
 			read(unit, *) id, refAllele, minor
 			snpId = plinkInfo%dict%getValue(id)
