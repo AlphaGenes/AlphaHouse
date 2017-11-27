@@ -232,16 +232,22 @@ subroutine createOutputFiles(genotypes,chroms, phase,lengths, basepairs,maxChrom
 		endif
 
 		allocate(array(ped%pedigreeSize-ped%nDummys, nsnps(i)))
-		write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i3)"
+		
+
+		
 		! set up the pedigree to avoid read in
 		array = 9
 		do p=1,ped%pedigreeSize-ped%nDummys
 			array(p,:) = pack(genotypes(p,:), maskedLogi)
 		end do
+		
+		write(fmt, '(a,i10,a)')   "(",nsnps(i), "F7.2)"
+		write(lengthFile, fmt) pack(lengths(i,:), maskedLogi)
+		write(fmt, '(a,i10,a)')   "(",nsnps(i), "i10)"
+		write(bpFile, fmt) pack(basepairs(i,:), maskedLogi)
+		
 
-		write(lengthFile, *) pack(lengths(i,:), maskedLogi)
-		write(bpFile, *) pack(basepairs(i,:), maskedLogi)
-
+		write(fmt, '(a,i10,a)')  "(a20,", nsnps(i), "i3)"
 		do p=1,ped%pedigreeSize-ped%nDummys
 			write(outChrF,fmt) ped%pedigree(p)%originalId,array(p,:)
 			write(outChrp,fmt) ped%pedigree(p)%originalId,pack(phase(p,:,1), maskedLogi)
@@ -328,21 +334,24 @@ subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, has
 		endif
 
 		! if we 've moved on to the next chromosome
-		if (chrom /=prevChrom .or. i == totalSnps) then
+		
+		if (chrom /=prevChrom) then
 
-			! set the count to he current numbers
-			if (i == totalSnps) then
-				curChromSnpCount = curChromSnpCount + 1
-			endif
 			nsnps(chromCount) = curChromSnpCount
 			curChromSnpCount = 0
 			chromCount = chromCount + 1
-
 			prevChrom = chrom
 			if (chromCount > maxChroms) then
 				maxChroms = chromCount
 			endif
 		endif
+		! last chrom
+		if (i == totalSnps) then
+			nsnps(chromCount) = curChromSnpCount + 1
+			if (chromCount > maxChroms) then
+				maxChroms = chromCount
+			endif
+		end if
 
 		curChromSnpCount = curChromSnpCount + 1
 
@@ -364,9 +373,6 @@ subroutine readBim(bimFile, dict, bimInfo,nsnps,totalSnps,chroms, maxChroms, has
 
 		call chroms(chromCount)%snps%list_add(i)
 	end do
-
-	maxChroms = maxChroms -1
-	chromCount = chromCount - 1
 
 	if (chromCount /= LARGECHROMNUMBER) then
 		allocate(temparray(chromCount))
