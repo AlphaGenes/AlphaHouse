@@ -30,7 +30,7 @@ module alphaFullChromModule
 		use pedigreeModule
 
 		class(baseSpecFile),target :: specFileInput
-		type(pedigreeHolder), optional :: ped
+		type(pedigreeHolder), target, optional :: ped
 	end subroutine runProgram
 end interface
 contains
