@@ -236,18 +236,24 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo)
 			close(refAlleleUnit)
 		
 
-		allocate(array(ped%addedRealAnimals, plinkInfo%nsnpsPerChromosome(i)))
-		write(fmt, '(a,i10,a)')  "(a20,", plinkInfo%nsnpsPerChromosome(i), "i3)"
+		
+
+		
 		! set up the pedigree to avoid read in
 		! array = 9
 		! do p=1,ped%addedRealAnimals
 		! 	array(p,:) = pack(plinkInfo%genotypes(p,:), maskedLogi)
 		! end do
+		
+		write(fmt, '(a,i10,a)')   "(",plinkInfo%nsnpsPerChromosome(i), "F7.2)"
+		write(lengthFile, fmt) pack(plinkInfo%lengths(i,:), maskedLogi)
+		write(fmt, '(a,i10,a)')   "(",plinkInfo%nsnpsPerChromosome(i), "i10)"
+		write(bpFile, fmt) pack(plinkInfo%basepairs(i,:), maskedLogi)
+		
 
-		write(lengthFile, *) pack(plinkInfo%lengths(i,:), maskedLogi)
-		write(bpFile, *) pack(plinkInfo%basepairs(i,:), maskedLogi)
+		write(fmt, '(a,i10,a)')  "(a20,", plinkInfo%nsnpsPerChromosome(i), "i3)"
 
-		do p=1,ped%addedRealAnimals
+		 do p=1,ped%addedRealAnimals	
 			write(outChrF,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%genotypes(p,:), maskedLogi)
 			write(outChrp,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%phase(p,:,1), maskedLogi)
 			write(outChrp,fmt) ped%pedigree(p)%originalId,pack(plinkInfo%phase(p,:,2), maskedLogi)
@@ -255,11 +261,9 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo)
 		print *, "Finished writeout of chromosome ", i
 
 		close(outChrF)
-		close(outChrF)
 		close(outChrP)
 		close(lengthFile)
 		close(bpFile)
-		deallocate(array)
 	enddo
 
 
@@ -318,16 +322,12 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 
 
 		! if we 've moved on to the next chromosome
-		if (chrom /=prevChrom .or. i == plinkInfo%totalSnps) then
+		
+		if (chrom /=prevChrom) then
 
-			! set the count to he current numbers
-			if (i == plinkInfo%totalSnps) then
-				curChromSnpCount = curChromSnpCount + 1
-			endif
 			plinkInfo%nsnpsPerChromosome(chromCount) = curChromSnpCount
 			curChromSnpCount = 0
 			chromCount = chromCount + 1
-
 			prevChrom = chrom
 
 				if (chrom == "X" .or. chrom == 'Y') then
@@ -341,6 +341,13 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 				plinkInfo%nChroms = chromCount
 			endif
 		endif
+		! last chrom
+		if (i == plinkInfo%totalSnps) then
+			plinkInfo%nsnpsPerChromosome(chromCount) = curChromSnpCount + 1
+			if (chromCount > plinkInfo%nChroms) then
+				plinkInfo%nChroms = chromCount
+			endif
+		end if
 
 		curChromSnpCount = curChromSnpCount + 1
 
@@ -362,9 +369,6 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 
 		call plinkInfo%chromosomes(chromCount)%snps%list_add(i)
 	end do
-
-	plinkInfo%nChroms = plinkInfo%nChroms -1
-	chromCount = chromCount - 1
 
 	if (chromCount /= LARGECHROMNUMBER) then
 		allocate(temparray(chromCount))
