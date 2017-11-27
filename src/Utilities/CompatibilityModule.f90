@@ -147,14 +147,12 @@ end subroutine readFamFile
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    October 26, 2016
 !---------------------------------------------------------------------------
-subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps, sexChrom)
+subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo)
 	use HashModule
 	use PedigreeModule
 
 	character(len=*),intent(in) :: binaryFilePre !< part before file extension
 	type(pedigreeholder), intent(out) :: ped !< pedigree object returned
-	integer, intent(out) :: sexChrom !< true if a sex chromosome is present
-	integer,dimension(:), allocatable, intent(out) :: nsnps !< number of snps per chromosome
 	character(len=128), dimension(:), allocatable, intent(out) :: outputPaths !< output paths for each chromosome
 	type(bimHolder) , allocatable, dimension(:) :: bimInfo
 	type(plinkInfoType) :: plinkInfo
@@ -169,8 +167,7 @@ subroutine readPlink(binaryFilePre, ped, outputPaths,nsnps, sexChrom)
 	call createOutputFiles(ped, outputPaths,plinkInfo)
 
 
-	nsnps = plinkInfo%nsnpsPerChromosome
-	sexChrom = plinkInfo%sexChrom
+
 end subroutine readPlink
 
 !---------------------------------------------------------------------------
@@ -510,7 +507,7 @@ end subroutine readBED
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    October 26, 2017
 !---------------------------------------------------------------------------
-subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
+subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo)
 	use HashModule
 	use PedigreeModule
 	use AlphaHouseMod
@@ -518,10 +515,6 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 
 	character(len=*),intent(in) :: filePre
 	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
-	integer, dimension(:) ,allocatable, intent(out) :: nsnps
-
-	integer,intent(out) :: sexChrom
-
 
 	type(plinkInfoType) :: plinkInfo
 	type(DictStructure) :: dict
@@ -531,8 +524,7 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths ,nsnps,sexChrom)
 	call readRef(trim(filePre)//".ref", plinkInfo)
 	call readPedFile(trim(filePre)//".ped",ped, plinkInfo)
 	call createOutputFiles(ped, outputPaths,plinkInfo)
-	nsnps = plinkInfo%nsnpsPerChromosome
-	sexChrom = sexChrom
+
 end subroutine readPlinkNoneBinary
 
 

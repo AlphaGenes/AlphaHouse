@@ -132,25 +132,24 @@ contains
 		procedure(runProgram), pointer, intent(in):: funPointer
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
-		integer, dimension(:), allocatable :: nsnps
-		integer  :: sexChroms
+		type(plinkInfoType) :: plinkInfo
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
-			call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlink(plinkPre, ped, chromPaths,plinkInfo)
 		else
-			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,plinkInfo)
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
 			specFile%resultFolderPath = chromPaths(i)
-			specFile%nsnp = nsnps(i)
+			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 			print *,"doing chrom ", i
-			if (i > size(chromPaths)-2 .and. sexChroms /=0) then
+			if (i > size(chromPaths)-2 .and. plinkInfo%sexChrom /=0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -168,11 +167,11 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 			! first chrom should already be read in
 			! if (i /= 1) then
-			print *,"using ",trim(chromPaths(i))//"genotypes.txt",nsnps(i)
+			print *,"using ",trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i)
 
-			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
-			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
-			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
+			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i),initAll=1)
+			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",plinkInfo%nsnpsPerChromosome(i))
+			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",plinkInfo%nsnpsPerChromosome(i))
 
 
 
@@ -183,6 +182,8 @@ contains
 
 
 		enddo
+
+		call writePedFile(ped,plinkInfo,specfile,chromPaths)
 
 
 	end subroutine runPlink
