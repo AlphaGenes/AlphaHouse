@@ -144,7 +144,7 @@ contains
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
-			specFile%resultFolderPath = chromPaths(i)
+			specFile%resultFolderPath = trim(chromPaths(i))//"results"
 			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))

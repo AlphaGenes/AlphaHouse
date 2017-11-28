@@ -862,7 +862,6 @@ end subroutine readRef
 subroutine writePedFile(ped,plinkInfo,params, paths)
 	use AlphaHouseMod, only : countColumns
 	use basespecfileModule
-	integer :: nChroms
 
 	class(basespecfile), intent(in) :: params
 	type(plinkInfoType), intent(in) :: plinkInfo
@@ -877,32 +876,37 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 
 	print *, "merging plink output"
 	if (present(paths)) then
+		print *,"IN HERE"
 	
-		do i =1,nChroms
+		do i =1,plinkInfo%nChroms
 
-
-			nsnps = countColumns(trim(paths(i))//"phase.txt", ' ') - 1
+			print *,"IN HERE2"
+			nsnps = plinkInfo%nsnpsPerChromosome(i)
+			print *,"IN HERE21"	
 			call ped%addPhaseInformationFromFile(trim(paths(i))//"phase.txt",nsnps)
 
 			do p=1,ped%pedigreeSize
-			
-				do j=1,nsnps,2
-					
+				print *,"IN HERE3"
+				snpCounts = 0
+				do j=1,nsnps
+					print *,"IN HERE4"
 					phase1 = ped%pedigree(p)%individualPhase(1)%getPhase(j)
-					phase2 = ped%pedigree(p)%individualPhase(2)%getPhase(j+1)
+					phase2 = ped%pedigree(p)%individualPhase(2)%getPhase(j)
 
 					snpCounts = snpCounts + 1
 					if (phase1 == 1) then
-						outputAlleles(i,snpCounts) = plinkInfo%referenceAllelePerSnps(snpCounts)
+						print*, "hey",plinkInfo%referenceAllelePerSnps(j)
+						outputAlleles(i,snpCounts) = plinkInfo%referenceAllelePerSnps(j)
 					else
-						outputAlleles(i,snpCounts) = plinkInfo%alternateAllelePerSnps(snpCounts)
+						print*, "hey1",plinkInfo%alternateAllelePerSnps(j)
+						outputAlleles(i,snpCounts) = plinkInfo%alternateAllelePerSnps(j)
 					endif
 
 					snpCounts = snpCounts + 1
 					if (phase2 == 1) then
-						outputAlleles(i,snpCounts) = plinkInfo%referenceAllelePerSnps(snpCounts)
+						outputAlleles(i,snpCounts) = plinkInfo%referenceAllelePerSnps(j)
 					else
-						outputAlleles(i,snpCounts) = plinkInfo%alternateAllelePerSnps(snpCounts)
+						outputAlleles(i,snpCounts) = plinkInfo%alternateAllelePerSnps(j)
 					endif
 
 				enddo
@@ -914,6 +918,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 		write(fmt, '(a,i10,a)') '(5a20,',2*plinkInfo%totalSnps, 'a2)'
 
 		print *, "Writing alleles per animal"
+		! print *,outputAlleles
 		do p=1, ped%pedigreeSize
 			write(pedUnit,  fmt) ped%pedigree(p)%originalId,ped%pedigree(p)%sireId,ped%pedigree(p)%damId,ped%pedigree(p)%gender,'0', outputAlleles(p,:)
 		enddo
