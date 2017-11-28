@@ -869,7 +869,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 	type(PedigreeHolder), intent(in) :: ped
 	character(len=128), optional,dimension(:), allocatable, intent(in) :: paths !< output paths for each chromosome
 	character(len=2), dimension(:,:), allocatable :: outputAlleles
-	character(len=:),allocatable :: fmt
+	character(len=128) :: fmt
 	integer(kind=1) :: phase1,phase2
 	integer :: snpCounts = 0, pedUnit,i,nsnps,p,j
 	allocate(outputAlleles(ped%pedigreeSize, plinkInfo%totalSnps*2)) !outputphase
@@ -912,6 +912,8 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 		print *, "Writing plink output to file"
 		open(newunit=pedUnit,file=trim(params%resultFolderPath) //"PlinkOutput.ped", status='unknown')
 		write(fmt, '(a,i10,a)') '(5a20,',2*plinkInfo%totalSnps, 'i2)'
+
+		print *, "Writing alleles per animal"
 		do p=1, ped%pedigreeSize
 			write(pedUnit,  fmt) ped%pedigree(p)%originalId,ped%pedigree(p)%sireId,ped%pedigree(p)%damId,ped%pedigree(p)%gender,'0', outputAlleles(p,:)
 		enddo
