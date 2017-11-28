@@ -876,29 +876,22 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 
 	print *, "merging plink output"
 	if (present(paths)) then
-		print *,"IN HERE"
 	
 		do i =1,plinkInfo%nChroms
 
-			print *,"IN HERE2"
 			nsnps = plinkInfo%nsnpsPerChromosome(i)
-			print *,"IN HERE21"	
 			call ped%addPhaseInformationFromFile(trim(paths(i))//"phase.txt",nsnps)
 
 			do p=1,ped%pedigreeSize
-				print *,"IN HERE3"
 				snpCounts = 0
 				do j=1,nsnps
-					print *,"IN HERE4"
 					phase1 = ped%pedigree(p)%individualPhase(1)%getPhase(j)
 					phase2 = ped%pedigree(p)%individualPhase(2)%getPhase(j)
 
 					snpCounts = snpCounts + 1
 					if (phase1 == 1) then
-						print*, "hey",plinkInfo%referenceAllelePerSnps(j)
 						outputAlleles(i,snpCounts) = plinkInfo%referenceAllelePerSnps(j)
 					else
-						print*, "hey1",plinkInfo%alternateAllelePerSnps(j)
 						outputAlleles(i,snpCounts) = plinkInfo%alternateAllelePerSnps(j)
 					endif
 
