@@ -207,16 +207,17 @@ module AlphaHouseMod
 			numColumnsOut = 0
 			Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
 
-			if (fileSize<1000) then
-				allocate(character(len=fileSize):: tempChar)
-			else
-				allocate(character(len=1000):: tempChar)
-			end if
 
 			ioStatus = 0
 			filePosition = 1
 
 			if (fileExists) then
+				if (fileSize<1000) then
+					allocate(character(len=fileSize):: tempChar)
+				else
+					allocate(character(len=1000):: tempChar)
+				end if
+
 				open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
 				read(fileUnit, pos=1) tempChar
 				finalLetter = len(tempChar)
@@ -395,8 +396,8 @@ module AlphaHouseMod
 			end do
 			close(Unit)
 			return
-		! 300 nLines=nLines-1
-			
+			! 300 nLines=nLines-1
+
 
 		end function
 
@@ -1281,5 +1282,6 @@ module AlphaHouseMod
 		!###########################################################################
 
 end module
+
 
 
