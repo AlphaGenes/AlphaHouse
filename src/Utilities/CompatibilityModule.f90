@@ -875,7 +875,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 	allocate(outputAlleles(ped%pedigreeSize, plinkInfo%totalSnps*2)) !outputphase
 
 
-
+	print *, "merging plink output"
 	if (present(paths)) then
 	
 		do i =1,nChroms
@@ -909,9 +909,9 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 			enddo
 		enddo
 
-
+		print *, "Writing plink output to file"
 		open(newunit=pedUnit,file=trim(params%resultFolderPath) //"PlinkOutput.ped", status='unknown')
-		write(fmt, '(a,i10,a)') '(6a20,',2*plinkInfo%totalSnps, 'i2)'
+		write(fmt, '(a,i10,a)') '(5a20,',2*plinkInfo%totalSnps, 'i2)'
 		do p=1, ped%pedigreeSize
 			write(pedUnit,  fmt) ped%pedigree(p)%originalId,ped%pedigree(p)%sireId,ped%pedigree(p)%damId,ped%pedigree(p)%gender,'0', outputAlleles(p,:)
 		enddo
