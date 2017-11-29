@@ -715,9 +715,9 @@ module PedigreeModule
 					sireInconsistencies = bitcount(mend(i)%paternalInconsistent)
 
 					! update inconsistencies, maybe do this first
-					ped%pedigree(i)%sirePointer%inconsistencies = ped%pedigree(i)%sirePointer%inconsistencies + sireInconsistencies
+					ped%pedigree(i)%sirePointer%inconsistencyCount = ped%pedigree(i)%sirePointer%inconsistencyCount + sireInconsistencies
 					damInconsistencies = bitcount(mend(i)%maternalInconsistent)
-					ped%pedigree(i)%damPointer%inconsistencies = ped%pedigree(i)%damPointer%inconsistencies + damInconsistencies
+					ped%pedigree(i)%damPointer%inconsistencyCount = ped%pedigree(i)%damPointer%inconsistencyCount + damInconsistencies
 
 					! if (present(file)) then
 					!     write (outfile,'(3a30,2I)') &

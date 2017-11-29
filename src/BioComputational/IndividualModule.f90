@@ -81,7 +81,7 @@ module IndividualModule
 	type(IntegerLinkedList) :: families
 
 	integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
-
+	integer :: inconsistencyCount
     character(len=IDLENGTH) :: familyId
 
 	contains
@@ -271,6 +271,7 @@ module IndividualModule
 			this%gender = -9
 			this%sireId = sireIDIn
 			this%damId = damIDIn
+			this%inconsistencyCount = 0
 			if (present(generation)) then
 				this%generation = generation
 			else
