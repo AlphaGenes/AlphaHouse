@@ -110,6 +110,7 @@ subroutine destroyPlinkInfoType(plinkInfo)
 	if (allocated(plinkInfo%lengths)) deallocate(plinkInfo%lengths)
 	if (allocated(plinkInfo%basepairs)) deallocate(plinkInfo%basepairs)
 	if (allocated(plinkInfo%nsnpsPerChromosome	)) deallocate(plinkInfo%nsnpsPerChromosome)
+	if (allocated(plinkInfo%snpName)) deallocate(plinkInfo%snpName)
 
 end subroutine destroyPlinkInfoType
 
@@ -325,6 +326,7 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 
 	open(newUnit=unit, file=bimFile, status='old')
 	allocate(plinkInfo%chromosomes(LARGECHROMNUMBER))
+	allocate(plinkInfo%snpName(plinkInfo%totalSnps))
 	allocate(bimInfo(plinkInfo%totalSnps))
 	allocate(plinkInfo%lengths(LARGECHROMNUMBER,plinkInfo%totalSnps))
 	allocate(plinkInfo%basepairs(LARGECHROMNUMBER,plinkInfo%totalSnps))
@@ -580,7 +582,7 @@ subroutine readMap(filename,plinkInfo)
 	allocate(plinkInfo%chromosomes(LARGECHROMNUMBER))
 	allocate(plinkInfo%lengths(LARGECHROMNUMBER, plinkInfo%totalSnps))
 	allocate(plinkInfo%basepairs(LARGECHROMNUMBER, plinkInfo%totalSnps))
-
+	allocate(plinkInfo%snpName(plinkInfo%totalSnps))
 	allocate(plinkInfo%nsnpsPerChromosome(LARGECHROMNUMBER))
 
 	call plinkInfo%dict%DictStructure()
@@ -609,6 +611,7 @@ subroutine readMap(filename,plinkInfo)
 		plinkInfo%lengths(chromCount,plinkInfo%nsnpsPerChromosome(chromCount)) = length
 		plinkInfo%basepairs(chromCount,plinkInfo%nsnpsPerChromosome(chromCount) ) = basepair
 		call plinkInfo%dict%addKey(id, i)
+		plinkInfo%snpName(i) = id
 		call plinkInfo%chromosomes(chromCount)%snps%list_add(i)
 	enddo
 
