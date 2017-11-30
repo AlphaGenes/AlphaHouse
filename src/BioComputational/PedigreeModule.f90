@@ -673,9 +673,8 @@ module PedigreeModule
 			character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
 			integer :: CountChanges, dumId
 			integer :: snpChanges
-			logical :: sireRemoved, damRemoved,changedGeno
+			logical :: sireRemoved, damRemoved
 
-			changedGeno = .false.
 			sireRemoved = .false.
 			damRemoved = .false.
 
@@ -799,8 +798,7 @@ module PedigreeModule
 						! if both were inconsistent, set to which one is more likely
 						if (testBit(mend(i)%individualInconsistent,j) ) then
 							snpChanges = snpChanges + 1
-							changedGeno = .true.
-							! TODO is it worth checking if this animal is inconsistent?
+
 
 							! if dam is more likely correct, set to dam value, and set sire to missing
 							if (ped%pedigree(i)%sirePointer%inconsistencies(j) > ped%pedigree(i)%damPointer%inconsistencies(j)) then

@@ -85,7 +85,7 @@ real(real64), dimension(:,:) ,allocatable :: lengths !< array of snp lengths in 
 integer, dimension(:,:) ,allocatable :: basepairs !< array of basepair positions, in format (chrom, snps)
 integer :: sexChrom = 0 !<if not 0, then this is the sex chrom
 integer, dimension(:), allocatable :: nsnpsPerChromosome !< nsnps per chromosome
-
+character(len=128), dimension(:), allocatable :: snpName
 
 contains
 final :: destroyPlinkInfoType
@@ -374,7 +374,7 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 		plinkInfo%basepairs(chromCount,curChromSnpCount) = pos
 
 		call plinkInfo%dict%addKey(id, i)
-
+		plinkInfo%snpName(i) = id
 		bimInfo(i)%chrom = chrom
 		!  TODO clean this up
 
@@ -961,6 +961,44 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 	endif
 
 end subroutine writePedFile
+
+
+subroutine writeMapFile(plinkInfo)
+	type(plinkInfoType), intent(in) :: plinkInfo
+	integer :: unit, snpCount,i,h
+	open(newunit=unit, file="PlinkOutput.map", status='unknown')
+	snpCount = 0
+	do i=1, plinkInfo%nChroms
+
+		do h=1, plinkInfo%nsnpsPerChromosome(i)
+			snpCount = snpCount + 1
+			write(unit,'(I4,a30,F5.5,I8)') i,trim(plinkInfo%snpName(snpCount)),plinkInfo%lengths(i,h),plinkInfo%basepairs(i,h)
+		enddo
+	enddo
+
+	close(unit)
+ 
+	
+end subroutine writeMapFile
+
+
+subroutine writeRefFile(plinkInfo)
+	type(plinkInfoType), intent(in) :: plinkInfo
+	integer :: unit, snpCount,i,h
+	open(newunit=unit, file="PlinkOutput.map", status='unknown')
+	snpCount = 0
+	do i=1, plinkInfo%nChroms
+
+		do h=1, plinkInfo%nsnpsPerChromosome(i)
+			snpCount = snpCount + 1
+			write(unit,'(a30,a8,a8)') trim(plinkInfo%snpName(snpCount)),trim(plinkInfo%referenceAllelePerSnps(snpCount)),trim(plinkInfo%alternateAllelePerSnps(snpCount))
+		enddo
+	enddo
+
+	close(unit)
+ 
+	
+end subroutine writeRefFile
 
 end module CompatibilityModule
 

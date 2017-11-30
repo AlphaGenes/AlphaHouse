@@ -184,7 +184,8 @@ contains
 		enddo
 
 		call writePedFile(ped,plinkInfo,specfile,chromPaths)
-
+		call writeMapFile(plinkInfo)
+		call writeRefFile(plinkInfo)
 
 	end subroutine runPlink
 #endif
