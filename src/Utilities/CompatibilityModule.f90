@@ -331,6 +331,8 @@ subroutine readBim(bimFile, bimInfo,plinkInfo)
 	allocate(plinkInfo%lengths(LARGECHROMNUMBER,plinkInfo%totalSnps))
 	allocate(plinkInfo%basepairs(LARGECHROMNUMBER,plinkInfo%totalSnps))
 	chromCount = 1
+	plinkInfo%lengths = 0
+	plinkInfo%basepairs = 0
 	do i =1, plinkInfo%totalSnps
 
 		read(unit, *) chrom, id,chrompos, pos ,ref, alt
@@ -588,6 +590,8 @@ subroutine readMap(filename,plinkInfo)
 	call plinkInfo%dict%DictStructure()
 	plinkInfo%nChroms = 0
 	plinkInfo%nsnpsPerChromosome = 0
+	plinkInfo%lengths = 0
+	plinkInfo%basepairs = 0
 	chromCount = 0
 	prevChrom = 'MT'
 
@@ -975,7 +979,7 @@ subroutine writeMapFile(plinkInfo)
 
 		do h=1, plinkInfo%nsnpsPerChromosome(i)
 			snpCount = snpCount + 1
-			write(unit,'(I4,a30,F5.5,I8)') i,trim(plinkInfo%snpName(snpCount)),plinkInfo%lengths(i,h),plinkInfo%basepairs(i,h)
+			write(unit,'(I4,a30,F10.5, I10)') i,trim(plinkInfo%snpName(snpCount)),plinkInfo%lengths(i,h),plinkInfo%basepairs(i,h)
 		enddo
 	enddo
 
@@ -988,7 +992,7 @@ end subroutine writeMapFile
 subroutine writeRefFile(plinkInfo)
 	type(plinkInfoType), intent(in) :: plinkInfo
 	integer :: unit, snpCount,i,h
-	open(newunit=unit, file="PlinkOutput.map", status='unknown')
+	open(newunit=unit, file="PlinkOutput.ref", status='unknown')
 	snpCount = 0
 	do i=1, plinkInfo%nChroms
 

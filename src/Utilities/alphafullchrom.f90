@@ -179,8 +179,6 @@ contains
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
-
-
 		enddo
 
 		call writePedFile(ped,plinkInfo,specfile,chromPaths)
