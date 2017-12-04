@@ -88,12 +88,40 @@ integer, dimension(:), allocatable :: nsnpsPerChromosome !< nsnps per chromosome
 character(len=128), dimension(:), allocatable :: snpName
 
 contains
+procedure :: initPlinkInfoType
 final :: destroyPlinkInfoType
 
 end type plinkInfoType
 contains
 
 
+subroutine initPlinkInfoType(plinkInfo, ped)
+
+	class(plinkInfoType) :: plinkInfo
+
+	type(PedigreeHolder) :: ped
+	integer :: i
+
+
+	plinkInfo%nChroms = 1
+	plinkInfo%totalSnps = ped%nsnpsPopulation
+	allocate(plinkInfo%referenceAllelePerSnps(ped%nsnpsPopulation))
+	allocate(plinkInfo%alternateAllelePerSnps(ped%nsnpsPopulation))
+	plinkInfo%referenceAllelePerSnps = "1"
+	plinkInfo%alternateAllelePerSnps = "2"
+	plinkInfo%genotypes = ped%getGenotypesAsArrayWitHMissing()
+	plinkInfo%phase = ped%getPhaseAsArrayWithMissing()
+	allocate(plinkInfo%lengths(1,ped%nsnpsPopulation))
+	plinkInfo%lengths = 0
+	allocate(plinkInfo%basepairs(1,ped%nsnpsPopulation))
+	plinkInfo%basepairs = 0
+	allocate(plinkInfo%nsnpsPerChromosome(1))
+	plinkInfo%nsnpsPerChromosome = ped%nsnpsPopulation
+	allocate(plinkInfo%snpName(ped%nsnpsPopulation))
+	do i=1,ped%nsnpsPopulation
+		write(plinkInfo%snpName(i),'(a,i2)') "SNP",i
+	enddo
+end subroutine initPlinkInfoType
 
 !---------------------------------------------------------------------------
 !< @brief destructor for plinkInfoType
@@ -898,74 +926,76 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 
 	class(basespecfile), intent(in) :: params
 	type(plinkInfoType), intent(inout) :: plinkInfo
-	type(PedigreeHolder), intent(in) :: ped
+	type(PedigreeHolder) :: ped
 	character(len=128), optional,dimension(:), allocatable, intent(in) :: paths !< output paths for each chromosome
 	character(len=2), dimension(:,:), allocatable :: outputAlleles
 	character(len=128) :: fmt
 	integer(kind=1) :: phase1,phase2
 	integer :: snpCounts = 0,outcounts=0, pedUnit,i,nsnps,p,j
+
+	
+	print *, "merging plink output"
+	if (.not. present(paths)) then
+
+		call plinkInfo%initPlinkInfoType(ped)
+	endif
+
 	allocate(outputAlleles(ped%pedigreeSize, plinkInfo%totalSnps*2)) !outputphase
 
 	outputAlleles = "0"
-	print *, "merging plink output"
-	if (present(paths)) then
-
-		! TODO talk with mr Gottardo about this
-		if (.not. allocated(plinkInfo%referenceAllelePerSnps)) then
-			allocate(plinkInfo%referenceAllelePerSnps(plinkInfo%totalSnps))
-			allocate(plinkInfo%alternateAllelePerSnps(plinkInfo%totalSnps))
-			plinkInfo%referenceAllelePerSnps = "1"
-			plinkInfo%alternateAllelePerSnps = "2"
-		endif
-
-		do i =1,plinkInfo%nChroms
-
-			nsnps = plinkInfo%nsnpsPerChromosome(i)
-			call ped%addPhaseInformationFromFile(trim(paths(i))//"phase.txt",nsnps)
-
-			do j=1,nsnps
-				snpCounts = snpCounts + 1
-				outcounts = outcounts + 1
-				do p=1,ped%pedigreeSize		
-					phase1 = ped%pedigree(p)%individualPhase(1)%getPhase(j)
-					phase2 = ped%pedigree(p)%individualPhase(2)%getPhase(j)
-					
-					if (phase1 == 1) then
-						outputAlleles(p,outcounts) = plinkInfo%referenceAllelePerSnps(snpCounts)
-					else if (phase1 == 0) then
-						outputAlleles(p,outcounts) = plinkInfo%alternateAllelePerSnps(snpCounts)
-					else 
-						outputAlleles(p,outcounts) = '0'
-					endif			
-					
-					if (phase2 == 1) then
-						outputAlleles(p,outcounts+1) = plinkInfo%referenceAllelePerSnps(snpCounts)
-					else if (phase2 == 0) then
-						outputAlleles(p,outcounts+1) = plinkInfo%alternateAllelePerSnps(snpCounts) !< -1 because snp are for output
-					else 
-						outputAlleles(p,outcounts+1) = '0'
-					endif
-
-				enddo
-				outcounts = outcounts + 1
-			enddo
-		enddo
-
-		print *, "Writing plink output to file"
-		open(newunit=pedUnit,file="PlinkOutput.ped", status='unknown')
-		write(fmt, '(a,i10,a)') '(3a20,i2,a20,',2*plinkInfo%totalSnps, 'a2)'
-
-		print *, "Writing alleles per animal"
-		! print *,outputAlleles
-		do p=1, ped%pedigreeSize
-			write(pedUnit,  fmt) ped%pedigree(p)%originalId,ped%pedigree(p)%sireId,ped%pedigree(p)%damId,ped%pedigree(p)%gender,'0 ', outputAlleles(p,:)
-		enddo
-
-		close(pedunit)
-
-	else
-		! TODO print out what is currently in ped
+	
+	! TODO talk with mr Gottardo about this
+	if (.not. allocated(plinkInfo%referenceAllelePerSnps)) then
+		allocate(plinkInfo%referenceAllelePerSnps(plinkInfo%totalSnps))
+		allocate(plinkInfo%alternateAllelePerSnps(plinkInfo%totalSnps))
+		plinkInfo%referenceAllelePerSnps = "1"
+		plinkInfo%alternateAllelePerSnps = "2"
 	endif
+
+	do i =1,plinkInfo%nChroms
+
+		nsnps = plinkInfo%nsnpsPerChromosome(i)
+
+		if (present(paths)) then !< if multiple chromosomes - load in that file
+			call ped%addPhaseInformationFromFile(trim(paths(i))//"phase.txt",nsnps)
+		endif 
+		do j=1,nsnps
+			snpCounts = snpCounts + 1
+			outcounts = outcounts + 1
+			do p=1,ped%pedigreeSize
+				phase1 = ped%pedigree(p)%individualPhase(1)%getPhase(j)
+				phase2 = ped%pedigree(p)%individualPhase(2)%getPhase(j)
+				if (phase1 == 1) then
+					outputAlleles(p,outcounts) = plinkInfo%referenceAllelePerSnps(snpCounts)
+				else if (phase1 == 0) then
+					outputAlleles(p,outcounts) = plinkInfo%alternateAllelePerSnps(snpCounts)
+				else
+					outputAlleles(p,outcounts) = '0'
+				endif
+
+				if (phase2 == 1) then
+					outputAlleles(p,outcounts+1) = plinkInfo%referenceAllelePerSnps(snpCounts)
+				else if (phase2 == 0) then
+					outputAlleles(p,outcounts+1) = plinkInfo%alternateAllelePerSnps(snpCounts) !< -1 because snp are for output
+				else
+					outputAlleles(p,outcounts+1) = '0'
+				endif
+
+			enddo
+			outcounts = outcounts + 1
+		enddo
+	enddo
+
+	print *, "Writing plink output to file"
+	open(newunit=pedUnit,file="PlinkOutput.ped", status='unknown')
+	write(fmt, '(a,i10,a)') '(3a20,i2,a20,',2*plinkInfo%totalSnps, 'a2)'
+	print *, "Writing alleles per animal"
+	do p=1, ped%pedigreeSize
+		write(pedUnit,  fmt) ped%pedigree(p)%originalId,ped%pedigree(p)%sireId,ped%pedigree(p)%damId,ped%pedigree(p)%gender,'0 ', outputAlleles(p,:)
+	enddo
+
+	close(pedunit)
+
 
 end subroutine writePedFile
 
@@ -975,8 +1005,9 @@ subroutine writeMapFile(plinkInfo)
 	integer :: unit, snpCount,i,h
 	open(newunit=unit, file="PlinkOutput.map", status='unknown')
 	snpCount = 0
-	do i=1, plinkInfo%nChroms
 
+	
+	do i=1, plinkInfo%nChroms
 		do h=1, plinkInfo%nsnpsPerChromosome(i)
 			snpCount = snpCount + 1
 			write(unit,'(I4,a30,F10.5, I10)') i,trim(plinkInfo%snpName(snpCount)),plinkInfo%lengths(i,h),plinkInfo%basepairs(i,h)
@@ -984,8 +1015,8 @@ subroutine writeMapFile(plinkInfo)
 	enddo
 
 	close(unit)
- 
-	
+
+
 end subroutine writeMapFile
 
 
@@ -1003,11 +1034,12 @@ subroutine writeRefFile(plinkInfo)
 	enddo
 
 	close(unit)
- 
-	
+
+
 end subroutine writeRefFile
 
 end module CompatibilityModule
+
 
 
 

@@ -106,7 +106,7 @@ contains
 			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i),initAll=1)
 			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
 			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
-
+			
 			call funPointer(specFile,ped)
 
 		enddo
@@ -176,14 +176,17 @@ contains
 
 
 			print *,"starting function run"
+			print *,"first animalID:",ped%pedigree(1)%originalId
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
 		enddo
 
-		call writePedFile(ped,plinkInfo,specfile,chromPaths)
-		call writeMapFile(plinkInfo)
-		call writeRefFile(plinkInfo)
+		if (specfile%plinkOutput) then
+			call writePedFile(ped,plinkInfo,specfile,chromPaths)
+			call writeMapFile(plinkInfo)
+			call writeRefFile(plinkInfo)
+		endif
 
 	end subroutine runPlink
 #endif

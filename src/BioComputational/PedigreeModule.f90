@@ -790,7 +790,8 @@ module PedigreeModule
 				if (ped%pedigree(i)%Founder) cycle
 				! if both parents haven't been removed, check most likely one
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
-
+				print *,"first animalID3:",ped%pedigree(1)%originalId,i
+				print *,"DEBUGID:",ped%pedigree(i)%originalId
 				do j=1,ped%pedigree(i)%individualGenotype%length
 
 					!< if either is a dummy, likely that individualInconsistent is inccorrect
@@ -2083,7 +2084,6 @@ module PedigreeModule
 			enddo
 
 			this%nsnpsPopulation = nsnps
-
 			if (present(initAll)) then
 				do i=1, this%pedigreeSize
 					if (.not. this%pedigree(i)%genotyped) then
@@ -2529,12 +2529,15 @@ module PedigreeModule
 			type(IndividualLinkedList) :: dummyList
 			integer, intent(in) , optional :: unknownDummysAtEnd !< if this option is specified, then only unknown dummies are put at end
 
+			if (this%isSorted /= 0) return
+			
 			if (allocated(this%generations)) deallocate(this%generations)
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
 			pedCounter = 0
 
+		
 			! call this%dictionary%destroy()
 			! call this%founders%destroyLinkedList()
 			! call this%sireList%destroyLinkedList()
