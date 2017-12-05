@@ -83,8 +83,8 @@ module GenotypeModule
 		procedure :: subset
 		procedure :: setFromHaplotypesIfMissing
 		procedure :: setFromOtherIfMissing
-        procedure :: numHet
-        procedure :: hetPresent
+		procedure :: numHet
+		procedure :: hetPresent
 		procedure :: readFormattedGenotype
 		procedure :: readunFormattedGenotype
 		procedure :: writeFormattedGenotype
@@ -133,6 +133,10 @@ module GenotypeModule
 		module procedure newGenotypeHap
 		module procedure newGenotypeMissing
 	end interface Genotype
+
+	interface operator ( == )
+		module procedure compareGenotype
+	end interface operator ( == )
 
 	contains
 
@@ -752,47 +756,47 @@ module GenotypeModule
 			c = g%length - g%numNotMissing()
 		end function numMissing
 
-        !---------------------------------------------------------------------------
-        !> @brief   Returns the number of hetrozygotes in the genotype
-        !> @date    November 1, 2017
-        !> @return  The number of missing snps
-        !---------------------------------------------------------------------------
-        function numHet(g) result(c)
-            class(Genotype), intent(in) :: g
+		!---------------------------------------------------------------------------
+		!> @brief   Returns the number of hetrozygotes in the genotype
+		!> @date    November 1, 2017
+		!> @return  The number of missing snps
+		!---------------------------------------------------------------------------
+		function numHet(g) result(c)
+			class(Genotype), intent(in) :: g
 
-            integer :: c, i
+			integer :: c, i
 
-            c = 0
-            !$SOMP SIMD REDUCTION(+:c)
-            do i = 1, g%sections
-                c = c + POPCNT(IAND(NOT(g%homo(i)), NOT(g%additional(i))))
-            end do
-        end function numHet
+			c = 0
+			!$SOMP SIMD REDUCTION(+:c)
+			do i = 1, g%sections
+				c = c + POPCNT(IAND(NOT(g%homo(i)), NOT(g%additional(i))))
+			end do
+		end function numHet
 
-        !---------------------------------------------------------------------------
-        !> @brief   Returns the number of phased hetrozygotes in a haplotype given
-        !>          the genotype.
-        !> @date    November 1, 2017
-        !> @return  The number of missing snps
-        !---------------------------------------------------------------------------
-        function hetPresent(g,h) result(c)
-            use HaplotypeModule
+		!---------------------------------------------------------------------------
+		!> @brief   Returns the number of phased hetrozygotes in a haplotype given
+		!>          the genotype.
+		!> @date    November 1, 2017
+		!> @return  The number of missing snps
+		!---------------------------------------------------------------------------
+		function hetPresent(g,h) result(c)
+			use HaplotypeModule
 
-            class(Genotype), intent(in) :: g
-            class(Haplotype), intent(in) :: h
+			class(Genotype), intent(in) :: g
+			class(Haplotype), intent(in) :: h
 
-            integer:: c, i
+			integer:: c, i
 
-            c = 0
-            !$SOMP SIMD REDUCTION(+:c)
-            do i = 1, g%sections
-                c = c + POPCNT(IAND( &
-                    IAND(NOT(g%homo(i)), NOT(g%additional(i))), &
-                    NOT(h%missing(i))))
-            end do
+			c = 0
+			!$SOMP SIMD REDUCTION(+:c)
+			do i = 1, g%sections
+				c = c + POPCNT(IAND( &
+				IAND(NOT(g%homo(i)), NOT(g%additional(i))), &
+				NOT(h%missing(i))))
+			end do
 
-            c = c - g%overhang
-        end function hetPresent
+			c = c - g%overhang
+		end function hetPresent
 
 		!---------------------------------------------------------------------------
 		!> @brief   Sets the Haplotype from the Genotype
@@ -1361,6 +1365,7 @@ module GenotypeModule
 		end subroutine readFormattedGenotype
 
 end module GenotypeModule
+
 
 
 

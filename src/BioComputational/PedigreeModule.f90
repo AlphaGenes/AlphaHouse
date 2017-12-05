@@ -138,6 +138,7 @@ module PedigreeModule
 		procedure :: writeOutGenotypesForImputed
 		procedure :: setSnpBasePairs
 		procedure :: setSnpLengths
+		procedure :: deepCheckPedigree
 
 
 
@@ -275,6 +276,9 @@ module PedigreeModule
 
 			call destroyPedigree(res)
 
+
+			print *,"COPY PED CALLED"
+
 			res%pedigreeSize = this%pedigreeSize
 			res%nDummys = this%nDummys
 			res%unknownDummys = this%unknownDummys
@@ -345,10 +349,11 @@ module PedigreeModule
 			do i=1, this%pedigreeSize
 
 				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-				res%pedigree(i) = this%pedigree(i)
+				call copyIndividual(res%pedigree(i),this%pedigree(i))
 				call res%pedigree(i)%resetOffspringInformation
 				if (.not. res%pedigree(i)%Founder) then
 					! we know that sire and dam id should be set
+					
 					tmpSire= res%dictionary%getValue(res%pedigree(i)%sireId)
 					tmpDam = res%dictionary%getValue(res%pedigree(i)%damId)
 
@@ -357,6 +362,7 @@ module PedigreeModule
 						tmpAnimalArrayCount = tmpAnimalArrayCount + 1
 						tmpAnimalArray(tmpAnimalArrayCount) = i
 					else
+
 						call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
 						res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
 						if (res%pedigree(tmpSire)%nOffs== 1) then
@@ -384,8 +390,8 @@ module PedigreeModule
 			do i=1, tmpAnimalArrayCount
 				tmpId = tmpAnimalArray(i)
 
-				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
-				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
+				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sireId)
+				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damId)
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
 					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
 
@@ -410,7 +416,38 @@ module PedigreeModule
 
 		end subroutine copyPedigree
 
+		logical function deepCheckPedigree(this)
+			
+			class(pedigreeHolder) , intent(in) :: this
+			integer :: i, h
+			deepCheckPedigree = .true.
+			do i=1, this%pedigreeSize
 
+				if (associated(this%pedigree(i)%sirePointer)) then
+					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+				endif
+
+				if (associated(this%pedigree(i)%damPointer)) then
+					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+				endif
+
+				do h=1,this%pedigree(i)%nOffs
+
+					if (loc(this%pedigree(i)%offsprings(h)%p) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%offsprings(h)%p%originalId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+
+				enddo
+			enddo
+
+		end function deepCheckPedigree
 		!---------------------------------------------------------------------------
 		!< @brief Checks for array equality
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -444,10 +481,8 @@ module PedigreeModule
 					return
 				endif
 
-
+			
 			end do
-
-
 		end function equality
 
 
@@ -795,6 +830,7 @@ module PedigreeModule
 
 			do i=1, ped%pedigreeSize
 				if (ped%pedigree(i)%Founder) cycle
+				
 				! if both parents haven't been removed, check most likely one
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
 				do j=1,ped%pedigree(i)%individualGenotype%length
@@ -2540,13 +2576,9 @@ module PedigreeModule
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
-			pedCounter = 0
 
-		
-			! call this%dictionary%destroy()
-			! call this%founders%destroyLinkedList()
-			! call this%sireList%destroyLinkedList()
-			! call this%damList%destroyLinkedList()
+
+			pedCounter = 0
 
 			deallocate(this%sireList)
 			deallocate(this%damList)
@@ -2557,8 +2589,6 @@ module PedigreeModule
 			allocate(this%dictionary)
 			call this%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
-
-
 			allocate(this%sireList)
 			allocate(this%damList)
 			allocate(this%founders)
