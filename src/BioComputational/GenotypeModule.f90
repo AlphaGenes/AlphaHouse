@@ -146,6 +146,8 @@ module GenotypeModule
 			if (allocated(g%locked)) then
 				deallocate(g%locked)
 			end if
+
+			g%hasLock = .false.
 		end subroutine destroyGenotype
 
 

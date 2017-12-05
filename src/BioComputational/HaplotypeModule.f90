@@ -280,11 +280,12 @@ contains
         endif
         allocate(h%phase(h%sections))
         allocate(h%missing(h%sections))
-        allocate(h%locked(h%sections))
         h%phase = phase
         h%missing = missing
-        h%locked = locked
-
+        if (allocated(locked)) then
+            allocate(h%locked(h%sections))
+            h%locked = locked
+        endif
         do i = 64 - h%overhang, 63
             h%phase(h%sections) = ibclr(h%phase(h%sections), i)
             h%missing(h%sections) = ibclr(h%missing(h%sections), i)

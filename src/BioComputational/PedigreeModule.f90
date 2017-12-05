@@ -286,14 +286,21 @@ module PedigreeModule
 			allocate(tmpAnimalArray(this%pedigreeSize))
 
 			res%nGenotyped =this%nGenotyped
+
+			if (allocated(this%hdMap)) then
+				if (.not. allocated(res%hdMap)) then
+					allocate(res%hdMap(res%pedigreeSize))
+				endif
 			res%hdMap = this%hdMap
+			endif
 
 			! can copy genotype and hd dictionaries as order will be the same,
 			! can't do main dictionary as we have to know if parents exist
 			if (allocated(this%hdDictionary)) then
-				if (.not. allocated(res%hdDictionary)) then
-					allocate(res%hdDictionary)
+				if (allocated(res%hdDictionary)) then
+					deallocate(res%hdDictionary)
 				endif
+				allocate(res%hdDictionary)
 				res%hdDictionary = this%hdDictionary
 			endif
 
@@ -790,8 +797,6 @@ module PedigreeModule
 				if (ped%pedigree(i)%Founder) cycle
 				! if both parents haven't been removed, check most likely one
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
-				print *,"first animalID3:",ped%pedigree(1)%originalId,i
-				print *,"DEBUGID:",ped%pedigree(i)%originalId
 				do j=1,ped%pedigree(i)%individualGenotype%length
 
 					!< if either is a dummy, likely that individualInconsistent is inccorrect
