@@ -3426,8 +3426,9 @@ module PedigreeModule
 			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
-				res(this%genotypeMap(i),:,1) = this%pedigree(this%genotypeMap(i))%individualPhase(1)%toIntegerArray()
-				res(this%genotypeMap(i),:,2) = this%pedigree(this%genotypeMap(i))%individualPhase(2)%toIntegerArray()
+				
+				res(this%genotypeMap(i),:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				res(this%genotypeMap(i),:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
 
 		end function getPhaseAsArrayWithMissing
