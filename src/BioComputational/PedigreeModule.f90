@@ -3840,7 +3840,7 @@ module PedigreeModule
 
 			this%isSorted = 0
 
-			write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,this%nDummys
+			write(tmpCounterStr, '(a,I5)') dummyAnimalPrepre,this%nDummys
 			call this%Pedigree(this%pedigreeSize)%initIndividual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
