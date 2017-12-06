@@ -176,7 +176,6 @@ contains
 
 
 			print *,"starting function run"
-			print *,"first animalID:",ped%pedigree(1)%originalId
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
