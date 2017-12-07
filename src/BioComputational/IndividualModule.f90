@@ -152,6 +152,10 @@ module IndividualModule
 		module procedure compareIndividual
 	end interface operator ( == )
 
+		interface operator ( /= )
+		module procedure invertCompare
+	end interface operator ( /= )
+
 	interface assignment (=)
 		module procedure copyIndividual
 	end interface
@@ -159,7 +163,11 @@ module IndividualModule
 	contains
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Function to deep copy individual
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine copyIndividual(new, old)
 
 			type(Individual), intent(inout) :: new
@@ -218,8 +226,30 @@ module IndividualModule
 				new%inconsistencies=old%inconsistencies
 			endif
 
+			if (allocated(old%genotypeProbabilities)) then
+				new%genotypeProbabilities = old%genotypeProbabilities
+			endif
+
+			if (allocated(old%nHighDensityOffspring)) then
+				new%nHighDensityOffspring = old%nHighDensityOffspring
+			endif
+
+			if (allocated(old%phaseProbabilities)) then
+				new%phaseProbabilities = old%phaseProbabilities
+			endif
+						
+			if (allocated(old%seg)) then
+				new%seg = old%seg
+			endif
+
 		end subroutine copyIndividual
 
+
+			!---------------------------------------------------------------------------
+		!< @brief sets indiivudal pointer container object to null
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine deallocateIndividualPointer(this)
 			type(IndividualPointerContainer), intent(inout):: this
 
@@ -381,6 +411,11 @@ module IndividualModule
 
 
 
+		!---------------------------------------------------------------------------
+		!< @brief Sets seg TODO
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine setSeg(this, location, parent, value)
 
 			class(individual) :: this
@@ -425,6 +460,17 @@ module IndividualModule
 
 
 		end function getSeg
+
+		!---------------------------------------------------------------------------
+		!> @brief inverse of compare (/=)
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		logical function invertCompare(l1,l2)
+			class(Individual), intent(in) :: l1
+			type (Individual) , intent(in) :: l2 !< individuals to compare
+			invertCompare=.not. compareIndividual(l1,l2)
+		end function invertCompare
 		!---------------------------------------------------------------------------
 		!> @brief Returns true if individuals are equal, false otherwise
 		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -433,6 +479,7 @@ module IndividualModule
 		logical function compareIndividual(l1,l2)
 			class(Individual), intent(in) :: l1
 			type (Individual) , intent(in) :: l2 !< individuals to compare
+			integer :: i
 			compareIndividual=.true.
 
 			if (.NOT. (l1%id == l2%id .and. l1%sireID == l2%sireID .and. l1%damID == l2%damID)) then
@@ -440,6 +487,19 @@ module IndividualModule
 				Return
 			endif
 
+			if (l1%nOffs /= l2%nOffs) then
+				compareIndividual = .false.
+				return
+			endif
+
+			do i=1,l1%nOffs
+				if (l1%offsprings(i)%p%originalId /= l2%offsprings(i)%p%originalId) then
+					compareIndividual = .false.
+					return
+				endif
+
+				
+			enddo
 			if (l1%generation /= l2%generation) then
 				compareIndividual = .false.
 				return
@@ -453,10 +513,6 @@ module IndividualModule
 				return
 			endif
 			if (l1%gender /= l2%gender) then
-				compareIndividual = .false.
-				return
-			endif
-			if (l1%nOffs /= l2%nOffs) then
 				compareIndividual = .false.
 				return
 			endif
@@ -525,6 +581,31 @@ module IndividualModule
 
 			if (allocated(l1%individualGenotype)) then
 				if (.not. l1%individualGenotype%compareGenotype(l2%individualGenotype)) then
+					compareIndividual = .false.
+					return
+				endif
+				if (any(l1%individualGenotype%toIntegerArray() == l2%individualGenotype%toIntegerArray()) == .false.) then
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
+			if (allocated(l1%individualPhase)) then
+				if (.not. l1%individualPhase(1)%compareHaplotype(l2%individualPhase(1))) then
+					compareIndividual = .false.
+					return
+				endif
+				if (.not. l1%individualPhase(2)%compareHaplotype(l2%individualPhase(2))) then
+					compareIndividual = .false.
+					return
+				endif
+
+				if (any(l1%individualPhase(1)%toIntegerArray() == l2%individualPhase(1)%toIntegerArray()) == .false.) then
+					compareIndividual = .false.
+					return
+				endif
+
+				if (any(l1%individualPhase(2)%toIntegerArray() == l2%individualPhase(2)%toIntegerArray()) ==.false.) then
 					compareIndividual = .false.
 					return
 				endif

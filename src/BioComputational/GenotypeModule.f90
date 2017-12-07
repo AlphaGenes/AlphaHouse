@@ -427,14 +427,30 @@ module GenotypeModule
 
 			integer :: i
 
+			if (g1%overhang /= g2%overhang) then
+				same = .false.
+				return
+			endif
+
+			if (g1%sections /= g2%sections) then
+				same = .false.
+				return
+			endif
 			if (g1%length /= g2%length) then
 				same = .false.
 			else
 				same = .true.
 				do i = 1, g1%sections
-					same = same .and. (g1%homo(i) == g2%homo(i)) .and. (g1%additional(i) == g2%additional(i))
+					same = same .and. (g1%homo(i) == g2%homo(i)) .and. (g1%additional(i) == g2%additional(i))					
 				end do
 			end if
+
+			if (allocated(g1%locked)) then
+				if (any(g1%locked(:) == g2%locked(:)) == .false.) then
+					same =.false.
+					return
+				endif
+			endif 
 		end function compareGenotype
 
 
