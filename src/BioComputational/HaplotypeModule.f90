@@ -439,6 +439,18 @@ contains
 
         integer :: i
 
+
+        if (.not. h1%sections == h2%sections) then
+            same = .false.
+            return
+        endif
+
+        if (.not. h1%overhang == h2%overhang) then
+            same = .false.
+            return
+        endif
+
+
         if (h1%length /= h2%length) then
             same = .false.
         else
