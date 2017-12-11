@@ -9,6 +9,7 @@
 !
 ! DESCRIPTION:
 !> @brief    Module cotaining abstract class for base spec files
+!> Designed to work with programs that work on a single chromosome 
 !
 !> @author   David Wilson, david.wilson@roslin.ed.ac.uk
 !
@@ -27,9 +28,10 @@ module baseSpecFileModule
 	character(len=512) :: resultFolderPath !< Path where results should go
 	character(len=512) :: plinkinputfile !< prepend to plink file
 	logical :: plinkBinary !< are the plink files binary
-	integer(kind=int32) :: nsnp
+	integer(kind=int32) :: nsnp !< number of snp for this chromosme
 	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
-	logical :: plinkOutput
+	logical :: plinkOutput !< if true - output in plink format
+	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
 	end type
 
 

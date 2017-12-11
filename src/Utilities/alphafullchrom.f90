@@ -77,7 +77,10 @@ contains
 
 		do i=1, totalToDo
 
-
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle 
+			endif
 			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
 			path = "MultiChromResults/" // curChrom
@@ -106,7 +109,7 @@ contains
 			call ped%addGenotypeInformationFromFile(chromPaths(i)//"genotypes.txt",nsnps(i),initAll=1)
 			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
 			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
-			
+
 			call funPointer(specFile,ped)
 
 		enddo
@@ -144,10 +147,12 @@ contains
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle 
+			endif
 			specFile%resultFolderPath = trim(chromPaths(i))//"results"
 			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
-			! write(chromPath,'(a,i0)') "chr",i
-			! result=makedirqq(prepend//trim(chromPath))
 			print *,"doing chrom ", i
 			if (i > size(chromPaths)-2 .and. plinkInfo%sexChrom /=0) then
 				if (i == size(chromPaths)-1) then !< x chrom
@@ -190,6 +195,7 @@ contains
 	end subroutine runPlink
 #endif
 end module alphaFullChromModule
+
 
 
 
