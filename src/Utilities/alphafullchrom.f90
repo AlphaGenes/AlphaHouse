@@ -139,9 +139,9 @@ contains
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
-			call readPlink(plinkPre, ped, chromPaths,plinkInfo)
+			call readPlink(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		else
-			call readPlinkNoneBinary(plinkPre, ped, chromPaths,plinkInfo)
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
