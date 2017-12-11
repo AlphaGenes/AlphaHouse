@@ -334,7 +334,7 @@ module PedigreeModule
 
 			do i=1, this%pedigreeSize
 
-				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
+				call res%dictionary%addKey(trim(this%pedigree(i)%originalID),i)
 				call copyIndividual(res%pedigree(i),this%pedigree(i))
 				call res%pedigree(i)%resetOffspringInformation
 				if (.not. res%pedigree(i)%Founder) then
@@ -373,13 +373,11 @@ module PedigreeModule
 			do i=1, tmpAnimalArrayCount
 				tmpId = tmpAnimalArray(i)
 
-				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sireId)
-				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damId)
+				tmpSire= res%dictionary%getValue(res%pedigree(tmpId)%sirePointer%originalId)
+				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
 					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
-
-					print *,res%pedigree(tmpId)%sirePointer%originalId
-					print *,res%pedigree(tmpId)%damPointer%originalId
+					print *,res%pedigree(tmpId)%sireId,res%dictionary%getValue(res%pedigree(tmpId)%sireId)
 				else
 					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(tmpId)%sirePointer =>  res%pedigree(tmpSire)
@@ -3599,8 +3597,8 @@ module PedigreeModule
 			res = 9
 			do i=1, this%pedigreeSize
 				
-				res(this%genotypeMap(i),:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
-				res(this%genotypeMap(i),:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
+				res(i,:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				res(i,:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
 
 		end function getPhaseAsArrayWithMissing
