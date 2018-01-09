@@ -28,6 +28,7 @@ module baseSpecFileModule
 	character(len=512) :: plinkinputfile !< prepend to plink file
 	logical :: plinkBinary
 	integer(kind=int32) :: nsnp
+	integer(kind=1) :: CurrChrom
 	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
 
 	end type
