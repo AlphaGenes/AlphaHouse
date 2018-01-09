@@ -86,7 +86,7 @@ contains
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)
-			specFile%CurrChrom = curChrom
+			specFile%CurrChrom = i 
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 
@@ -148,6 +148,8 @@ contains
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)
+			specFile%CurrChrom = i 
+
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 			print *,"doing chrom ", i
@@ -174,7 +176,6 @@ contains
 			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
 			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
 			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
-
 
 
 			print *,"starting function run"
