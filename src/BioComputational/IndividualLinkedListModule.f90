@@ -192,7 +192,6 @@ contains
         this%last => null()
 		! deallocate(this%first)
 		! deallocate(this%last)
-
 	end subroutine destroyLinkedList
 
 

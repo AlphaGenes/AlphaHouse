@@ -207,16 +207,17 @@ module AlphaHouseMod
 			numColumnsOut = 0
 			Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
 
-			if (fileSize<1000) then
-				allocate(character(len=fileSize):: tempChar)
-			else
-				allocate(character(len=1000):: tempChar)
-			end if
 
 			ioStatus = 0
 			filePosition = 1
 
 			if (fileExists) then
+				if (fileSize<1000) then
+					allocate(character(len=fileSize):: tempChar)
+				else
+					allocate(character(len=1000):: tempChar)
+				end if
+
 				open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
 				read(fileUnit, pos=1) tempChar
 				finalLetter = len(tempChar)
@@ -380,14 +381,13 @@ module AlphaHouseMod
 
 			! Other
 			integer(int32) :: f,Unit
-
 			character(len=300) :: DumC
 
 			nLines=0
 			f=0
 			open(newunit=Unit,file=trim(FileName),status="old")
 			do
-				read(Unit,*,iostat=f) DumC
+				read(Unit,'(a)',iostat=f) DumC
 				nLines=nLines+1
 				if (f /= 0) then
 					nLines=nLines-1
@@ -396,6 +396,9 @@ module AlphaHouseMod
 			end do
 			close(Unit)
 			return
+			! 300 nLines=nLines-1
+
+
 		end function
 
 		!###########################################################################
@@ -1279,5 +1282,6 @@ module AlphaHouseMod
 		!###########################################################################
 
 end module
+
 
 

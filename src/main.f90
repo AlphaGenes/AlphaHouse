@@ -17,7 +17,7 @@ program test
 
 	call initPedigree(ped,inputFile)
 	nsnps = 0 
-    call ped%addGenotypeInformationFromFile(genotypeFile,nsnps)
+    call ped%addGenotypeInformationFromFile(genotypeFile,nsnps,initAll=1)
     call ped%sortPedigreeAndOverwrite()
 
 	inconsistencies = ped%findMendelianInconsistencies(file="mendInfo.txt", snpFilePath="snpinfo.txt")

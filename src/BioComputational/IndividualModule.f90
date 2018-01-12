@@ -73,27 +73,16 @@ module IndividualModule
 	integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
 	integer, allocatable :: nHighDensityOffspring
 	! plant stuff
-	integer :: MyFamilyAsOffspring = -99
-	real(kind=real64) :: MendelianInconsistenciesPercFamily = 0
 	logical(kind=1):: isInbred
 	logical(kind=1)::isImputed
 	logical(kind=1) :: IgnoreMe =.false.
 
-	integer, allocatable, dimension(:) :: StrandBreakArray
-	integer(kind=1), allocatable, dimension(:,:) :: PartialInformativeHaplotype, PartialInformativeHaplotypeFull
-	integer(kind=1), allocatable, dimension(:,:) :: ParentalHaplotypes, ParentalHaplotypesFull
-	! plant stuff testing
-	integer :: NumberOfSwitches = 0
-	integer, allocatable, dimension(:) :: BestSwitchPosArray, ParentInferredSwitchCount
-	double precision :: MyGenoYield, MyGenoAccuracy, MyGenoAccuracyInf, MyGenoYieldInf, MyGenoCorrect, MyGenoCorrectInf
-	double precision :: MyPhase1YieldInf, MyPhase1AccInf,  MyPhase1CorrectInf, MyPhase2YieldInf, MyPhase2AccInf, MyPhase2CorrectInf
-	double precision, allocatable, dimension( :,:) :: MyPhaseYield, MyPhaseAcc, MyPhaseCorrect
 
 	type(IntegerLinkedList) :: families
 
 	integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
-
-    character(len=IDLENGTH) :: familyId
+	integer :: inconsistencyCount
+	character(len=IDLENGTH) :: familyId
 
 	contains
 		procedure :: initIndividual
@@ -142,11 +131,11 @@ module IndividualModule
 		procedure :: getSeg
 		procedure :: setSeg
 		procedure :: setSegToMissing
+		procedure :: isFounder
 		procedure :: makeIndividualPhaseCompliment
 		procedure :: makeIndividualGenotypeFromPhase
 		procedure :: countHighDensityOffspring
 		procedure :: addFamily
-		procedure :: initialisePlantArrays
 		procedure :: getProbabilitiesFromOwnGenotypeAndPhase
 		procedure :: initPhaseAndGenotypes
 		procedure :: initGenotype
@@ -163,6 +152,10 @@ module IndividualModule
 		module procedure compareIndividual
 	end interface operator ( == )
 
+		interface operator ( /= )
+		module procedure invertCompare
+	end interface operator ( /= )
+
 	interface assignment (=)
 		module procedure copyIndividual
 	end interface
@@ -170,13 +163,17 @@ module IndividualModule
 	contains
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Function to deep copy individual
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine copyIndividual(new, old)
 
 			type(Individual), intent(inout) :: new
 			type(Individual),intent(in) :: old
 
-            call destroyIndividual(new)
+			call destroyIndividual(new)
 
 			new%originalID=old%originalID
 			new%sireID=old%sireID
@@ -192,16 +189,12 @@ module IndividualModule
 			new%HD=old%HD
 			new%isDummy=old%isDummy
 			new%isUnknownDummy=old%isUnknownDummy
-            if (allocated(new%offsprings)) then
-                deallocate(new%offsprings)
-            endif
+			if (allocated(new%offsprings)) then
+				deallocate(new%offsprings)
+			endif
 			allocate(new%OffSprings(OFFSPRINGTHRESHOLD))
 			new%sirePointer => old%sirePointer
 			new%damPointer => old%damPointer
-			! allocate(new%sirePointer)
-			! allocate(new%damPointer)
-
-			! allocate(new%individualGenotype)
 			if (allocated(old%individualGenotype)) then
 				new%individualGenotype=old%individualGenotype
 			endif
@@ -233,8 +226,30 @@ module IndividualModule
 				new%inconsistencies=old%inconsistencies
 			endif
 
+			if (allocated(old%genotypeProbabilities)) then
+				new%genotypeProbabilities = old%genotypeProbabilities
+			endif
+
+			if (allocated(old%nHighDensityOffspring)) then
+				new%nHighDensityOffspring = old%nHighDensityOffspring
+			endif
+
+			if (allocated(old%phaseProbabilities)) then
+				new%phaseProbabilities = old%phaseProbabilities
+			endif
+						
+			if (allocated(old%seg)) then
+				new%seg = old%seg
+			endif
+
 		end subroutine copyIndividual
 
+
+			!---------------------------------------------------------------------------
+		!< @brief sets indiivudal pointer container object to null
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine deallocateIndividualPointer(this)
 			type(IndividualPointerContainer), intent(inout):: this
 
@@ -278,9 +293,11 @@ module IndividualModule
 			allocate(this%OffSprings(OFFSPRINGTHRESHOLD))
 			this%originalID = originalID
 			this%id = id
+			this%hd = .false.
 			this%gender = -9
 			this%sireId = sireIDIn
 			this%damId = damIDIn
+			this%inconsistencyCount = 0
 			if (present(generation)) then
 				this%generation = generation
 			else
@@ -295,13 +312,22 @@ module IndividualModule
 					if (allocated(this%individualPhase)) then
 						deallocate(this%individualPhase)
 					endif
+					if (allocated(this%individualPhaseSubset)) then
+						deallocate(this%individualPhaseSubset)
+					endif
 
 					if (allocated(this%individualGenotype)) then
 						deallocate(this%individualGenotype)
 					endif
+
+					if (allocated(this%individualGenotypeSubset)) then
+						deallocate(this%individualGenotypeSubset)
+					endif
+
 					allocate(this%individualPhase(2))
 					allocate(this%individualGenotype)
-
+					allocate(this%individualPhaseSubset(2))
+					allocate(this%individualGenotypeSubset)
 					if (allocated(this%inconsistencies)) then
 						deallocate(this%inconsistencies)
 					endif
@@ -309,6 +335,9 @@ module IndividualModule
 					call this%individualGenotype%newGenotypeMissing(nsnps)
 					call this%individualPhase(1)%newHaplotypeMissing(nsnps)
 					call this%individualPhase(2)%newHaplotypeMissing(nsnps)
+					call this%individualGenotypeSubset%newGenotypeMissing(nsnps)
+					call this%individualPhaseSubset(1)%newHaplotypeMissing(nsnps)
+					call this%individualPhaseSubset(2)%newHaplotypeMissing(nsnps)
 					this%inconsistencies =  0
 				endif
 
@@ -366,58 +395,27 @@ module IndividualModule
 				deallocate(this%phaseProbabilities)
 			endif
 
-
-			if (allocated(this%BestSwitchPosArray)) then
-
-				deallocate(this%BestSwitchPosArray)
-			endif
-
-			if (allocated(this%ParentInferredSwitchCount)) then
-
-				deallocate(this%ParentInferredSwitchCount)
-			endif
-			if (allocated(this%StrandBreakArray)) then
-
-				deallocate(this%StrandBreakArray)
-			endif
-
-			if (allocated(this%PartialInformativeHaplotype)) then
-
-				deallocate(this%PartialInformativeHaplotype)
-			endif
-
-			if (allocated(this%PartialInformativeHaplotypeFull)) then
-
-				deallocate(this%PartialInformativeHaplotypeFull)
-			endif
-
-			if (allocated(this%ParentInferredSwitchCount)) then
-
-				deallocate(this%ParentInferredSwitchCount)
-			endif
-
-			if (allocated(this%MyPhaseYield)) then
-
-				deallocate(this%MyPhaseYield)
-			endif
-
-			if (allocated(this%MyPhaseAcc)) then
-
-				deallocate(this%MyPhaseAcc)
-			endif
-
-			if (allocated(this%MyPhaseCorrect)) then
-
-				deallocate(this%MyPhaseCorrect)
-			endif
 			if (allocated(this%inconsistencies)) then
 				deallocate(this%inconsistencies)
+			endif
+
+			if (allocated(this%individualGenotypeSubset)) then
+				deallocate(this%individualGenotypeSubset)
+			endif
+
+			if (allocated(this%individualPhaseSubset)) then
+				deallocate(this%individualPhaseSubset)
 			endif
 
 		end subroutine destroyIndividual
 
 
 
+		!---------------------------------------------------------------------------
+		!< @brief Sets seg TODO
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine setSeg(this, location, parent, value)
 
 			class(individual) :: this
@@ -447,6 +445,11 @@ module IndividualModule
 		end subroutine setSegToMissing
 
 
+		!---------------------------------------------------------------------------
+		!> @brief Returns Seg array
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
 		function getSeg(this, location,parent) result(res)
 			implicit none
 
@@ -457,6 +460,17 @@ module IndividualModule
 
 
 		end function getSeg
+
+		!---------------------------------------------------------------------------
+		!> @brief inverse of compare (/=)
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		logical function invertCompare(l1,l2)
+			class(Individual), intent(in) :: l1
+			type (Individual) , intent(in) :: l2 !< individuals to compare
+			invertCompare=.not. compareIndividual(l1,l2)
+		end function invertCompare
 		!---------------------------------------------------------------------------
 		!> @brief Returns true if individuals are equal, false otherwise
 		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -465,14 +479,138 @@ module IndividualModule
 		logical function compareIndividual(l1,l2)
 			class(Individual), intent(in) :: l1
 			type (Individual) , intent(in) :: l2 !< individuals to compare
+			integer :: i
+			compareIndividual=.true.
 
-			if (l1%id == l2%id .and. l1%sireID == l2%sireID .and. l1%damID == l2%damID) then
-				compareIndividual=.true.
-			else
+			if (.NOT. (l1%id == l2%id .and. l1%sireID == l2%sireID .and. l1%damID == l2%damID)) then
 				compareIndividual=.false.
+				Return
 			endif
 
-			return
+			if (l1%nOffs /= l2%nOffs) then
+				compareIndividual = .false.
+				return
+			endif
+
+			do i=1,l1%nOffs
+				if (l1%offsprings(i)%p%originalId /= l2%offsprings(i)%p%originalId) then
+					compareIndividual = .false.
+					return
+				endif
+
+				
+			enddo
+			if (l1%generation /= l2%generation) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%id /= l2%id) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%originalPosition /= l2%originalPosition) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%gender /= l2%gender) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%Founder /= l2%Founder) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%Genotyped /= l2%Genotyped) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%Sequenced /= l2%Sequenced) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%isPhased /= l2%isPhased) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%HD /= l2%HD) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%isDummy /= l2%isDummy) then
+				compareIndividual = .false.
+				return
+			endif
+			if (l1%isUnknownDummy /= l2%isUnknownDummy) then
+				compareIndividual = .false.
+				return
+			endif
+
+			if (allocated(l1%nHighDensityOffspring)) then
+				if (l1%nHighDensityOffspring /= l2%nHighDensityOffspring) then
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
+
+			if (associated(l1%sirePointer)) then
+				if (ASSOCIATED(l2%sirePointer)) then
+
+					if (.not. l1%sirePointer%originalId == l2%sirePointer%originalID) then
+						compareIndividual = .false.
+						return
+					endif
+				else
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
+			if (associated(l1%damPointer)) then
+				if (ASSOCIATED(l2%damPointer)) then
+
+					if (.not. l1%damPointer%originalId == l2%damPointer%originalID) then
+						compareIndividual = .false.
+						return
+					endif
+				else
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
+			if (allocated(l1%individualGenotype)) then
+				if (.not. l1%individualGenotype%compareGenotype(l2%individualGenotype)) then
+					compareIndividual = .false.
+					return
+				endif
+				if (any(l1%individualGenotype%toIntegerArray() == l2%individualGenotype%toIntegerArray()) == .false.) then
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
+			if (allocated(l1%individualPhase)) then
+				if (.not. l1%individualPhase(1)%compareHaplotype(l2%individualPhase(1))) then
+					compareIndividual = .false.
+					return
+				endif
+				if (.not. l1%individualPhase(2)%compareHaplotype(l2%individualPhase(2))) then
+					compareIndividual = .false.
+					return
+				endif
+
+				if (any(l1%individualPhase(1)%toIntegerArray() == l2%individualPhase(1)%toIntegerArray()) == .false.) then
+					compareIndividual = .false.
+					return
+				endif
+
+				if (any(l1%individualPhase(2)%toIntegerArray() == l2%individualPhase(2)%toIntegerArray()) ==.false.) then
+					compareIndividual = .false.
+					return
+				endif
+			endif
+
 		end function compareIndividual
 
 		!---------------------------------------------------------------------------
@@ -1237,8 +1375,6 @@ module IndividualModule
 			logical, intent(in), optional :: lockIn
 
 			this%Genotyped = .true.
-			!TODO this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
-			! this%Genotyped = any(geno == 1 .or. geno == 2 .or. geno == 0)
 
 			if (allocated(this%inconsistencies)) then
 				deallocate(this%inconsistencies)
@@ -1652,37 +1788,9 @@ module IndividualModule
 
 		end subroutine getProbabilitiesFromOwnGenotypeAndPhase
 
-		!---------------------------------------------------------------------------
-		!> @brief arrays for plant imputation
-		!> @author  serap gonen serap.gonen@roslin.ed.ac.uk
-		!> @date    September 08, 2017
-		!---------------------------------------------------------------------------
-
-		subroutine initialisePlantArrays(this, nSnpSubset, nSnpAll)
-			use constantModule, only: MissingPlantArrayCode
-
-			class(individual) :: this
-			integer, intent(in) :: nSnpSubset, nSnpAll
-
-			! allocate(this%individualGenotypeSubset)
-			allocate(this%individualPhaseSubset(2))
-			allocate(this%ParentalHaplotypes(2,nSnpSubset))
-			allocate(this%StrandBreakArray(nSnpSubset))
-			allocate(this%PartialInformativeHaplotype(2,nSnpSubset))
-			allocate(this%ParentInferredSwitchCount(2))
-			allocate(this%ParentalHaplotypesFull(2,nSnpAll))
-			allocate(this%PartialInformativeHaplotypeFull(2,nSnpAll))
-			call this%individualGenotypeSubset%newGenotypeMissing(nSnpSubset)
-			call this%individualPhaseSubset(1)%newHaplotypeMissing(nSnpSubset)
-			call this%individualPhaseSubset(2)%newHaplotypeMissing(nSnpSubset)
-			this%ParentalHaplotypes = MissingPlantArrayCode
-			this%StrandBreakArray = 0
-			this%ParentInferredSwitchCount = 0
-			this%PartialInformativeHaplotype = MissingPlantArrayCode
-			this%ParentalHaplotypesFull = MissingPlantArrayCode
-			this%PartialInformativeHaplotypeFull =MissingPlantArrayCode
-		end subroutine initialisePlantArrays
 
 end module IndividualModule
+
+
 
 

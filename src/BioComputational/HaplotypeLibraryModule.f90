@@ -215,7 +215,7 @@ module HaplotypeLibraryModule
 			library % Size = library % Size + 1
 			library%newStore(library%Size) = hap
 
-			library%hapfreq(library%size) = 1
+			! library%hapfreq(library%size) = 1
 			id = library%size
 		end function addHap
 
@@ -789,6 +789,10 @@ module HaplotypeLibraryModule
 			integer, intent(in) :: id
 
 			library%newstore(id:library%size-1) = library%newstore(id+1:library%size)
+            
+            library%hapfreq(id:library%size-1) = library%hapfreq(id+1:library%size)
+            library%hapfreq(library%size) = 0
+
 			library%size = library%size - 1
 		end subroutine removeHap
 

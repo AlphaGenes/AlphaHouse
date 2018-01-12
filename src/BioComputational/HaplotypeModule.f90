@@ -280,11 +280,12 @@ contains
         endif
         allocate(h%phase(h%sections))
         allocate(h%missing(h%sections))
-        allocate(h%locked(h%sections))
         h%phase = phase
         h%missing = missing
-        h%locked = locked
-
+        if (allocated(locked)) then
+            allocate(h%locked(h%sections))
+            h%locked = locked
+        endif
         do i = 64 - h%overhang, 63
             h%phase(h%sections) = ibclr(h%phase(h%sections), i)
             h%missing(h%sections) = ibclr(h%missing(h%sections), i)
@@ -437,6 +438,18 @@ contains
         logical :: same
 
         integer :: i
+
+
+        if (.not. h1%sections == h2%sections) then
+            same = .false.
+            return
+        endif
+
+        if (.not. h1%overhang == h2%overhang) then
+            same = .false.
+            return
+        endif
+
 
         if (h1%length /= h2%length) then
             same = .false.

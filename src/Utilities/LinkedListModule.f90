@@ -39,28 +39,29 @@ module LinkedListModule
 
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief subroutine to deep copy linked list
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine copyLinkedList(list, this)
 			type(LinkedList), pointer, intent(inout) :: list
 			type(LinkedList), pointer, intent(in) :: this
 			type(LinkedList), pointer :: cur, t
 			type(LinkedList), pointer :: next
 
-			! l => list
 			t => this
 			if (associated(t)) then
 
 				if (.not. ASSOCIATED(list)) then
 					allocate(list)
 				endif
-				! allocate(l)
 				allocate(list%data)
 				list%next => null()
-				! print *,"here",t%data%key
 				list%data%key = t%data%key
 				list%data%value = t%data%value
 				cur =>list
-				do while (associated(t%next))
+				do while (associated(t))
 					allocate( next )
 					cur%next => next
 					allocate( next%data)
@@ -73,6 +74,12 @@ module LinkedListModule
 
 		end subroutine copyLinkedList
 
+
+				!---------------------------------------------------------------------------
+		!< @brief Function to check linked list equality 
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		logical function equalLists(left,right)
 			type(LinkedList), pointer,intent(in) :: left
 			type(LinkedList), pointer,intent(in) :: right
@@ -134,6 +141,12 @@ module LinkedListModule
 
 		! end function copyLinkedList
 
+
+				!---------------------------------------------------------------------------
+		!< @brief Helper Function to check list equality
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		logical function LIST_DATAEquals(l, r)
 			class(LIST_DATA), intent(in) :: l,r
 			if (l%value == r%value) then
@@ -145,7 +158,11 @@ module LinkedListModule
 		end function LIST_DATAEquals
 
 
-
+				!---------------------------------------------------------------------------
+		!< @brief deallocates list data object
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine clearData(d)
 			type(LIST_DATA):: d
 

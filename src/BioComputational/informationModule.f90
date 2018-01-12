@@ -1,4 +1,3 @@
-
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -53,11 +52,12 @@ module informationModule
 
 
 
-    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath, snpErrorPath) result(meanAccuracy)
+    function calculateAccuracyPerAnimal(ped, trueFile, outputPerAnimalPath, snpErrorPath, lowDensityOnly) result(meanAccuracy)
         
         type(PedigreeHolder) :: ped
         character(len=*),intent(in) :: trueFile
         character(len=*),intent(in),optional :: outputPerAnimalPath, snpErrorPath
+        integer, optional :: lowDensityOnly
 
         integer(kind=1), allocatable, dimension(:) :: tmpArray
         integer :: animal,i, unit, lines, snpErrorUnit
@@ -71,10 +71,12 @@ module informationModule
         endif
 
         ! set accuracies as 1, so not pedigreed animals won't affect
-        accuracies = 1
+        
         
         lines = countLines(trueFile)
         allocate(accuracies(lines))
+
+        accuracies = 1
         allocate(tmpIds(lines))
         ! allocate the
         allocate(tmpArray(ped%pedigree(ped%genotypeMap(1))%individualgenotype%length))
@@ -86,9 +88,13 @@ module informationModule
         do i=1,lines
 
             read(unit,*) tmpIDs(i), tmpArray
-
+        
             animal = ped%dictionary%getValue(tmpIDs(i))
             if (animal /= DICT_NULL) Then
+
+                if (present(lowDensityOnly)) then
+                    if (ped%pedigree(animal)%hd) cycle
+                endif
                 if (present(snpErrorPath)) then
                     accuracies(i) = corAccuracies(tmpArray, ped%pedigree(animal)%individualGenotype%toIntegerArray(), i, snpErrorUnit)
                 else
@@ -109,7 +115,7 @@ module informationModule
         if (present(snpErrorPath)) then
             close(snpErrorUnit)
         endif
-        meanAccuracy = 0
+        
         meanAccuracy = sum(accuracies) / lines
             
 
@@ -221,7 +227,7 @@ module informationModule
         enddo 
 
         res = 1 - real(incorrect) / real(count)
-
+        if(count == 0) res = 1
     end function corAccuracies
     ! subroutine checkPhaseYield
 

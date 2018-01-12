@@ -30,7 +30,7 @@ module alphaFullChromModule
 		use pedigreeModule
 
 		class(baseSpecFile),target :: specFileInput
-		type(pedigreeHolder), optional :: ped
+		type(pedigreeHolder), target, optional :: ped
 	end subroutine runProgram
 end interface
 contains
@@ -55,7 +55,7 @@ contains
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		integer :: sexChroms
 		integer :: totalToDo, curChrom
 		class(baseSpecFile) :: specfile
 		real(kind=real64), dimension(:) ,allocatable :: lengths
@@ -77,7 +77,10 @@ contains
 
 		do i=1, totalToDo
 
-
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle 
+			endif
 			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
 			path = "MultiChromResults/" // curChrom
@@ -89,7 +92,7 @@ contains
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. sexChroms /= 0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -132,25 +135,26 @@ contains
 		procedure(runProgram), pointer, intent(in):: funPointer
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
-		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		type(plinkInfoType) :: plinkInfo
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
-			call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlink(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		else
-			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
-			specFile%resultFolderPath = chromPaths(i)
-			specFile%nsnp = nsnps(i)
-			! write(chromPath,'(a,i0)') "chr",i
-			! result=makedirqq(prepend//trim(chromPath))
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle 
+			endif
+			specFile%resultFolderPath = trim(chromPaths(i))//"results"
+			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
 			print *,"doing chrom ", i
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. plinkInfo%sexChrom /=0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -168,11 +172,11 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 			! first chrom should already be read in
 			! if (i /= 1) then
-			print *,"using ",trim(chromPaths(i))//"genotypes.txt",nsnps(i)
+			print *,"using ",trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i)
 
-			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
-			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
-			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
+			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i),initAll=1)
+			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",plinkInfo%nsnpsPerChromosome(i))
+			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",plinkInfo%nsnpsPerChromosome(i))
 
 
 
@@ -180,14 +184,18 @@ contains
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
-
-
 		enddo
 
+		if (specfile%plinkOutput) then
+			call writePedFile(ped,plinkInfo,specfile,chromPaths)
+			call writeMapFile(plinkInfo)
+			call writeRefFile(plinkInfo)
+		endif
 
 	end subroutine runPlink
 #endif
 end module alphaFullChromModule
+
 
 
 
