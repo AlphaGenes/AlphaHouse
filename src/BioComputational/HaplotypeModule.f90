@@ -53,6 +53,7 @@ module HaplotypeModule
         integer :: sections
         integer :: overhang
         integer :: length
+        integer :: startPosition =0 !Will be zero unless subset
     contains
         procedure :: toIntegerArray => haplotypeToIntegerArray
         procedure :: toIntegerArrayWithErrors
@@ -1106,7 +1107,7 @@ contains
 
         sub%sections = (sub%length-1) / 64 + 1
         sub%overhang = 64 - (sub%length - (sub%sections - 1) * 64)
-
+        sub%startPosition = start
         allocate(sub%phase(sub%sections))
         allocate(sub%missing(sub%sections))
 
