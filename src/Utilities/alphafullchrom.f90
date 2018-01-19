@@ -181,6 +181,9 @@ contains
 
 
 			print *,"starting function run"
+			if (.not. specFile%validate()) then
+				write(error_unit, *) "ERROR - Spec file validation has failed"
+			endif
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
