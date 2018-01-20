@@ -76,6 +76,9 @@ module IndividualModule
 	logical(kind=1):: isInbred
 	logical(kind=1)::isImputed
 	logical(kind=1) :: IgnoreMe =.false.
+	
+
+	integer :: used = 0 !< if not 0, then value has been initialised  
 
 
 	type(IntegerLinkedList) :: families

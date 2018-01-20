@@ -4596,6 +4596,166 @@ module PedigreeModule
 		end subroutine addSireDamToListAndUpdateValues
 
 
+		subroutine memoryClearer(this)
+		type(PedigreeHolder),intent(inout)  :: this
+			!$OMP Parallel DO
+			do i=1, ped%pedigreeSize
+				
+				if (ped%pedigree(i)%used == 0) then
+					call writeOutPhaseAndGenotypeBinary(ped%pedigree(i))
+					deallocate(ped%pedigree(i)%individualGenotype)
+					deallocate(ped%pedigree(i)%individualPhase)
+				endif
+			enddo
+			!$omp end parallel do
+			
+		end subroutine memoryClearer
+
+
+
+
+		
+		subroutine writeOutPhaseAndGenotypeBinary(individual)
+			use constantModule, only : storageFolder
+				type(individual) :: individual
+				logical :: exists, result
+				integer :: unit
+				inquire(file=storageFolder,EXIST=exists)
+
+				if (.not. exists.) then
+					result = MAKEDIRQQ(storageFolder)			
+				endif
+
+				inquire(file=storageFolder//trim(individual%originalID),EXIST=exists)
+				if (.not. exists.) then
+					result = MAKEDIRQQ(storageFolder//trim(individual%originalID))			
+				endif
+
+				inquire(file=storageFolder//trim(individual%originalID)//DASH // "phase1",EXIST=exists)
+				if (.not. exists.) then
+					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase1")			
+				endif
+
+				inquire(file=storageFolder//trim(individual%originalID)//DASH // "phase2",EXIST=exists)
+				if (.not. exists.) then
+					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase2")			
+				endif
+
+				inquire(file=storageFolder//trim(individual%originalID)//DASH // "genotype",EXIST=exists)
+				if (.not. exists.) then
+					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase")			
+				endif
+
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", 'unformatted')
+				write(unit) sections
+				write(unit) homo
+				write(unit) additional
+				write(unit) locked
+				write(unit) hasLock
+				write(unit) overhang
+				write(unit) length
+				close(unit)
+
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", 'unformatted')
+				write(unit) sections
+				write(unit) phase
+				write(unit) missing
+				write(unit) locked
+				write(unit) hasLock
+				write(unit) overhang
+				write(unit) length
+				write(unit) startPosition
+				close(unit)
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", 'unformatted')
+				write(unit) sections
+				write(unit) phase
+				write(unit) missing
+				write(unit) locked
+				write(unit) hasLock
+				write(unit) overhang
+				write(unit) length
+				write(unit) startPosition
+				close(unit)
+				
+
+
+			
+		end subroutine writeOutPhaseAndGenotypeBinary
+
+
+		subroutine readInPhaseAndGenotypeBinary(individual)
+					
+				type(individual) :: individual
+				integer :: unit
+
+				allocate(individual%individualGenotype)
+				allocate(individual%individualPhase(2))
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", 'unformatted')
+				
+				
+				read(unit) individual%individualGenotype%sections
+
+				allocate(individual%individualGenotype%homo(individual%individualGenotype%sections))
+				allocate(individual%individualGenotype%additional(individual%individualGenotype%sections))
+				allocate(individual%individualGenotype%locked(individual%individualGenotype%sections))
+				read(unit) individual%individualGenotype%homo
+				read(unit) individual%individualGenotype%additional
+				read(unit) individual%individualGenotype%locked
+				read(unit) individual%individualGenotype%hasLock
+				read(unit) individual%individualGenotype%overhang
+				read(unit) individual%individualGenotype%length
+				close(unit)
+
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", 'unformatted')
+				read(unit) individual%individualPhase(1)%sections
+
+				allocate(individual%individualPhase(1)%phase(individual%individualPhase(1)%sections))
+				allocate(individual%individualPhase(1)%missing(individual%individualPhase(1)%sections))
+				allocate(individual%individualPhase(1)%locked(individual%individualPhase(1)%sections))
+				read(unit) individual%individualPhase(1)%phase
+				read(unit) individual%individualPhase(1)%missing
+				read(unit) individual%individualPhase(1)%locked
+				read(unit) individual%individualPhase(1)%hasLock
+				read(unit) individual%individualPhase(1)%overhang
+				read(unit) individual%individualPhase(1)%length
+				read(unit) individual%individualPhase(1)%startPosition
+				close(unit)
+
+				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", 'unformatted')
+				read(unit) individual%individualPhase(2)%sections
+
+				allocate(individual%individualPhase(2)%phase(individual%individualPhase(1)%sections))
+				allocate(individual%individualPhase(2)%missing(individual%individualPhase(1)%sections))
+				allocate(individual%individualPhase(2)%locked(individual%individualPhase(1)%sections))
+				read(unit) individual%individualPhase(2)%phase
+				read(unit) individual%individualPhase(2)%missing
+				read(unit) individual%individualPhase(2)%locked
+				read(unit) individual%individualPhase(2)%hasLock
+				read(unit) individual%individualPhase(2)%overhang
+				read(unit) individual%individualPhase(2)%length
+				read(unit) individual%individualPhase(2)%startPosition
+				close(unit)
+
+		end subroutine readInPhaseAndGenotypeBinary
+
+
+
+	
+		subroutine memGetter(individual) 
+			type(individual), intent(inout) :: individual !< individual to check what memory needs got from
+
+			if allocated(individual%individualGenotype) return !< if info is already there, don't read in
+			
+			! spawn new thread here - so other animal jobs can still be done on reading		
+			call readInPhaseAndGenotypeBinary(individual)
+
+		end subroutine memGetter
+
 end module PedigreeModule
 
 
