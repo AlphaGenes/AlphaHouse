@@ -76,9 +76,6 @@ module IndividualModule
 	logical(kind=1):: isInbred
 	logical(kind=1)::isImputed
 	logical(kind=1) :: IgnoreMe =.false.
-	
-
-	integer :: used = 0 !< if not 0, then value has been initialised  
 
 
 	type(IntegerLinkedList) :: families
@@ -86,6 +83,9 @@ module IndividualModule
 	integer, allocatable, dimension(:) :: inconsistencies !< number of consistencies an individual has overall, so each offsprings inconsistencies will add to this.
 	integer :: inconsistencyCount
 	character(len=IDLENGTH) :: familyId
+
+
+	integer :: used = 1 !< field stating last cycle that genotype has been upgraded 
 
 	contains
 		procedure :: initIndividual
@@ -142,6 +142,7 @@ module IndividualModule
 		procedure :: getProbabilitiesFromOwnGenotypeAndPhase
 		procedure :: initPhaseAndGenotypes
 		procedure :: initGenotype
+		procedure :: incrementUsed
 		generic:: write(formatted)=> writeIndividual
 
 
@@ -1791,6 +1792,23 @@ module IndividualModule
 
 		end subroutine getProbabilitiesFromOwnGenotypeAndPhase
 
+
+		subroutine incrementUsed(this)
+			class(individual) :: this
+
+
+			this%used = this%used+1
+
+		end subroutine incrementUsed
+
+
+		subroutine setGenotype(this, pos, value)
+			class(individual) :: this
+			integer, intent(in) :: pos, value
+
+			call this%individualGenotype%setGenotype(pos, value)
+			call this%incrementUsed()
+		end subroutine setGenotype
 
 end module IndividualModule
 
