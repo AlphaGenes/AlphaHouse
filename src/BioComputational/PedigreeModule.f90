@@ -1,4 +1,37 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
+!######
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -479,8 +512,8 @@ module PedigreeModule
 					return
 				endif
 				if (pedOne%genotypeDictionary == pedTwo%genotypeDictionary) then
-				equality = .false.
-				return 
+					equality = .false.
+					return
 				endif
 			endif
 
@@ -490,8 +523,8 @@ module PedigreeModule
 					return
 				endif
 				if (pedOne%hdDictionary == pedTwo%hdDictionary) then
-				equality = .false.
-				return 
+					equality = .false.
+					return
 				endif
 			endif
 
@@ -1125,7 +1158,7 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Sets the phase for homozygotic snps 
+		!< @brief Sets the phase for homozygotic snps
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2017
 		!---------------------------------------------------------------------------
@@ -3596,7 +3629,7 @@ module PedigreeModule
 			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
-				
+
 				res(i,:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
 				res(i,:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
@@ -4193,7 +4226,7 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Sets the phase for homozygotic snps 
+		!< @brief Sets the phase for homozygotic snps
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2017
 		!---------------------------------------------------------------------------
@@ -4597,166 +4630,168 @@ module PedigreeModule
 
 
 		subroutine memoryClearer(this)
-		type(PedigreeHolder),intent(inout)  :: this
+			type(PedigreeHolder),intent(inout)  :: this
+			integer :: i
+			
 			!$OMP Parallel DO
-			do i=1, ped%pedigreeSize
-				
-				if (ped%pedigree(i)%used == 0) then
-					call writeOutPhaseAndGenotypeBinary(ped%pedigree(i))
-					deallocate(ped%pedigree(i)%individualGenotype)
-					deallocate(ped%pedigree(i)%individualPhase)
+			do i=1, this%pedigreeSize
+
+				if (this%pedigree(i)%used == 0) then
+					call writeOutPhaseAndGenotypeBinary(this%pedigree(i))
+					deallocate(this%pedigree(i)%individualGenotype)
+					deallocate(this%pedigree(i)%individualPhase)
 				endif
 			enddo
 			!$omp end parallel do
-			
+
 		end subroutine memoryClearer
 
 
 
 
-		
-		subroutine writeOutPhaseAndGenotypeBinary(individual)
+
+		subroutine writeOutPhaseAndGenotypeBinary(ind)
 			use constantModule, only : storageFolder
-				type(individual) :: individual
-				logical :: exists, result
-				integer :: unit
-				inquire(file=storageFolder,EXIST=exists)
+			USE IFPORT
+			type(individual) :: ind
+			logical :: exists, result
+			integer :: unit
+			inquire(file=storageFolder,EXIST=exists)
 
-				if (.not. exists.) then
-					result = MAKEDIRQQ(storageFolder)			
-				endif
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder)
+			endif
 
-				inquire(file=storageFolder//trim(individual%originalID),EXIST=exists)
-				if (.not. exists.) then
-					result = MAKEDIRQQ(storageFolder//trim(individual%originalID))			
-				endif
+			inquire(file=storageFolder//trim(ind%originalID),EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//trim(ind%originalID))
+			endif
 
-				inquire(file=storageFolder//trim(individual%originalID)//DASH // "phase1",EXIST=exists)
-				if (.not. exists.) then
-					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase1")			
-				endif
+			inquire(file=storageFolder//trim(ind%originalID)//DASH // "phase1",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//trim(ind%originalID)//DASH // "phase1")
+			endif
 
-				inquire(file=storageFolder//trim(individual%originalID)//DASH // "phase2",EXIST=exists)
-				if (.not. exists.) then
-					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase2")			
-				endif
+			inquire(file=storageFolder//trim(ind%originalID)//DASH // "phase2",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//trim(ind%originalID)//DASH // "phase2")
+			endif
 
-				inquire(file=storageFolder//trim(individual%originalID)//DASH // "genotype",EXIST=exists)
-				if (.not. exists.) then
-					result = MAKEDIRQQ(storageFolder//trim(individual%originalID)//DASH // "phase")			
-				endif
-
-
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", 'unformatted')
-				write(unit) sections
-				write(unit) homo
-				write(unit) additional
-				write(unit) locked
-				write(unit) hasLock
-				write(unit) overhang
-				write(unit) length
-				close(unit)
+			inquire(file=storageFolder//trim(ind%originalID)//DASH // "genotype",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//trim(ind%originalID)//DASH // "phase")
+			endif
 
 
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", 'unformatted')
-				write(unit) sections
-				write(unit) phase
-				write(unit) missing
-				write(unit) locked
-				write(unit) hasLock
-				write(unit) overhang
-				write(unit) length
-				write(unit) startPosition
-				close(unit)
-
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", 'unformatted')
-				write(unit) sections
-				write(unit) phase
-				write(unit) missing
-				write(unit) locked
-				write(unit) hasLock
-				write(unit) overhang
-				write(unit) length
-				write(unit) startPosition
-				close(unit)
-				
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualGenotype%sections
+			write(unit) ind%individualGenotype%homo
+			write(unit) ind%individualGenotype%additional
+			write(unit) ind%individualGenotype%locked
+			write(unit) ind%individualGenotype%hasLock
+			write(unit) ind%individualGenotype%overhang
+			write(unit) ind%individualGenotype%length
+			close(unit)
 
 
-			
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(1)%sections
+			write(unit) ind%individualPhase(1)%phase
+			write(unit) ind%individualPhase(1)%missing
+			write(unit) ind%individualPhase(1)%locked
+			write(unit) ind%individualPhase(1)%hasLock
+			write(unit) ind%individualPhase(1)%overhang
+			write(unit) ind%individualPhase(1)%length
+			write(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(2)%sections
+			write(unit) ind%individualPhase(2)%phase
+			write(unit) ind%individualPhase(2)%missing
+			write(unit) ind%individualPhase(2)%locked
+			write(unit) ind%individualPhase(2)%hasLock
+			write(unit) ind%individualPhase(2)%overhang
+			write(unit) ind%individualPhase(2)%length
+			write(unit) ind%individualPhase(2)%startPosition
+			close(unit)
+
 		end subroutine writeOutPhaseAndGenotypeBinary
 
 
-		subroutine readInPhaseAndGenotypeBinary(individual)
-					
-				type(individual) :: individual
-				integer :: unit
+		subroutine readInPhaseAndGenotypeBinary(ind)
 
-				allocate(individual%individualGenotype)
-				allocate(individual%individualPhase(2))
+			type(individual) :: ind
+			integer :: unit
 
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", 'unformatted')
-				
-				
-				read(unit) individual%individualGenotype%sections
+			allocate(ind%individualGenotype)
+			allocate(ind%individualPhase(2))
 
-				allocate(individual%individualGenotype%homo(individual%individualGenotype%sections))
-				allocate(individual%individualGenotype%additional(individual%individualGenotype%sections))
-				allocate(individual%individualGenotype%locked(individual%individualGenotype%sections))
-				read(unit) individual%individualGenotype%homo
-				read(unit) individual%individualGenotype%additional
-				read(unit) individual%individualGenotype%locked
-				read(unit) individual%individualGenotype%hasLock
-				read(unit) individual%individualGenotype%overhang
-				read(unit) individual%individualGenotype%length
-				close(unit)
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
 
 
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", 'unformatted')
-				read(unit) individual%individualPhase(1)%sections
+			read(unit) ind%individualGenotype%sections
 
-				allocate(individual%individualPhase(1)%phase(individual%individualPhase(1)%sections))
-				allocate(individual%individualPhase(1)%missing(individual%individualPhase(1)%sections))
-				allocate(individual%individualPhase(1)%locked(individual%individualPhase(1)%sections))
-				read(unit) individual%individualPhase(1)%phase
-				read(unit) individual%individualPhase(1)%missing
-				read(unit) individual%individualPhase(1)%locked
-				read(unit) individual%individualPhase(1)%hasLock
-				read(unit) individual%individualPhase(1)%overhang
-				read(unit) individual%individualPhase(1)%length
-				read(unit) individual%individualPhase(1)%startPosition
-				close(unit)
+			allocate(ind%individualGenotype%homo(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%additional(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%locked(ind%individualGenotype%sections))
+			read(unit) ind%individualGenotype%homo
+			read(unit) ind%individualGenotype%additional
+			read(unit) ind%individualGenotype%locked
+			read(unit) ind%individualGenotype%hasLock
+			read(unit) ind%individualGenotype%overhang
+			read(unit) ind%individualGenotype%length
+			close(unit)
 
-				open(newunit=unit,file=storageFolder//trim(individual%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", 'unformatted')
-				read(unit) individual%individualPhase(2)%sections
 
-				allocate(individual%individualPhase(2)%phase(individual%individualPhase(1)%sections))
-				allocate(individual%individualPhase(2)%missing(individual%individualPhase(1)%sections))
-				allocate(individual%individualPhase(2)%locked(individual%individualPhase(1)%sections))
-				read(unit) individual%individualPhase(2)%phase
-				read(unit) individual%individualPhase(2)%missing
-				read(unit) individual%individualPhase(2)%locked
-				read(unit) individual%individualPhase(2)%hasLock
-				read(unit) individual%individualPhase(2)%overhang
-				read(unit) individual%individualPhase(2)%length
-				read(unit) individual%individualPhase(2)%startPosition
-				close(unit)
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(1)%sections
+
+			allocate(ind%individualPhase(1)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(1)%phase
+			read(unit) ind%individualPhase(1)%missing
+			read(unit) ind%individualPhase(1)%locked
+			read(unit) ind%individualPhase(1)%hasLock
+			read(unit) ind%individualPhase(1)%overhang
+			read(unit) ind%individualPhase(1)%length
+			read(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(2)%sections
+
+			allocate(ind%individualPhase(2)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(2)%phase
+			read(unit) ind%individualPhase(2)%missing
+			read(unit) ind%individualPhase(2)%locked
+			read(unit) ind%individualPhase(2)%hasLock
+			read(unit) ind%individualPhase(2)%overhang
+			read(unit) ind%individualPhase(2)%length
+			read(unit) ind%individualPhase(2)%startPosition
+			close(unit)
 
 		end subroutine readInPhaseAndGenotypeBinary
 
 
 
-	
-		subroutine memGetter(individual) 
-			type(individual), intent(inout) :: individual !< individual to check what memory needs got from
+	! this should be called in an openmp task
+		subroutine memGetter(ind)
+			type(individual), intent(inout) :: ind !< individual to check what memory needs got from
 
-			if allocated(individual%individualGenotype) return !< if info is already there, don't read in
+			if (allocated(ind%individualGenotype)) return !< if info is already there, don't read in
+
+			! spawn new thread here - so other animal jobs can still be done on reading
 			
-			! spawn new thread here - so other animal jobs can still be done on reading		
-			call readInPhaseAndGenotypeBinary(individual)
+			call readInPhaseAndGenotypeBinary(ind)
 
 		end subroutine memGetter
 
 end module PedigreeModule
+
 
 
 
