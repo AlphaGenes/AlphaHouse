@@ -33,19 +33,20 @@ module baseSpecFileModule
 	logical :: plinkOutput !< if true - output in plink format
 	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
 	contains
-		procedure :: validate
+		! procedure :: validateBase
+		procedure :: validate => validateBase
 	end type baseSpecFile
 
 	contains
 
-		function validate(params) result(res)
+		function validateBase(params) result(res)
 
 			class(baseSpecFile) :: params
 			LOGICAL :: res
 			res = .true.
 
 
-		end function validate
+		end function validateBase
 
 
 
