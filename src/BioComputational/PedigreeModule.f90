@@ -4792,7 +4792,19 @@ module PedigreeModule
 		end subroutine readInPhaseAndGenotypeBinary
 
 
+					! this should be called in an openmp task
+			! We want to call this function only for animals required
+			! We also want to know if its phase or genotype they need
+		subroutine memGetter(ind)
+			type(individual), intent(inout) :: ind !< individual to check what memory needs got from
 
+			if (allocated(ind%individualGenotype)) return !< if info is already there, don't read in
+
+			! spawn new thread here - so other animal jobs can still be done on reading
+			
+			call readInPhaseAndGenotypeBinary(ind)
+
+		end subroutine memGetter
 
 
 end module PedigreeModule
