@@ -1,4 +1,37 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
+!######
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -479,8 +512,8 @@ module PedigreeModule
 					return
 				endif
 				if (pedOne%genotypeDictionary == pedTwo%genotypeDictionary) then
-				equality = .false.
-				return 
+					equality = .false.
+					return
 				endif
 			endif
 
@@ -490,8 +523,8 @@ module PedigreeModule
 					return
 				endif
 				if (pedOne%hdDictionary == pedTwo%hdDictionary) then
-				equality = .false.
-				return 
+					equality = .false.
+					return
 				endif
 			endif
 
@@ -1125,7 +1158,7 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Sets the phase for homozygotic snps 
+		!< @brief Sets the phase for homozygotic snps
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2017
 		!---------------------------------------------------------------------------
@@ -3596,7 +3629,7 @@ module PedigreeModule
 			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
-				
+
 				res(i,:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
 				res(i,:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
@@ -4193,7 +4226,7 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Sets the phase for homozygotic snps 
+		!< @brief Sets the phase for homozygotic snps
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2017
 		!---------------------------------------------------------------------------
@@ -4596,7 +4629,174 @@ module PedigreeModule
 		end subroutine addSireDamToListAndUpdateValues
 
 
+		subroutine memoryClearer(this)
+			type(PedigreeHolder),intent(inout)  :: this
+			integer :: i
+			
+			!$OMP Parallel DO
+			do i=1, this%pedigreeSize
+				this%pedigree(i)%used  = this%pedigree(i)%used  - 1 
+				if (this%pedigree(i)%used <= 0) then
+					call writeOutPhaseAndGenotypeBinary(this%pedigree(i))
+					deallocate(this%pedigree(i)%individualGenotype)
+					deallocate(this%pedigree(i)%individualPhase)
+				endif
+			enddo
+			!$omp end parallel do
+
+		end subroutine memoryClearer
+
+
+
+
+
+		subroutine writeOutPhaseAndGenotypeBinary(ind)
+			use constantModule, only : storageFolder
+			USE IFPORT
+			type(individual) :: ind
+			logical :: exists, result
+			integer :: unit
+			inquire(file=storageFolder,EXIST=exists)
+
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder)
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID),EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID))
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "phase1")
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "phase2")
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "genotype")
+			endif
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualGenotype%sections
+			write(unit) ind%individualGenotype%homo
+			write(unit) ind%individualGenotype%additional
+			write(unit) ind%individualGenotype%hasLock
+			if (ind%individualGenotype%hasLock) then
+				write(unit) ind%individualGenotype%locked
+			endif
+			write(unit) ind%individualGenotype%overhang
+			write(unit) ind%individualGenotype%length
+			close(unit)
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(1)%sections
+			write(unit) ind%individualPhase(1)%phase
+			write(unit) ind%individualPhase(1)%missing
+			write(unit) ind%individualPhase(1)%hasLock
+			if (ind%individualPhase(1)%hasLock) then
+				write(unit) ind%individualPhase(1)%locked
+			endif
+			write(unit) ind%individualPhase(1)%overhang
+			write(unit) ind%individualPhase(1)%length
+			write(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(2)%sections
+			write(unit) ind%individualPhase(2)%phase
+			write(unit) ind%individualPhase(2)%missing
+			write(unit) ind%individualPhase(2)%hasLock
+			if (ind%individualPhase(2)%hasLock) then
+				write(unit) ind%individualPhase(2)%locked
+			endif
+			write(unit) ind%individualPhase(2)%overhang
+			write(unit) ind%individualPhase(2)%length
+			write(unit) ind%individualPhase(2)%startPosition
+			close(unit)
+
+		end subroutine writeOutPhaseAndGenotypeBinary
+
+
+		subroutine readInPhaseAndGenotypeBinary(ind)
+
+			type(individual) :: ind
+			integer :: unit
+
+			allocate(ind%individualGenotype)
+			allocate(ind%individualPhase(2))
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
+
+
+			read(unit) ind%individualGenotype%sections
+
+			allocate(ind%individualGenotype%homo(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%additional(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%locked(ind%individualGenotype%sections))
+			read(unit) ind%individualGenotype%homo
+			read(unit) ind%individualGenotype%additional
+			read(unit) ind%individualGenotype%hasLock
+
+			if (ind%individualGenotype%hasLock) then
+				read(unit) ind%individualGenotype%locked
+			endif
+			read(unit) ind%individualGenotype%overhang
+			read(unit) ind%individualGenotype%length
+			close(unit)
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(1)%sections
+
+			allocate(ind%individualPhase(1)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(1)%phase
+			read(unit) ind%individualPhase(1)%missing
+			read(unit) ind%individualPhase(1)%hasLock
+
+			if (ind%individualPhase(1)%hasLock) then
+				read(unit) ind%individualPhase(1)%locked
+			endif
+			read(unit) ind%individualPhase(1)%overhang
+			read(unit) ind%individualPhase(1)%length
+			read(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(2)%sections
+
+			allocate(ind%individualPhase(2)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(2)%phase
+			read(unit) ind%individualPhase(2)%missing
+			read(unit) ind%individualPhase(2)%hasLock
+
+			if (ind%individualPhase(2)%hasLock) then
+				read(unit) ind%individualPhase(2)%locked
+			endif
+			read(unit) ind%individualPhase(2)%overhang
+			read(unit) ind%individualPhase(2)%length
+			read(unit) ind%individualPhase(2)%startPosition
+			close(unit)
+
+		end subroutine readInPhaseAndGenotypeBinary
+
+
+
+
+
 end module PedigreeModule
+
 
 
 

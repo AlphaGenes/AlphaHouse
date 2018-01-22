@@ -84,6 +84,9 @@ module IndividualModule
 	integer :: inconsistencyCount
 	character(len=IDLENGTH) :: familyId
 
+
+	integer :: used = 1 !< field stating last cycle that genotype has been upgraded 
+
 	contains
 		procedure :: initIndividual
 		procedure :: getSireDamByIndex
@@ -139,6 +142,7 @@ module IndividualModule
 		procedure :: getProbabilitiesFromOwnGenotypeAndPhase
 		procedure :: initPhaseAndGenotypes
 		procedure :: initGenotype
+		procedure :: incrementUsed
 		generic:: write(formatted)=> writeIndividual
 
 
@@ -1787,6 +1791,40 @@ module IndividualModule
 			this%phaseProbabilities(2,:) = this%IndividualPhase(2)%toIntegerArrayWithErrors()
 
 		end subroutine getProbabilitiesFromOwnGenotypeAndPhase
+
+
+		subroutine incrementUsed(this)
+			class(individual) :: this
+
+
+			this%used = this%used+1
+
+		end subroutine incrementUsed
+
+
+		subroutine setGenotype(this, pos, value)
+			class(individual) :: this
+			integer, intent(in) :: pos, value
+
+			call this%individualGenotype%setGenotype(pos, value)
+			call this%incrementUsed()
+		end subroutine setGenotype
+
+
+			! this should be called in an openmp task
+			! We want to call this function only for animals required
+		subroutine memGetter(ind)
+			type(individual), intent(inout) :: ind !< individual to check what memory needs got from
+
+			if (allocated(ind%individualGenotype)) return !< if info is already there, don't read in
+
+			! spawn new thread here - so other animal jobs can still be done on reading
+			
+			call readInPhaseAndGenotypeBinary(ind)
+
+		end subroutine memGetter
+
+
 
 
 end module IndividualModule
