@@ -1,4 +1,37 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
+!######
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -45,7 +78,7 @@ module PedigreeModule
 	type(IndividualLinkedList),allocatable, dimension(:) :: generations !linked List holding each generation
 	type(DictStructure),allocatable :: dictionary ! hashmap of animal ids to index in pedigree
 	integer(kind=int32) :: pedigreeSize, nDummys !pedigree size cannot be bigger than 2 billion animals
-	integer(kind=int32) :: addedRealAnimals !< animals that have been added, that aren't dummys 
+	integer(kind=int32) :: addedRealAnimals !< animals that have been added, that aren't dummys
 	integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
 	integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
 
@@ -138,6 +171,8 @@ module PedigreeModule
 		procedure :: writeOutGenotypesForImputed
 		procedure :: setSnpBasePairs
 		procedure :: setSnpLengths
+		procedure :: deepCheckPedigree
+		procedure :: initPedigreeFromOutputFileFolder
 
 
 
@@ -274,14 +309,13 @@ module PedigreeModule
 
 
 			call destroyPedigree(res)
-
 			res%pedigreeSize = this%pedigreeSize
 			res%nDummys = this%nDummys
 			res%unknownDummys = this%unknownDummys
 			res%maxPedigreeSize = this%maxPedigreeSize
 			res%inputMap = this%inputMap
 			res%genotypeMap = this%genotypeMap
-
+			res%addedRealAnimals = this%addedRealAnimals
 
 			allocate(tmpAnimalArray(this%pedigreeSize))
 
@@ -291,7 +325,7 @@ module PedigreeModule
 				if (.not. allocated(res%hdMap)) then
 					allocate(res%hdMap(res%pedigreeSize))
 				endif
-			res%hdMap = this%hdMap
+				res%hdMap = this%hdMap
 			endif
 
 			! can copy genotype and hd dictionaries as order will be the same,
@@ -308,7 +342,7 @@ module PedigreeModule
 				if (.not. allocated(res%genotypeDictionary)) then
 					allocate(res%genotypeDictionary)
 				endif
-				res%genotypeDictionary = this%genotypeDictionary
+				call deepCopyHash(res%genotypeDictionary,this%genotypeDictionary)
 			endif
 
 			res%nHd = this%nHd
@@ -316,19 +350,8 @@ module PedigreeModule
 			res%nsnpsPopulation = this%nsnpsPopulation
 			res%isSorted =this%isSorted
 
-
 			allocate(res%sireList)
 			allocate(res%damList)
-			if (allocated(this%sireList)) then
-				res%sireList = this%sireList
-			endif
-
-			if (allocated(this%damList)) then
-				res%damList = this%damList
-			endif
-
-
-
 			sizeDict  =this%pedigreeSize*2
 
 			allocate(res%pedigree(this%maxPedigreeSize))
@@ -344,11 +367,12 @@ module PedigreeModule
 
 			do i=1, this%pedigreeSize
 
-				call res%dictionary%addKey(this%pedigree(i)%originalID,i)
-				res%pedigree(i) = this%pedigree(i)
+				call res%dictionary%addKey(trim(this%pedigree(i)%originalID),i)
+				call copyIndividual(res%pedigree(i),this%pedigree(i))
 				call res%pedigree(i)%resetOffspringInformation
 				if (.not. res%pedigree(i)%Founder) then
 					! we know that sire and dam id should be set
+
 					tmpSire= res%dictionary%getValue(res%pedigree(i)%sireId)
 					tmpDam = res%dictionary%getValue(res%pedigree(i)%damId)
 
@@ -357,6 +381,7 @@ module PedigreeModule
 						tmpAnimalArrayCount = tmpAnimalArrayCount + 1
 						tmpAnimalArray(tmpAnimalArrayCount) = i
 					else
+
 						call res%pedigree(tmpSire)%addOffspring(res%pedigree(i))
 						res%pedigree(i)%sirePointer =>  res%pedigree(tmpSire)
 						if (res%pedigree(tmpSire)%nOffs== 1) then
@@ -373,13 +398,10 @@ module PedigreeModule
 					call res%founders%list_add(res%pedigree(i))
 				endif
 
-
 				if (res%isSorted /= 0) then
 					call res%generations(res%pedigree(i)%generation)%list_add(res%pedigree(i))
 				endif
-
 			enddo
-
 
 			do i=1, tmpAnimalArrayCount
 				tmpId = tmpAnimalArray(i)
@@ -388,9 +410,7 @@ module PedigreeModule
 				tmpDam = res%dictionary%getValue(res%pedigree(tmpId)%damPointer%originalId)
 				if (tmpSire == DICT_NULL .or. tmpDam == DICT_NULL) then
 					print *, "WE SHOULD NOT GET HERE IN COPY! PLEASE CONTACT DEVELOPERS"
-
-					print *,res%pedigree(tmpId)%sirePointer%originalId
-					print *,res%pedigree(tmpId)%damPointer%originalId
+					print *,res%pedigree(tmpId)%sireId,res%dictionary%getValue(res%pedigree(tmpId)%sireId)
 				else
 					call res%pedigree(tmpSire)%addOffspring(res%pedigree(tmpId))
 					res%pedigree(tmpId)%sirePointer =>  res%pedigree(tmpSire)
@@ -402,14 +422,67 @@ module PedigreeModule
 					if (res%pedigree(tmpDam)%nOffs== 1) then
 						call res%damList%list_add(res%pedigree(tmpDam))
 					endif
-
 				endif
-
 			enddo
-
 
 		end subroutine copyPedigree
 
+		!---------------------------------------------------------------------------
+		!< @brief Checks if all of the pointers line up in the pedigree
+		!< details this is done with the LOC intrinsic function
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
+		logical function deepCheckPedigree(this)
+
+			class(pedigreeHolder) , intent(in) :: this
+			integer :: i, h
+			type(IndividualLinkedListNode), pointer :: p1
+			deepCheckPedigree = .true.
+			do i=1, this%pedigreeSize
+
+				if (associated(this%pedigree(i)%sirePointer)) then
+					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+				endif
+
+				if (associated(this%pedigree(i)%damPointer)) then
+					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+				endif
+
+				do h=1,this%pedigree(i)%nOffs
+
+					if (loc(this%pedigree(i)%offsprings(h)%p) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%offsprings(h)%p%originalId)))) then
+						deepCheckPedigree = .false.
+						return
+					endif
+
+				enddo
+			enddo
+
+			p1 => this%sireList%first
+			do i=1, this%sireList%length
+				if (loc(p1%item) /= loc(this%pedigree(this%dictionary%getvalue(p1%item%originalId)))) then
+					deepCheckPedigree = .false.
+					return
+				endif
+				p1 => p1%next
+			enddo
+
+			p1 => this%damList%first
+			do i=1, this%damList%length
+				if (loc(p1%item) /= loc(this%pedigree(this%dictionary%getvalue(p1%item%originalId)))) then
+					deepCheckPedigree = .false.
+					return
+				endif
+				p1 => p1%next
+			enddo
+		end function deepCheckPedigree
 
 		!---------------------------------------------------------------------------
 		!< @brief Checks for array equality
@@ -419,7 +492,7 @@ module PedigreeModule
 		logical function equality(pedOne, pedTwo)
 
 			type(pedigreeHolder) , intent(in) :: pedOne, pedTwo
-			integer :: i
+			integer :: i,h
 
 			equality = .true.
 
@@ -428,25 +501,142 @@ module PedigreeModule
 				return
 			endif
 
+			if (pedOne%maxPedigreeSize /=  pedTwo%maxPedigreeSize) then
+				equality = .false.
+				return
+			endif
+
+			if (allocated(pedOne%genotypeDictionary)) then
+				if (.not. allocated(pedTwo%genotypeDictionary)) then
+					equality = .false.
+					return
+				endif
+				if (pedOne%genotypeDictionary == pedTwo%genotypeDictionary) then
+					equality = .false.
+					return
+				endif
+			endif
+
+			if (allocated(pedOne%hdDictionary)) then
+				if (.not. allocated(pedTwo%hdDictionary)) then
+					equality = .false.
+					return
+				endif
+				if (pedOne%hdDictionary == pedTwo%hdDictionary) then
+					equality = .false.
+					return
+				endif
+			endif
+
 			if (pedOne%nGenotyped /=  pedTwo%nGenotyped) then
 				equality = .false.
 				return
 			endif
+
+			if (pedOne%unknownDummys /=  pedTwo%unknownDummys) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%addedRealAnimals /=  pedTwo%addedRealAnimals) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%sireList%length /=  pedTwo%sireList%length) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%damList%length /=  pedTwo%damList%length) then
+				equality = .false.
+				return
+			endif
+
+			if (pedOne%founders%length /=  pedTwo%founders%length) then
+				equality = .false.
+				return
+			endif
+			! Compare lists
+			block
+				type(individualLinkedListnode), pointer :: p1,p2
+
+				p1 => pedOne%sireList%first
+				p2 => pedTwo%sireList%first
+				do i =1, pedOne%sireList%length
+					if (.not. compareIndividual(p1%item, p2%item)) then
+						equality = .false.
+						return
+					endif
+					p1 => p1%next
+					p2 => p2%next
+				enddo
+
+				p1 => pedOne%damList%first
+				p2 => pedTwo%damList%first
+				do i =1, pedOne%damList%length
+					if (.not. compareIndividual(p1%item, p2%item)) then
+						equality = .false.
+						return
+					endif
+					p1 => p1%next
+					p2 => p2%next
+				enddo
+				p1 => pedOne%founders%first
+				p2 => pedTwo%founders%first
+				do i =1, pedOne%founders%length
+					if (.not. compareIndividual(p1%item, p2%item)) then
+						equality = .false.
+						return
+					endif
+					p1 => p1%next
+					p2 => p2%next
+				enddo
+
+				if (pedOne%maxGeneration /= pedTwo%maxGeneration) then
+					equality = .false.
+					return
+				endif
+
+				do i=1, pedOne%maxGeneration
+					if (pedOne%generations(i)%length /=pedTwo%generations(i)%length) then
+						equality = .false.
+						return
+					endif
+
+					p1 => pedOne%generations(i)%first
+					p2 => pedTwo%generations(i)%first
+
+					do h=1,pedOne%generations(i)%length
+
+						if (.not. compareIndividual(p1%item, p2%item)) then
+							equality = .false.
+							return
+						endif
+
+						p1 => p1%next
+						p2 => p2%next
+					enddo
+				enddo
+			end block
 
 			if (pedOne%nHd /=  pedTwo%nHd) then
 				equality = .false.
 				return
 			endif
 
+			! compare individuals
 			do i=1, pedOne%pedigreeSize
 				if (.not. (pedOne%pedigree(i) == pedTwo%pedigree(i))) then
 					equality = .false.
 					return
 				endif
-
-
 			end do
 
+			if (pedOne%founders%length /= pedTwo%founders%length) then
+				equality = .false.
+				return
+			endif
 
 		end function equality
 
@@ -483,8 +673,6 @@ module PedigreeModule
 			endif
 
 			close(FileUnit)
-
-
 
 		end subroutine writeOutPhaseProbabilities
 
@@ -562,7 +750,12 @@ module PedigreeModule
 
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Returns an HD pedigree
+		!< details Creates a new pedigree Object with only the HD animals
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2018
+		!---------------------------------------------------------------------------
 		subroutine getHDPedigree(this,new)
 			class(pedigreeHolder) :: this
 			type(pedigreeHolder) :: new
@@ -655,15 +848,17 @@ module PedigreeModule
 				endif
 
 			enddo
-
 			new%nGenotyped = this%nHd
-			! new%genotypeMap = new%hdMap
-			! new%genotypeDictionary = new%hdDictionary
 			deallocate(tmpAnimalArray)
 		end subroutine getHDPedigree
 
 
-
+		!---------------------------------------------------------------------------
+		!< @brief Function to find and correct mendellian inconsistencies in the pedigree
+		!< details this is done with the LOC intrinsic function
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		function findMendelianInconsistencies(ped, thresholdIn,file,snpfilePath) result(CountChanges)
 			use genotypeModule
 			use BitUtilities
@@ -678,7 +873,8 @@ module PedigreeModule
 			integer :: i,j
 			character(len=*),intent(in), optional :: file !< path to
 			character(len=*),intent(in), optional :: snpfilePath !< path for file to output changes that were made to individual snps.
-			integer :: CountChanges, dumId
+			integer :: CountChanges !< returns the changes to the pedigree that the function has done
+			integer :: dumId
 			integer :: snpChanges
 			logical :: sireRemoved, damRemoved
 
@@ -795,6 +991,7 @@ module PedigreeModule
 
 			do i=1, ped%pedigreeSize
 				if (ped%pedigree(i)%Founder) cycle
+
 				! if both parents haven't been removed, check most likely one
 				! call ped%pedigree(i)%individualGenotype%setMissingBits(mend%individualInconsistencies)
 				do j=1,ped%pedigree(i)%individualGenotype%length
@@ -959,6 +1156,12 @@ module PedigreeModule
 			endif
 		end function getUniqueParents
 
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets the phase for homozygotic snps
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		subroutine homozygoticFillIn(this)
 
 			class(PedigreeHolder), intent(inout) :: this
@@ -1231,7 +1434,7 @@ module PedigreeModule
 			integer, intent(inout) :: nsnps
 			type(PedigreeHolder) :: pedStructure
 
-
+			call destroyPedigree(pedStructure)
 			allocate(pedStructure%sireList)
 			allocate(pedStructure%damList)
 			allocate(pedStructure%Founders)
@@ -1267,9 +1470,10 @@ module PedigreeModule
 			use AlphaHouseMod, only : countColumns
 			character(len=*), intent(in) :: folder !< input folder
 			integer, intent(inout) :: nsnps
-			type(PedigreeHolder) :: pedStructure
+			class(PedigreeHolder) :: pedStructure
 			character(len=:), allocatable :: pedigreeFile, genotypeFile, phaseFile,genderFile
 
+			call destroyPedigree(pedStructure)
 
 			pedigreeFile = "pedigree.txt"
 			genotypeFile = "genotypes.txt"
@@ -2063,6 +2267,13 @@ module PedigreeModule
 				nsnps = countColumns(genotypeFile, ' ') - 1
 			endif
 
+
+			if (this%nGenotyped /= 0) then
+				deallocate(this%genotypeMap)
+				deallocate(this%genotypeDictionary)
+				this%nGenotyped = 0
+			endif
+
 			allocate(tmpSnpArray(nsnps))
 			open(newUnit=fileUnit, file=genotypeFile, status="old")
 			do i=1, nAnnis
@@ -2548,18 +2759,14 @@ module PedigreeModule
 			integer, intent(in) , optional :: unknownDummysAtEnd !< if this option is specified, then only unknown dummies are put at end
 
 			if (this%isSorted /= 0) return
-			
+
 			if (allocated(this%generations)) deallocate(this%generations)
 			if (.not. allocated(this%generations)) then
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
-			pedCounter = 0
 
-		
-			! call this%dictionary%destroy()
-			! call this%founders%destroyLinkedList()
-			! call this%sireList%destroyLinkedList()
-			! call this%damList%destroyLinkedList()
+
+			pedCounter = 0
 
 			deallocate(this%sireList)
 			deallocate(this%damList)
@@ -2570,8 +2777,6 @@ module PedigreeModule
 			allocate(this%dictionary)
 			call this%dictionary%DictStructure(sizeDict)
 			allocate(newGenerationList(0:this%maxGeneration))
-
-
 			allocate(this%sireList)
 			allocate(this%damList)
 			allocate(this%founders)
@@ -2856,7 +3061,6 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			character(len=*), optional :: filePath
 			integer ::i,unit
-			character(IDLENGTH) :: res(3)
 
 			if(present(filepath)) then
 				open(newunit=unit, file=filePath, status="unknown")
@@ -2864,8 +3068,7 @@ module PedigreeModule
 				unit = output_unit
 			endif
 			do i= 1, this%pedigreeSize
-				res =  this%pedigree(i)%getCharacterVectorOfRecodedIds()
-				write(unit,'(3a20)')  this%pedigree(i)%originalId, res(2), res(3)
+				write(unit,'(3a32)')  trim(this%pedigree(i)%originalId), trim(this%pedigree(i)%sireId),trim(this%pedigree(i)%damId)
 			enddo
 		end subroutine printPedigreeOriginalFormat
 
@@ -3439,9 +3642,9 @@ module PedigreeModule
 			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
-				
-				res(this%genotypeMap(i),:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
-				res(this%genotypeMap(i),:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
+
+				res(i,:,1) = this%pedigree(i)%individualPhase(1)%toIntegerArray()
+				res(i,:,2) = this%pedigree(i)%individualPhase(2)%toIntegerArray()
 			enddo
 
 		end function getPhaseAsArrayWithMissing
@@ -3853,7 +4056,7 @@ module PedigreeModule
 
 			this%isSorted = 0
 
-			write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,this%nDummys
+			write(tmpCounterStr, '(a,I5)') dummyAnimalPrepre,this%nDummys
 			call this%Pedigree(this%pedigreeSize)%initIndividual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
@@ -3911,7 +4114,7 @@ module PedigreeModule
 			this%Pedigree(this%pedigreeSize)%isDummy = .false.
 			this%Pedigree(this%pedigreeSize)%originalPosition = this%addedRealAnimals
 			this%inputMap(this%pedigreeSize) = this%addedRealAnimals
-		
+
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
 
@@ -4035,6 +4238,11 @@ module PedigreeModule
 		end function countMissingPhaseNoDummys
 
 
+		!---------------------------------------------------------------------------
+		!< @brief Sets the phase for homozygotic snps
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
 		function calculatePedigreeCorrelationWithInbreeding(pedIn, additVarianceIn) result (values)
 			use SortedIntegerLinkedListModule
 			class(PedigreeHolder), intent(in):: pedIn
@@ -4404,6 +4612,7 @@ module PedigreeModule
 		end function calculatePedigreeCorrelationWithInBreedingMPI
 #endif
 
+
 		subroutine addSireDamToListAndUpdateValues(listIn, IndividualIn, values, firstValue)
 			use SortedIntegerLinkedListModule
 			type(sortedIntegerLinkedList), intent(inout):: listIn
@@ -4433,7 +4642,187 @@ module PedigreeModule
 		end subroutine addSireDamToListAndUpdateValues
 
 
+		subroutine memoryClearer(this)
+			type(PedigreeHolder),intent(inout)  :: this
+			integer :: i
+			
+			!$OMP Parallel DO
+			do i=1, this%pedigreeSize
+				this%pedigree(i)%used  = this%pedigree(i)%used  - 1 
+				if (this%pedigree(i)%used <= 0) then
+					call writeOutPhaseAndGenotypeBinary(this%pedigree(i))
+					deallocate(this%pedigree(i)%individualGenotype)
+					deallocate(this%pedigree(i)%individualPhase)
+				endif
+			enddo
+			!$omp end parallel do
+
+		end subroutine memoryClearer
+
+
+
+
+
+		subroutine writeOutPhaseAndGenotypeBinary(ind)
+			use constantModule, only : storageFolder
+			USE IFPORT
+			type(individual) :: ind
+			logical :: exists, result
+			integer :: unit
+			inquire(file=storageFolder,EXIST=exists)
+
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder)
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID),EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID))
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "phase1")
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "phase2")
+			endif
+
+			inquire(file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype",EXIST=exists)
+			if (.not. exists) then
+				result = MAKEDIRQQ(storageFolder//DASH//trim(ind%originalID)//DASH // "genotype")
+			endif
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualGenotype%sections
+			write(unit) ind%individualGenotype%homo
+			write(unit) ind%individualGenotype%additional
+			write(unit) ind%individualGenotype%hasLock
+			if (ind%individualGenotype%hasLock) then
+				write(unit) ind%individualGenotype%locked
+			endif
+			write(unit) ind%individualGenotype%overhang
+			write(unit) ind%individualGenotype%length
+			close(unit)
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(1)%sections
+			write(unit) ind%individualPhase(1)%phase
+			write(unit) ind%individualPhase(1)%missing
+			write(unit) ind%individualPhase(1)%hasLock
+			if (ind%individualPhase(1)%hasLock) then
+				write(unit) ind%individualPhase(1)%locked
+			endif
+			write(unit) ind%individualPhase(1)%overhang
+			write(unit) ind%individualPhase(1)%length
+			write(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			write(unit) ind%individualPhase(2)%sections
+			write(unit) ind%individualPhase(2)%phase
+			write(unit) ind%individualPhase(2)%missing
+			write(unit) ind%individualPhase(2)%hasLock
+			if (ind%individualPhase(2)%hasLock) then
+				write(unit) ind%individualPhase(2)%locked
+			endif
+			write(unit) ind%individualPhase(2)%overhang
+			write(unit) ind%individualPhase(2)%length
+			write(unit) ind%individualPhase(2)%startPosition
+			close(unit)
+
+		end subroutine writeOutPhaseAndGenotypeBinary
+
+
+		subroutine readInPhaseAndGenotypeBinary(ind)
+
+			type(individual) :: ind
+			integer :: unit
+
+			allocate(ind%individualGenotype)
+			allocate(ind%individualPhase(2))
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "genotype"// DASH// "genotypeFile", status="unknown", form = 'unformatted')
+
+
+			read(unit) ind%individualGenotype%sections
+
+			allocate(ind%individualGenotype%homo(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%additional(ind%individualGenotype%sections))
+			allocate(ind%individualGenotype%locked(ind%individualGenotype%sections))
+			read(unit) ind%individualGenotype%homo
+			read(unit) ind%individualGenotype%additional
+			read(unit) ind%individualGenotype%hasLock
+
+			if (ind%individualGenotype%hasLock) then
+				read(unit) ind%individualGenotype%locked
+			endif
+			read(unit) ind%individualGenotype%overhang
+			read(unit) ind%individualGenotype%length
+			close(unit)
+
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase1"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(1)%sections
+
+			allocate(ind%individualPhase(1)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(1)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(1)%phase
+			read(unit) ind%individualPhase(1)%missing
+			read(unit) ind%individualPhase(1)%hasLock
+
+			if (ind%individualPhase(1)%hasLock) then
+				read(unit) ind%individualPhase(1)%locked
+			endif
+			read(unit) ind%individualPhase(1)%overhang
+			read(unit) ind%individualPhase(1)%length
+			read(unit) ind%individualPhase(1)%startPosition
+			close(unit)
+
+			open(newunit=unit,file=storageFolder//DASH//trim(ind%originalID)//DASH // "phase2"// DASH// "phaseFile", status="unknown", form = 'unformatted')
+			read(unit) ind%individualPhase(2)%sections
+
+			allocate(ind%individualPhase(2)%phase(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%missing(ind%individualPhase(1)%sections))
+			allocate(ind%individualPhase(2)%locked(ind%individualPhase(1)%sections))
+			read(unit) ind%individualPhase(2)%phase
+			read(unit) ind%individualPhase(2)%missing
+			read(unit) ind%individualPhase(2)%hasLock
+
+			if (ind%individualPhase(2)%hasLock) then
+				read(unit) ind%individualPhase(2)%locked
+			endif
+			read(unit) ind%individualPhase(2)%overhang
+			read(unit) ind%individualPhase(2)%length
+			read(unit) ind%individualPhase(2)%startPosition
+			close(unit)
+
+		end subroutine readInPhaseAndGenotypeBinary
+
+
+					! this should be called in an openmp task
+			! We want to call this function only for animals required
+			! We also want to know if its phase or genotype they need
+		subroutine memGetter(ind)
+			type(individual), intent(inout) :: ind !< individual to check what memory needs got from
+
+			if (allocated(ind%individualGenotype)) return !< if info is already there, don't read in
+
+			! spawn new thread here - so other animal jobs can still be done on reading
+			
+			call readInPhaseAndGenotypeBinary(ind)
+
+		end subroutine memGetter
+
+
 end module PedigreeModule
+
+
 
 
 

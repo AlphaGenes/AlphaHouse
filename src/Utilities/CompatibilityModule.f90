@@ -198,7 +198,7 @@ end subroutine readFamFile
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    October 26, 2016
 !---------------------------------------------------------------------------
-subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo)
+subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo, useChroms)
 	use HashModule
 	use PedigreeModule
 
@@ -207,6 +207,7 @@ subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo)
 	character(len=128), dimension(:), allocatable, intent(out) :: outputPaths !< output paths for each chromosome
 	type(bimHolder) , allocatable, dimension(:) :: bimInfo
 	type(plinkInfoType) :: plinkInfo
+	integer, dimension(:), intent(in),allocatable, optional :: useChroms
 
 	! TODO change to pointer rather than copy
 	call readFamFile(ped,trim(binaryFilePre)//".fam")
@@ -215,8 +216,14 @@ subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo)
 	call readBED(trim(binaryFilePre)//".bed",ped,4,plinkInfo)
 	print *,"READ BED"
 
+	if (present(useChroms)) then
+		if(allocated(useChroms)) then
+			call createOutputFiles(ped, outputPaths,plinkInfo,useChroms)
+			return
+		endif
+	endif
+	
 	call createOutputFiles(ped, outputPaths,plinkInfo)
-
 
 
 end subroutine readPlink
@@ -226,7 +233,7 @@ end subroutine readPlink
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    October 26, 2017
 !---------------------------------------------------------------------------
-subroutine createOutputFiles(ped, outputPaths,plinkInfo)
+subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 	use ifport
 	use ALphaHouseMod, only : countLines
 
@@ -240,6 +247,7 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo)
 	integer, dimension(:), allocatable :: masked
 	integer :: result, i, h,p,refAlleleUnit,count
 	integer(kind=1),allocatable,dimension (:,:) :: array
+	integer, dimension(:), intent(in), optional :: useChroms
 	path = "fullGenome/"
 	result=makedirqq(path)
 
@@ -248,7 +256,11 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo)
 	allocate(outputPaths(plinkInfo%nChroms))
 	allocate(maskedLogi(size(plinkInfo%genotypes,2))) !< alloc to total number of snps
 	do i =1, plinkInfo%nChroms
+		
 
+		if (present(useChroms)) then
+			if (.not. any(useChroms == i)) cycle
+		endif
 		write(outChrFile, '(a,a,i0.2,a)') trim(path),trim("chr"),i,DASH
 
 		result=makedirqq(outChrFile)
@@ -561,7 +573,7 @@ end subroutine readBED
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    October 26, 2017
 !---------------------------------------------------------------------------
-subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo)
+subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo,useChroms)
 	use HashModule
 	use PedigreeModule
 	use AlphaHouseMod
@@ -569,7 +581,7 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo)
 
 	character(len=*),intent(in) :: filePre
 	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
-
+	integer, dimension(:), intent(in),allocatable, optional :: useChroms
 	type(plinkInfoType) :: plinkInfo
 	type(DictStructure) :: dict
 	type(pedigreeHolder) :: ped
@@ -577,6 +589,13 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo)
 	call readMap(trim(filePre)//".map",plinkInfo)
 	call readRef(trim(filePre)//".ref", plinkInfo)
 	call readPedFile(trim(filePre)//".ped",ped, plinkInfo)
+	if (present(useChroms)) then
+		if(allocated(useChroms)) then
+			call createOutputFiles(ped, outputPaths,plinkInfo,useChroms)
+			return
+		endif
+	endif
+	
 	call createOutputFiles(ped, outputPaths,plinkInfo)
 
 end subroutine readPlinkNoneBinary

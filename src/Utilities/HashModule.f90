@@ -31,391 +31,428 @@ module HashModule
 
 
 	type HASH_LIST
-	    type(LinkedList), pointer :: list => null()
-    contains 
-        final :: destroyHASH_LIST
-end type HASH_LIST
+	type(LinkedList), pointer :: list => null()
+	contains
+		final :: destroyHASH_LIST
+	end type HASH_LIST
 
-type DictStructure
+	type DictStructure
 
-type(HASH_LIST), pointer, dimension(:) :: table => null()
-integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
+	type(HASH_LIST), pointer, dimension(:) :: table => null()
+	integer(kind=int64) :: hash_size  = DEFAULTDICTSIZE
 
-contains
+	contains
 
-	final :: destroy
-	procedure :: addKey
-	procedure :: deleteKey
-	procedure :: getValue
-	procedure :: hasKey
-	procedure :: getElement
-	procedure :: getSize
-	procedure :: getAllKeys
-	procedure :: hashKey
-	procedure :: dict_create
-	procedure :: dict_create_val
+		final :: destroy
+		procedure :: addKey
+		procedure :: deleteKey
+		procedure :: getValue
+		procedure :: hasKey
+		procedure :: getElement
+		procedure :: getSize
+		procedure :: getAllKeys
+		procedure :: hashKey
+		procedure :: dict_create
+		procedure :: dict_create_val
 
-	generic :: DictStructure => dict_create, dict_create_val
-end type DictStructure
+		generic :: DictStructure => dict_create, dict_create_val
+	end type DictStructure
 
-interface DictStructure
-	module procedure dict_create
-	module procedure dict_create_val
-end interface DictStructure
+	interface DictStructure
+		module procedure dict_create
+		module procedure dict_create_val
+	end interface DictStructure
 
-interface assignment ( = )
-       module procedure deepCopyHash
-end interface assignment ( = )
+	interface assignment ( = )
+		module procedure deepCopyHash
+	end interface assignment ( = )
+	interface operator ( == )
+		module procedure compareHash
+	end interface operator ( == )
 
-
-! We do not want everything to be public
-!
-private :: LIST_DATA
-private :: HASH_LIST
-private :: LinkedList
-
-private :: getElement
-private :: hashKey
-
-
-contains
-
-    subroutine destroyHASH_LIST(hashList)
-
-        type(HASH_LIST) :: hashList
-
-
-		if (associated(hashList%list)) then
-			deallocate(hashList%list)
-		endif
-        hashList%list => null()
-        
-
-    end subroutine
+	! We do not want everything to be public
 	!
-	! Routines and functions specific to dictionaries
-	!
+	private :: LIST_DATA
+	private :: HASH_LIST
+	private :: LinkedList
 
-	!---------------------------------------------------------------------------
-	!> @brief Returns size of underlying table of dictionary
-	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
-	!> @date    October 26, 2016
-	!---------------------------------------------------------------------------
-	integer function getSize(this)
-		class(DictStructure) :: this
-		getSize = size(this%table)
-
-	end function getSize
+	private :: getElement
+	private :: hashKey
 
 
+	contains
 
-	subroutine deepCopyHash(hash,  old)
-	type(DictStructure) ,intent(inout):: hash
-	type(DictStructure), intent(in) :: old
-	integer :: i
-	
-	hash%hash_size = old%hash_size
-	allocate(hash%table(hash%hash_size))
-	do i=1, hash%hash_size
-		call copyLinkedList(hash%table(i)%list,old%table(i)%list)
-	enddo
-		
-	end subroutine deepCopyHash
+		!---------------------------------------------------------------------------
+		!< @brief Comparator function for hash tables
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
+		logical function compareHash(h1, h2)
 
+			type(DictStructure),intent(in) :: h1,h2
+			integer :: i
+			compareHash = .true.
+			if (h1%hash_size /= h2%hash_size) then
+				compareHash = .false.
+				return
+			endif
 
-	function getAllKeys(this) result(res)
-		use CharacterLinkedListModule
+			do i=1,h1%hash_size
 
-		class(DictStructure) :: this
-		character(len=IDLENGTH), dimension(:), allocatable :: res !< output array
-		type(CharacterLinkedList) :: list
-		type(LinkedList), pointer :: tmp
-		integer :: i
-
-
-		do i=1,this%hash_size
-
-			tmp => this%table(i)%list
-
-			do while (associated(tmp))
-                
-                if (allocated(tmp%data%key)) then
-				    call list%list_add(tmp%data%key)
-                endif
-				tmp => tmp%next
-
-			end do
-
-
-		enddo
-
-		res = list%convertToArray()
-
-
-	end function getAllKeys
-
-	!---------------------------------------------------------------------------
-	!> @brief Constructor for dictionary
-	!> @author  David Wilson david.wilson@roslin.ed.ac.uk
-	!> @date    October 26, 2016
-	!---------------------------------------------------------------------------
-	subroutine dict_create(dict,size)
-		class(DictStructure)  :: dict !< Dictionary Object
-		integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
-		integer(kind=int64) :: i
-
-		if (present(size)) then
-			dict%hash_size = size
-		else 
-			dict%hash_size = DEFAULTDICTSIZE
-		endif
-		! allocate( dict )
-		allocate( dict%table(dict%hash_size) )
-
-		do i = 1,dict%hash_size
-			dict%table(i)%list => null()
-		enddo
-
-	end subroutine dict_create
-
-	!---------------------------------------------------------------------------
-	!> @brief Constructor for dictionary withkey and value parameters
-	!> @author  David Wilson david.wilson@roslin.ed.ac.uk 
-	!> @date    October 26, 2016
-	!---------------------------------------------------------------------------
-	subroutine dict_create_val(dict,key, value, size )
-		class(DictStructure)  :: dict !< Dictionary Object
-		character(len=*), intent(in) ::  key !< key for value in dictionary
-		integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
-		integer, intent(in)  :: value !< value to be stored in dictionary
-		type(LIST_DATA), allocatable :: data
-		integer(kind=int64):: i
-		integer(kind=int64):: hash
-
-		if (present(size)) then
-			dict%hash_size = size
-		endif
-		allocate( dict%table(dict%hash_size) )
-
-		do i = 1,dict%hash_size
-			dict%table(i)%list => null()
-		enddo
-
-
-		allocate(data)
-		data%key   = key
-		data%value = value
-
-		hash = dict%hashKey( trim(key ) )
-		call list_create( dict%table(hash)%list, data )
-
-	end subroutine dict_create_val
-
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief     deinitialises a hashtable and frees all memory it was required to store.
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	!-------------------------------------------
-	subroutine destroy(this)
-		type(DictStructure) :: this
-
-		integer(kind=int64) :: i
-		
-
-		if (this%hash_size == 0) return
-		if (associated(this%table)) then
-			do i = 1,this%hash_size
-				if (associated(this%table(i)%list)) then
-					call list_destroy(this%table(i)%list )
-                	this%table(i)%list => null()
+				if (.not. equalLists(h1%table(i)%list, h2%table(i)%list )) then
+					compareHash = .false.
+					return
 				endif
 			enddo
-			deallocate(this%table)
-			nullify(this%table)
-			this%hash_size = 0
-		endif
-
-	end subroutine destroy
 
 
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief     Adds a new key, value pair to hashtable
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	! PARAMETERS:
-	!> @param[in] Value. class(*)
-	!> @param[in] key. String.
-	!---------------------------------------------------------------------------
-	subroutine addKey( this, key, value )
-		class(DictStructure)  :: this
-		character(len=*), intent(in) :: key
-		integer, intent(in)  :: value
-
-		type(LIST_DATA),allocatable              :: data
-		type(LinkedList), pointer   :: elem
-		integer(kind=int64) :: hash
+		end function compareHash
 
 
-		elem => getElement( this, key )
+		!---------------------------------------------------------------------------
+		!< @brief Function to deallocate hash table list
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
+		subroutine destroyHASH_LIST(hashList)
 
-		if ( associated(elem) ) then
-			elem%data%value = value
-		else
+			type(HASH_LIST) :: hashList
+
+
+			if (associated(hashList%list)) then
+				deallocate(hashList%list)
+			endif
+			hashList%list => null()
+
+
+		end subroutine
+		!
+		! Routines and functions specific to dictionaries
+		!
+
+		!---------------------------------------------------------------------------
+		!> @brief Returns size of underlying table of dictionary
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		integer function getSize(this)
+			class(DictStructure) :: this
+			getSize = size(this%table)
+
+		end function getSize
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Deep copy function for hash tables
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
+		subroutine deepCopyHash(hash,  old)
+			type(DictStructure) ,intent(inout):: hash
+			type(DictStructure), intent(in) :: old
+			integer :: i
+
+			hash%hash_size = old%hash_size
+			allocate(hash%table(hash%hash_size))
+			do i=1, hash%hash_size
+				call copyLinkedList(hash%table(i)%list,old%table(i)%list)
+			enddo
+
+		end subroutine deepCopyHash
+
+		!---------------------------------------------------------------------------
+		!< @brief Function to return a character array of keys in dictionary
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2017
+		!---------------------------------------------------------------------------
+		function getAllKeys(this) result(res)
+			use CharacterLinkedListModule
+
+			class(DictStructure) :: this
+			character(len=IDLENGTH), dimension(:), allocatable :: res !< output array
+			type(CharacterLinkedList) :: list
+			type(LinkedList), pointer :: tmp
+			integer :: i
+
+
+			do i=1,this%hash_size
+				tmp => this%table(i)%list
+				do while (associated(tmp))
+					if (allocated(tmp%data%key)) then
+						call list%list_add(tmp%data%key)
+					endif
+					tmp => tmp%next
+				end do
+			enddo
+
+			res = list%convertToArray()
+
+
+		end function getAllKeys
+
+		!---------------------------------------------------------------------------
+		!> @brief Constructor for dictionary
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine dict_create(dict,size)
+			class(DictStructure)  :: dict !< Dictionary Object
+			integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
+			integer(kind=int64) :: i
+
+			if (present(size)) then
+				dict%hash_size = size
+			else
+				dict%hash_size = DEFAULTDICTSIZE
+			endif
+			! allocate( dict )
+			allocate( dict%table(dict%hash_size) )
+
+			do i = 1,dict%hash_size
+				dict%table(i)%list => null()
+			enddo
+
+		end subroutine dict_create
+
+		!---------------------------------------------------------------------------
+		!> @brief Constructor for dictionary withkey and value parameters
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine dict_create_val(dict,key, value, size )
+			class(DictStructure)  :: dict !< Dictionary Object
+			character(len=*), intent(in) ::  key !< key for value in dictionary
+			integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
+			integer, intent(in)  :: value !< value to be stored in dictionary
+			type(LIST_DATA), allocatable :: data
+			integer(kind=int64):: i
+			integer(kind=int64):: hash
+
+			if (present(size)) then
+				dict%hash_size = size
+			endif
+			allocate( dict%table(dict%hash_size) )
+
+			do i = 1,dict%hash_size
+				dict%table(i)%list => null()
+			enddo
+
+
 			allocate(data)
 			data%key   = key
 			data%value = value
-			hash       = this%hashKey( trim(key) )
-			if ( associated( this%table(hash)%list ) ) then
-				call list_insert( this%table(hash)%list, data )
-			else
-				call list_create( this%table(hash)%list, data )
+
+			hash = dict%hashKey( trim(key ) )
+			call list_create( dict%table(hash)%list, data )
+
+		end subroutine dict_create_val
+
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief     deinitialises a hashtable and frees all memory it was required to store.
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		!-------------------------------------------
+		subroutine destroy(this)
+			type(DictStructure) :: this
+
+			integer(kind=int64) :: i
+
+
+			if (this%hash_size == 0) return
+			if (associated(this%table)) then
+				do i = 1,this%hash_size
+					if (associated(this%table(i)%list)) then
+						call list_destroy(this%table(i)%list )
+						this%table(i)%list => null()
+					endif
+				enddo
+				deallocate(this%table)
+				nullify(this%table)
+				this%hash_size = 0
 			endif
-		endif
 
-	end subroutine addKey
-
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief     Deletes key from hashtable
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	! PARAMETERS:
-	!> @param[in] Value. class(*)
-	!> @param[in] key. String.
-	!---------------------------------------------------------------------------
-	subroutine deleteKey( this, key )
-		class(DictStructure) :: this
-		character(len=*), intent(in) :: key
-
-		type(LinkedList), pointer   :: elem
-		integer(kind=int64) :: hash
-
-		elem => this%getElement(key )
-
-		if ( associated(elem) ) then
-			hash = this%hashKey( trim(key) )
-			call list_delete_element( this%table(hash)%list, elem )
-		endif
-	end subroutine deleteKey
-
-	! getValue
-	!     Get the value belonging to a key
-	! Arguments:
-	!     dict       Pointer to the dictionary
-	!     key        Key for which the values are sought
-	!
-	function getValue( this, key ) result(value)
-		class(DictStructure)   :: this
-		character(len=*), intent(in) :: key
-		integer :: value
-
-		type(LinkedList), pointer   :: elem
-
-		elem => this%getElement( key )
-
-		if ( associated(elem) ) then
-			value = elem%data%value
-		else
-			value = DICT_NULL
-		endif
-	end function getValue
-
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief      checks if hashtable contains key
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	! PARAMETERS:
-	!> @param[out] boolean relating to if structure contains key.
-	!> @param[in] key. String.
-	!---------------------------------------------------------------------------
-	logical function hasKey( this, key )
-		class(DictStructure) :: this
-		character(len=*), intent(in) :: key
-
-		type(LinkedList), pointer :: elem
-
-		elem => this%getElement(key )
-
-		hasKey = associated(elem)
-	end function hasKey
+		end subroutine destroy
 
 
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief      gets linked list element a at given key
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	! PARAMETERS:
-	!> @param[out] Element. Linked List Node.
-	!> @param[in] key. String.
-	!---------------------------------------------------------------------------
-	function getElement( this, key ) result(elem)
-		class(DictStructure) :: this
-		character(len=*), intent(in) :: key
-		type(LinkedList), pointer :: elem
-		integer(kind=int64) :: hash
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief     Adds a new key, value pair to hashtable
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		! PARAMETERS:
+		!> @param[in] Value. class(*)
+		!> @param[in] key. String.
+		!---------------------------------------------------------------------------
+		subroutine addKey( this, key, value )
+			class(DictStructure)  :: this
+			character(len=*), intent(in) :: key
+			integer, intent(in)  :: value
+
+			type(LIST_DATA),allocatable              :: data
+			type(LinkedList), pointer   :: elem
+			integer(kind=int64) :: hash
 
 
-		hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
-        elem => this%table(hash)%list
-        do while ( associated(elem) )
-                    if (allocated(elem%data%key)) then
-                        if ( elem%data%key .eq. key ) then
-                            exit
-                        else
-                            elem => list_next( elem )
-                        endif
-                    endif
-		enddo
+			elem => getElement( this, key )
 
-	end function getElement
+			if ( associated(elem) ) then
+				elem%data%value = value
+			else
+				allocate(data)
+				data%key   = key
+				data%value = value
+				hash       = this%hashKey( trim(key) )
+				if ( associated( this%table(hash)%list ) ) then
+					call list_insert( this%table(hash)%list, data )
+				else
+					call list_create( this%table(hash)%list, data )
+				endif
+			endif
+
+		end subroutine addKey
+
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief     Deletes key from hashtable
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		! PARAMETERS:
+		!> @param[in] Value. class(*)
+		!> @param[in] key. String.
+		!---------------------------------------------------------------------------
+		subroutine deleteKey( this, key )
+			class(DictStructure) :: this
+			character(len=*), intent(in) :: key
+
+			type(LinkedList), pointer   :: elem
+			integer(kind=int64) :: hash
+
+			elem => this%getElement(key )
+
+			if ( associated(elem) ) then
+				hash = this%hashKey( trim(key) )
+				call list_delete_element( this%table(hash)%list, elem )
+			endif
+		end subroutine deleteKey
+
+		! getValue
+		!     Get the value belonging to a key
+		! Arguments:
+		!     dict       Pointer to the dictionary
+		!     key        Key for which the values are sought
+		!
+		function getValue( this, key ) result(value)
+			class(DictStructure)   :: this
+			character(len=*), intent(in) :: key
+			integer :: value
+
+			type(LinkedList), pointer   :: elem
+
+			elem => this%getElement( key )
+
+			if ( associated(elem) ) then
+				value = elem%data%value
+			else
+				value = DICT_NULL
+			endif
+		end function getValue
+
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief      checks if hashtable contains key
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		! PARAMETERS:
+		!> @param[out] boolean relating to if structure contains key.
+		!> @param[in] key. String.
+		!---------------------------------------------------------------------------
+		logical function hasKey( this, key )
+			class(DictStructure) :: this
+			character(len=*), intent(in) :: key
+
+			type(LinkedList), pointer :: elem
+
+			elem => this%getElement(key )
+
+			hasKey = associated(elem)
+		end function hasKey
+
+
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief      gets linked list element a at given key
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		! PARAMETERS:
+		!> @param[out] Element. Linked List Node.
+		!> @param[in] key. String.
+		!---------------------------------------------------------------------------
+		function getElement( this, key ) result(elem)
+			class(DictStructure) :: this
+			character(len=*), intent(in) :: key
+			type(LinkedList), pointer :: elem
+			integer(kind=int64) :: hash
+
+
+			hash = this%hashKey(trim(key)) !< if key is empty string, this will return 0 and cause segfault error
+			elem => this%table(hash)%list
+			do while ( associated(elem) )
+				if (allocated(elem%data%key)) then
+					if ( elem%data%key .eq. key ) then
+						exit
+					else
+						elem => list_next( elem )
+					endif
+				endif
+			enddo
+
+		end function getElement
 
 
 
-	!---------------------------------------------------------------------------
-	! DESCRIPTION:
-	!> @brief      returns a hash of given string
-	!
-	!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
-	!
-	!> @date       October 25, 2016
-	!
-	! PARAMETERS:
-	!> @param[in] sizeOut. String.
-	!---------------------------------------------------------------------------
-	function hashKey(dict, key)
-		character(len=*), intent(in) :: key
-		class(DictStructure) :: dict
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!> @brief      returns a hash of given string
+		!
+		!> @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!> @date       October 25, 2016
+		!
+		! PARAMETERS:
+		!> @param[in] sizeOut. String.
+		!---------------------------------------------------------------------------
+		function hashKey(dict, key)
+			character(len=*), intent(in) :: key
+			class(DictStructure) :: dict
 
-		integer(kind=int64) :: i
-		integer(kind=int64) :: hashKey !<hashkey out
-		hashKey = 0
-		do i = 1,len(key)
-			hashKey = KMOD(DICT_MULTIPLIER * hashKey + ichar(key(i:i)), dict%hash_size)
-		enddo
+			integer(kind=int64) :: i
+			integer(kind=int64) :: hashKey !<hashkey out
+			hashKey = 0
+			do i = 1,len(key)
+				hashKey = KMOD(DICT_MULTIPLIER * hashKey + ichar(key(i:i)), dict%hash_size)
+			enddo
 
-		hashKey = 1 + hashKey
-	end function hashKey
+			hashKey = 1 + hashKey
+		end function hashKey
 
 
 
 end module HashModule
+
 
