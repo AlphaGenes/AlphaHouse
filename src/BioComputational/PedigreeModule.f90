@@ -1080,7 +1080,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine initPedigree(pedStructure, fileIn, numberInFile, genderFile, nsnps)
+		subroutine initPedigree(pedStructure, fileIn, numberInFile, genderFile, nsnps,dontInitAll)
 			use AlphaHouseMod, only : countLines
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -1088,6 +1088,7 @@ module PedigreeModule
 			character(len=*), intent(in),optional :: genderFile !< path to gender file
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
 			integer, optional, intent(in) :: nsnps !< number of snps for the population
+            integer, optional :: dontInitAll !< don't initialise all animals 
 
 			character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
 			integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
@@ -1149,8 +1150,13 @@ module PedigreeModule
 				endif
 				call pedStructure%dictionary%addKey(tmpId, i)
 
-				call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
-				pedStructure%Pedigree(i)%originalPosition = i
+                if (present(dontInitAll)) then
+				    call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped 
+				else
+                    call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+                    
+                endif
+                pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
 				if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
 					tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
@@ -1316,7 +1322,7 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile,initAll)
+		subroutine initPedigreeGenotypeFiles(pedStructure,fileIn, numberInFile, nSnp,GenotypeFileFormatIn, pedFile, genderfile,dontInitAll)
 			use AlphaHouseMod, only : countLines, countColumns
 			use iso_fortran_env
 			type(PedigreeHolder) :: pedStructure
@@ -1326,7 +1332,7 @@ module PedigreeModule
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
 			character(len=*),intent(in), optional :: pedFile !< path of pedigree file
 			character(len=*),intent(in), optional :: genderfile !< path of gender file
-			integer, intent(in), optional :: initAll !< if genotype and phase of all animals should be initialised
+			integer, intent(in), optional :: dontInitAll !< if genotype and phase of all animals should be initialised
 
 			character(len=IDLENGTH) :: tmpId
 			integer(kind=int32) :: fileUnit
@@ -1356,9 +1362,17 @@ module PedigreeModule
 			pedStructure%addedRealAnimals = nIndividuals
 			if  (present(pedFile)) then
 				if (present(genderFile)) then
-					call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
+                    if (present(dontInitAll)) then
+                        call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp, dontInitAll=dontInitAll)
+                    else
+					    call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
+                    end if
 				else
-					call initPedigree(pedStructure,pedFile, nsnps=nSnp)
+                    if (present(dontInitAll)) then
+                        call initPedigree(pedStructure,pedFile, nsnps=nSnp, dontInitAll=dontInitAll)
+                    else
+					    call initPedigree(pedStructure,pedFile, nsnps=nSnp)
+                    end if
 				endif
 			else
 
@@ -1424,8 +1438,7 @@ module PedigreeModule
 					call pedStructure%setAnimalAsGenotyped(i,tmpGeno)
 				endif
 			enddo
-
-			if (present(initAll)) then
+			if (.not. present(dontInitAll)) then
 				do i=1, pedStructure%pedigreeSize
 					if (.not. pedStructure%pedigree(i)%genotyped) then
 						call pedStructure%pedigree(i)%initPhaseAndGenotypes(pedStructure%nsnpsPopulation)
