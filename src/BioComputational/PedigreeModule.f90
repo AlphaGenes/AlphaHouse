@@ -173,7 +173,7 @@ module PedigreeModule
 		procedure :: setSnpLengths
 		procedure :: deepCheckPedigree
 		procedure :: initPedigreeFromOutputFileFolder
-
+		procedure :: setAnimalAsGenotypedFromPhase
 
 
 #ifdef MPIACTIVE
@@ -1291,7 +1291,7 @@ module PedigreeModule
 			character(len=*), intent(in),optional :: genderFile !< path to gender file
 			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of animals in file
 			integer, optional, intent(in) :: nsnps !< number of snps for the population
-            integer, optional :: dontInitAll !< don't initialise all animals 
+			integer, optional :: dontInitAll !< don't initialise all animals
 
 			character(len=IDLENGTH) :: tmpId,tmpSire,tmpDam
 			integer(kind=int32) :: stat, fileUnit,tmpSireNum, tmpDamNum, tmpGender,tmpIdNum
@@ -1353,13 +1353,13 @@ module PedigreeModule
 				endif
 				call pedStructure%dictionary%addKey(tmpId, i)
 
-                if (present(dontInitAll)) then
-				    call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped 
+				if (present(dontInitAll)) then
+					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i) !Make a new individual based on info from ped
 				else
-                    call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
-                    
-                endif
-                pedStructure%Pedigree(i)%originalPosition = i
+					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),trim(tmpSire),trim(tmpDam), i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+
+				endif
+				pedStructure%Pedigree(i)%originalPosition = i
 				pedStructure%inputMap(i) = i
 				if (tmpSire /= EMPTY_PARENT) then !check sire is defined in pedigree
 					tmpSireNum = pedStructure%dictionary%getValue(tmpSire)
@@ -1566,17 +1566,17 @@ module PedigreeModule
 			pedStructure%addedRealAnimals = nIndividuals
 			if  (present(pedFile)) then
 				if (present(genderFile)) then
-                    if (present(dontInitAll)) then
-                        call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp, dontInitAll=dontInitAll)
-                    else
-					    call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
-                    end if
+					if (present(dontInitAll)) then
+						call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp, dontInitAll=dontInitAll)
+					else
+						call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
+					end if
 				else
-                    if (present(dontInitAll)) then
-                        call initPedigree(pedStructure,pedFile, nsnps=nSnp, dontInitAll=dontInitAll)
-                    else
-					    call initPedigree(pedStructure,pedFile, nsnps=nSnp)
-                    end if
+					if (present(dontInitAll)) then
+						call initPedigree(pedStructure,pedFile, nsnps=nSnp, dontInitAll=dontInitAll)
+					else
+						call initPedigree(pedStructure,pedFile, nsnps=nSnp)
+					end if
 				endif
 			else
 
@@ -1662,6 +1662,132 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine initPedigreeGenotypeFiles
 
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Constructor for pedigree class using two line phase format
+		!< @details Constructor builds pedigree, without any sorting being done.
+		!< If no pedigree file is supplied, all animals are founders
+		!< If an animal is in the pedigree, but not in the genotypeFile, this animal is still created as a dummy!
+		!< If the animal is in the genotype file, but not in the pedigree, it is added!
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine initPedigreePhaseFiles(pedStructure,fileIn, numberInFile, nSnp,pedFile, genderfile,dontInitAll)
+			use AlphaHouseMod, only : countLines, countColumns
+			use iso_fortran_env
+			type(PedigreeHolder) :: pedStructure
+			integer, intent(inout) :: nSnp !< number of snps to read, if 0, will count columns and return
+			character(len=*),intent(in) :: fileIn !< path of Genotype file
+			integer(kind=int32),optional,intent(in) :: numberInFile !< Number of lines in file
+			character(len=*),intent(in), optional :: pedFile !< path of pedigree file
+			character(len=*),intent(in), optional :: genderfile !< path of gender file
+			integer, intent(in), optional :: dontInitAll !< if genotype and phase of all animals should be initialised
+
+			character(len=IDLENGTH) :: tmpId
+			integer(kind=int32) :: fileUnit
+			integer(kind=int64) :: nIndividuals
+			integer, allocatable, dimension(:) :: tmpAnimalArray !array used for animals which parents are not found
+			integer :: tmpAnimalArrayCount
+			integer(kind=1), dimension(:), allocatable :: tmpPhase1,tmpphase2
+			integer(kind=int64) :: sizeDict
+			integer :: i,j
+
+
+			if (nsnp == 0) then
+				nsnp = countColumns(fileIn,' ') - 1
+			end if
+
+			pedStructure%isSorted = 0
+			pedStructure%nHd = 0
+			pedStructure%nGenotyped = 0
+			pedStructure%nsnpsPopulation = nsnp
+			allocate(tmpphase1(nsnp))
+			allocate(tmpphase2(nsnp))
+			if (present(numberInFile)) then
+				nIndividuals = numberInFile/2
+			else
+				nIndividuals = countLines(fileIn)/2
+			endif
+			pedStructure%addedRealAnimals = nIndividuals
+			if  (present(pedFile)) then
+				if (present(genderFile)) then
+					if (present(dontInitAll)) then
+						call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp, dontInitAll=dontInitAll)
+					else
+						call initPedigree(pedStructure,pedFile, genderFile=genderFile, nsnps=nSnp)
+					end if
+				else
+					if (present(dontInitAll)) then
+						call initPedigree(pedStructure,pedFile, nsnps=nSnp, dontInitAll=dontInitAll)
+					else
+						call initPedigree(pedStructure,pedFile, nsnps=nSnp)
+					end if
+				endif
+			else
+
+				allocate(pedStructure%sireList)
+				allocate(pedStructure%damList)
+				allocate(pedStructure%Founders)
+				allocate(pedStructure%dictionary)
+				pedStructure%nDummys = 0
+				tmpAnimalArrayCount = 0
+				sizeDict = nIndividuals
+				pedStructure%maxPedigreeSize = nIndividuals + (nIndividuals * 4)
+				allocate(pedStructure%Pedigree(pedStructure%maxPedigreeSize))
+				pedStructure%pedigreeSize = nIndividuals
+				call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
+				allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
+				allocate(pedStructure%inputMap(nIndividuals))
+				pedStructure%maxGeneration = 0
+			endif
+
+
+			open(newUnit=fileUnit, file=fileIn, status="old")
+
+			do i=1,nIndividuals
+				read (fileUnit, *) tmpId, tmpPhase1(:)
+				read (fileUnit, *) tmpId, tmpPhase2(:)
+
+
+				if (present(pedFile)) then
+					j = pedStructure%dictionary%getValue(tmpID)
+
+					if ( j == DICT_NULL) then
+						call pedStructure%addAnimalAtEndOfPedigree(tmpID)
+						call pedStructure%setAnimalAsGenotypedFromPhase(pedStructure%pedigreeSize,tmpPhase1,tmpPhase2)
+					else
+						call pedStructure%setAnimalAsGenotypedFromPhase(j,tmpPhase1,tmpPhase2)
+					endif
+				else
+					call pedStructure%dictionary%addKey(tmpId, i)
+					call pedStructure%Pedigree(i)%initIndividual(trim(tmpId),"0","0", i, nsnps=pedStructure%nsnpsPopulation) !Make a new individual based on info from ped
+					pedStructure%Pedigree(i)%founder = .true.
+					call pedStructure%founders%list_add(pedStructure%pedigree(i))
+					pedStructure%Pedigree(i)%originalPosition = i
+					pedStructure%inputMap(i) = i
+					call pedStructure%setAnimalAsGenotypedFromPhase(i,tmpPhase1,tmpPhase2)
+				endif
+			enddo
+			if (.not. present(dontInitAll)) then
+				do i=1, pedStructure%pedigreeSize
+					if (.not. pedStructure%pedigree(i)%genotyped) then
+						call pedStructure%pedigree(i)%initPhaseAndGenotypes(pedStructure%nsnpsPopulation)
+
+						if (allocated(pedStructure%pedigree(i)%inconsistencies)) then
+							deallocate(pedStructure%pedigree(i)%inconsistencies)
+						endif
+						allocate(pedStructure%pedigree(i)%inconsistencies(pedStructure%nsnpsPopulation))
+						pedStructure%pedigree(i)%inconsistencies = 0
+						call pedStructure%pedigree(i)%initPhaseArrays(pedStructure%nsnpsPopulation)
+					endif
+
+
+				enddo
+			endif
+
+			close(fileUnit)
+		end subroutine initPedigreePhaseFiles
 		!---------------------------------------------------------------------------
 		!< @brief Constructor for pedigree class
 		!< @details Constructor builds pedigree, without any sorting being done, but by simply building the linked lists and storing founders, as well as having dummy animals.
@@ -3811,6 +3937,62 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
+		subroutine setAnimalAsGenotypedFromPhase(this, individualIndex, phase1,phase2, lockIn)
+			use HaplotypeModule
+			use GenotypeModule
+			class(pedigreeHolder) :: this
+			integer, intent(in) :: individualIndex !< index of animal to get genotyped
+			integer(KIND=1), dimension(:), intent(in) :: phase1,phase2 !< One dimensional array of genotype information
+			logical, intent(in), optional :: lockIn
+			logical :: lock
+			type(Haplotype) :: h1, h2
+			type(Genotype) :: geno
+
+			call h1%Haplotype(phase1)
+			call h2%Haplotype(phase2)
+			call geno%Genotype(h1,h2)
+			if (present(lockIn)) then
+				lock = lockIn
+			else
+				lock = .false.
+			endif
+
+			if (this%nGenotyped == 0) then
+				allocate(this%genotypeDictionary)
+				call this%genotypeDictionary%DictStructure()
+				allocate(this%genotypeMap(this%pedigreeSize))
+				this%genotypeMap = 0
+
+			else if (this%nGenotyped > this%pedigreeSize) then
+				! Following error should never appear
+				write(error_unit,*) "Error: animals being genotyped that are bigger than ped structure size!"
+			else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
+				! if animal has already been genotyped, overwrite array, but don't increment
+				call this%pedigree(individualIndex)%setGenotypeObject(geno)
+				
+				this%pedigree(individualIndex)%individualPhase(1) = h1
+				this%pedigree(individualIndex)%individualPhase(2) = h2
+				return
+			endif
+
+			this%nGenotyped = this%nGenotyped+1
+			call this%genotypeDictionary%addKey(this%pedigree(individualIndex)%originalID, this%nGenotyped)
+			call this%pedigree(individualIndex)%setGenotypeObject(geno)
+			this%pedigree(individualIndex)%individualPhase(1) = h1
+			this%pedigree(individualIndex)%individualPhase(2) = h2
+			this%genotypeMap(this%nGenotyped) = individualIndex
+
+		end subroutine setAnimalAsGenotypedFromPhase
+
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets the individual to be genotyped.
+		!<If geno array is not given, animal will still be set to genotyped. It is up to the callee
+		!<if the animal has enough snps set to actually genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
 		subroutine setAnimalAsGenotypedSequence(this, individualIndex, geno, referAllele, alterAllele)
 
 			class(pedigreeHolder) :: this
@@ -4645,10 +4827,10 @@ module PedigreeModule
 		subroutine memoryClearer(this)
 			type(PedigreeHolder),intent(inout)  :: this
 			integer :: i
-			
+
 			!$OMP Parallel DO
 			do i=1, this%pedigreeSize
-				this%pedigree(i)%used  = this%pedigree(i)%used  - 1 
+				this%pedigree(i)%used  = this%pedigree(i)%used  - 1
 				if (this%pedigree(i)%used <= 0) then
 					call writeOutPhaseAndGenotypeBinary(this%pedigree(i))
 					deallocate(this%pedigree(i)%individualGenotype)
@@ -4805,22 +4987,23 @@ module PedigreeModule
 		end subroutine readInPhaseAndGenotypeBinary
 
 
-					! this should be called in an openmp task
-			! We want to call this function only for animals required
-			! We also want to know if its phase or genotype they need
+		! this should be called in an openmp task
+		! We want to call this function only for animals required
+		! We also want to know if its phase or genotype they need
 		subroutine memGetter(ind)
 			type(individual), intent(inout) :: ind !< individual to check what memory needs got from
 
 			if (allocated(ind%individualGenotype)) return !< if info is already there, don't read in
 
 			! spawn new thread here - so other animal jobs can still be done on reading
-			
+
 			call readInPhaseAndGenotypeBinary(ind)
 
 		end subroutine memGetter
 
 
 end module PedigreeModule
+
 
 
 
