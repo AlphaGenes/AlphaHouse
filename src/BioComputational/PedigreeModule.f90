@@ -733,7 +733,7 @@ module PedigreeModule
 			pedStructure%addedRealAnimals = 0
 
 			if (present(minSize)) then
-				pedStructure%maxPedigreeSize = minSize * 4
+				pedStructure%maxPedigreeSize = minSize
 			else
 				pedStructure%maxPedigreeSize = DEFAULTDICTSIZE
 			endif
@@ -790,6 +790,7 @@ module PedigreeModule
 					new%pedigreeSize = new%pedigreeSize+1
 					new%nhd = new%nhd + 1
 					new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+					call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(this%hdMap(i)))
 					new%pedigree(i)%id = new%pedigreeSize
 					new%hdMap(new%nhd) = new%pedigreeSize
 					new%genotypeMap(new%nhd) = new%pedigreeSize
@@ -812,15 +813,15 @@ module PedigreeModule
 
 
 			do i=1,tmpAnimalCount
-				sire =new%dictionary%getValue(this%pedigree(this%hdMap(i))%sireId)
-				dam = new%dictionary%getValue(this%pedigree(this%hdMap(i))%damId)
+				sire =new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%sireId)
+				dam = new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%damId)
 				new%pedigreeSize = new%pedigreeSize+1
-				call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
+				call new%dictionary%addKey( this%pedigree(tmpAnimalArray(i))%originalId,new%pedigreeSize)
 				new%nhd = new%nhd + 1
 				new%hdMap(new%nhd) = new%pedigreeSize
-				call new%hdDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
+				call new%hdDictionary%addKey(this%pedigree(tmpAnimalArray(i))%originalId, new%nhd)
 				indiv = new%pedigreeSize
-				call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(this%hdMap(i)))
+				call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(tmpAnimalArray(i)))
 				! new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
 				call new%pedigree(i)%resetOffspringInformation
 				if (dam ==DICT_NULL) then
