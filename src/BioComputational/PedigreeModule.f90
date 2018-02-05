@@ -798,7 +798,6 @@ module PedigreeModule
 					call new%genotypeDictionary%addKey(this%pedigree(this%hdMap(i))%originalId, new%nhd)
 					call new%dictionary%addKey( this%pedigree(this%hdMap(i))%originalId,new%pedigreeSize)
 					call new%pedigree(i)%resetOffspringInformation
-
 					if (sire /= DICT_NULL) then
 						call new%pedigree(sire)%AddOffspring(new%pedigree(i))
 						! from above condition we know dam is also not null
@@ -811,39 +810,37 @@ module PedigreeModule
 				endif
 			enddo
 
-
 			do i=1,tmpAnimalCount
+
+			! check if sire and dam are in the new HD pedigree
 				sire =new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%sireId)
 				dam = new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%damId)
+				
 				new%pedigreeSize = new%pedigreeSize+1
 				call new%dictionary%addKey( this%pedigree(tmpAnimalArray(i))%originalId,new%pedigreeSize)
 				new%nhd = new%nhd + 1
 				new%hdMap(new%nhd) = new%pedigreeSize
 				call new%hdDictionary%addKey(this%pedigree(tmpAnimalArray(i))%originalId, new%nhd)
 				indiv = new%pedigreeSize
-				call copyIndividual(new%pedigree(new%pedigreeSize),this%pedigree(tmpAnimalArray(i)))
-				! new%pedigree(new%pedigreeSize) = this%pedigree(this%hdMap(i))
+				call copyIndividual(new%pedigree(indiv),this%pedigree(tmpAnimalArray(i)))
+
 				call new%pedigree(i)%resetOffspringInformation
+
+				! check if we need to create new sire/dam dummies
 				if (dam ==DICT_NULL) then
 					call new%createDummyAnimalAtEndOfPedigree(dam)
 					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%damId = new%pedigree(dam)%originalId
 
-
 				else
 					call new%pedigree(dam)%addOffspring(new%pedigree(indiv))
 				endif
 
-
-
 				if (sire ==DICT_NULL) then
 
 					call new%createDummyAnimalAtEndOfPedigree(sire)
-
 					call new%pedigree(sire)%addOffspring(new%pedigree(indiv))
 					new%pedigree(indiv)%sireId = new%pedigree(sire)%originalId
-
-
 				else
 					call new%pedigree(sire)%addOffspring(new%pedigree(indiv))
 				endif
