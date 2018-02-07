@@ -748,6 +748,8 @@ module GenotypeModule
 			integer :: c
 
 			c = g%length - g%numNotMissing()
+
+            c = c - g%overhang
 		end function numMissing
 
         !---------------------------------------------------------------------------
