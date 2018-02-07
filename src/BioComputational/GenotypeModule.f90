@@ -735,6 +735,8 @@ module GenotypeModule
 			do i = 1, g%sections
 				c = c + POPCNT(NOT(IAND(NOT(g%homo(i)), g%additional(i))))
 			end do
+
+            c = c - g%overhang
 		end function numNotMissing
 
 		!---------------------------------------------------------------------------
@@ -748,8 +750,6 @@ module GenotypeModule
 			integer :: c
 
 			c = g%length - g%numNotMissing()
-
-            c = c - g%overhang
 		end function numMissing
 
         !---------------------------------------------------------------------------
