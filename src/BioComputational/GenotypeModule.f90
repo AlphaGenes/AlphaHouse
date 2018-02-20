@@ -787,6 +787,8 @@ module GenotypeModule
 			do i = 1, g%sections
 				c = c + POPCNT(IAND(NOT(g%homo(i)), NOT(g%additional(i))))
 			end do
+
+            c = c - g%overhang
 		end function numHet
 
 		!---------------------------------------------------------------------------
