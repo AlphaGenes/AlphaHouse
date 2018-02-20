@@ -93,6 +93,7 @@ module IndividualModule
 		procedure :: isGenotyped
 		procedure :: isGenotypedNonMissing
 		procedure :: setGenotypeArray
+		procedure :: setGenotypeObject
 		procedure :: setPhaseArray
 		procedure :: setGenotypeArraySubset
 		procedure :: setPhaseArraySubset
@@ -1405,6 +1406,39 @@ module IndividualModule
 
 			call this%individualGenotype%Genotype(Geno)
 		end subroutine setGenotypeArray
+
+
+				!---------------------------------------------------------------------------
+		!> @brief Sets the individual to be genotyped.
+		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!> @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine setGenotypeObject(this, geno)
+			use constantModule
+
+			class(Individual), intent(inout) :: this
+			type(Genotype), intent(in) :: geno !< One dimensional array of genotype information
+
+			this%Genotyped = .true.
+
+			if (allocated(this%inconsistencies)) then
+				deallocate(this%inconsistencies)
+			endif
+
+			allocate(this%inconsistencies(geno%length))
+			this%inconsistencies = 0
+
+			call this%initPhaseArrays(geno%length)
+
+
+			if (allocated(this%individualGenotype)) then
+				deallocate(this%individualGenotype)
+
+			endif
+			allocate(this%individualGenotype)
+
+			this%individualGenotype = geno
+		end subroutine setGenotypeObject
 
 
 		!---------------------------------------------------------------------------
