@@ -4320,12 +4320,12 @@ module PedigreeModule
 			! known, has its genotype filled in as the sum of the two alleles
 			integer :: i
 
-			!$OMP PARALLEL DO &
-			!$OMP PRIVATE(i)
+			!$!OMP PARALLEL DO &
+			!$!OMP PRIVATE(i)
 			do i=1,this%pedigreeSize
 				call this%pedigree(i)%makeIndividualGenotypeFromPhase()
 			enddo
-			!$OMP END PARALLEL DO
+			!$!OMP END PARALLEL DO
 
 
 		END SUBROUTINE MakeGenotype
@@ -4345,12 +4345,12 @@ module PedigreeModule
 			! then impute the missing allele as the complement of the genotype and the known phased allele
 			integer :: i
 
-			!$OMP PARALLEL DO &
-			!$OMP PRIVATE(i)
+			!$!OMP PARALLEL DO &
+			!$!OMP PRIVATE(i)
 			do i=1,this%pedigreeSize
 				call this%pedigree(i)%makeIndividualPhaseCompliment()
 			enddo
-			!$OMP END PARALLEL DO
+			!$!OMP END PARALLEL DO
 
 		end subroutine PhaseComplement
 
