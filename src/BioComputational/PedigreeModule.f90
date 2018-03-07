@@ -3686,8 +3686,10 @@ module PedigreeModule
 			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
 			integer :: i
 
-
+			
 			allocate(res(this%pedigreeSize, this%pedigree(1)%individualPhase(1)%length,2))
+			
+			print *, "shapeRES:", shape(res)
 			res = 9
 			do i=1, this%pedigreeSize
 
