@@ -2162,7 +2162,7 @@ module PedigreeModule
 					endif
 					if (.not. sireFound) then
 
-						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .false.)
+						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .true.)
 						! tmpCounter =  tmpCounter + 1
 						! write(tmpCounterStr, '(a,I3.3)')  dummyAnimalPrepre,tmpCounter
 						! pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
@@ -4266,14 +4266,22 @@ module PedigreeModule
 				if (present(sireIn)) then
 					if (sireIn) then
 						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+						call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(1)
 					else
 						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+						call this%damList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(2)
 					endif
 				else 
 					if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
 						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+						call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(1)
 					else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
 						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+						call this%damList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(2)
 					else
 						write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
 					end if
