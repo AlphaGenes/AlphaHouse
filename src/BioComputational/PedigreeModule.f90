@@ -444,17 +444,15 @@ module PedigreeModule
 				if (associated(this%pedigree(i)%sirePointer)) then
 					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId)))) then
 						deepCheckPedigree = .false.
-						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId
+						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
 						
-						return
 					endif
 				endif
 
 				if (associated(this%pedigree(i)%damPointer)) then
 					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
 						deepCheckPedigree = .false.
-						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId
-						return
+						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
 					endif
 				endif
 
@@ -462,8 +460,7 @@ module PedigreeModule
 
 					if (loc(this%pedigree(i)%offsprings(h)%p) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%offsprings(h)%p%originalId)))) then
 						deepCheckPedigree = .false.
-						write(error_unit, *) "WARNING: offspring pointer is out of alignment on ind:", this%pedigree(i)%originalId
-						return
+						write(error_unit, *) "WARNING: offspring pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  offspring: ",this%pedigree(i)%offsprings(h)%p%originalId
 					endif
 
 				enddo
@@ -471,7 +468,6 @@ module PedigreeModule
 				if (this%pedigree(i)%isDummy .and. this%pedigree(i)%nOffs == 0) then
 					write(error_unit, *) "WARNING: Dummy animal does not have any kids attached!"
 					deepCheckPedigree = .false.
-					return
 				endif
 			enddo
 
@@ -490,7 +486,6 @@ module PedigreeModule
 				if (loc(p1%item) /= loc(this%pedigree(this%dictionary%getvalue(p1%item%originalId)))) then
 					deepCheckPedigree = .false.
 					write(error_unit, *) "WARNING: damlist is wrong is out of alignment on ind:", p1%item%originalId
-					return
 				endif
 				p1 => p1%next
 			enddo
