@@ -463,6 +463,9 @@ module PedigreeModule
 					endif
 
 				enddo
+
+				if (this%pedigree(i)%isDummy .and. this%pedigree(i)%nOffs == 0) then
+					write(error_unit, *) "WARNING: Dummy animal does not have any kids attached!"
 			enddo
 
 			p1 => this%sireList%first
