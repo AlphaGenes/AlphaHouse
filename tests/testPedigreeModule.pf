@@ -234,10 +234,9 @@ module TestPedigreeModule
 			tmp = pedigree%dictionary%getValue("fff")
 			call pedigree%setAnimalAsHD(tmp)
 			call pedigree%getHDPedigree(hdPed)
-			@assertEqual(hdPed%pedigreeSize,4)
+
+			@assertEqual(hdPed%pedigreeSize,3)
 			@assertEqual(hdPed%nHd,2)
-			!  @assertFalse(tmp == DICT_NULL)
-			!  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
 		end subroutine testHDPed
 
 
@@ -335,7 +334,7 @@ module TestPedigreeModule
 
 			call pedigree%makeRecodedPedigreeArray(recPed)
 			call expRecPed%init(n=pedigree%pedigreeSize)
-			expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"001", "d1", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+			expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"0001", "d1", dummyAnimalPrepre//"0002", dummyAnimalPrepre//"0003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
 			expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
 			expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
 			expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
@@ -352,7 +351,7 @@ module TestPedigreeModule
 
 			call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
 			call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-			expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"001", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
+			expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"0001", dummyAnimalPrepre//"0002", dummyAnimalPrepre//"0003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
 			expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
 			expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
 			expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]

@@ -2054,7 +2054,7 @@ module PedigreeModule
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
 						! check if the tmp animal has already been created
 						if (tmpSireNum == DICT_NULL) then
-							call pedStructure%addAnimalAtEndOfPedigree(trim(tmpSire),offspringID = tmpAnimalArray(i))
+							call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpSire),offspringID=tmpAnimalArray(i))
 						endif
 					endif
 					sireFound = .true.
@@ -2073,7 +2073,7 @@ module PedigreeModule
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
 						! Check for defined animals that have nit been set in pedigree
 						if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
-							call pedStructure%addAnimalAtEndOfPedigree(trim(tmpDam),offspringID = tmpAnimalArray(i))
+							call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpDam),offspringID=tmpAnimalArray(i))
 						endif
 					endif
 					damFound = .true.
@@ -4156,9 +4156,9 @@ module PedigreeModule
 			this%nDummys = this%nDummys + 1
 
 			this%isSorted = 0
-
-			write(tmpCounterStr, '(a,I5)') dummyAnimalPrepre,this%nDummys
-			call this%Pedigree(this%pedigreeSize)%initIndividual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
+			tmpCounterStr = ""
+			write(tmpCounterStr, '(I4.4)') this%nDummys
+			call this%Pedigree(this%pedigreeSize)%initIndividual(trim(dummyAnimalPrepre)//trim(tmpCounterStr) ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
 			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
@@ -4234,7 +4234,6 @@ module PedigreeModule
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
 			
-
 			if (present(offspringId)) then
 				if (offspringId > this%pedigreeSize) then
 					write(error_unit,*) "ERROR - dummy list given index larger than pedigree"
@@ -4257,10 +4256,8 @@ module PedigreeModule
 			if (present(geno)) then
 				call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
 				call this%pedigree(this%pedigreeSize)%initPhaseArrays(size(geno))
-				!   TODO make sure animal is actually hd
-				! call this%setAnimalAsHD(this%pedigreeSize)
 			else if (this%nsnpsPopulation /=0) then
-				call this%pedigree(this%pedigreeSize)%initPhaseAndGenotypes(size(geno))
+				call this%pedigree(this%pedigreeSize)%initPhaseAndGenotypes(this%nsnpsPopulation)
 			endif
 		end subroutine addAnimalAtEndOfPedigree
 
