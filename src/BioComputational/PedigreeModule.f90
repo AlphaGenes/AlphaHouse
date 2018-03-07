@@ -450,7 +450,7 @@ module PedigreeModule
 				endif
 
 				if (associated(this%pedigree(i)%damPointer)) then
-					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId))) .and. .not. this%pedigree(i)%sirePointer%isUnknownDummy) then
+					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId))) .and. .not. this%pedigree(i)%damPointer%isUnknownDummy) then
 						deepCheckPedigree = .false.
 						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
 					endif
@@ -2147,18 +2147,18 @@ module PedigreeModule
 						endif
 
 
-						pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+						! pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
 
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-						if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
-							call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-						endif
+						! call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+						! if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+						! 	call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
+						! 	call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
+						! endif
 
 						! add dummy animal to correct lists and dictionaries
-						call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-						call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+						! call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+						! call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
+						! pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
 					endif
 					if (.not. sireFound) then
 
@@ -2171,24 +2171,24 @@ module PedigreeModule
 						! 	call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
 						! endif
 						! call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+						! pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
 						if (tmpSire == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
 						endif
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
 
-						pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
+						! pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
 
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-						if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
-							call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-						endif
+						! call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
+						! if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
+						! 	call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
+						! 	call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
+						! endif
 
 						! add animals to correct lists and dictinoaries
-						call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
-						call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
+						! call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
+						! pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
+						! call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
 					endif
 
 				endif
