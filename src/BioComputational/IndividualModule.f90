@@ -64,6 +64,7 @@ module IndividualModule
 	logical(kind=1) :: HD          = .false.
 	logical(kind=1) :: isDummy     = .false.  ! if this animal is not in the pedigree, this will be true
 	logical(kind=1) :: isUnknownDummy = .false.
+	logical(kind=1) :: mendelianError(2) = .false. !< there to signify if there is a mendelian error for that individual - 1 is sire, 2 is dam
 	type(genotype),allocatable :: individualGenotype, individualGenotypeSubset
 	type(Haplotype),allocatable,dimension(:) :: individualPhase, individualPhaseSubset
 	integer,dimension(:), allocatable :: referAllele, AlterAllele
