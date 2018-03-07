@@ -442,7 +442,7 @@ module PedigreeModule
 			do i=1, this%pedigreeSize
 
 				if (associated(this%pedigree(i)%sirePointer)) then
-					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId)))) then
+					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId))) .and. .not. this%pedigree(i)%sirePointer%isUnknownDummy) then
 						deepCheckPedigree = .false.
 						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
 						
@@ -450,7 +450,7 @@ module PedigreeModule
 				endif
 
 				if (associated(this%pedigree(i)%damPointer)) then
-					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
+					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId))) .and. .not. this%pedigree(i)%sirePointer%isUnknownDummy) then
 						deepCheckPedigree = .false.
 						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
 					endif
@@ -466,7 +466,7 @@ module PedigreeModule
 				enddo
 
 				if (this%pedigree(i)%isDummy .and. this%pedigree(i)%nOffs == 0) then
-					write(error_unit, *) "WARNING: Dummy animal does not have any kids attached!"
+					write(error_unit, *) "WARNING: Dummy animal does not have any kids attached: "
 					deepCheckPedigree = .false.
 				endif
 			enddo
@@ -2020,7 +2020,7 @@ module PedigreeModule
 			integer, dimension(:), intent(in) :: tmpAnimalArray !< array containing indexes of tmp animals
 			integer, intent(in) :: tmpAnimalArrayCount !< number of animals actually in tmpAnimalArray
 			logical :: sireFound, damFound
-			integer(kind=int32) :: tmpSireNum, tmpDamNum
+			integer(kind=int32) :: tmpSireNum, tmpDamNum,tmpId
 			integer(kind=int32) :: i, tmpCounter
 			character(len=IDLENGTH) :: tmpSire,tmpDam,tmpCounterStr
 
@@ -2130,18 +2130,20 @@ module PedigreeModule
 				if (.not. damFound .OR. .not. sireFound) then
 
 					if (.not. damFound) then
-						tmpCounter =  tmpCounter + 1
-						write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,tmpCounter
-						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-						pedStructure%nDummys = pedStructure%nDummys + 1
-						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-						endif
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+						! tmpCounter =  tmpCounter + 1
+						! write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,tmpCounter
+						! pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+						! pedStructure%nDummys = pedStructure%nDummys + 1
+						! if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+						! 	call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+						! endif
+						! call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+						! pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+
+						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .false.)
 						if (tmpDam == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
+							pedStructure%Pedigree(tmpId)%isUnknownDummy = .true.
 						endif
 
 
@@ -2159,14 +2161,16 @@ module PedigreeModule
 						pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
 					endif
 					if (.not. sireFound) then
-						tmpCounter =  tmpCounter + 1
-						write(tmpCounterStr, '(a,I3.3)')  dummyAnimalPrepre,tmpCounter
-						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-						pedStructure%nDummys = pedStructure%nDummys + 1
-						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-						endif
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+
+						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .false.)
+						! tmpCounter =  tmpCounter + 1
+						! write(tmpCounterStr, '(a,I3.3)')  dummyAnimalPrepre,tmpCounter
+						! pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
+						! pedStructure%nDummys = pedStructure%nDummys + 1
+						! if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
+						! 	call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+						! endif
+						! call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
 						if (tmpSire == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
@@ -4224,13 +4228,15 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		! PARAMETERS:
 		!---------------------------------------------------------------------------
-		subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
+		subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId, sireIn)
 			use IFCORE
 			class(PedigreeHolder) :: this
-			integer, optional :: offspringId !< offspring recoded id canbe given here
 			integer, intent(out) :: dummyId
+			integer, optional :: offspringId !< offspring recoded id canbe given here
+			logical, optional :: sireIn !< if true, assign to sire location
 			character(len=IDLENGTH) :: tmpCounterStr
 
+			
 			this%pedigreeSize = this%pedigreeSize+1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
@@ -4257,14 +4263,21 @@ module PedigreeModule
 
 				call this%Pedigree(this%pedigreeSize)%AddOffspring(this%pedigree(offspringId))
 
-				if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
-					this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
-				else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
-					this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
-				else
-					write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
-				end if
-
+				if (present(sireIn)) then
+					if (sireIn) then
+						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+					else
+						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+					endif
+				else 
+					if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
+						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+					else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
+						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+					else
+						write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
+					end if
+				endif
 			endif
 			dummyId = this%pedigreeSize
 		end subroutine createDummyAnimalAtEndOfPedigree
