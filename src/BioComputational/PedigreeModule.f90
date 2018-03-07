@@ -944,6 +944,10 @@ module PedigreeModule
 						CountChanges=CountChanges+1
 						! remove offspring link
 						call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
+
+						if (ped%pedigree(i)%sirePointer%nOffs ==0) then
+							call ped%sireList%list_remove(ped%pedigree(i)%sirePointer)
+						endif
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
 						sireRemoved = .true.
@@ -959,6 +963,10 @@ module PedigreeModule
 						CountChanges=CountChanges+1
 						! remove offspring link
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
+
+						if (ped%pedigree(i)%damPointer%nOffs ==0) then
+							call ped%damlist%list_remove(ped%pedigree(i)%damPointer)
+						endif
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 						damRemoved =.true.
 					endif
