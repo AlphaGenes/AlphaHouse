@@ -944,7 +944,7 @@ module PedigreeModule
 						CountChanges=CountChanges+1
 						! remove offspring link
 						ped%pedigree(i)%mendelianError(1) = .true.
-						if (ped%pedigree(i)%sirePointer%nOffs ==0) then
+						if (ped%pedigree(i)%sirePointer%nOffs ==1) then
 							call ped%sireList%list_remove(ped%pedigree(i)%sirePointer)
 						endif
 						call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
@@ -965,7 +965,7 @@ module PedigreeModule
 						CountChanges=CountChanges+1
 						! remove offspring link
 						ped%pedigree(i)%mendelianError(2) = .true.
-						if (ped%pedigree(i)%damPointer%nOffs ==0) then
+						if (ped%pedigree(i)%damPointer%nOffs ==1) then
 							call ped%damlist%list_remove(ped%pedigree(i)%damPointer)
 						endif
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
