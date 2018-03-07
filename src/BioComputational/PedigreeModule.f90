@@ -930,12 +930,6 @@ module PedigreeModule
 					damInconsistencies = bitcount(mend(i)%maternalInconsistent)
 					ped%pedigree(i)%damPointer%inconsistencyCount = ped%pedigree(i)%damPointer%inconsistencyCount + damInconsistencies
 
-					! if (present(file)) then
-					!     write (outfile,'(3a30,2I)') &
-					!     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
-
-					! endif
-					! looks like a pedigree error
 					if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 						! remove sire link
 						if (present(file)) then
@@ -4170,7 +4164,7 @@ module PedigreeModule
 			tmpCounterStr = ""
 			write(tmpCounterStr, '(I4.4)') this%nDummys
 			call this%Pedigree(this%pedigreeSize)%initIndividual(trim(dummyAnimalPrepre)//trim(tmpCounterStr) ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
-			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
+			call this%dictionary%addKey(trim(dummyAnimalPrepre)//trim(tmpCounterStr), this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
