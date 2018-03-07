@@ -442,7 +442,7 @@ module PedigreeModule
 			do i=1, this%pedigreeSize
 
 				if (associated(this%pedigree(i)%sirePointer)) then
-					if ( .not. this%pedigree(i)%sirePointer%isUnknownDummy .or. .not. this%pedigree(i)%mendelianError(1)) then
+					if ( .not. this%pedigree(i)%sirePointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(1)) then
 					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId))) ) then
 						deepCheckPedigree = .false.
 						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
@@ -452,7 +452,7 @@ module PedigreeModule
 
 				if (associated(this%pedigree(i)%damPointer)) then
 
-					if (.not. this%pedigree(i)%damPointer%isUnknownDummy .or. .not. this%pedigree(i)%mendelianError(2)) then
+					if (.not. this%pedigree(i)%damPointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(2)) then
 					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
 						deepCheckPedigree = .false.
 						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
