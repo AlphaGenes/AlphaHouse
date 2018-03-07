@@ -3687,7 +3687,7 @@ module PedigreeModule
 			integer :: i
 
 
-			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			allocate(res(this%pedigreeSize, this%pedigree(1)%individualPhase(1)%length,2))
 			res = 9
 			do i=1, this%pedigreeSize
 
