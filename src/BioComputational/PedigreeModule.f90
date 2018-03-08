@@ -2058,9 +2058,7 @@ module PedigreeModule
 						! check that we've not already defined the parent above
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
 						! check if the tmp animal has already been created
-						if (tmpSireNum == DICT_NULL) then
-							call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpSire),offspringID=tmpAnimalArray(i))
-						endif
+						call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpSire),offspringID=tmpAnimalArray(i))
 					endif
 					sireFound = .true.
 				endif
@@ -2077,9 +2075,8 @@ module PedigreeModule
 						! check that we've not already defined the parent above
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
 						! Check for defined animals that have nit been set in pedigree
-						if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
-							call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpDam),offspringID=tmpAnimalArray(i))
-						endif
+						call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpDam),offspringID=tmpAnimalArray(i))
+						
 					endif
 					damFound = .true.
 				endif
@@ -2120,8 +2117,6 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		function getGenotypedFounders(this, numberOfGenerations) result(genotypedFounders)
-
-
 			class(pedigreeHolder) :: this
 			integer, intent(in) :: numberOfGenerations
 			type(IndividualLinkedList) :: genotypedFounders
@@ -2137,9 +2132,6 @@ module PedigreeModule
 
 				endif
 			enddo
-
-
-
 		end function getGenotypedFounders
 
 
@@ -2165,9 +2157,6 @@ module PedigreeModule
 				deallocate(this%hdMap)
 			endif
 			! this%genotypeMap = 0
-
-
-
 			do i=1,this%pedigreeSize
 				if (allocated(this%pedigree(i)%individualPhase)) then
 					deallocate(this%pedigree(i)%individualPhase)
@@ -2265,8 +2254,6 @@ module PedigreeModule
 						this%pedigree(i)%inconsistencies = 0
 						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
 					endif
-
-
 				enddo
 			endif
 		end subroutine addGenotypeInformationFromArray
@@ -2409,9 +2396,6 @@ module PedigreeModule
 				this%pedigree(i)%familyId = familyids(i)
 
 			enddo
-
-
-
 
 		end subroutine addFamilyIds
 
@@ -2988,10 +2972,6 @@ module PedigreeModule
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
 			pedCounter = 0
-			! call this%dictionary%destroy()
-			! call this%founders%destroyLinkedList()
-			! call this%sireList%destroyLinkedList()
-			! call this%damList%destroyLinkedList()
 
 			! deallocate to call destructors
 			deallocate(this%dictionary)
@@ -3072,9 +3052,6 @@ module PedigreeModule
 				call destroyLinkedList(this%generations(i))
 			enddo
 			deallocate(this%generations)
-			! do i=1,this%pedigreeSize
-			! 	call this%Pedigree(i)%destroyIndividual
-			! enddo
 
 			deallocate(this%pedigree)
 
@@ -3689,7 +3666,6 @@ module PedigreeModule
 			
 			allocate(res(this%pedigreeSize, this%pedigree(1)%individualPhase(1)%length,2))
 			
-			print *, "shapeRES:", shape(res)
 			res = 9
 			do i=1, this%pedigreeSize
 
