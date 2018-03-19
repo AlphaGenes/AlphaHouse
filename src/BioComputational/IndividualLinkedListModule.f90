@@ -413,7 +413,7 @@ subroutine list_remove(this,item)
 				tmpItem => node%next%item
 				if(associated(tmpItem,item)) then
 					if(associated(node%next%next)) then
-						deallocate(node%next%next%previous)
+						! deallocate(node%next%next%previous)
 						node%next%next%previous => node
 						node%next=> node%next%next
 					else

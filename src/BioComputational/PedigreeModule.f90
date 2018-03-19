@@ -442,16 +442,21 @@ module PedigreeModule
 			do i=1, this%pedigreeSize
 
 				if (associated(this%pedigree(i)%sirePointer)) then
-					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId)))) then
+					if ( .not. this%pedigree(i)%sirePointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(1)) then
+					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId))) ) then
 						deepCheckPedigree = .false.
-						return
+						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
+					endif
 					endif
 				endif
 
 				if (associated(this%pedigree(i)%damPointer)) then
+
+					if (.not. this%pedigree(i)%damPointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(2)) then
 					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
 						deepCheckPedigree = .false.
-						return
+						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
+					endif
 					endif
 				endif
 
@@ -459,16 +464,22 @@ module PedigreeModule
 
 					if (loc(this%pedigree(i)%offsprings(h)%p) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%offsprings(h)%p%originalId)))) then
 						deepCheckPedigree = .false.
-						return
+						write(error_unit, *) "WARNING: offspring pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  offspring: ",this%pedigree(i)%offsprings(h)%p%originalId
 					endif
 
 				enddo
+
+				if (this%pedigree(i)%isDummy .and. this%pedigree(i)%nOffs == 0) then
+					write(error_unit, *) "WARNING: Dummy animal does not have any kids attached: "
+					deepCheckPedigree = .false.
+				endif
 			enddo
 
 			p1 => this%sireList%first
 			do i=1, this%sireList%length
 				if (loc(p1%item) /= loc(this%pedigree(this%dictionary%getvalue(p1%item%originalId)))) then
 					deepCheckPedigree = .false.
+					write(error_unit, *) "WARNING: damlist is wrong is out of alignment on ind:", p1%item%originalId
 					return
 				endif
 				p1 => p1%next
@@ -478,7 +489,7 @@ module PedigreeModule
 			do i=1, this%damList%length
 				if (loc(p1%item) /= loc(this%pedigree(this%dictionary%getvalue(p1%item%originalId)))) then
 					deepCheckPedigree = .false.
-					return
+					write(error_unit, *) "WARNING: damlist is wrong is out of alignment on ind:", p1%item%originalId
 				endif
 				p1 => p1%next
 			enddo
@@ -919,12 +930,6 @@ module PedigreeModule
 					damInconsistencies = bitcount(mend(i)%maternalInconsistent)
 					ped%pedigree(i)%damPointer%inconsistencyCount = ped%pedigree(i)%damPointer%inconsistencyCount + damInconsistencies
 
-					! if (present(file)) then
-					!     write (outfile,'(3a30,2I)') &
-					!     Ped%pedigree(i)%originalID, Ped%pedigree(i)%sirePointer%originalID,Ped%pedigree(i)%damPointer%originalID, sireInconsistencies, damInconsistencies
-
-					! endif
-					! looks like a pedigree error
 					if ((float(sireInconsistencies) / ped%pedigree(i)%individualGenotype%length) > threshold) then
 						! remove sire link
 						if (present(file)) then
@@ -932,7 +937,13 @@ module PedigreeModule
 						endif
 						CountChanges=CountChanges+1
 						! remove offspring link
+						ped%pedigree(i)%mendelianError(1) = .true.
+						if (ped%pedigree(i)%sirePointer%nOffs ==1) then
+							call ped%sireList%list_remove(ped%pedigree(i)%sirePointer)
+						endif
 						call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
+
+						
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
 						sireRemoved = .true.
@@ -947,7 +958,12 @@ module PedigreeModule
 						endif
 						CountChanges=CountChanges+1
 						! remove offspring link
+						ped%pedigree(i)%mendelianError(2) = .true.
+						if (ped%pedigree(i)%damPointer%nOffs ==1) then
+							call ped%damlist%list_remove(ped%pedigree(i)%damPointer)
+						endif
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
+						
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 						damRemoved =.true.
 					endif
@@ -2013,9 +2029,9 @@ module PedigreeModule
 			integer, dimension(:), intent(in) :: tmpAnimalArray !< array containing indexes of tmp animals
 			integer, intent(in) :: tmpAnimalArrayCount !< number of animals actually in tmpAnimalArray
 			logical :: sireFound, damFound
-			integer(kind=int32) :: tmpSireNum, tmpDamNum
+			integer(kind=int32) :: tmpSireNum, tmpDamNum,tmpId
 			integer(kind=int32) :: i, tmpCounter
-			character(len=IDLENGTH) :: tmpSire,tmpDam,tmpCounterStr
+			character(len=IDLENGTH) :: tmpSire,tmpDam
 
 			tmpCounter = 0 !< counter for dummy animals
 
@@ -2035,7 +2051,6 @@ module PedigreeModule
 					if (tmpSireNum /= DICT_NULL .and. .not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then !if sire has been found in hashtable
 						pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
 						call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-
 						if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
 							call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
 							call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
@@ -2043,33 +2058,7 @@ module PedigreeModule
 						! check that we've not already defined the parent above
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer)) then!if sire is defined but not in the pedigree, create him
 						! check if the tmp animal has already been created
-						tmpSireNum = pedStructure%dictionary%getValue(trim(tmpSire))
-						if (tmpSireNum == DICT_NULL) then
-							pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-							pedStructure%nDummys = pedStructure%nDummys + 1
-							if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-								call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-							endif
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpSire),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-							call pedStructure%dictionary%addKey(trim(tmpSire), pedStructure%pedigreeSize)
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-							pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-
-							if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-								call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1) !if its a sire, it should be male
-								call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-							endif
-							call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
-						else
-							pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(tmpSireNum)
-							call pedStructure%Pedigree(tmpSireNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-							if (pedStructure%Pedigree(tmpSireNum)%nOffs == 1) then
-								call pedStructure%Pedigree(tmpSireNum)%setGender(1) !if its a sire, it should be male
-								call pedStructure%sireList%list_add(pedStructure%Pedigree(tmpSireNum)) ! add animal to sire list
-							endif
-						endif
+						call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpSire),offspringID=tmpAnimalArray(i))
 					endif
 					sireFound = .true.
 				endif
@@ -2079,42 +2068,15 @@ module PedigreeModule
 					if (tmpDamNum /= DICT_NULL .and. .not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then !if dam has been found
 						pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
 						call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-						call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
 						if (pedStructure%Pedigree(tmpDamnum)%nOffs == 1) then
+							call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a dam, should be female
 							call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamnum)) ! add animal to dam list
 						endif
 						! check that we've not already defined the parent above
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
 						! Check for defined animals that have nit been set in pedigree
-						tmpDamNum = pedStructure%dictionary%getValue(trim(tmpDam))
-						if (tmpDamNum == DICT_NULL) then !If dummy animal has not already been set in pedigree
-							pedStructure%nDummys = pedStructure%nDummys + 1
-							pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-							if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-								call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-							endif
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpDam),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-							call pedStructure%dictionary%addKey(trim(tmpDam), pedStructure%pedigreeSize)
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-							pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-							if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-								call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2) !if its a dam, it should be female
-								call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-							endif
-							call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
-						else
-							pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(tmpDamNum)
-							call pedStructure%Pedigree(tmpDamNum)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-							if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-								call pedStructure%Pedigree(tmpDamNum)%setGender(2) !if its a sire, it should be male, dam female
-								call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-							endif
-
-							call pedStructure%damList%list_add(pedStructure%Pedigree(tmpDamnum)) ! add animal to dam list
-						endif
-
+						call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpDam),offspringID=tmpAnimalArray(i))
+						
 					endif
 					damFound = .true.
 				endif
@@ -2123,61 +2085,20 @@ module PedigreeModule
 				if (.not. damFound .OR. .not. sireFound) then
 
 					if (.not. damFound) then
-						tmpCounter =  tmpCounter + 1
-						write(tmpCounterStr, '(a,I3.3)') dummyAnimalPrepre,tmpCounter
-						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-						pedStructure%nDummys = pedStructure%nDummys + 1
-						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-						endif
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
+						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .false.)
 						if (tmpDam == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
-							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
+							pedStructure%Pedigree(tmpId)%isUnknownDummy = .true.
 						endif
 
-
-						pedStructure%Pedigree(tmpAnimalArray(i))%damPointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-						if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(2)
-							call pedStructure%damList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-						endif
-
-						! add dummy animal to correct lists and dictionaries
-						call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-						call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
 					endif
 					if (.not. sireFound) then
-						tmpCounter =  tmpCounter + 1
-						write(tmpCounterStr, '(a,I3.3)')  dummyAnimalPrepre,tmpCounter
-						pedStructure%pedigreeSize = pedStructure%pedigreeSize + 1
-						pedStructure%nDummys = pedStructure%nDummys + 1
-						if (pedStructure%pedigreeSize > pedStructure%maxPedigreeSize) then
-							call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
-						endif
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%initIndividual(trim(tmpCounterStr),'0','0', pedStructure%pedigreeSize,nsnps=pedStructure%nsnpsPopulation)
+
+						call pedStructure%createDummyAnimalAtEndOfPedigree(tmpId, tmpAnimalArray(i), .true.)
 						if (tmpSire == EMPTY_PARENT) then
 							pedStructure%unknownDummys = pedStructure%unknownDummys+1
 							pedStructure%Pedigree(pedStructure%pedigreeSize)%isUnknownDummy = .true.
 						endif
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%isDummy = .true.
-
-						pedStructure%Pedigree(tmpAnimalArray(i))%sirePointer =>  pedStructure%Pedigree(pedStructure%pedigreeSize)
-
-						call pedStructure%Pedigree(pedStructure%pedigreeSize)%addOffspring(pedStructure%Pedigree(tmpAnimalArray(i)))
-						if (pedStructure%Pedigree(pedStructure%pedigreeSize)%nOffs == 1) then
-							call pedStructure%Pedigree(pedStructure%pedigreeSize)%setGender(1)
-							call pedStructure%sireList%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize)) ! add animal to sire list
-						endif
-
-						! add animals to correct lists and dictinoaries
-						call pedStructure%Founders%list_add(pedStructure%Pedigree(pedStructure%pedigreeSize))
-						pedStructure%Pedigree(pedStructure%pedigreeSize)%founder = .true.
-						call pedStructure%dictionary%addKey(tmpCounterStr, pedStructure%pedigreeSize)
 					endif
 
 				endif
@@ -2196,8 +2117,6 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		function getGenotypedFounders(this, numberOfGenerations) result(genotypedFounders)
-
-
 			class(pedigreeHolder) :: this
 			integer, intent(in) :: numberOfGenerations
 			type(IndividualLinkedList) :: genotypedFounders
@@ -2213,9 +2132,6 @@ module PedigreeModule
 
 				endif
 			enddo
-
-
-
 		end function getGenotypedFounders
 
 
@@ -2241,9 +2157,6 @@ module PedigreeModule
 				deallocate(this%hdMap)
 			endif
 			! this%genotypeMap = 0
-
-
-
 			do i=1,this%pedigreeSize
 				if (allocated(this%pedigree(i)%individualPhase)) then
 					deallocate(this%pedigree(i)%individualPhase)
@@ -2341,8 +2254,6 @@ module PedigreeModule
 						this%pedigree(i)%inconsistencies = 0
 						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
 					endif
-
-
 				enddo
 			endif
 		end subroutine addGenotypeInformationFromArray
@@ -2485,9 +2396,6 @@ module PedigreeModule
 				this%pedigree(i)%familyId = familyids(i)
 
 			enddo
-
-
-
 
 		end subroutine addFamilyIds
 
@@ -3064,10 +2972,6 @@ module PedigreeModule
 				call this%setPedigreeGenerationsAndBuildArrays
 			endif
 			pedCounter = 0
-			! call this%dictionary%destroy()
-			! call this%founders%destroyLinkedList()
-			! call this%sireList%destroyLinkedList()
-			! call this%damList%destroyLinkedList()
 
 			! deallocate to call destructors
 			deallocate(this%dictionary)
@@ -3148,9 +3052,6 @@ module PedigreeModule
 				call destroyLinkedList(this%generations(i))
 			enddo
 			deallocate(this%generations)
-			! do i=1,this%pedigreeSize
-			! 	call this%Pedigree(i)%destroyIndividual
-			! enddo
 
 			deallocate(this%pedigree)
 
@@ -3762,8 +3663,9 @@ module PedigreeModule
 			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
 			integer :: i
 
-
-			allocate(res(this%pedigreeSize, this%pedigree(this%genotypeMap(1))%individualGenotype%length,2))
+			
+			allocate(res(this%pedigreeSize, this%pedigree(1)%individualPhase(1)%length,2))
+			
 			res = 9
 			do i=1, this%pedigreeSize
 
@@ -4217,13 +4119,15 @@ module PedigreeModule
 		!< @date    October 26, 2016
 		! PARAMETERS:
 		!---------------------------------------------------------------------------
-		subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId)
+		subroutine createDummyAnimalAtEndOfPedigree(this,dummyId, offspringId, sireIn)
 			use IFCORE
 			class(PedigreeHolder) :: this
-			integer, optional :: offspringId !< offspring recoded id canbe given here
 			integer, intent(out) :: dummyId
+			integer, optional :: offspringId !< offspring recoded id canbe given here
+			logical, optional :: sireIn !< if true, assign to sire location
 			character(len=IDLENGTH) :: tmpCounterStr
 
+			
 			this%pedigreeSize = this%pedigreeSize+1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
@@ -4235,10 +4139,10 @@ module PedigreeModule
 			this%nDummys = this%nDummys + 1
 
 			this%isSorted = 0
-
-			write(tmpCounterStr, '(a,I5)') dummyAnimalPrepre,this%nDummys
-			call this%Pedigree(this%pedigreeSize)%initIndividual(tmpCounterStr ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
-			call this%dictionary%addKey(tmpCounterStr, this%pedigreeSize)
+			tmpCounterStr = ""
+			write(tmpCounterStr, '(I4.4)') this%nDummys
+			call this%Pedigree(this%pedigreeSize)%initIndividual(trim(dummyAnimalPrepre)//trim(tmpCounterStr) ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
+			call this%dictionary%addKey(trim(dummyAnimalPrepre)//trim(tmpCounterStr), this%pedigreeSize)
 			this%Pedigree(this%pedigreeSize)%isDummy = .true.
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
@@ -4250,14 +4154,29 @@ module PedigreeModule
 
 				call this%Pedigree(this%pedigreeSize)%AddOffspring(this%pedigree(offspringId))
 
-				if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
-					this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
-				else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
-					this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
-				else
-					write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
-				end if
-
+				if (present(sireIn)) then
+					if (sireIn) then
+						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+						call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(1)
+					else
+						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+						call this%damList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(2)
+					endif
+				else 
+					if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
+						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+						call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(1)
+					else if (.not. associated(this%pedigree(offspringId)%damPointer)) then
+						this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+						call this%damList%list_add(this%Pedigree(this%pedigreeSize))
+						call this%Pedigree(this%pedigreeSize)%setGender(2)
+					else
+						write(error_unit,*) "ERROR - dummy animal given offspring that already has both parents!"
+					end if
+				endif
 			endif
 			dummyId = this%pedigreeSize
 		end subroutine createDummyAnimalAtEndOfPedigree
@@ -4271,12 +4190,12 @@ module PedigreeModule
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine addAnimalAtEndOfPedigree(this, originalID, geno)
+		subroutine addAnimalAtEndOfPedigree(this, originalID, geno, offspringID)
 			use IFCORE
 			class(PedigreeHolder) :: this
 			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
-
+			integer, intent(in), optional :: offspringId
 			! change pedigree to no longer be sorted
 
 			this%issorted = 0
@@ -4297,14 +4216,31 @@ module PedigreeModule
 
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
+			
+			if (present(offspringId)) then
+				if (offspringId > this%pedigreeSize) then
+					write(error_unit,*) "ERROR - dummy list given index larger than pedigree"
+				endif
+
+				call this%Pedigree(this%pedigreeSize)%AddOffspring(this%pedigree(offspringId))
+				if (this%pedigree(offspringId)%sireId == originalID) then
+					this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
+					call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
+					call this%Pedigree(this%pedigreeSize)%setGender(1)
+				else if (this%pedigree(offspringId)%damId == originalID) then
+					this%pedigree(offspringId)%damPointer => this%Pedigree(this%pedigreeSize)
+					call this%damList%list_add(this%Pedigree(this%pedigreeSize))
+					call this%Pedigree(this%pedigreeSize)%setGender(2)
+				else
+					write(error_unit,*) "ERROR - new animal given offspring which doesn't share its ID!!"
+				end if
+			endif
 
 			if (present(geno)) then
 				call this%setAnimalAsGenotyped(this%pedigreeSize, geno)
 				call this%pedigree(this%pedigreeSize)%initPhaseArrays(size(geno))
-				!   TODO make sure animal is actually hd
-				! call this%setAnimalAsHD(this%pedigreeSize)
 			else if (this%nsnpsPopulation /=0) then
-				call this%pedigree(this%pedigreeSize)%initPhaseAndGenotypes(size(geno))
+				call this%pedigree(this%pedigreeSize)%initPhaseAndGenotypes(this%nsnpsPopulation)
 			endif
 		end subroutine addAnimalAtEndOfPedigree
 
@@ -4320,12 +4256,12 @@ module PedigreeModule
 			! known, has its genotype filled in as the sum of the two alleles
 			integer :: i
 
-			!$OMP PARALLEL DO &
-			!$OMP PRIVATE(i)
+			!$!OMP PARALLEL DO &
+			!$!OMP PRIVATE(i)
 			do i=1,this%pedigreeSize
 				call this%pedigree(i)%makeIndividualGenotypeFromPhase()
 			enddo
-			!$OMP END PARALLEL DO
+			!$!OMP END PARALLEL DO
 
 
 		END SUBROUTINE MakeGenotype
@@ -4345,12 +4281,12 @@ module PedigreeModule
 			! then impute the missing allele as the complement of the genotype and the known phased allele
 			integer :: i
 
-			!$OMP PARALLEL DO &
-			!$OMP PRIVATE(i)
+			!$!OMP PARALLEL DO &
+			!$!OMP PRIVATE(i)
 			do i=1,this%pedigreeSize
 				call this%pedigree(i)%makeIndividualPhaseCompliment()
 			enddo
-			!$OMP END PARALLEL DO
+			!$!OMP END PARALLEL DO
 
 		end subroutine PhaseComplement
 
