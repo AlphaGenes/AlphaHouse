@@ -1,4 +1,36 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -184,6 +216,11 @@ contains
 			if (.not. specFile%validate()) then
 				write(error_unit, *) "ERROR - Spec file validation has failed"
 			endif
+
+			if (specfile%stopAfterPlink) then
+				call addNeccessaryOutputForProgram(specfile,chromPaths, ped)
+				call exit(0)
+			endif
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
@@ -196,6 +233,39 @@ contains
 		endif
 
 	end subroutine runPlink
+
+
+	subroutine addNeccessaryOutputForProgram(specFile,chromPaths, ped)
+	
+	! TODO need to overload write out method
+	use ifport
+	use baseSpecFileModule
+	use pedigreeModule
+	use alphahousemod
+
+	class(basespecfile), intent(in) :: specfile
+	character(len=128), dimension(:), allocatable,intent(in) :: chromPaths
+	type(PedigreeHolder), intent(in) :: ped
+	class(basespecfile), allocatable :: specFileTemp
+	integer :: status,i
+	character(len=:),allocatable :: exePath
+	
+	call specFile%copy(specFileTemp)
+	specFileTemp%plinkinputfile = ""
+	specFileTemp%PlinkOutput = .false.
+	specFileTemp%resultFolderPath = ""
+	specFileTemp%PedigreeFile = "Pedigree.txt"
+	
+	do i=1, size(chromPaths)		
+		call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName))
+		! copy program executable
+		call getExecutablePath(exePath)
+		status = SYSTEMQQ(COPY // " " //  trim(exePath)// " " // chrompaths(i))
+		call ped%printPedigreeOriginalFormat(trim(chrompaths(i))//"pedigree.txt")
+	end do 
+
+end subroutine addNeccessaryOutputForProgram
+
 #endif
 end module alphaFullChromModule
 

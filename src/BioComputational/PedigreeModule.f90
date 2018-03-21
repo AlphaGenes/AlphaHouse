@@ -1606,7 +1606,7 @@ module PedigreeModule
 				pedStructure%pedigreeSize = nIndividuals
 				call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 				allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
-				allocate(pedStructure%inputMap(nIndividuals))
+				allocate(pedStructure%inputMap(pedStructure%maxPedigreeSize))
 				pedStructure%maxGeneration = 0
 			endif
 
@@ -1752,7 +1752,7 @@ module PedigreeModule
 				pedStructure%pedigreeSize = nIndividuals
 				call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 				allocate(tmpAnimalArray(nIndividuals)) !allocate to nIndividuals in case all animals are in incorrect order of generations
-				allocate(pedStructure%inputMap(nIndividuals))
+				allocate(pedStructure%inputMap(pedStructure%maxPedigreeSize))
 				pedStructure%maxGeneration = 0
 			endif
 
@@ -1847,7 +1847,7 @@ module PedigreeModule
 			pedStructure%addedRealAnimals = size(pedArray,2)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
-			allocate(pedStructure%inputMap(size(pedArray,2)))
+			allocate(pedStructure%inputMap(pedStructure%maxPedigreeSize))
 			pedStructure%maxGeneration = 0
 
 			do i=1,size(pedArray(1,:))
@@ -1949,7 +1949,7 @@ module PedigreeModule
 			pedStructure%pedigreeSize = size(pedArray,2)
 			call pedStructure%dictionary%DictStructure(sizeDict) !dictionary used to map alphanumeric id's to location in pedigree holder
 			allocate(tmpAnimalArray(size(pedArray,2))) !allocate to nIndividuals in case all animals are in incorrect order of generations
-			allocate(pedStructure%inputMap(size(pedArray,2)))
+			allocate(pedStructure%inputMap(pedStructure%maxPedigreeSize))
 			pedStructure%maxGeneration = 0
 			pedStructure%addedRealAnimals  =size(PedArray,2)
 			do i=1,size(pedArray,2)

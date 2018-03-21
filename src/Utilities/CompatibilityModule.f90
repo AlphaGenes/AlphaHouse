@@ -330,19 +330,6 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 end subroutine createOutputFiles
 
 
-! subroutine addNeccessaryOutputForProgram(specFile,chromPaths, ped)
-	
-! 	! TODO need to overload write out method
-
-
-! 	do i=1, size(chromPaths)
-
-
-! 	end do 
-
-! end subroutine addNeccessaryOutputForProgram
-
-
 
 !---------------------------------------------------------------------------
 !< @brief Reads bim file to datastructures
@@ -884,7 +871,7 @@ character function getFirstHetPosition(alleles, snp)
 	character(len=2),dimension(:,:), allocatable, intent(in) :: alleles
 	character(len=2) :: all1, all2
 	integer, intent(in) :: snp !< snp position
-	integer :: i, h
+	integer :: i
 
 	do i=1, size(alleles,1) !< loops through number of animals
 		all1 = alleles(i,snp)

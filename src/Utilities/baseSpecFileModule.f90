@@ -23,23 +23,52 @@
 !-------------------------------------------------------------------------------
 module baseSpecFileModule
 	use iso_fortran_env
-	type, abstract :: baseSpecFile
+	type :: baseSpecFile
 
 	character(len=512) :: resultFolderPath !< Path where results should go
 	character(len=512) :: plinkinputfile !< prepend to plink file
+	character(len=300):: PedigreeFile = "NoPedigree",GenotypeFile="Genotypes.txt" !< Pedigree and genotype file - again from the plink input
 	logical :: plinkBinary !< are the plink files binary
 	integer(kind=int32) :: nsnp !< number of snp for this chromosme
 	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
 	logical :: plinkOutput !< if true - output in plink format
-	logical :: stopAfterPlink !< if true -- will call exit after plink output has been created - 
+	logical :: stopAfterPlink = .false. !< if true -- will call exit after plink output has been created -
 	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
+	character(len=20) :: programName = "UNSPECFIED"
+	character(len=32) :: version = "UNSPECFIED"
 	contains
 		! procedure :: validateBase
 		procedure :: validate => validateBase
+		procedure :: writeSpec => writeOutBase
+		procedure :: copy => copyBase
 	end type baseSpecFile
 
 	contains
 
+
+		subroutine copyBase(old, new)
+
+			class(baseSpecFile),intent(in) ::  old
+			class(baseSpecFile),allocatable, intent(out) ::  new
+
+
+			allocate(baseSpecFile::new)
+			new%resultFolderPath = old%resultFolderPath
+			new%plinkinputfile = old%plinkinputfile
+			new%PedigreeFile = old%PedigreeFile
+			new%GenotypeFile = old%GenotypeFile
+			new%plinkBinary = old%plinkBinary
+			new%nsnp = old%nsnp
+			new%SexOpt = old%SexOpt
+			new%HetGameticStatus = old%HetGameticStatus
+			new%HomGameticStatus = old%HomGameticStatus
+			new%plinkOutput = old%plinkOutput
+			new%stopAfterPlink = old%stopAfterPlink
+			new%useChroms = old%useChroms
+			new%programName = old%programName
+			new%version = old%version
+
+		end subroutine copyBase
 		function validateBase(params) result(res)
 
 			class(baseSpecFile) :: params
@@ -50,10 +79,22 @@ module baseSpecFileModule
 		end function validateBase
 
 
-		subroutine writeOutSpecOptions(params)
-		class(baseSpecFile), intent(in) :: params
-		integer :: unit,i
+		subroutine writeOutBase(params,path)
+			class(baseSpecFile), intent(in) :: params
+			integer :: unit,i
+			character(len=*), optional, intent(in):: path
 			character(len=:), allocatable :: tmpString
-		end subroutine writeOutSpecOptions
+
+
+			if (present(path)) then
+				open(newunit=unit, file=path,status='unknown')
+			else
+				open(newunit=unit, file=trim(params%programName)//"Spec.txt",status='unknown')
+			endif
+
+			write(unit,* ) "ERROR - writing of spec files not implemented for this program, please contact developers"
+		end subroutine writeOutBase
 
 end module baseSpecFileModule
+
+
