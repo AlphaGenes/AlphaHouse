@@ -31,6 +31,7 @@ module baseSpecFileModule
 	integer(kind=int32) :: nsnp !< number of snp for this chromosme
 	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
 	logical :: plinkOutput !< if true - output in plink format
+	logical :: stopAfterPlink !< if true -- will call exit after plink output has been created - 
 	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
 	contains
 		! procedure :: validateBase
@@ -49,5 +50,10 @@ module baseSpecFileModule
 		end function validateBase
 
 
+		subroutine writeOutSpecOptions(params)
+		class(baseSpecFile), intent(in) :: params
+		integer :: unit,i
+			character(len=:), allocatable :: tmpString
+		end subroutine writeOutSpecOptions
 
 end module baseSpecFileModule

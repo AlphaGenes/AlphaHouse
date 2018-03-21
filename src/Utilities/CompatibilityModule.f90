@@ -330,6 +330,19 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 end subroutine createOutputFiles
 
 
+! subroutine addNeccessaryOutputForProgram(specFile,chromPaths, ped)
+	
+! 	! TODO need to overload write out method
+
+
+! 	do i=1, size(chromPaths)
+
+
+! 	end do 
+
+! end subroutine addNeccessaryOutputForProgram
+
+
 
 !---------------------------------------------------------------------------
 !< @brief Reads bim file to datastructures

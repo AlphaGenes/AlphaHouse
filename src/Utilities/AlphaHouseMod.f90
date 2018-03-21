@@ -41,6 +41,7 @@ module AlphaHouseMod
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
 	public :: countColumns, getColumnNumbers
+	public :: getExecutablePath
 	!> @brief List of characters for case conversion in ToLower
 	CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
 	CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -1279,6 +1280,22 @@ module AlphaHouseMod
 			end if
 		end subroutine
 
+
+		subroutine getExecutablePath( exePath)
+			character(len=128) :: myPath, myDir 
+			character(len=:), allocatable, intent(out) :: exePath
+
+			call get_command_argument(0,myPath) 
+			call getcwd(myDir)    
+			
+
+			if (myPath(1:1) == '.') then
+				exePath = trim(myDir) // trim(myPath(2:))
+			else 
+				exePath = trim(myDir) // trim(myPath)
+			endif
+			print *, "Executable path is ", exePath
+		end subroutine getExecutablePath
 		!###########################################################################
 
 end module
