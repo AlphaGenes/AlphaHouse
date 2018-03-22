@@ -34,7 +34,7 @@ module baseSpecFileModule
 	logical :: plinkOutput !< if true - output in plink format
 	logical :: stopAfterPlink = .false. !< if true -- will call exit after plink output has been created -
 	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
-	character(len=20) :: programName = "UNSPECFIED"
+	character(len=21) :: programName = "-----UNSPECFIED------"
 	character(len=32) :: version = "UNSPECFIED"
 	contains
 		! procedure :: validateBase

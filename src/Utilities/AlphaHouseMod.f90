@@ -1339,7 +1339,7 @@ module AlphaHouseMod
 			character(len=:), allocatable, optional :: extraInfo
 			character(len=100)  :: programNameString, extraInforString
 
-			write(programNameString,('(a30,a1,a3,a15, a3,a1,a30)')) " ","*"," ",trim(params%programName)," ","*"," "
+			write(programNameString,('(a30,a1,a21,a1,a30)')) " ","*",trim(params%programName),"*"," "
 			 
 			print *, ""
 			print *, "                              ***********************                         "
