@@ -265,7 +265,7 @@ contains
 #ifdef _WIN32
 			status = SYSTEMQQ("mklink " trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
 #else
-			status = SYSTEMQQ("ln -s " //  trim(exePath)// " " // chrompaths(i))
+			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // chrompaths(i))
 #endif
 			! status = SYSTEMQQ(COPY // " " //  trim(exePath)// " " // chrompaths(i))
 			call ped%printPedigreeOriginalFormat(trim(chrompaths(i))//"pedigree.txt")
