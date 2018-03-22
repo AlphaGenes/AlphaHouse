@@ -259,7 +259,7 @@ contains
 		specFileTemp%PedigreeFile = "Pedigree.txt"
 
 		do i=1, size(chromPaths)
-			call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName))
+			call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName)//"Spec.txt")
 			! copy program executable
 			call getExecutablePath(exePath)
 #ifdef _WIN32
