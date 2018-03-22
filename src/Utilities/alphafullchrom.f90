@@ -271,9 +271,6 @@ contains
 			status = SYSTEMQQ("mklink " trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
 #else
 			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // trim(chrompaths(i)) // "/.")
-			if ( status /= 0) then
-				write(error_unit, *) "LINK FAILED"
-			endif
 #endif
 			! status = SYSTEMQQ(COPY // " " //  trim(exePath)// " " // chrompaths(i))
 			call ped%printPedigreeOriginalFormat(trim(chrompaths(i))//"pedigree.txt")
