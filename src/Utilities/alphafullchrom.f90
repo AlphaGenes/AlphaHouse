@@ -255,7 +255,7 @@ contains
 		call specFile%copy(specFileTemp)
 		specFileTemp%plinkinputfile = ""
 		specFileTemp%PlinkOutput = .false.
-		specFileTemp%resultFolderPath = ""
+		specFileTemp%resultFolderPath = "Results"
 		specFileTemp%PedigreeFile = "Pedigree.txt"
 
 		do i=1, size(chromPaths)
