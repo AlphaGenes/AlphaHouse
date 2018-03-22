@@ -219,6 +219,7 @@ contains
 
 			if (specfile%stopAfterPlink) then
 				call addNeccessaryOutputForProgram(specfile,chromPaths, ped)
+				print *, "Stopping program after plink output - neccessary files have been copied."
 				call exit(0)
 			endif
 			call funPointer(specFile,ped)
@@ -237,7 +238,6 @@ contains
 
 	subroutine addNeccessaryOutputForProgram(specFile,chromPaths, ped)
 	
-	! TODO need to overload write out method
 	use ifport
 	use baseSpecFileModule
 	use pedigreeModule
