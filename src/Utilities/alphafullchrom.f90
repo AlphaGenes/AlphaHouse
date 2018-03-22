@@ -259,13 +259,15 @@ contains
 		specFileTemp%PedigreeFile = "Pedigree.txt"
 
 		do i=1, size(chromPaths)
+
+			print *, "PATH: ", trim(chromPaths(i))
 			call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName)//"Spec.txt")
 			! copy program executable
 			call getExecutablePath(exePath)
 #ifdef _WIN32
 			status = SYSTEMQQ("mklink " trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
 #else
-			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // chrompaths(i))
+			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // trim(chrompaths(i)) // "/.")
 			if ( status /= 0) then
 				write(error_unit, *) "LINK FAILED"
 			endif
