@@ -259,7 +259,10 @@ contains
 		specFileTemp%PedigreeFile = "Pedigree.txt"
 
 		do i=1, size(chromPaths)
-
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle
+			endif
 			print *, "PATH: ", trim(chromPaths(i))
 			call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName)//"Spec.txt")
 			! copy program executable
