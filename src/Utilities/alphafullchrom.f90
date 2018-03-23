@@ -268,7 +268,7 @@ contains
 			! copy program executable
 			call getExecutablePath(exePath)
 #ifdef _WIN32
-			status = SYSTEMQQ("mklink " trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
+			status = SYSTEMQQ("mklink " // trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
 #else
 			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // trim(chrompaths(i)) // "/.")
 #endif
