@@ -453,7 +453,7 @@ module PedigreeModule
 			character(len=*),intent(in)  :: filename
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
-			character(len=12) :: StrSnp,OutFmt
+			character(len=50) :: StrSnp,OutFmt
 			integer :: fileUnit,i
 			open(newunit=FileUnit, file=filename, status="replace")
 
@@ -491,7 +491,7 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
 			integer :: i, fileUnit
-			character(len=30) :: StrSnp,OutFmt
+			character(len=50) :: StrSnp,OutFmt
 
 			open(newunit=FileUnit, file=filename, status="replace")
 
