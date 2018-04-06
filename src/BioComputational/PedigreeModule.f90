@@ -2282,7 +2282,7 @@ module PedigreeModule
 			integer(kind=1), allocatable, dimension(:) :: tmpSnpArray
 			integer :: i, j,fileUnit, nAnnis,tmpIdNum
 			integer :: count, end
-			integer :: addCount
+			integer :: addCount,stat
 			logical :: lock
 
 			addCount = 0
@@ -2312,7 +2312,10 @@ module PedigreeModule
 			allocate(tmpSnpArray(nsnps))
 			open(newUnit=fileUnit, file=genotypeFile, status="old")
 			do i=1, nAnnis
-				read (fileUnit,*) tmpId,tmpSnpArray(:)
+				read (fileUnit,*, iostat=stat) tmpId,tmpSnpArray(:)
+				if (stat /= 0) then
+					write(error_unit,'(a,i2)') "Error -problem with genotype file read in - nCols expected:" , size(tmpsnpArray)
+				endif
 				do j=1,nsnps
 					if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) then
 						tmpSnpArray(j)=9
