@@ -235,7 +235,7 @@ module AlphaHouseMod
 			integer(kind=int64):: fileSize, fileUnit, filePosition, fileSizeLeft
 			integer:: IOStatus, i, finalLetter
 			logical:: fileExists, previousIsDelim
-			integer:: finalChar
+			integer:: finalChar,stat
 
 			numColumnsOut = 0
 			Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
@@ -252,7 +252,11 @@ module AlphaHouseMod
 				end if
 
 				open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
-				read(fileUnit, pos=1) tempChar
+				read(fileUnit, pos=1, iostat=stat) tempChar
+
+				if (stat/=0) then
+					write(error_unit,*) "ERROR- count columns has failed"
+				endif
 				finalLetter = len(tempChar)
 
 				!Just in case the first element is not a
