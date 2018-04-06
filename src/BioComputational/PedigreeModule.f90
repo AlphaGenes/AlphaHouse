@@ -2314,7 +2314,7 @@ module PedigreeModule
 			do i=1, nAnnis
 				read (fileUnit,*, iostat=stat) tmpId,tmpSnpArray(:)
 				if (stat /= 0) then
-					write(error_unit,'(a,i2)') "Error -problem with genotype file read in - nCols expected:" , size(tmpsnpArray)
+					write(error_unit,'(a,i20)') "Error -problem with genotype file read in - nCols expected:" , size(tmpsnpArray)
 				endif
 				do j=1,nsnps
 					if ((tmpSnpArray(j)<0).or.(tmpSnpArray(j)>2)) then
