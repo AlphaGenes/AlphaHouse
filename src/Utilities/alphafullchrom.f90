@@ -90,7 +90,7 @@ contains
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
 		integer :: sexChroms
-		integer :: totalToDo, curChrom
+		integer :: totalToDo
 		class(baseSpecFile) :: specfile
 		real(kind=real64), dimension(:) ,allocatable :: lengths
 		integer, dimension(:) ,allocatable :: basepairs
@@ -115,15 +115,14 @@ contains
 				! Check if we are only doing a subset of chromsomes
 				if (.not. any(specFile%useChroms == i)) cycle
 			endif
-			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
+			specFile%CurrChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
-			path = "MultiChromResults/" // curChrom
+			path = "MultiChromResults/" // specFile%CurrChrom
 			result=makedirqq(path)
 			CALL chdir(path)
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)
-			specFile%CurrChrom = i
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 
