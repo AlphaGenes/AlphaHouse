@@ -1,0 +1,125 @@
+
+
+
+
+
+module TesthaplotypeLinkedList
+  use pFUnit_mod
+  use haplotypeLinkedListModule
+  use HaplotypeModule
+  use ISO_Fortran_env
+
+  implicit none
+
+  type(haplotypeLinkedList),allocatable :: ll  
+  type(haplotype), target :: hap1, hap2,hap3
+  contains
+
+ @before
+    subroutine initialise
+        
+        integer :: haps(4)
+        implicit none
+        allocate(ll)
+
+        haps = (/0,1,1,0/)
+        call hap1%inithaplotype(haps)
+        haps = (/1,1,1,1/)
+        call hap2%inithaplotype(haps)
+        haps = (/0,0,0,0/)
+        call hap3%inithaplotype(haps)
+        
+    end subroutine
+
+   @after
+    subroutine Uninit
+    !   call ll%destroyLinkedList
+        deallocate(ll)
+        print *, "test done"
+    end subroutine
+
+    @test
+    subroutine testAdd
+        implicit none
+        call ll%list_add(hap1)
+
+        @assertTrue(associated(ll%first%item, hap1))
+        @assertTrue(associated(ll%last%item, hap1))
+        ! @assertTrue(associated(ll%make d(1), hap1))
+        @assertEqual(ll%length, 1)
+    end subroutine testAdd
+
+     @test
+    subroutine testCopy
+        type(haplotypeLinkedList) :: copy
+        
+        
+        call ll%list_add(hap1)
+
+        copy = ll
+        call ll%list_add(hap2)
+
+        @assertEqual(copy%length, 1)
+
+        @assertTrue(associated(copy%first%item, hap1))
+        @assertTrue(associated(copy%last%item, hap1))
+        
+        copy = ll
+        @assertEqual(copy%length, 2)
+         @assertTrue(associated(copy%first%item, hap1))
+        @assertTrue(associated(copy%last%item, hap2))
+
+
+        call ll%list_add(hap3)
+        copy = ll
+        @assertEqual(copy%length, 3)
+
+         @assertTrue(associated(copy%first%item, hap1))
+        @assertTrue(associated(copy%last%item, hap3))
+       
+
+
+        ! @assertTrue(associated(ll%make d(1), hap1))
+        
+    end subroutine testCopy
+
+
+
+    @test
+    subroutine testDelete
+        implicit none
+
+        type(haplotype), pointer :: tmp
+
+
+        tmp => hap1
+        call ll%list_add(hap1)
+        call ll%list_remove(tmp)
+        @assertEqual(ll%length, 0)
+        @assertFalse(associated(ll%first))
+        @assertFalse(associated(ll%last))
+
+        call ll%list_add(hap1)
+        call ll%list_add(hap2)
+        tmp => hap2
+        call ll%list_remove(tmp)
+        @assertEqualuserdefined(ll%first%item, hap1)
+        @assertEqualuserdefined(ll%last%item, hap1)
+    end subroutine testDelete
+
+
+
+
+
+    @test
+    subroutine testPop
+        implicit none
+        type(haplotype), pointer ::  tmp
+        call ll%list_add(hap1)
+        call ll%list_add(hap2)
+        call ll%list_pop(tmp)
+        @assertTrue(associated(tmp,hap2))
+
+    end subroutine testPop
+
+end module TesthaplotypeLinkedList

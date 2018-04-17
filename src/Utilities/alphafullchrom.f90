@@ -1,4 +1,38 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -30,7 +64,7 @@ module alphaFullChromModule
 		use pedigreeModule
 
 		class(baseSpecFile),target :: specFileInput
-		type(pedigreeHolder), optional :: ped
+		type(pedigreeHolder), target, optional :: ped
 	end subroutine runProgram
 end interface
 contains
@@ -55,7 +89,7 @@ contains
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		integer :: sexChroms
 		integer :: totalToDo, curChrom
 		class(baseSpecFile) :: specfile
 		real(kind=real64), dimension(:) ,allocatable :: lengths
@@ -77,7 +111,10 @@ contains
 
 		do i=1, totalToDo
 
-
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle
+			endif
 			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
 			path = "MultiChromResults/" // curChrom
@@ -86,11 +123,11 @@ contains
 
 			specFile%resultFolderPath = chromPaths(i)
 			specFile%nsnp = nsnps(i)
-			specFile%CurrChrom = i 
+			specFile%CurrChrom = i
 			! write(chromPath,'(a,i0)') "chr",i
 			! result=makedirqq(prepend//trim(chromPath))
 
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. sexChroms /= 0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -133,27 +170,28 @@ contains
 		procedure(runProgram), pointer, intent(in):: funPointer
 		character(len=128), dimension(:), allocatable :: chromPaths
 		integer :: i
-		integer, dimension(:), allocatable :: nsnps
-		logical :: sexChroms
+		type(plinkInfoType) :: plinkInfo
 		class(baseSpecFile) :: specfile
 
 		if (specfile%plinkBinary) then
-			call readPlink(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlink(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		else
-			call readPlinkNoneBinary(plinkPre, ped, chromPaths,nsnps, sexChroms)
+			call readPlinkNoneBinary(plinkPre, ped, chromPaths,plinkInfo,specFile%useChroms)
 		endif
 
 		call ped%printPedigreeOriginalFormat("PLINKPED.txt")
 		do i=1, size(chromPaths)
 
-			specFile%resultFolderPath = chromPaths(i)
-			specFile%nsnp = nsnps(i)
-			specFile%CurrChrom = i 
+			if (allocated(specFile%useChroms)) then
+				if (.not. any(specFile%useChroms == i)) cycle
+			endif
+			! Check if we are only doing a subset of chromsomes
+			specFile%CurrChrom = i
 
-			! write(chromPath,'(a,i0)') "chr",i
-			! result=makedirqq(prepend//trim(chromPath))
+			specFile%resultFolderPath = trim(chromPaths(i))//"results"
+			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
 			print *,"doing chrom ", i
-			if (i > size(chromPaths)-2 .and. sexChroms) then
+			if (i > size(chromPaths)-2 .and. plinkInfo%sexChrom /=0) then
 				if (i == size(chromPaths)-1) then !< x chrom
 					specFile%SexOpt = 1
 					specFile%HetGameticStatus=1
@@ -171,25 +209,82 @@ contains
 			call ped%wipeGenotypeAndPhaseInfo
 			! first chrom should already be read in
 			! if (i /= 1) then
-			print *,"using ",trim(chromPaths(i))//"genotypes.txt",nsnps(i)
+			print *,"using ",trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i)
 
-			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",nsnps(i),initAll=1)
-			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",nsnps(i))
-			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",nsnps(i))
+			call ped%addGenotypeInformationFromFile(trim(chromPaths(i))//"genotypes.txt",plinkInfo%nsnpsPerChromosome(i),initAll=1)
+			call ped%setSnpBasePairs(trim(chromPaths(i))//"snpBasepairs.txt",plinkInfo%nsnpsPerChromosome(i))
+			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",plinkInfo%nsnpsPerChromosome(i))
 
 
 			print *,"starting function run"
+			if (.not. specFile%validate()) then
+				write(error_unit, *) "ERROR - Spec file validation has failed"
+			endif
+
+			if (specfile%stopAfterPlink) then
+				call addNeccessaryOutputForProgram(specfile,chromPaths, ped)
+				print *, "Stopping program after plink output - neccessary files have been copied."
+				call exit(0)
+			endif
 			call funPointer(specFile,ped)
 			print *,"Finished function run"
 
-
-
 		enddo
 
+		if (specfile%plinkOutput) then
+			call writePedFile(ped,plinkInfo,specfile,chromPaths)
+			call writeMapFile(plinkInfo)
+			call writeRefFile(plinkInfo)
+		endif
 
 	end subroutine runPlink
+
+
+	subroutine addNeccessaryOutputForProgram(specFile,chromPaths, ped)
+
+		use ifport
+		use baseSpecFileModule
+		use pedigreeModule
+		use alphahousemod
+
+		class(basespecfile), intent(in) :: specfile
+		character(len=128), dimension(:), allocatable,intent(in) :: chromPaths
+		type(PedigreeHolder), intent(in) :: ped
+		class(basespecfile), allocatable :: specFileTemp
+		integer :: status,i
+		character(len=:),allocatable :: exePath
+
+		call specFile%copy(specFileTemp)
+		specFileTemp%plinkinputfile = ""
+		specFileTemp%PlinkOutput = .false.
+		specFileTemp%resultFolderPath = "Results"
+		specFileTemp%PedigreeFile = "Pedigree.txt"
+
+		do i=1, size(chromPaths)
+			if (allocated(specFile%useChroms)) then
+				! Check if we are only doing a subset of chromsomes
+				if (.not. any(specFile%useChroms == i)) cycle
+			endif
+			print *, "PATH: ", trim(chromPaths(i))
+			call specFileTemp%writeSpec(trim(chromPaths(i)) //trim(specFile%programName)//"Spec.txt")
+			! copy program executable
+			call getExecutablePath(exePath)
+#ifdef _WIN32
+			status = SYSTEMQQ("mklink " // trim(chrompaths(i))//trim(specFile%programName) // " " // trim(exePath))
+#else
+			status = SYSTEMQQ("ln -sf " //  trim(exePath)// " " // trim(chrompaths(i)) // "/.")
+#endif
+			! status = SYSTEMQQ(COPY // " " //  trim(exePath)// " " // chrompaths(i))
+			call ped%printPedigreeOriginalFormat(trim(chrompaths(i))//"pedigree.txt")
+		end do
+
+	end subroutine addNeccessaryOutputForProgram
+
 #endif
 end module alphaFullChromModule
+
+
+
 
 
 

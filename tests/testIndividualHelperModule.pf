@@ -122,7 +122,7 @@ module TestIndividualHelperModule
         tmp2 => pedigree%pedigree(pedigree%dictionary%getValue("bbb"))
         tmp3 => pedigree%pedigree(pedigree%dictionary%getValue("eee"))
         tmp4 => pedigree%pedigree(pedigree%dictionary%getValue("fff"))
-        ret = getSharedKids(tmp,tmp2)
+        call getSharedKids(tmp,tmp2,ret)
         @assertEqual(ret%length,2)
         @assertTrue(ret%contains(tmp3))
         @assertTrue(ret%contains(tmp4))

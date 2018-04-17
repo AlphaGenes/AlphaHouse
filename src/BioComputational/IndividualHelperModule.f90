@@ -329,13 +329,13 @@ module IndividualHelperModule
 
             
 
-            if (individualOne%offsprings(i)%p%sirePointer == IndividualOne) then
+            if (associated(individualOne%offsprings(i)%p%sirePointer, IndividualOne)) then
                 if (associated(individualOne%offsprings(i)%p%damPointer)) then
                     if (.not. res%contains(individualOne%offsprings(i)%p%damPointer)) then
                         call res%list_add(individualOne%offsprings(i)%p%damPointer)
                     endif
                 endif
-            else if (individualOne%offsprings(i)%p%damPointer == IndividualOne) then
+            else if (associated(individualOne%offsprings(i)%p%damPointer,IndividualOne)) then
                 if (associated(individualOne%offsprings(i)%p%sirePointer)) then
                     if (.not. res%contains(individualOne%offsprings(i)%p%sirePointer)) then
                         call res%list_add(individualOne%offsprings(i)%p%sirePointer)

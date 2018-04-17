@@ -26,7 +26,11 @@ contains
         double precision :: corelength
         integer :: i, nCores, left
 
-        nCores = nSnp / Jump
+        if (jump /= 0) then
+            nCores = nSnp / Jump
+        else
+            nCores = 10
+        end if
 
         ! Catch the case where Jump (i.e. wanted core length) is greater than nsnps
         if (nCores == 0) then

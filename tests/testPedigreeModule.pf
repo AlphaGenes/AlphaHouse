@@ -234,10 +234,9 @@ module TestPedigreeModule
 			tmp = pedigree%dictionary%getValue("fff")
 			call pedigree%setAnimalAsHD(tmp)
 			call pedigree%getHDPedigree(hdPed)
-			@assertEqual(hdPed%pedigreeSize,4)
+
+			@assertEqual(hdPed%pedigreeSize,3)
 			@assertEqual(hdPed%nHd,2)
-			!  @assertFalse(tmp == DICT_NULL)
-			!  @assertEqual(2,pedigree%pedigree(tmp)%nOffs)
 		end subroutine testHDPed
 
 
@@ -278,6 +277,40 @@ module TestPedigreeModule
 			@assertEqualUserDefined(array, test1)
 		end subroutine testGenos
 
+
+				@test
+		subroutine testGenosClear
+			implicit none
+			integer :: tmp1, tmp,i
+			integer(kind=1), dimension(:), allocatable :: array
+			integer(kind=1), dimension(4) :: test1
+			integer(kind=1), dimension(4) :: test2
+
+			test1 = [ 0,2,1,9 ]
+			test2 = [ 1,1,1,1 ]
+			tmp1 = pedigree%dictionary%getValue("bbb")
+			@assertFalse(tmp1 == DICT_NULL)
+			tmp = pedigree%genotypeDictionary%getValue("bbb")
+			@assertFalse(tmp == DICT_NULL)
+			tmp = pedigree%genotypeDictionary%getValue("fff")
+			@assertFalse(tmp == DICT_NULL)
+			array = pedigree%pedigree(tmp1)%individualGenotype%toIntegerArray()
+
+			call writeOutPhaseAndGenotypeBinary(pedigree%pedigree(tmp1))
+			deallocate(pedigree%pedigree(tmp1)%individualGenotype)
+			deallocate(pedigree%pedigree(tmp1)%individualPhase)
+
+			call readInPhaseAndGenotypeBinary(pedigree%pedigree(tmp1))
+			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%length,4)
+			@assertEqualUserDefined(array, test1)
+			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%firstHet(),3)
+			call pedigree%pedigree(tmp1)%individualGenotype%setGenotype(3,2)
+			@assertEqual(pedigree%pedigree(tmp1)%individualGenotype%getGenotype(3),1)
+			array = pedigree%pedigree(tmp)%individualGenotype%toIntegerArray()
+			@assertEqualUserDefined(array, test1)
+		end subroutine testGenosClear
+
+
 		@test
 		subroutine testSorting
 			integer :: tmp,tmp2, i
@@ -301,7 +334,7 @@ module TestPedigreeModule
 
 			call pedigree%makeRecodedPedigreeArray(recPed)
 			call expRecPed%init(n=pedigree%pedigreeSize)
-			expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"001", "d1", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
+			expRecPed%originalId(0:) = ["0", "aaa", "bbb", dummyAnimalPrepre//"0001", "d1", dummyAnimalPrepre//"0002", dummyAnimalPrepre//"0003", "ccc", "ddd", "ggg", "hhh", "eee", "fff"]
 			expRecPed%generation(0:) = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     1,     1,     2,     2]
 			expRecPed%id(1,0:)       = [  0,     1,     2,        3,      4,         5,        6,     7,     8,     9,    10,    11,    12]
 			expRecPed%id(2,0:)       = [  0,     0,     0,        0,      0,         0,        0,     1,     1,     5,     6,     8,     8]
@@ -318,7 +351,7 @@ module TestPedigreeModule
 
 			call pedigreeUnsorted%makeRecodedPedigreeArray(recPed)
 			call expRecPed%init(n=pedigreeUnsorted%pedigreeSize)
-			expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"001", dummyAnimalPrepre//"002", dummyAnimalPrepre//"003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
+			expRecPed%originalId(0:) = ["0", "bbb", "aaa","d1", dummyAnimalPrepre//"0001", dummyAnimalPrepre//"0002", dummyAnimalPrepre//"0003", "ccc", "ggg", "ddd", "hhh", "eee", "fff"]
 			expRecPed%generation(0:) = [  0,     0,        0,       0,        0,         0,        0,     1,     1,     1,     1,     2,     2]
 			expRecPed%id(1,0:)       = [  0,     1,        2,       3,        4,         5,        6,     7,     8,     9,    10,    11,    12]
 			expRecPed%id(2,0:)       = [  0,     0,        0,       0,        0,         0,        0,     2,     4,     2,     6,     9,     9]

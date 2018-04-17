@@ -1,4 +1,36 @@
+#ifdef _WIN32
 
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "\"
+#DEFINE COPY "copy"
+#DEFINE MD "md"
+#DEFINE RMDIR "RMDIR /S /Q"
+#DEFINE RM "del"
+#DEFINE RENAME "MOVE /Y"
+#DEFINE SH "BAT"
+#DEFINE EXE ".exe"
+#DEFINE NULL " >NUL"
+
+
+#else
+
+#define STRINGIFY(x)#x
+#define TOSTRING(x) STRINGIFY(x)
+
+#DEFINE DASH "/"
+#DEFINE COPY "cp"
+#DEFINE MD "mkdir"
+#DEFINE RMDIR "rm -r"
+#DEFINE RM "rm"
+#DEFINE RENAME "mv"
+#DEFINE SH "sh"
+#DEFINE EXE ""
+#DEFINE NULL ""
+
+
+#endif
 !###############################################################################
 
 !-------------------------------------------------------------------------------
@@ -41,6 +73,7 @@ module AlphaHouseMod
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
 	public :: countColumns, getColumnNumbers
+	public :: getExecutablePath, header, PrintVersion
 	!> @brief List of characters for case conversion in ToLower
 	CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
 	CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -202,23 +235,28 @@ module AlphaHouseMod
 			integer(kind=int64):: fileSize, fileUnit, filePosition, fileSizeLeft
 			integer:: IOStatus, i, finalLetter
 			logical:: fileExists, previousIsDelim
-			integer:: finalChar
+			integer:: finalChar,stat
 
 			numColumnsOut = 0
 			Inquire(file=fileNameIn, size=fileSize, exist=fileExists)
 
-			if (fileSize<1000) then
-				allocate(character(len=fileSize):: tempChar)
-			else
-				allocate(character(len=1000):: tempChar)
-			end if
 
 			ioStatus = 0
 			filePosition = 1
 
 			if (fileExists) then
+				if (fileSize<1000) then
+					allocate(character(len=fileSize):: tempChar)
+				else
+					allocate(character(len=1000):: tempChar)
+				end if
+
 				open(newunit=fileUnit, file=fileNameIn, action="read", status="old", access="stream")
-				read(fileUnit, pos=1) tempChar
+				read(fileUnit, pos=1, iostat=stat) tempChar
+
+				if (stat/=0) then
+					write(error_unit,*) "ERROR- count columns has failed"
+				endif
 				finalLetter = len(tempChar)
 
 				!Just in case the first element is not a
@@ -395,8 +433,8 @@ module AlphaHouseMod
 			end do
 			close(Unit)
 			return
-		! 300 nLines=nLines-1
-			
+			! 300 nLines=nLines-1
+
 
 		end function
 
@@ -1278,8 +1316,74 @@ module AlphaHouseMod
 			end if
 		end subroutine
 
+
+		subroutine getExecutablePath( exePath)
+			character(len=128) :: myPath, myDir
+			character(len=:), allocatable, intent(out) :: exePath
+
+			call get_command_argument(0,myPath)
+			call getcwd(myDir)
+
+
+			if (myPath(1:1) == '.') then
+				exePath = trim(myDir) // trim(myPath(2:))
+			else
+				exePath = trim(myDir) // trim(myPath)
+			endif
+			print *, "Executable path is ", exePath
+		end subroutine getExecutablePath
 		!###########################################################################
 
+
+		!#############################################################################################################################################################################################################################
+
+		subroutine Header(params, extraInfo)
+			use baseSpecFileModule
+			class(baseSpecFile), intent(in) :: params
+			character(len=:), allocatable, optional :: extraInfo
+			character(len=100)  :: programNameString, extraInforString
+
+			write(programNameString,('(a30,a1,a21,a1,a30)')) " ","*",trim(params%programName),"*"," "
+			 
+			print *, ""
+			print *, "                              ***********************                         "
+			print *, "                              *                     *                         "
+			print *, trim(programNameString)
+			! print *, "                              *    "// trim(params%programName) // "     *                         "
+			print *, "                              *                     *                         "
+			print *, "                              ***********************                         "
+			print *, "                                                                              "
+			if (present(extraInfo)) then
+				write(extraInforString,('(a20,a,a20)')) " ",extraInfo," "
+				print *, trim(extraInforString)
+			endif
+
+			! print *, "                    Software For Phasing and Imputing Genotypes               "
+
+		end subroutine Header
+
+		!#############################################################################################################################################################################################################################
+
+		subroutine PrintVersion(Params,extraInfo)
+
+			use baseSpecFileModule
+			class(baseSpecFile), intent(in) :: params
+			character(len=:), allocatable, optional :: extraInfo
+
+			if (present(extraInfo)) then
+				call Header(params, extraInfo)
+			else
+				call Header(Params)
+			endif
+			print *, ""
+			print *, "                              Version:   "//trim(params%version) // "                     "
+			print *, "                              Compiled: "//__DATE__//", "//__TIME__
+			print *, ""
+
+		end subroutine PrintVersion
+
 end module
+
+
 
 
