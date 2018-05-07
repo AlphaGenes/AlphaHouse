@@ -1617,7 +1617,7 @@ module IndividualModule
 
 			motherId = this%getSireDamNewIDByIndexNoDummy(3)
 			fatherId = this%getSireDamNewIDByIndexNoDummy(2)
-			if (offspringTOAdd%id == motherId .or. offspringToAdd%id == fatherID) then
+			if (offspringTOAdd%originalId == this%damId .or. offspringToAdd%originalId == this%damId) then
 				write(message,*) "ERROR: Animal ", this%originalID ," has been given animal ", offspringToAdd%originalId, " as both parent and offspring"
 				call TRACEBACKQQ(string= message,user_exit_code=1)
 
