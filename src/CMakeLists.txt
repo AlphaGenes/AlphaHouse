@@ -47,7 +47,14 @@ if (USE_MPI)
 endif()
 
 if (ALPHAHOUSEEXE)
-	ADD_EXECUTABLE(${ALPHAHOUSEEXE} ${ALPHAHOUSE_src})
+    ADD_EXECUTABLE(${ALPHAHOUSEEXE} ${ALPHAHOUSE_src})
+    
+
+    if (USE_NETCDF)
+         
+    target_link_libraries (${ALPHAHOUSEEXE} ${NETCDF_LIBRARIES})
+
+    endif()
 else()
 	ADD_LIBRARY(${AHLIB} STATIC ${ALPHAHOUSE_src})
 endif()

@@ -42,7 +42,7 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 # Uncomment the below if you want the user to choose a parallelization library
 OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
-
+OPTION(USE_NETCDF "Use NETCDF for IO" ON)
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
   # file(GLOB testDeps "${SRC}/*.f90")
@@ -87,6 +87,12 @@ INCLUDE(${CMAKE_MODULE_PATH}/findMKL.cmake)
 if (${USE_HDF5})
 	INCLUDE(${CMAKE_MODULE_PATH}/findHDF5.cmake)
 endif(${USE_HDF5})
+
+if (${USE_NETCDF})
+  set (NETCDF_F90 "YES")
+  INCLUDE(${CMAKE_MODULE_PATH}/findNetCDF.cmake)
+  find_package (NetCDF REQUIRED)
+endif(${USE_NETCDF})
 
 # This INCLUDE statement executes code that sets the compile flags for DEBUG,
 # RELEASE, and TESTING.  You should  review this file and make sure the flags
