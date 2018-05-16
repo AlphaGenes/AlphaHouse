@@ -231,7 +231,7 @@ contains
 		enddo
 
 		if (specfile%plinkOutput) then
-			call writePedFile(ped,plinkInfo,specfile,chromPaths)
+			call writePedFile(ped,plinkInfo,chromPaths)
 			call writeMapFile(plinkInfo)
 			call writeRefFile(plinkInfo)
 		endif
