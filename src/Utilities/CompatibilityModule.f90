@@ -1043,7 +1043,7 @@ subroutine writeRefFile(plinkInfo)
 end subroutine writeRefFile
 
 
-subroutine WriteBed(bed, ped, minor, plinkInfo)
+subroutine WriteBed(bed, minor, genotypes)
 
 	use PedigreeModule
 	use genotypeModule
@@ -1051,9 +1051,8 @@ subroutine WriteBed(bed, ped, minor, plinkInfo)
 
 	! Arguments
 	character(*), intent(in) :: bed !< bed file name
-	type(PedigreeHolder), intent(in) :: ped !< pedigree read in from .fam
 	integer, intent(in) ::  minor !< if the first allele is minor or major
-	type(plinkInfoType), intent(in) :: plinkInfo
+	integer,dimension(:,:),allocatable, intent(in) :: genotypes
 
 	!! Types
 	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
@@ -1070,9 +1069,7 @@ subroutine WriteBed(bed, ped, minor, plinkInfo)
 	data magicnumber /108,27/, plinkmode /1/
 
 
-	print *,"start BED wrote"
 	! TODO have to write function to convert ped to to plinkInfo.
-
 
 	if (minor == 1) then
 		codes = (/ 0, 1, 2, MISSINGGENOTYPECODE /)
@@ -1091,21 +1088,21 @@ subroutine WriteBed(bed, ped, minor, plinkInfo)
 		inner: do i=0,6,2
 			j = j + 1
 
-			if (plinkInfo%genotypes(j,k) == codes(1)) then
+			if (genotypes(j,k) == codes(1)) then
 				element = ibclr(element,i)
 				element = ibclr(element,i+1)
-			else if (plinkInfo%genotypes(j,k) ==codes(4)) then
+			else if (genotypes(j,k) ==codes(4)) then
 				element = ibset(element,i)
 				element = ibclr(element,i+1)
-			else if (plinkInfo%genotypes(j,k) == codes(2)) then
+			else if (genotypes(j,k) == codes(2)) then
 				element = ibclr(element,i)
 				element = ibset(element,i+1)
-			else if (plinkInfo%genotypes(j,k) ==codes(3)) then
+			else if (genotypes(j,k) ==codes(3)) then
 				element = ibset(element,i)
 				element = ibset(element,i+1)
 			end if
 
-			if (j == ped%addedRealAnimals) then
+			if (j == size(genotypes,1)) then
 
 				j = 0
 				k = k + 1
@@ -1144,20 +1141,19 @@ end subroutine writeFamFile
 
 
 
-subroutine writeBim(bimFile, bimInfo,plinkInfo)
+subroutine writeBim(bimFile, bimInfo)
 	use HashModule
 	use AlphaHouseMod
 	use ConstantModule
 
 	character(len=*), intent(in) :: bimFile
 	type(bimHolder) , allocatable, dimension(:), intent(in) :: bimInfo !< extra info provided by BIM file
-	type(plinkInfoType), intent(in) :: plinkInfo
 	integer :: i, unit
 
 	open(newUnit=unit, file=bimFile, status='unknown')
 
-	do i =1, plinkInfo%totalSnps
-		write(unit, *) bimInfo%chrom, bimInfo%id,bimInfo%chrompos, bimInfo%pos ,bimInfo%ref, bimInfo%alt
+	do i =1, size(bimInfo)
+		write(unit, *) bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ,bimInfo(i)%ref, bimInfo(i)%alt
 	end do
 
 	close (unit)
