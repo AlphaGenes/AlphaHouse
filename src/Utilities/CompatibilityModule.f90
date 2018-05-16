@@ -1057,6 +1057,104 @@ subroutine writeRefFile(plinkInfo)
 
 end subroutine writeRefFile
 
+
+subroutine WritePed(bed, ped, minor, plinkInfo)
+
+	use PedigreeModule
+	use genotypeModule
+	implicit none
+
+	! Arguments
+	character(*), intent(in) :: bed !< bed file name
+	type(PedigreeHolder), intent(in) :: ped !< pedigree read in from .fam
+	integer, intent(in) ::  minor !< if the first allele is minor or major
+	type(plinkInfoType), intent(in) :: plinkInfo
+	integer :: status
+
+	!! Types
+	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
+
+	!! Local arguments
+	integer(Byte) :: readplinkmode, element, plinkmode
+	integer(Byte), dimension(2) :: readmagicnumber, magicnumber
+	integer :: stat, i, j, k, snpcount, majorcount
+	integer, dimension(4) :: codes, phasecodes
+	!integer, dimension(:), allocatable :: domasksnps
+	real :: allelefreq
+	integer :: bedInUnit
+	! Supported formats as per plink 1.9.
+	!data magicnumber/X"6C",X'0000001B' /,  plinkmode/X'01'/
+	data magicnumber /108,27/, plinkmode /1/
+
+
+	print *,"start BED wrote"
+	allocate(plinkInfo%genotypes(ped%addedRealAnimals,plinkInfo%totalSnps))
+	allocate(plinkInfo%phase(ped%addedRealAnimals,plinkInfo%totalSnps,2))
+	! TODO have to write function to convert ped to to plinkInfo.
+
+	! plinkInfo%genotypes(:,:) = MISSINGGENOTYPECODE
+	! plinkInfo%phase(:,:,:) = MISSINGPHASECODE
+
+	if (minor == 1) then
+		codes = (/ 0, 1, 2, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 0, 1, 1, MISSINGGENOTYPECODE /)
+	else
+		codes = (/ 2, 1, 0, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
+	endif
+
+	open(newunit=bedInUnit, file=bed, status='new', ACCESS='STREAM', FORM='UNFORMATTED')
+	write(bedInUnit) magicnumber, plinkmode
+
+	j=0  ! Sample-index
+	k=1  ! SNP-index
+	snpcount = 0
+	majorcount = 0
+	outer: do
+		read(bedInUnit, iostat=stat) element
+		if (stat /= 0) exit
+		inner: do i=0,6,2
+			j = j + 1
+			snpcount = snpcount + 1
+			select case(IBITS(element, i, 2))
+				case (0) ! homozygote
+				plinkInfo%genotypes(j,k) = codes(1)
+				plinkInfo%phase(j,k,:) = phasecodes(1)
+				case (1) ! missing
+				plinkInfo%genotypes(j,k) = codes(4)
+				plinkInfo%phase(j,k,:) = phaseCodes(4)
+				snpcount = snpcount - 1
+				case (2) ! heterozygote
+				plinkInfo%genotypes(j,k) = codes(2)
+				! Set to missing - as we don't know which snp is which
+				plinkInfo%phase(j,k,1) = MISSINGPHASECODE
+				plinkInfo%phase(j,k,2) = MISSINGPHASECODE
+				majorcount = majorcount + 1
+				case (3) ! homozygote, minor
+				plinkInfo%genotypes(j,k) = codes(3)
+				plinkInfo%phase(j,k,:) = phasecodes(3)
+				majorcount = majorcount + 2
+			endselect
+			if (j == ped%addedRealAnimals) then
+				if (snpcount /= 0) then
+					allelefreq = majorcount / (snpcount*2.)
+				endif
+				j = 0
+				snpcount = 0
+				majorcount = 0
+				k = k + 1
+				cycle outer
+			endif
+		enddo inner
+		! print *, "in outer"
+	enddo outer
+	close(bedInUnit)
+
+	if (stat == -1) stat=0
+
+	print *, "finished"
+
+end subroutine writeBED
 end module CompatibilityModule
 
 

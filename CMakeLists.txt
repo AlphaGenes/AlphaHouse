@@ -12,7 +12,7 @@ INCLUDE(${CMAKE_MODULE_PATH}/setVersion.cmake)
 
 
 OPTION(RUN_TESTS "Run and compile tests"
-  ON)
+  OFF)
 OPTION(USE_HDF5 "Use hdf"
        OFF)
 
@@ -89,9 +89,11 @@ if (${USE_HDF5})
 endif(${USE_HDF5})
 
 if (${USE_NETCDF})
+message("Using netcdf")
   set (NETCDF_F90 "YES")
-  INCLUDE(${CMAKE_MODULE_PATH}/findNetCDF.cmake)
   find_package (NetCDF REQUIRED)
+  INCLUDE(${CMAKE_MODULE_PATH}/findNetCDF.cmake)
+  # find_package (NetCDF REQUIRED)
 endif(${USE_NETCDF})
 
 # This INCLUDE statement executes code that sets the compile flags for DEBUG,
