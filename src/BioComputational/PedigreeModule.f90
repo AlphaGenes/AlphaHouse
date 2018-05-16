@@ -115,6 +115,7 @@ module PedigreeModule
 		procedure :: addPhaseInformationFromFile
 		procedure :: addGenotypeInformationFromArray
 		generic :: addGenotypeInformation => addGenotypeInformationFromArray, addGenotypeInformationFromFile
+		procedure :: getGenotypesAsArrayRealAnimals
 		procedure :: outputSortedPedigreeInAlphaImputeFormat
 		procedure :: isDummy
 		procedure :: sortPedigreeAndOverwrite
@@ -3667,6 +3668,31 @@ module PedigreeModule
 
 		end function getGenotypesAsArray
 
+
+		!---------------------------------------------------------------------------
+		!< @brief returns array of genotype information as is used by alphaimpute in format (0:nGenotyped, nSnp)
+		!<
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		function getGenotypesAsArrayRealAnimals(this) result(res)
+
+			class(pedigreeHolder) :: this
+			integer(kind=1) ,dimension(:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+			integer :: i
+
+
+			allocate(res(this%addedRealAnimals, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+			res = 9
+			do i=1, this%addedRealAnimals
+
+				if (.not. allocated(this%pedigree(this%inputMap(i))%individualGenotype)) then
+					write(error_unit,*) "error - not all animals have been allocated a genotype"
+				endif
+				res(i,:) = this%pedigree(this%inputMap(i))%individualGenotype%toIntegerArray()
+			enddo
+
+		end function getGenotypesAsArrayRealAnimals
 
 		!---------------------------------------------------------------------------
 		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)

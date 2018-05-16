@@ -63,6 +63,7 @@ module CompatibilityModule
 	character(len=IDLENGTH) :: id
 	character(len=2) :: chrom !<either an integer, or 'X'/'Y'/'XY'/'MT'
 	integer(kind=int64) :: pos, chrompos
+
 end type bimHolder
 
 type Chromosome
@@ -93,6 +94,29 @@ final :: destroyPlinkInfoType
 
 end type plinkInfoType
 contains
+
+
+function createBimInfoFromGenotypes(genotypes) result(bimOut)
+	type(bimHolder),allocatable, dimension(:) :: bimOut
+	integer(kind=1), dimension(:,:) :: genotypes
+	integer :: nsnps,i,nanimals
+	character(len=16) :: snpNumber 
+
+	nsnps = size(genotypes,2)
+	nanimals = size(genotypes,1)
+	allocate(bimOut(nsnps))
+	
+	do i=1,nsnps
+		write (snpNumber, '(a,I13.13)') "SNP",i
+		bimOut(i)%id = snpNumber
+		bimOut(i)%chrom = "1"
+		bimOut(i)%pos = 0
+		bimOut(i)%chromPos = 1
+		bimOut(i)%ref = "1"
+		bimOut(i)%alt = "2"
+	enddo
+
+end function createBimInfoFromGenotypes
 
 
 subroutine initPlinkInfoType(plinkInfo, ped)
@@ -1043,16 +1067,16 @@ subroutine writeRefFile(plinkInfo)
 end subroutine writeRefFile
 
 
-subroutine WriteBed(bed, minor, genotypes)
+subroutine WriteBedFile(bed, minor, genotypes)
 
 	use PedigreeModule
 	use genotypeModule
 	implicit none
 
 	! Arguments
-	character(*), intent(in) :: bed !< bed file name
+	character(len=*), intent(in) :: bed !< bed file name
 	integer, intent(in) ::  minor !< if the first allele is minor or major
-	integer,dimension(:,:),allocatable, intent(in) :: genotypes !< Genotypes should be in format (nanimals, nsnps)
+	integer(kind=1),dimension(:,:), intent(in) :: genotypes !< Genotypes should be in format (nanimals, nsnps)
 
 	!! Types
 	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
@@ -1101,8 +1125,7 @@ subroutine WriteBed(bed, minor, genotypes)
 				element = ibset(element,i)
 				element = ibset(element,i+1)
 			end if
-
-			if (j == size(genotypes,2)) then
+			if (animals == size(genotypes,1)) then
 
 				animals = 0
 				snps = snps + 1
@@ -1118,7 +1141,7 @@ subroutine WriteBed(bed, minor, genotypes)
 
 	print *, "finished"
 
-end subroutine writeBED
+end subroutine WriteBedFile
 
 
 subroutine writeFamFile(ped,pedFile)
@@ -1142,7 +1165,7 @@ end subroutine writeFamFile
 
 
 
-subroutine writeBim(bimFile, bimInfo)
+subroutine writeBimFile(bimFile, bimInfo)
 	use HashModule
 	use AlphaHouseMod
 	use ConstantModule
@@ -1159,10 +1182,27 @@ subroutine writeBim(bimFile, bimInfo)
 
 	close (unit)
 
-end subroutine writeBim
+end subroutine writeBimFile
 
 
-! subroutine writeOutPlinkBinary()
+subroutine writeOutPlinkBinary(ped,path,bimInfo)
+
+	type(PedigreeHolder) :: ped
+	character(len=*), intent(in) :: path !< file prepend (before the .)
+	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+
+	if (present(bimInfo)) then
+		call writeBimFile(trim(path)//".bim", bimInfo)
+	else
+		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
+	endif 
+
+	call writeFamFile(ped,trim(path)//".fam")
+
+	call WriteBedFile(trim(path)//".bed",2, ped%getGenotypesAsArrayRealAnimals())
+
+
+end subroutine writeOutPlinkBinary
 end module CompatibilityModule
 
 
