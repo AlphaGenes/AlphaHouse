@@ -1087,7 +1087,7 @@ subroutine WriteBed(bed, minor, genotypes)
 	outer: do
 		inner: do i=0,6,2
 			
-			snps = snps + 1
+			animals = animals + 1
 			if (genotypes(animals,snps) == codes(1)) then
 				element = ibclr(element,i)
 				element = ibclr(element,i+1)
@@ -1104,8 +1104,8 @@ subroutine WriteBed(bed, minor, genotypes)
 
 			if (j == size(genotypes,2)) then
 
-				k = 0
-				animals = animals + 1
+				animals = 0
+				snps = snps + 1
 				
 				cycle outer
 			endif
@@ -1162,7 +1162,7 @@ subroutine writeBim(bimFile, bimInfo)
 end subroutine writeBim
 
 
-
+subroutine writeOutPlinkBinary()
 end module CompatibilityModule
 
 
