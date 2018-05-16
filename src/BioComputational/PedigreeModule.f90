@@ -2258,6 +2258,45 @@ module PedigreeModule
 			endif
 		end subroutine addGenotypeInformationFromArray
 
+				!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!< @brief     Adds genotype information to pedigree from a 2 dimensional array
+		!
+		!< @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!< @date       October 25, 2016
+		!---------------------------------------------------------------------------
+		subroutine addGenotypeInformationFromCharArray(this, array, initall)
+
+			use AlphaHouseMod, only : countLines,char2Int1Array
+			use ConstantModule, only : IDLENGTH, DICT_NULL
+			implicit none
+			class(PedigreeHolder) :: this
+			character(len=IDLENGTH),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
+			integer :: id
+			integer :: i
+			integer(kind=1), allocatable, dimension(:) :: genotypeArray
+			integer, intent(in),optional :: initAll !< optional argument- if present initialise whoe pedigree with size of snps
+			do i=1,size(array,1)
+			id = this%dictionary%getvalue(array(i,1))
+				if (id /= DICT_NULL) then
+					genotypeArray = char2Int1Array(array(i,2:))
+					call this%setAnimalAsGenotyped(id, genotypeArray)
+				endif
+			enddo
+			this%nsnpsPopulation = size(genotypeArray) - 1 ! remove the id
+
+			if (present(initAll)) then
+				do i=1, this%pedigreeSize
+					if (.not. this%pedigree(i)%genotyped) then
+						call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+						allocate(this%pedigree(i)%inconsistencies(this%nsnpsPopulation))
+						this%pedigree(i)%inconsistencies = 0
+						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
+					endif
+				enddo
+			endif
+		end subroutine addGenotypeInformationFromCharArray
 
 		!---------------------------------------------------------------------------
 		! DESCRIPTION:
