@@ -42,7 +42,7 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 # Uncomment the below if you want the user to choose a parallelization library
 OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
-OPTION(USE_NETCDF "Use NETCDF for IO" ON)
+OPTION(USE_NETCDF "Use NETCDF for IO" OFF)
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
   # file(GLOB testDeps "${SRC}/*.f90")
