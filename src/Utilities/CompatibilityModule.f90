@@ -1052,7 +1052,7 @@ subroutine WriteBed(bed, minor, genotypes)
 	! Arguments
 	character(*), intent(in) :: bed !< bed file name
 	integer, intent(in) ::  minor !< if the first allele is minor or major
-	integer,dimension(:,:),allocatable, intent(in) :: genotypes
+	integer,dimension(:,:),allocatable, intent(in) :: genotypes !< Genotypes should be in format (nanimals, nsnps)
 
 	!! Types
 	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
@@ -1060,7 +1060,7 @@ subroutine WriteBed(bed, minor, genotypes)
 	!! Local arguments
 	integer(Byte) :: element, plinkmode
 	integer(Byte), dimension(2) ::  magicnumber
-	integer :: stat, i, j, k
+	integer :: stat, i, animals, snps
 	integer, dimension(4) :: codes, phasecodes
 	!integer, dimension(:), allocatable :: domasksnps
 	integer :: bedUnit
@@ -1082,30 +1082,31 @@ subroutine WriteBed(bed, minor, genotypes)
 	open(newunit=bedUnit, file=bed, status='new', ACCESS='STREAM', FORM='UNFORMATTED')
 	write(bedUnit) magicnumber, plinkmode
 
-	j=0  ! Sample-index
-	k=1  ! SNP-index
+	animals=0  ! Sample-index
+	snps=1  ! SNP-index
 	outer: do
 		inner: do i=0,6,2
-			j = j + 1
-
-			if (genotypes(j,k) == codes(1)) then
+			
+			snps = snps + 1
+			if (genotypes(animals,snps) == codes(1)) then
 				element = ibclr(element,i)
 				element = ibclr(element,i+1)
-			else if (genotypes(j,k) ==codes(4)) then
+			else if (genotypes(animals,snps) ==codes(4)) then
 				element = ibset(element,i)
 				element = ibclr(element,i+1)
-			else if (genotypes(j,k) == codes(2)) then
+			else if (genotypes(animals,snps) == codes(2)) then
 				element = ibclr(element,i)
 				element = ibset(element,i+1)
-			else if (genotypes(j,k) ==codes(3)) then
+			else if (genotypes(animals,snps) ==codes(3)) then
 				element = ibset(element,i)
 				element = ibset(element,i+1)
 			end if
 
-			if (j == size(genotypes,1)) then
+			if (j == size(genotypes,2)) then
 
-				j = 0
-				k = k + 1
+				k = 0
+				animals = animals + 1
+				
 				cycle outer
 			endif
 		enddo inner
@@ -1159,6 +1160,8 @@ subroutine writeBim(bimFile, bimInfo)
 	close (unit)
 
 end subroutine writeBim
+
+
 
 end module CompatibilityModule
 
