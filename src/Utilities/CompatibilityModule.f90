@@ -1162,7 +1162,7 @@ subroutine writeBim(bimFile, bimInfo)
 end subroutine writeBim
 
 
-subroutine writeOutPlinkBinary()
+! subroutine writeOutPlinkBinary()
 end module CompatibilityModule
 
 
