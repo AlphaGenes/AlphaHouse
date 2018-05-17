@@ -1107,10 +1107,10 @@ subroutine WriteBedFile(bed, minor, genotypes)
 	write(bedUnit) magicnumber, plinkmode
 
 	element = 0
-	outer: do snps=1,size(genotypes,2)
-		animals = 0	
+	animals = 0	
+	outer: do
 		inner: do i=0,6,2
-			
+			if (snps == size(genotypes,2)) exit
 			animals = animals + 1
 			if (genotypes(animals,snps) == codes(1)) then
 				element = ibclr(element,i)
@@ -1125,11 +1125,12 @@ subroutine WriteBedFile(bed, minor, genotypes)
 				element = ibset(element,i)
 				element = ibset(element,i+1)
 			end if
-			! if (animals == size(genotypes,1)) then
+			if (animals == size(genotypes,1)) then
 
-			! 	animals = 0				
-			! 	cycle outer
-			! endif
+				animals = 0
+				snps = snps +1				
+				cycle outer
+			endif
 		enddo inner
 
 		write(bedUnit, iostat=stat) element
@@ -1203,24 +1204,27 @@ subroutine writeOutPlinkBinary(ped,path,bimInfo)
 end subroutine writeOutPlinkBinary
 
 
-subroutine writeOutPlinkNonBinary(ped,path,bimInfo)
+! subroutine writeOutPlinkNonBinary(ped,path,plinkInfo)
 
-	type(PedigreeHolder) :: ped
-	character(len=*), intent(in) :: path !< file prepend (before the .)
-	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+! 	type(PedigreeHolder) :: ped
+! 	character(len=*), intent(in) :: path !< file prepend (before the .)
+! 	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
 
-	if (present(bimInfo)) then
-		call writeBimFile(trim(path)//".bim", bimInfo)
-	else
-		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
-	endif 
+! 	if (present(bimInfo)) then
+! 		call writeBimFile(trim(path)//".bim", bimInfo)
+! 	else
+! 		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
+! 	endif 
 
-	call writeFamFile(ped,trim(path)//".fam")
+! 	call writeFamFile(ped,trim(path)//".fam")
 
-	call WriteBedFile(trim(path)//".bed",2, ped%getGenotypesAsArrayRealAnimals())
-	! TODO
+! 	call WriteBedFile(trim(path)//".bed",2, ped%getGenotypesAsArrayRealAnimals())
+! 	! TODO
 
-end subroutine writeOutPlinkNonBinary
+! end subroutine writeOutPlinkNonBinary
+
+
+
 end module CompatibilityModule
 
 
