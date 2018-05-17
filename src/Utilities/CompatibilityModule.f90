@@ -1111,7 +1111,7 @@ subroutine WriteBedFile(bed, minor, genotypes)
 	snps = 1	
 	outer: do
 		inner: do i=0,6,2
-			if (snps == size(genotypes,2)) exit outer
+			if (snps > size(genotypes,2)) exit outer
 			animals = animals + 1
 			if (genotypes(animals,snps) == codes(1)) then
 				element = ibclr(element,i)
