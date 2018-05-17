@@ -1154,7 +1154,7 @@ subroutine writeFamFile(ped,pedFile)
 
 	open(newUnit=fileUnit, file=pedFile, status="unknown")
 	do i=1, ped%addedRealAnimals
-		write(fileUnit,*) ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId,ped%pedigree(ped%inputMap(i))%gender,phenotype
+		write(fileUnit,'(4a32,a1, i1,a1, a2)') ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId," ",ped%pedigree(ped%inputMap(i))%gender," ",phenotype
 	enddo
 
 
@@ -1175,7 +1175,7 @@ subroutine writeBimFile(bimFile, bimInfo)
 	open(newUnit=unit, file=bimFile, status='unknown')
 
 	do i =1, size(bimInfo)
-		write(unit, '(a2,a10,I6,I6,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ,bimInfo(i)%ref, bimInfo(i)%alt
+		write(unit, '(a2,a10,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
 	end do
 
 	close (unit)
