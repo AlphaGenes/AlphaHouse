@@ -302,6 +302,7 @@ module IndividualModule
 			this%hd = .false.
 			this%gender = -9
 			this%sireId = sireIDIn
+			this%familyId = UNKNOWNFAMILY
 			this%damId = damIDIn
 			this%inconsistencyCount = 0
 			if (present(generation)) then
