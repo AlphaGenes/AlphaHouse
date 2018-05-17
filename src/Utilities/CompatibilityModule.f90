@@ -1103,12 +1103,12 @@ subroutine WriteBedFile(bed, minor, genotypes)
 		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
 	endif
 
-	open(newunit=bedUnit, file=bed, status='new', ACCESS='STREAM', FORM='UNFORMATTED')
+	open(newunit=bedUnit, file=bed, status='unknown', ACCESS='STREAM', FORM='UNFORMATTED')
 	write(bedUnit) magicnumber, plinkmode
 
-	animals=0  ! Sample-index
-	snps=1  ! SNP-index
-	outer: do
+	element = 0
+	outer: do snps=1,size(genotypes,2)
+		animals = 0	
 		inner: do i=0,6,2
 			
 			animals = animals + 1
@@ -1125,13 +1125,11 @@ subroutine WriteBedFile(bed, minor, genotypes)
 				element = ibset(element,i)
 				element = ibset(element,i+1)
 			end if
-			if (animals == size(genotypes,1)) then
+			! if (animals == size(genotypes,1)) then
 
-				animals = 0
-				snps = snps + 1
-				
-				cycle outer
-			endif
+			! 	animals = 0				
+			! 	cycle outer
+			! endif
 		enddo inner
 
 		write(bedUnit, iostat=stat) element
@@ -1177,7 +1175,7 @@ subroutine writeBimFile(bimFile, bimInfo)
 	open(newUnit=unit, file=bimFile, status='unknown')
 
 	do i =1, size(bimInfo)
-		write(unit, *) bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ,bimInfo(i)%ref, bimInfo(i)%alt
+		write(unit, '(a2,a10,I6,I6,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ,bimInfo(i)%ref, bimInfo(i)%alt
 	end do
 
 	close (unit)
