@@ -1107,10 +1107,11 @@ subroutine WriteBedFile(bed, minor, genotypes)
 	write(bedUnit) magicnumber, plinkmode
 
 	element = 0
-	animals = 0	
+	animals = 0
+	snps = 1	
 	outer: do
 		inner: do i=0,6,2
-			if (snps == size(genotypes,2)) exit
+			if (snps == size(genotypes,2)) exit outer
 			animals = animals + 1
 			if (genotypes(animals,snps) == codes(1)) then
 				element = ibclr(element,i)
@@ -1155,7 +1156,7 @@ subroutine writeFamFile(ped,famFile)
 
 	open(newUnit=fileUnit, file=famFile, status="unknown")
 	do i=1, ped%addedRealAnimals
-		write(fileUnit,'(4a32,a1, i1,a1, a2)') ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId," ",ped%pedigree(ped%inputMap(i))%gender," ",phenotype
+		write(fileUnit,'(4a32,a1, i3,a1, a3)') ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId," ",ped%pedigree(ped%inputMap(i))%gender," ",phenotype
 	enddo
 
 
