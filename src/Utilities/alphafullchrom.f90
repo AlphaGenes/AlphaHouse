@@ -231,9 +231,9 @@ contains
 		enddo
 
 		if (specfile%plinkOutput) then
-			call writePedFile(ped,plinkInfo,chromPaths)
-			call writeMapFile(plinkInfo)
-			call writeRefFile(plinkInfo)
+			call writePedFile(ped,plinkInfo,"plinkOutput",chromPaths)
+			call writeMapFile(plinkInfo,"plinkOutput")
+			call writeRefFile(plinkInfo,"plinkOutput")
 		endif
 
 	end subroutine runPlink

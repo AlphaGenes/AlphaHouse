@@ -949,7 +949,7 @@ end subroutine readRef
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    November 26, 2017
 !---------------------------------------------------------------------------
-subroutine writePedFile(ped,plinkInfo, paths)
+subroutine writePedFile(ped,plinkInfo,outputPath, paths)
 	use AlphaHouseMod, only : countColumns
 	use basespecfileModule
 
@@ -958,6 +958,7 @@ subroutine writePedFile(ped,plinkInfo, paths)
 	character(len=128), optional,dimension(:), allocatable, intent(in) :: paths !< output paths for each chromosome
 	character(len=2), dimension(:,:), allocatable :: outputAlleles
 	character(len=128) :: fmt
+	character(len=*),intent(in) :: outputPath
 	integer(kind=1) :: phase1,phase2
 	integer :: snpCounts = 0,outcounts=0, pedUnit,i,nsnps,p,j
 
@@ -1015,7 +1016,7 @@ subroutine writePedFile(ped,plinkInfo, paths)
 	enddo
 
 	print *, "Writing plink output to file"
-	open(newunit=pedUnit,file="PlinkOutput.ped", status='unknown')
+	open(newunit=pedUnit,file=trim(outputPath)//".ped", status='unknown')
 	write(fmt, '(a,i10,a)') '(3a20,i2,a20,',2*plinkInfo%totalSnps, 'a2)'
 	print *, "Writing alleles per animal"
 	do p=1, ped%pedigreeSize
@@ -1028,10 +1029,11 @@ subroutine writePedFile(ped,plinkInfo, paths)
 end subroutine writePedFile
 
 
-subroutine writeMapFile(plinkInfo)
+subroutine writeMapFile(plinkInfo, path)
 	type(plinkInfoType), intent(in) :: plinkInfo
+	character(len=*), intent(in) :: path
 	integer :: unit, snpCount,i,h
-	open(newunit=unit, file="PlinkOutput.map", status='unknown')
+	open(newunit=unit, file=trim(path)//".map", status='unknown')
 	snpCount = 0
 
 
@@ -1048,10 +1050,11 @@ subroutine writeMapFile(plinkInfo)
 end subroutine writeMapFile
 
 
-subroutine writeRefFile(plinkInfo)
+subroutine writeRefFile(plinkInfo, path)
 	type(plinkInfoType), intent(in) :: plinkInfo
+	character(len=*), intent(in) :: path
 	integer :: unit, snpCount,i,h
-	open(newunit=unit, file="PlinkOutput.ref", status='unknown')
+	open(newunit=unit, file=trim(path)//".ref", status='unknown')
 	snpCount = 0
 	do i=1, plinkInfo%nChroms
 
@@ -1205,24 +1208,25 @@ subroutine writeOutPlinkBinary(ped,path,bimInfo)
 end subroutine writeOutPlinkBinary
 
 
-! subroutine writeOutPlinkNonBinary(ped,path,plinkInfo)
+subroutine writeOutPlinkNonBinary(ped,path,plinkInfoIn)
 
-! 	type(PedigreeHolder) :: ped
-! 	character(len=*), intent(in) :: path !< file prepend (before the .)
-! 	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+	type(PedigreeHolder) :: ped
+	character(len=*), intent(in) :: path !< file prepend (before the .)
+	type(plinkInfoType), optional :: plinkInfoIn
+	type(plinkInfoType) :: plinkInfoObj
+	
+	if (present(plinkInfoIn)) then
+		plinkInfoObj = plinkInfoIn
+	else
+		call plinkInfoObj%initPlinkInfoType(ped)
+	endif
+	
+	
+	call writePedFile(ped,plinkInfoObj,path)
+	call writeMapFile(plinkInfoObj,path)
+	call writeRefFile(plinkInfoObj,path)
 
-! 	if (present(bimInfo)) then
-! 		call writeBimFile(trim(path)//".bim", bimInfo)
-! 	else
-! 		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
-! 	endif 
-
-! 	call writeFamFile(ped,trim(path)//".fam")
-
-! 	call WriteBedFile(trim(path)//".bed",2, ped%getGenotypesAsArrayRealAnimals())
-! 	! TODO
-
-! end subroutine writeOutPlinkNonBinary
+end subroutine writeOutPlinkNonBinary
 
 
 
