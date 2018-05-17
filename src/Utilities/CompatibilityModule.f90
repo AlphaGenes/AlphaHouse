@@ -1106,7 +1106,7 @@ subroutine WriteBedFile(bed, minor, genotypes)
 		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
 	endif
 
-	open(newunit=bedUnit, file=bed, status='unknown', ACCESS='STREAM', FORM='UNFORMATTED')
+	open(newunit=bedUnit, file=bed, status='REPLACE', ACCESS='STREAM', FORM='UNFORMATTED')
 	write(bedUnit) magicnumber, plinkmode
 
 	element = 0
@@ -1130,13 +1130,12 @@ subroutine WriteBedFile(bed, minor, genotypes)
 				element = ibset(element,i+1)
 			end if
 			if (animals == size(genotypes,1)) then
-
 				animals = 0
 				snps = snps +1				
-				cycle outer
+				exit
+				
 			endif
 		enddo inner
-
 		write(bedUnit, iostat=stat) element
 	enddo outer
 	close(bedUnit)
@@ -1157,7 +1156,7 @@ subroutine writeFamFile(ped,famFile)
 	
 	phenotype = "-9"
 
-	open(newUnit=fileUnit, file=famFile, status="unknown")
+	open(newUnit=fileUnit, file=famFile, status="REPLACE")
 	do i=1, ped%addedRealAnimals
 		write(fileUnit,'(4a32,a1, i3,a1, a3)') ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId," ",ped%pedigree(ped%inputMap(i))%gender," ",phenotype
 	enddo
@@ -1177,7 +1176,7 @@ subroutine writeBimFile(bimFile, bimInfo)
 	type(bimHolder) , allocatable, dimension(:), intent(in) :: bimInfo !< extra info provided by BIM file
 	integer :: i, unit
 
-	open(newUnit=unit, file=bimFile, status='unknown')
+	open(newUnit=unit, file=bimFile, status="REPLACE")
 
 	do i =1, size(bimInfo)
 		write(unit, '(a2,a10,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
