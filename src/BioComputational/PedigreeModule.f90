@@ -167,6 +167,7 @@ module PedigreeModule
 		procedure :: writeOutGenotypesNoDummies
 		procedure :: getHDPedigree
 		procedure :: writeOutPedigree
+		procedure :: WritePedigreeOriginalOrder
 		procedure :: writeOutGenotypeProbabilities
 		procedure :: writeOutPhaseProbabilities
 		procedure :: writeOutGenotypesForImputed
@@ -3121,7 +3122,8 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Output pedigree to stdout in the format originalID,sireId,damId
+		!< @brief Output pedigree to stdout or file in the format originalID,sireId,damId
+		!< @details order will be storage order
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
@@ -3140,6 +3142,29 @@ module PedigreeModule
 			enddo
 		end subroutine printPedigreeOriginalFormat
 
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Output pedigree to stdout or file in the format originalID,sireId,damId
+		!< @details order will be the input ordger 
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    May 16, 2018
+		!---------------------------------------------------------------------------
+		subroutine WritePedigreeOriginalOrder(this, filepath)
+			class(PedigreeHolder) :: this
+			character(len=*), optional :: filePath
+			integer ::i,unit
+
+			if(present(filepath)) then
+				open(newunit=unit, file=filePath, status="unknown")
+			else
+				unit = output_unit
+			endif
+			do i= 1, this%addedRealAnimals
+				write(unit,'(3a32)')  trim(this%pedigree(this%inputMap(i))%originalId), trim(this%pedigree(this%inputMap(i))%sireId),trim(this%pedigree(this%inputMap(i))%damId)
+			enddo
+
+		end subroutine WritePedigreeOriginalOrder
 
 		!---------------------------------------------------------------------------
 		!< @brief Output genders to file
