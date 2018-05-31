@@ -73,7 +73,7 @@ module AlphaHouseMod
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
 	public :: countColumns, getColumnNumbers
-	public :: getExecutablePath, header, PrintVersion
+	public :: getExecutablePath, header, PrintVersion,printTitles
 	!> @brief List of characters for case conversion in ToLower
 	CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
 	CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -1364,7 +1364,7 @@ module AlphaHouseMod
 
 		!#############################################################################################################################################################################################################################
 
-		subroutine PrintVersion(Params,extraInfo)
+		subroutine printTitles(Params,extraInfo)
 
 			use baseSpecFileModule
 			class(baseSpecFile), intent(in) :: params
@@ -1375,13 +1375,17 @@ module AlphaHouseMod
 			else
 				call Header(Params)
 			endif
-			print *, ""
+			call PrintVersion()
+		end subroutine printTitles
+
+
+		subroutine PrintVersion()
+					print *, ""
 			print *, "                              Version:   "//trim(params%version) // "                     "
 			print *, "                              Compiled: "//__DATE__//", "//__TIME__
 			print *, ""
 
 		end subroutine PrintVersion
-
 end module
 
 
