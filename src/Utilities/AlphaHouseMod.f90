@@ -1450,18 +1450,21 @@ module AlphaHouseMod
 			else
 				call Header(Params)
 			endif
-			call PrintVersion()
+			call PrintVersion(params)
 		end subroutine printTitles
 
 
-		subroutine PrintVersion()
-					print *, ""
+		subroutine PrintVersion(params)
+			use baseSpecFileModule
+			class(baseSpecFile), intent(in) :: params
+			print *, ""
 			print *, "                              Version:   "//trim(params%version) // "                     "
 			print *, "                              Compiled: "//__DATE__//", "//__TIME__
 			print *, ""
 
 		end subroutine PrintVersion
 end module
+
 
 
 
