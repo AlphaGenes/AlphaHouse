@@ -28,13 +28,13 @@ module baseSpecFileModule
 	character(len=512) :: resultFolderPath !< Path where results should go
 	character(len=512) :: plinkinputfile !< prepend to plink file
 	character(len=300):: PedigreeFile = "NoPedigree",GenotypeFile="Genotypes.txt" !< Pedigree and genotype file - again from the plink input
+	integer :: nsnp 
 	logical :: plinkBinary !< are the plink files binary
-	integer(kind=int32) :: nsnp !< number of snp for this chromosme
+	integer(kind=1) :: CurrChrom
 	integer(kind=1) :: SexOpt,HetGameticStatus, HomGameticStatus
 	logical :: plinkOutput !< if true - output in plink format
 	logical :: stopAfterPlink = .false. !< if true -- will call exit after plink output has been created -
 	integer(kind=int32), dimension(:), allocatable :: useChroms !< Array containing chromosomes to do
-	integer :: currChrom
 	character(len=21) :: programName = "-----UNSPECFIED------"
 	character(len=32) :: version = "UNSPECFIED"
 	contains

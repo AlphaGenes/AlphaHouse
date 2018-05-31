@@ -63,6 +63,7 @@ module CompatibilityModule
 	character(len=IDLENGTH) :: id
 	character(len=2) :: chrom !<either an integer, or 'X'/'Y'/'XY'/'MT'
 	integer(kind=int64) :: pos, chrompos
+
 end type bimHolder
 
 type Chromosome
@@ -93,6 +94,29 @@ final :: destroyPlinkInfoType
 
 end type plinkInfoType
 contains
+
+
+function createBimInfoFromGenotypes(genotypes) result(bimOut)
+	type(bimHolder),allocatable, dimension(:) :: bimOut
+	integer(kind=1), dimension(:,:) :: genotypes
+	integer :: nsnps,i,nanimals
+	character(len=16) :: snpNumber 
+
+	nsnps = size(genotypes,2)
+	nanimals = size(genotypes,1)
+	allocate(bimOut(nsnps))
+	
+	do i=1,nsnps
+		write (snpNumber, '(a,I13.13)') "SNP",i
+		bimOut(i)%id = snpNumber
+		bimOut(i)%chrom = "1"
+		bimOut(i)%pos = 0
+		bimOut(i)%chromPos = 1
+		bimOut(i)%ref = "1"
+		bimOut(i)%alt = "2"
+	enddo
+
+end function createBimInfoFromGenotypes
 
 
 subroutine initPlinkInfoType(plinkInfo, ped)
@@ -171,23 +195,12 @@ subroutine readFamFile(ped,pedFile)
 	print *,"TOTAL ANS",lines
 	do i=1, lines
 		read(fileUnit,*) familyID,pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype
-
-
-
-		! TODO potentially add family ID here to animals
-		! pedArray(1,i) = familyID // ":" // pedArray(1,i)
-		! pedArray(2,i) = familyID // ":" // pedArray(2,i)
-		! pedArray(3,i) = familyID // ":" // pedArray(3,i)
-
-		! write(*,'(3a20)') pedArray(1,i),pedArray(2,i),pedArray(3,i)
 		read(gender,*,iostat=stat)  genderArray(i)
 		read(phenotype,*,iostat=stat)  phenotypeArray(i)
 	enddo
-
-
 	call initPedigreeArrays(ped,pedArray, genderArray)
 
-	print *, "ANS in ped",ped%pedigreeSize," without dum:",ped%addedRealAnimals
+	print *, "Animals in fam file:",ped%pedigreeSize," without dummies:",ped%addedRealAnimals
 
 	call ped%printPedigreeOriginalFormat("pedigreeOutput.txt")
 
@@ -222,7 +235,7 @@ subroutine readPlink(binaryFilePre, ped, outputPaths,plinkInfo, useChroms)
 			return
 		endif
 	endif
-	
+
 	call createOutputFiles(ped, outputPaths,plinkInfo)
 
 
@@ -246,7 +259,6 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 	logical, dimension(:), allocatable :: maskedLogi
 	integer, dimension(:), allocatable :: masked
 	integer :: result, i, h,p,refAlleleUnit,count
-	integer(kind=1),allocatable,dimension (:,:) :: array
 	integer, dimension(:), intent(in), optional :: useChroms
 	path = "fullGenome/"
 	result=makedirqq(path)
@@ -256,7 +268,7 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 	allocate(outputPaths(plinkInfo%nChroms))
 	allocate(maskedLogi(size(plinkInfo%genotypes,2))) !< alloc to total number of snps
 	do i =1, plinkInfo%nChroms
-		
+
 
 		if (present(useChroms)) then
 			if (.not. any(useChroms == i)) cycle
@@ -583,7 +595,6 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo,useChroms)
 	character(len=128), dimension(:), allocatable,intent(out) :: outputPaths
 	integer, dimension(:), intent(in),allocatable, optional :: useChroms
 	type(plinkInfoType) :: plinkInfo
-	type(DictStructure) :: dict
 	type(pedigreeHolder) :: ped
 
 	call readMap(trim(filePre)//".map",plinkInfo)
@@ -595,7 +606,7 @@ subroutine readPlinkNoneBinary(filePre,ped,outputPaths,plinkInfo,useChroms)
 			return
 		endif
 	endif
-	
+
 	call createOutputFiles(ped, outputPaths,plinkInfo)
 
 end subroutine readPlinkNoneBinary
@@ -620,7 +631,6 @@ subroutine readMap(filename,plinkInfo)
 	integer :: unit,i,chromCount,basepair
 
 	real(kind=real64) :: length
-	logical :: hasSexChrom
 	character(len=2) :: chrom,prevChrom
 	character(len=128) :: id
 
@@ -939,20 +949,20 @@ end subroutine readRef
 !< @author  David Wilson david.wilson@roslin.ed.ac.uk
 !< @date    November 26, 2017
 !---------------------------------------------------------------------------
-subroutine writePedFile(ped,plinkInfo,params, paths)
+subroutine writePedFile(ped,plinkInfo,outputPath, paths)
 	use AlphaHouseMod, only : countColumns
 	use basespecfileModule
 
-	class(basespecfile), intent(in) :: params
 	type(plinkInfoType), intent(inout) :: plinkInfo
 	type(PedigreeHolder) :: ped
 	character(len=128), optional,dimension(:), allocatable, intent(in) :: paths !< output paths for each chromosome
 	character(len=2), dimension(:,:), allocatable :: outputAlleles
 	character(len=128) :: fmt
+	character(len=*),intent(in) :: outputPath
 	integer(kind=1) :: phase1,phase2
 	integer :: snpCounts = 0,outcounts=0, pedUnit,i,nsnps,p,j
 
-	
+
 	print *, "merging plink output"
 	if (.not. present(paths)) then
 
@@ -962,7 +972,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 	allocate(outputAlleles(ped%pedigreeSize, plinkInfo%totalSnps*2)) !outputphase
 
 	outputAlleles = "0"
-	
+
 	! TODO talk with mr Gottardo about this
 	if (.not. allocated(plinkInfo%referenceAllelePerSnps)) then
 		allocate(plinkInfo%referenceAllelePerSnps(plinkInfo%totalSnps))
@@ -977,7 +987,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 
 		if (present(paths)) then !< if multiple chromosomes - load in that file
 			call ped%addPhaseInformationFromFile(trim(paths(i))//"phase.txt",nsnps)
-		endif 
+		endif
 		do j=1,nsnps
 			snpCounts = snpCounts + 1
 			outcounts = outcounts + 1
@@ -1006,7 +1016,7 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 	enddo
 
 	print *, "Writing plink output to file"
-	open(newunit=pedUnit,file="PlinkOutput.ped", status='unknown')
+	open(newunit=pedUnit,file=trim(outputPath)//".ped", status='unknown')
 	write(fmt, '(a,i10,a)') '(3a20,i2,a20,',2*plinkInfo%totalSnps, 'a2)'
 	print *, "Writing alleles per animal"
 	do p=1, ped%pedigreeSize
@@ -1019,13 +1029,14 @@ subroutine writePedFile(ped,plinkInfo,params, paths)
 end subroutine writePedFile
 
 
-subroutine writeMapFile(plinkInfo)
+subroutine writeMapFile(plinkInfo, path)
 	type(plinkInfoType), intent(in) :: plinkInfo
+	character(len=*), intent(in) :: path
 	integer :: unit, snpCount,i,h
-	open(newunit=unit, file="PlinkOutput.map", status='unknown')
+	open(newunit=unit, file=trim(path)//".map", status='unknown')
 	snpCount = 0
 
-	
+
 	do i=1, plinkInfo%nChroms
 		do h=1, plinkInfo%nsnpsPerChromosome(i)
 			snpCount = snpCount + 1
@@ -1039,10 +1050,11 @@ subroutine writeMapFile(plinkInfo)
 end subroutine writeMapFile
 
 
-subroutine writeRefFile(plinkInfo)
+subroutine writeRefFile(plinkInfo, path)
 	type(plinkInfoType), intent(in) :: plinkInfo
+	character(len=*), intent(in) :: path
 	integer :: unit, snpCount,i,h
-	open(newunit=unit, file="PlinkOutput.ref", status='unknown')
+	open(newunit=unit, file=trim(path)//".ref", status='unknown')
 	snpCount = 0
 	do i=1, plinkInfo%nChroms
 
@@ -1057,7 +1069,168 @@ subroutine writeRefFile(plinkInfo)
 
 end subroutine writeRefFile
 
+
+subroutine WriteBedFile(bed, minor, genotypes)
+
+	use PedigreeModule
+	use genotypeModule
+	implicit none
+
+	! Arguments
+	character(len=*), intent(in) :: bed !< bed file name
+	integer, intent(in) ::  minor !< if the first allele is minor or major
+	integer(kind=1),dimension(:,:), intent(in) :: genotypes !< Genotypes should be in format (nanimals, nsnps)
+
+	!! Types
+	INTEGER, PARAMETER :: Byte = SELECTED_INT_KIND(1) ! Byte
+
+	!! Local arguments
+	integer(Byte) :: element, plinkmode
+	integer(Byte), dimension(2) ::  magicnumber
+	integer :: stat, i, animals, snps
+	integer, dimension(4) :: codes, phasecodes
+	!integer, dimension(:), allocatable :: domasksnps
+	integer :: bedUnit
+	! Supported formats as per plink 1.9.
+	!data magicnumber/X"6C",X'0000001B' /,  plinkmode/X'01'/
+	data magicnumber /108,27/, plinkmode /1/
+
+
+	! TODO have to write function to convert ped to to plinkInfo.
+
+	if (minor == 1) then
+		codes = (/ 0, 1, 2, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 0, 1, 1, MISSINGGENOTYPECODE /)
+	else
+		codes = (/ 2, 1, 0, MISSINGGENOTYPECODE /)
+		phaseCodes = (/ 1, 1, 0, MISSINGGENOTYPECODE /)
+	endif
+
+	open(newunit=bedUnit, file=bed, status='REPLACE', ACCESS='STREAM', FORM='UNFORMATTED')
+	write(bedUnit) magicnumber, plinkmode
+
+	element = 0
+	animals = 0
+	snps = 1	
+	outer: do
+		inner: do i=0,6,2
+			if (snps > size(genotypes,2)) exit outer
+			animals = animals + 1
+			if (genotypes(animals,snps) == codes(1)) then
+				element = ibclr(element,i)
+				element = ibclr(element,i+1)
+			else if (genotypes(animals,snps) ==codes(4)) then
+				element = ibset(element,i)
+				element = ibclr(element,i+1)
+			else if (genotypes(animals,snps) == codes(2)) then
+				element = ibclr(element,i)
+				element = ibset(element,i+1)
+			else if (genotypes(animals,snps) ==codes(3)) then
+				element = ibset(element,i)
+				element = ibset(element,i+1)
+			end if
+			if (animals == size(genotypes,1)) then
+				animals = 0
+				snps = snps +1				
+				exit
+				
+			endif
+		enddo inner
+		write(bedUnit, iostat=stat) element
+	enddo outer
+	close(bedUnit)
+
+
+	print *, "finished"
+
+end subroutine WriteBedFile
+
+
+subroutine writeFamFile(ped,famFile)
+	use PedigreeModule
+
+	type(pedigreeHolder), intent(in) :: ped !< Pedigree object that is returned
+	character(len=*), intent(in) :: famFile !< .ped file generated by plink
+	character(len=2) :: phenotype
+	integer :: fileUnit, i
+	
+	phenotype = "-9"
+
+	open(newUnit=fileUnit, file=famFile, status="REPLACE")
+	do i=1, ped%addedRealAnimals
+		write(fileUnit,'(4a32,a1, i3,a1, a3)') ped%pedigree(ped%inputMap(i))%familyID,ped%pedigree(ped%inputMap(i))%originalId,ped%pedigree(ped%inputMap(i))%sireId,ped%pedigree(ped%inputMap(i))%damId," ",ped%pedigree(ped%inputMap(i))%gender," ",phenotype
+	enddo
+
+
+	close(fileUnit)
+end subroutine writeFamFile
+
+
+
+subroutine writeBimFile(bimFile, bimInfo)
+	use HashModule
+	use AlphaHouseMod
+	use ConstantModule
+
+	character(len=*), intent(in) :: bimFile
+	type(bimHolder) , allocatable, dimension(:), intent(in) :: bimInfo !< extra info provided by BIM file
+	integer :: i, unit
+
+	open(newUnit=unit, file=bimFile, status="REPLACE")
+
+	do i =1, size(bimInfo)
+		write(unit, '(a2,a10,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
+	end do
+
+	close (unit)
+
+end subroutine writeBimFile
+
+
+subroutine writeOutPlinkBinary(ped,path,bimInfo)
+
+	type(PedigreeHolder) :: ped
+	character(len=*), intent(in) :: path !< file prepend (before the .)
+	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+
+	if (present(bimInfo)) then
+		call writeBimFile(trim(path)//".bim", bimInfo)
+	else
+		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
+	endif 
+
+	call writeFamFile(ped,trim(path)//".fam")
+
+	call WriteBedFile(trim(path)//".bed",2, ped%getGenotypesAsArrayRealAnimals())
+
+
+end subroutine writeOutPlinkBinary
+
+
+subroutine writeOutPlinkNonBinary(ped,path,plinkInfoIn)
+
+	type(PedigreeHolder) :: ped
+	character(len=*), intent(in) :: path !< file prepend (before the .)
+	type(plinkInfoType), optional :: plinkInfoIn
+	type(plinkInfoType) :: plinkInfoObj
+	
+	if (present(plinkInfoIn)) then
+		plinkInfoObj = plinkInfoIn
+	else
+		call plinkInfoObj%initPlinkInfoType(ped)
+	endif
+	
+	
+	call writePedFile(ped,plinkInfoObj,path)
+	call writeMapFile(plinkInfoObj,path)
+	call writeRefFile(plinkInfoObj,path)
+
+end subroutine writeOutPlinkNonBinary
+
+
+
 end module CompatibilityModule
+
 
 
 

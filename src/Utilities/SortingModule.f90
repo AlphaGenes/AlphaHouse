@@ -26,33 +26,36 @@ module SortingModule
 
 	character(:), dimension(:), pointer :: sortArray
 
-
 	type group
 	integer :: order
 	real :: value
 end type group
+
+    interface heapsort
+        module procedure heapsortR, heapsortI
+    end interface heapsort
 contains
 
 
-	subroutine heapsort(a)
+	subroutine heapsortR(a)
 		real, intent(in out) :: a(0:)
 		integer :: start, n, bottom
 		real :: temp
 
 		n = size(a)
 		do start = (n - 2) / 2, 0, -1
-			call siftdown(a, start, n);
+			call siftdownR(a, start, n);
 		end do
 
 		do bottom = n - 1, 1, -1
 			temp = a(0)
 			a(0) = a(bottom)
 			a(bottom) = temp;
-			call siftdown(a, 0, bottom)
+			call siftdownR(a, 0, bottom)
 		end do
-	end subroutine heapsort
+	end subroutine heapsortR
 
-	subroutine siftdown(a, start, bottom)
+	subroutine siftdownR(a, start, bottom)
 
 		real, intent(in out) :: a(0:)
 		integer, intent(in) :: start, bottom
@@ -77,7 +80,52 @@ contains
 			end if
 		end do
 
-	end subroutine siftdown
+	end subroutine siftdownR
+
+    subroutine heapsortI(a)
+        integer, intent(in out) :: a(0:)
+        integer :: start, n, bottom
+        real :: temp
+
+        n = size(a)
+        do start = (n - 2) / 2, 0, -1
+            call siftdownI(a, start, n);
+        end do
+
+        do bottom = n - 1, 1, -1
+            temp = a(0)
+            a(0) = a(bottom)
+            a(bottom) = temp;
+            call siftdownI(a, 0, bottom)
+        end do
+    end subroutine heapsortI
+
+    subroutine siftdownI(a, start, bottom)
+
+        integer, intent(in out) :: a(0:)
+        integer, intent(in) :: start, bottom
+        integer :: child, root
+        real :: temp
+
+        root = start
+        do while(root*2 + 1 < bottom)
+            child = root * 2 + 1
+
+            if (child + 1 < bottom) then
+                if (a(child) < a(child+1)) child = child + 1
+            end if
+
+            if (a(root) < a(child)) then
+                temp = a(child)
+                a(child) = a (root)
+                a(root) = temp
+                root = child
+            else
+                return
+            end if
+        end do
+
+    end subroutine siftdownI
 
 	recursive subroutine QSortNew(a,na)
 

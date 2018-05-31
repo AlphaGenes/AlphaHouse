@@ -82,7 +82,7 @@ module PedigreeModule
 	integer(kind=int32) :: unknownDummys !< dummys that have been set by having one unknown parent
 	integer(kind=int32) :: maxPedigreeSize ! maximum size pedigree can be
 
-	integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree
+	integer, dimension(:) , allocatable :: inputMap ! map going from inputMap(1:pedsize) = recID -- this is to maintain the order of the original pedigree. Effectively addedrealanimals
 
 	integer, dimension(:) , allocatable :: genotypeMap ! map going from genotypeMap(1:nAnisG) = recID
 	type(DictStructure),allocatable :: genotypeDictionary ! maps id to location in genotype map
@@ -115,6 +115,7 @@ module PedigreeModule
 		procedure :: addPhaseInformationFromFile
 		procedure :: addGenotypeInformationFromArray
 		generic :: addGenotypeInformation => addGenotypeInformationFromArray, addGenotypeInformationFromFile
+		procedure :: getGenotypesAsArrayRealAnimals
 		procedure :: outputSortedPedigreeInAlphaImputeFormat
 		procedure :: isDummy
 		procedure :: sortPedigreeAndOverwrite
@@ -166,6 +167,7 @@ module PedigreeModule
 		procedure :: writeOutGenotypesNoDummies
 		procedure :: getHDPedigree
 		procedure :: writeOutPedigree
+		procedure :: WritePedigreeOriginalOrder
 		procedure :: writeOutGenotypeProbabilities
 		procedure :: writeOutPhaseProbabilities
 		procedure :: writeOutGenotypesForImputed
@@ -443,20 +445,20 @@ module PedigreeModule
 
 				if (associated(this%pedigree(i)%sirePointer)) then
 					if ( .not. this%pedigree(i)%sirePointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(1)) then
-					if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId))) ) then
-						deepCheckPedigree = .false.
-						write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
-					endif
+						if (loc(this%pedigree(i)%sirePointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%sireId))) ) then
+							deepCheckPedigree = .false.
+							write(error_unit, *) "WARNING: Sire pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  sire: ",this%pedigree(i)%sireId
+						endif
 					endif
 				endif
 
 				if (associated(this%pedigree(i)%damPointer)) then
 
 					if (.not. this%pedigree(i)%damPointer%isUnknownDummy .and. .not. this%pedigree(i)%mendelianError(2)) then
-					if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
-						deepCheckPedigree = .false.
-						write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
-					endif
+						if (loc(this%pedigree(i)%damPointer) /= loc(this%pedigree(this%dictionary%getvalue(this%pedigree(i)%damId)))) then
+							deepCheckPedigree = .false.
+							write(error_unit, *) "WARNING: dam pointer is out of alignment on ind:", this%pedigree(i)%originalId,"  dam: ",this%pedigree(i)%damId
+						endif
 					endif
 				endif
 
@@ -662,7 +664,7 @@ module PedigreeModule
 			character(len=*),intent(in)  :: filename
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
-			character(len=12) :: StrSnp,OutFmt
+			character(len=50) :: StrSnp,OutFmt
 			integer :: fileUnit,i
 			open(newunit=FileUnit, file=filename, status="replace")
 
@@ -698,7 +700,7 @@ module PedigreeModule
 			class(PedigreeHolder) :: this
 			integer, dimension(:),optional, intent(in) :: indexesToPrint
 			integer :: i, fileUnit
-			character(len=30) :: StrSnp,OutFmt
+			character(len=50) :: StrSnp,OutFmt
 
 			open(newunit=FileUnit, file=filename, status="replace")
 
@@ -823,10 +825,10 @@ module PedigreeModule
 
 			do i=1,tmpAnimalCount
 
-			! check if sire and dam are in the new HD pedigree
+				! check if sire and dam are in the new HD pedigree
 				sire =new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%sireId)
 				dam = new%dictionary%getValue(this%pedigree(tmpAnimalArray(i))%damId)
-				
+
 				new%pedigreeSize = new%pedigreeSize+1
 				call new%dictionary%addKey( this%pedigree(tmpAnimalArray(i))%originalId,new%pedigreeSize)
 				new%nhd = new%nhd + 1
@@ -943,7 +945,7 @@ module PedigreeModule
 						endif
 						call ped%pedigree(i)%sirePointer%removeOffspring(ped%pedigree(i))
 
-						
+
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 
 						sireRemoved = .true.
@@ -963,7 +965,7 @@ module PedigreeModule
 							call ped%damlist%list_remove(ped%pedigree(i)%damPointer)
 						endif
 						call ped%pedigree(i)%damPointer%removeOffspring(ped%pedigree(i))
-						
+
 						call ped%createDummyAnimalAtEndOfPedigree(dumId, i)
 						damRemoved =.true.
 					endif
@@ -2076,7 +2078,7 @@ module PedigreeModule
 					else if (.not. associated(pedStructure%Pedigree(tmpAnimalArray(i))%damPointer)) then
 						! Check for defined animals that have nit been set in pedigree
 						call pedStructure%addAnimalAtEndOfPedigree(originalID=trim(tmpDam),offspringID=tmpAnimalArray(i))
-						
+
 					endif
 					damFound = .true.
 				endif
@@ -2258,6 +2260,45 @@ module PedigreeModule
 			endif
 		end subroutine addGenotypeInformationFromArray
 
+		!---------------------------------------------------------------------------
+		! DESCRIPTION:
+		!< @brief     Adds genotype information to pedigree from a 2 dimensional array
+		!
+		!< @author     David Wilson, david.wilson@roslin.ed.ac.uk
+		!
+		!< @date       October 25, 2016
+		!---------------------------------------------------------------------------
+		subroutine addGenotypeInformationFromCharArray(this, array, initall)
+
+			use AlphaHouseMod, only : countLines,char2Int1Array
+			use ConstantModule, only : IDLENGTH, DICT_NULL
+			implicit none
+			class(PedigreeHolder) :: this
+			character(len=IDLENGTH),allocatable,dimension (:,:), intent(in) :: array !< array should be dimensions nanimals, nsnp
+			integer :: id
+			integer :: i
+			integer(kind=1), allocatable, dimension(:) :: genotypeArray
+			integer, intent(in),optional :: initAll !< optional argument- if present initialise whoe pedigree with size of snps
+			do i=1,size(array,1)
+				id = this%dictionary%getvalue(array(i,1))
+				if (id /= DICT_NULL) then
+					genotypeArray = char2Int1Array(array(i,2:))
+					call this%setAnimalAsGenotyped(id, genotypeArray)
+				endif
+			enddo
+			this%nsnpsPopulation = size(genotypeArray) - 1 ! remove the id
+
+			if (present(initAll)) then
+				do i=1, this%pedigreeSize
+					if (.not. this%pedigree(i)%genotyped) then
+						call this%pedigree(i)%initPhaseAndGenotypes(this%nsnpsPopulation)
+						allocate(this%pedigree(i)%inconsistencies(this%nsnpsPopulation))
+						this%pedigree(i)%inconsistencies = 0
+						call this%pedigree(i)%initPhaseArrays(this%nsnpsPopulation)
+					endif
+				enddo
+			endif
+		end subroutine addGenotypeInformationFromCharArray
 
 		!---------------------------------------------------------------------------
 		! DESCRIPTION:
@@ -3081,7 +3122,8 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
-		!< @brief Output pedigree to stdout in the format originalID,sireId,damId
+		!< @brief Output pedigree to stdout or file in the format originalID,sireId,damId
+		!< @details order will be storage order
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!< @date    October 26, 2016
 		!---------------------------------------------------------------------------
@@ -3100,6 +3142,29 @@ module PedigreeModule
 			enddo
 		end subroutine printPedigreeOriginalFormat
 
+
+
+		!---------------------------------------------------------------------------
+		!< @brief Output pedigree to stdout or file in the format originalID,sireId,damId
+		!< @details order will be the input ordger
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    May 16, 2018
+		!---------------------------------------------------------------------------
+		subroutine WritePedigreeOriginalOrder(this, filepath)
+			class(PedigreeHolder) :: this
+			character(len=*), optional :: filePath
+			integer ::i,unit
+
+			if(present(filepath)) then
+				open(newunit=unit, file=filePath, status="unknown")
+			else
+				unit = output_unit
+			endif
+			do i= 1, this%addedRealAnimals
+				write(unit,'(3a32)')  trim(this%pedigree(this%inputMap(i))%originalId), trim(this%pedigree(this%inputMap(i))%sireId),trim(this%pedigree(this%inputMap(i))%damId)
+			enddo
+
+		end subroutine WritePedigreeOriginalOrder
 
 		!---------------------------------------------------------------------------
 		!< @brief Output genders to file
@@ -3163,8 +3228,24 @@ module PedigreeModule
 			close(fileUnit)
 		end subroutine writeOutGenotypes
 
+		!---------------------------------------------------------------------------
+		!< @brief Output  of animals that are genotyped
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		subroutine writeOutGenotypesPedigreeOrder(this, filename)
+			class(PedigreeHolder) :: this
+			character(*), intent(in) :: filename
+			integer ::i, fileUnit
+			character(len=100) :: fmt
+			open(newUnit=fileUnit,file=filename,status="unknown")
+			write(fmt, '(a,i10,a)') '(a20,',this%nsnpsPopulation, 'i2)'
+			do i= 1, this%addedRealAnimals
+				write(fileUnit,fmt)  this%pedigree(this%inputMap(i))%originalId, this%pedigree(this%inputMap(i))%individualGenotype%toIntegerArray()
+			enddo
+			close(fileUnit)
 
-
+		end subroutine writeOutGenotypesPedigreeOrder
 		!---------------------------------------------------------------------------
 		!< @brief Output  of animals with genotype info passed in from array.
 		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
@@ -3243,7 +3324,6 @@ module PedigreeModule
 			enddo
 			close(fileUnit)
 		end subroutine writeOutGenotypesNoDummies
-
 
 		!---------------------------------------------------------------------------
 		!< @brief Outputs phase to file of only animals that are genotyped
@@ -3630,6 +3710,31 @@ module PedigreeModule
 
 
 		!---------------------------------------------------------------------------
+		!< @brief returns array of genotype information as is used by alphaimpute in format (0:nGenotyped, nSnp)
+		!<
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!< @date    October 26, 2016
+		!---------------------------------------------------------------------------
+		function getGenotypesAsArrayRealAnimals(this) result(res)
+
+			class(pedigreeHolder) :: this
+			integer(kind=1) ,dimension(:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
+			integer :: i
+
+
+			allocate(res(this%addedRealAnimals, this%pedigree(this%genotypeMap(1))%individualGenotype%length))
+			res = 9
+			do i=1, this%addedRealAnimals
+
+				if (.not. allocated(this%pedigree(this%inputMap(i))%individualGenotype)) then
+					write(error_unit,*) "error - not all animals have been allocated a genotype"
+				endif
+				res(i,:) = this%pedigree(this%inputMap(i))%individualGenotype%toIntegerArray()
+			enddo
+
+		end function getGenotypesAsArrayRealAnimals
+
+		!---------------------------------------------------------------------------
 		!< @brief returns array of phase information as is used by alphaimpute in format (0:pedSized, nSnp)
 		!< only information is populated where animals have been set as genotyped
 		!< This takes the genotype info even if an animal is not genotyped
@@ -3666,9 +3771,9 @@ module PedigreeModule
 			integer(kind=1) ,dimension(:,:,:), allocatable :: res !indexed from 0 for COMPATIBILITY
 			integer :: i
 
-			
+
 			allocate(res(this%pedigreeSize, this%pedigree(1)%individualPhase(1)%length,2))
-			
+
 			res = 9
 			do i=1, this%pedigreeSize
 
@@ -3872,7 +3977,7 @@ module PedigreeModule
 			else if (this%genotypeDictionary%getValue(this%pedigree(individualIndex)%originalID) /= DICT_NULL) then
 				! if animal has already been genotyped, overwrite array, but don't increment
 				call this%pedigree(individualIndex)%setGenotypeObject(geno)
-				
+
 				this%pedigree(individualIndex)%individualPhase(1) = h1
 				this%pedigree(individualIndex)%individualPhase(2) = h2
 				return
@@ -4130,7 +4235,7 @@ module PedigreeModule
 			logical, optional :: sireIn !< if true, assign to sire location
 			character(len=IDLENGTH) :: tmpCounterStr
 
-			
+
 			this%pedigreeSize = this%pedigreeSize+1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
@@ -4167,7 +4272,7 @@ module PedigreeModule
 						call this%damList%list_add(this%Pedigree(this%pedigreeSize))
 						call this%Pedigree(this%pedigreeSize)%setGender(2)
 					endif
-				else 
+				else
 					if (.not. associated(this%pedigree(offspringId)%sirePointer)) then
 						this%pedigree(offspringId)%sirePointer => this%Pedigree(this%pedigreeSize)
 						call this%sireList%list_add(this%Pedigree(this%pedigreeSize))
@@ -4219,7 +4324,7 @@ module PedigreeModule
 
 			call this%Founders%list_add(this%Pedigree(this%pedigreeSize))
 			this%Pedigree(this%pedigreeSize)%founder = .true.
-			
+
 			if (present(offspringId)) then
 				if (offspringId > this%pedigreeSize) then
 					write(error_unit,*) "ERROR - dummy list given index larger than pedigree"
@@ -4940,6 +5045,7 @@ module PedigreeModule
 
 
 end module PedigreeModule
+
 
 
 

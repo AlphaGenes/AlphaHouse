@@ -47,6 +47,8 @@ module IntelRNGMod
   public :: SampleIntelMultinomialI
   public :: SampleIntelPoissonI
 
+  public :: RandomSample
+
   ! Continuous
   !>@todo: should we make an interface and have generic for either single or double precision
   !!       and determine single or double based on inputs or???
@@ -931,6 +933,32 @@ module IntelRNGMod
 
       return
     end function
+
+    function RandomSample(list,num) result(res)
+        implicit none
+
+        integer, dimension(:), intent(in) :: list
+        integer, intent(in) :: num
+
+        integer, dimension(num) :: res
+
+        integer, dimension(size(list)) :: tmpA
+        integer, dimension(:), allocatable :: r
+        integer :: tmp, pos, i
+
+
+        tmpA = list
+
+        do i = 1, num
+            r = SampleIntelUniformI(1,0,size(list) - i)
+            pos = size(list) - r(1)
+            tmp = tmpA(i)
+            tmpA(i) = tmpA(pos)
+            tmpA(pos) = tmp
+        end do
+
+        res = tmpA(1:num)
+    end function RandomSample
 
 end module
 

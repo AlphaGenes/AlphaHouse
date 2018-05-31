@@ -60,7 +60,7 @@
 module AlphaHouseMod
 
 	use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
-
+	use ISO_Fortran_Env
 	implicit none
 
 	private
@@ -69,7 +69,7 @@ module AlphaHouseMod
 	public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
 	public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
 	public :: isDelim, PrintElapsedTime, intToChar, SetSeed
-
+	public :: Char2Int1Array,Char2Int32Array,Char2Int64Array
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
 	public :: countColumns, getColumnNumbers
@@ -93,6 +93,8 @@ module AlphaHouseMod
 	interface char2Int
 		module procedure char2Int32
 	end interface
+
+
 
 	interface FindLoc
 		module procedure FindLocC, FindLocI, FindLocS, FindLocD
@@ -509,14 +511,87 @@ module AlphaHouseMod
 		!> @date    September 26, 2016
 		!---------------------------------------------------------------------------
 		function Char2Int32(c) result(Res)
+			use ISO_Fortran_Env
 			implicit none
-
 			character(*), intent(in) :: c   !< character
 			integer(int32)           :: Res !< @return integer
+			integer :: stat
 
-			read(c, *) Res
+			read(c, *, iostat= stat) Res
+			if (stat /= 0) then
+				write(error_unit, *) "WARNING Character conversion to int not successful to 32 Byte int: ",c
+			endif
 			return
 		end function
+
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief   Convert character array to int kind 1 array
+		!> @date    May 16, 2018
+		!---------------------------------------------------------------------------
+		function Char2Int1Array(c) result(Res)
+			use ISO_Fortran_Env
+			implicit none
+
+			character(*),dimension(:), intent(in) :: c   !< character
+			integer(kind=1), allocatable, dimension(:)           :: Res !< @return integer
+			integer :: i,stat
+			allocate(res(size(c)))
+			do i=1, size(c)
+				read(c(i), *, iostat=stat) Res(i)
+
+				if (stat /= 0) then
+					write(error_unit, *) "WARNING Character conversion to int not successful to 1 Byte int: ",c(i)
+				endif
+			enddo
+			return
+		end function
+
+		!---------------------------------------------------------------------------
+		!> @brief   Convert character array to int32 array
+		!> @date    May 16, 2018
+		!---------------------------------------------------------------------------
+		function Char2Int32Array(c) result(Res)
+			use ISO_Fortran_Env
+			implicit none
+
+			character(*),dimension(:), intent(in) :: c   !< character
+			integer(int32), allocatable, dimension(:)           :: Res !< @return integer
+			integer :: i,stat
+			allocate(res(size(c)))
+			do i=1, size(c)
+				read(c(i), *, iostat=stat) Res(i)
+				if (stat /= 0) then
+					write(error_unit, *) "WARNING Character conversion to int not successful to 32 Byte int: ",c(i)
+				endif
+			enddo
+			return
+		end function
+
+
+		!---------------------------------------------------------------------------
+		!> @brief   Convert character array to int64 array
+		!> @date    May 16, 2018
+		!---------------------------------------------------------------------------
+		function Char2Int64Array(c) result(Res)
+			use ISO_Fortran_Env
+			implicit none
+
+			character(*),dimension(:), intent(in) :: c   !< character
+			integer(int64), allocatable, dimension(:)           :: Res !< @return integer
+			integer :: i,stat
+			allocate(res(size(c)))
+			do i=1, size(c)
+				read(c(i), *,iostat=stat) Res(i)
+				if (stat /= 0) then
+					write(error_unit, *) "WARNING Character conversion to int not successful to 64 Byte int: ",c(i)
+				endif
+			enddo
+			return
+		end function
+
 
 		!###########################################################################
 
@@ -1344,7 +1419,7 @@ module AlphaHouseMod
 			character(len=100)  :: programNameString, extraInforString
 
 			write(programNameString,('(a30,a1,a21,a1,a30)')) " ","*",trim(params%programName),"*"," "
-			 
+
 			print *, ""
 			print *, "                              ***********************                         "
 			print *, "                              *                     *                         "
@@ -1387,6 +1462,8 @@ module AlphaHouseMod
 
 		end subroutine PrintVersion
 end module
+
+
 
 
 

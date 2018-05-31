@@ -90,7 +90,7 @@ contains
 		integer :: i
 		integer, dimension(:), allocatable :: nsnps
 		integer :: sexChroms
-		integer :: totalToDo, curChrom
+		integer :: totalToDo
 		class(baseSpecFile) :: specfile
 		real(kind=real64), dimension(:) ,allocatable :: lengths
 		integer, dimension(:) ,allocatable :: basepairs
@@ -115,9 +115,9 @@ contains
 				! Check if we are only doing a subset of chromsomes
 				if (.not. any(specFile%useChroms == i)) cycle
 			endif
-			curChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
+			specFile%CurrChrom = (mpiRank+1)+((i-1) * size(chromPaths) )
 			result=makedirqq("MultiChromResults")
-			path = "MultiChromResults/" // curChrom
+			path = "MultiChromResults/" // specFile%CurrChrom
 			result=makedirqq(path)
 			CALL chdir(path)
 
@@ -182,9 +182,11 @@ contains
 		do i=1, size(chromPaths)
 
 			if (allocated(specFile%useChroms)) then
-				! Check if we are only doing a subset of chromsomes
 				if (.not. any(specFile%useChroms == i)) cycle
 			endif
+			! Check if we are only doing a subset of chromsomes
+			specFile%CurrChrom = i
+
 			specFile%resultFolderPath = trim(chromPaths(i))//"results"
 			specFile%nsnp = plinkInfo%nsnpsPerChromosome(i)
 			print *,"doing chrom ", i
@@ -213,7 +215,6 @@ contains
 			call ped%setSnpLengths(trim(chromPaths(i))//"snplengths.txt",plinkInfo%nsnpsPerChromosome(i))
 
 
-
 			print *,"starting function run"
 			if (.not. specFile%validate()) then
 				write(error_unit, *) "ERROR - Spec file validation has failed"
@@ -230,9 +231,9 @@ contains
 		enddo
 
 		if (specfile%plinkOutput) then
-			call writePedFile(ped,plinkInfo,specfile,chromPaths)
-			call writeMapFile(plinkInfo)
-			call writeRefFile(plinkInfo)
+			call writePedFile(ped,plinkInfo,"plinkOutput",chromPaths)
+			call writeMapFile(plinkInfo,"plinkOutput")
+			call writeRefFile(plinkInfo,"plinkOutput")
 		endif
 
 	end subroutine runPlink
@@ -280,6 +281,7 @@ contains
 
 #endif
 end module alphaFullChromModule
+
 
 
 
