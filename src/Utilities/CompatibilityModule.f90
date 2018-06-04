@@ -96,22 +96,29 @@ end type plinkInfoType
 contains
 
 
-function createBimInfoFromGenotypes(genotypes) result(bimOut)
+function createBimInfoFromGenotypes(genotypes,startPositionIn) result(bimOut)
 	type(bimHolder),allocatable, dimension(:) :: bimOut
 	integer(kind=1), dimension(:,:) :: genotypes
-	integer :: nsnps,i,nanimals
+	integer, optional, intent(in) :: startPositionIn
+	integer :: nsnps,i,nanimals,startPosition
 	character(len=16) :: snpNumber 
+
+	startPosition = 0
+
+	if (present(startPositionIn)) then
+		startPosition = startPositionIn
+	endif
 
 	nsnps = size(genotypes,2)
 	nanimals = size(genotypes,1)
 	allocate(bimOut(nsnps))
 	
 	do i=1,nsnps
-		write (snpNumber, '(a,I13.13)') "SNP",i
+		write (snpNumber, '(a,I13.13)') "SNP",i + startPosition
 		bimOut(i)%id = snpNumber
 		bimOut(i)%chrom = "1"
 		bimOut(i)%pos = 0
-		bimOut(i)%chromPos = 1
+		bimOut(i)%chromPos = i + startPosition
 		bimOut(i)%ref = "1"
 		bimOut(i)%alt = "2"
 	enddo
