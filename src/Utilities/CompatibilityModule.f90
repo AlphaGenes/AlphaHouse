@@ -1194,16 +1194,23 @@ subroutine writeBimFile(bimFile, bimInfo)
 end subroutine writeBimFile
 
 
-subroutine writeOutPlinkBinary(ped,path,bimInfo)
+subroutine writeOutPlinkBinary(ped,path,bimInfo, startPosIn)
 
 	type(PedigreeHolder) :: ped
 	character(len=*), intent(in) :: path !< file prepend (before the .)
 	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+	integer, optional :: startPosIn
+	integer :: startPos
 
+	if (present(startPosIn)) then
+		startPos = startPosIn
+	else
+		startPos = 0
+	endif
 	if (present(bimInfo)) then
 		call writeBimFile(trim(path)//".bim", bimInfo)
 	else
-		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
+		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing(),startPos))
 	endif 
 
 	call writeFamFile(ped,trim(path)//".fam")
