@@ -1186,7 +1186,7 @@ subroutine writeBimFile(bimFile, bimInfo)
 	open(newUnit=unit, file=bimFile, status="REPLACE")
 
 	do i =1, size(bimInfo)
-		write(unit, '(a2,a10,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
+		write(unit, '(a2,a16,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
 	end do
 
 	close (unit)
