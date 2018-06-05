@@ -103,7 +103,7 @@ function createBimInfoFromGenotypes(genotypes,startPositionIn) result(bimOut)
 	integer :: nsnps,i,nanimals,startPosition
 	character(len=16) :: snpNumber 
 
-	startPosition = 0
+	startPosition = 1
 
 	if (present(startPositionIn)) then
 		startPosition = startPositionIn
@@ -118,7 +118,7 @@ function createBimInfoFromGenotypes(genotypes,startPositionIn) result(bimOut)
 		bimOut(i)%id = snpNumber
 		bimOut(i)%chrom = "1"
 		bimOut(i)%pos = 0
-		bimOut(i)%chromPos = i + startPosition
+		bimOut(i)%chromPos = i + (startPosition - 1)
 		bimOut(i)%ref = "1"
 		bimOut(i)%alt = "2"
 	enddo
