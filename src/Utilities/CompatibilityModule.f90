@@ -114,7 +114,7 @@ function createBimInfoFromGenotypes(genotypes,startPositionIn) result(bimOut)
 	allocate(bimOut(nsnps))
 	
 	do i=1,nsnps
-		write (snpNumber, '(a,I13.13)') "SNP",i + startPosition
+		write (snpNumber, '(a,I13.13)') "SNP",i + (startPosition - 1)
 		bimOut(i)%id = snpNumber
 		bimOut(i)%chrom = "1"
 		bimOut(i)%pos = 0
