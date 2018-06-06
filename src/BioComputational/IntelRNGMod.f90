@@ -57,6 +57,9 @@ module IntelRNGMod
   public :: SampleIntelGammaS,SampleIntelGammaD
   public :: SampleIntelGumbelS,SampleIntelGumbelD
 
+  ! Return a single sample ratger than an array
+  public :: SingleSampleIntelUniformI
+
   contains
 
 
@@ -959,6 +962,29 @@ module IntelRNGMod
 
         res = tmpA(1:num)
     end function RandomSample
+
+    function SingleSampleIntelUniformI(a,b) result(res)
+        integer, optional :: a, b
+        integer(int32) :: res
+
+        integer(int32), dimension(:), allocatable :: resA
+
+        if (present(a)) then
+            if (present(b)) then
+                resA = SampleIntelUniformI(1,a,b)
+            else
+                resA = SampleIntelUniformI(1,a)
+            end if
+        else
+            if (present(b)) then
+                resA = SampleIntelUniformI(1,b=b)
+            else
+                resA = SampleIntelUniformI(1)
+            end if
+        end if
+
+        res = resA(1)
+    end function SingleSampleIntelUniformI
 
 end module
 
