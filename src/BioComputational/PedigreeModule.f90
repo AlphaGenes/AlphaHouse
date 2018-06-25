@@ -778,7 +778,7 @@ module PedigreeModule
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			! new%pedigreeSize = this%nHd
-			call initEmptyPedigree(new,this%nsnpsPopulation, this%pedigreeSize)
+			call initEmptyPedigree(new,this%nsnpsPopulation, this%pedigreeSize*2)
 			tmpAnimalCount = 0
 			new%nhd = 0
 			new%nDummys = 0
