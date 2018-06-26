@@ -4234,13 +4234,17 @@ module PedigreeModule
 			integer, optional :: offspringId !< offspring recoded id canbe given here
 			logical, optional :: sireIn !< if true, assign to sire location
 			character(len=IDLENGTH) :: tmpCounterStr
-
+			type(Individual), pointer, dimension(:) :: tmp
 
 			this%pedigreeSize = this%pedigreeSize+1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
-				write(error_unit,*) "ERROR: too many undefined animals"
-				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+				write(error_unit,*) "WARNING: too many undefined animals - memory usage will increase"
+				this%maxPedigreeSize = this%maxPedigreeSize*2
+				allocate(tmp(this%maxPedigreeSize))
+				tmp(1:this%pedigreeSize-1) = this%pedigree(1:this%pedigreeSize-1)
+				deallocate(this%pedigree) 
+				this%pedigree => tmp
 
 			endif
 
@@ -4304,6 +4308,7 @@ module PedigreeModule
 			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
 			integer, intent(in), optional :: offspringId
+			type(Individual), pointer, dimension(:) :: tmp
 			! change pedigree to no longer be sorted
 
 			this%issorted = 0
@@ -4312,8 +4317,12 @@ module PedigreeModule
 			this%addedRealAnimals = this%addedRealAnimals + 1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
-				write(error_unit,*) "ERROR: too many undefined animals"
-				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+				write(error_unit,*) "WARNING: too many undefined animals - memory usage will increase"
+				this%maxPedigreeSize = this%maxPedigreeSize*2
+				allocate(tmp(this%maxPedigreeSize))
+				tmp(1:this%pedigreeSize-1) = this%pedigree(1:this%pedigreeSize-1) 
+				deallocate(this%pedigree)
+				this%pedigree => tmp
 
 			endif
 			call this%Pedigree(this%pedigreeSize)%initIndividual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)
