@@ -73,10 +73,10 @@ module IndividualModule
 	real(kind=real32), allocatable, dimension(:,:) :: phaseProbabilities
 	integer(kind=1), dimension(:,:), allocatable :: seg !< should be dimension nsnps,2
 	integer, allocatable :: nHighDensityOffspring
+	logical(kind=1) :: IgnoreMe =.false.
 	! plant stuff
 	logical(kind=1):: isInbred
 	logical(kind=1)::isImputed
-	logical(kind=1) :: IgnoreMe =.false.
 
 
 	type(IntegerLinkedList) :: families

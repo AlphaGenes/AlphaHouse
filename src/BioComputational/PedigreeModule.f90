@@ -176,6 +176,7 @@ module PedigreeModule
 		procedure :: deepCheckPedigree
 		procedure :: initPedigreeFromOutputFileFolder
 		procedure :: setAnimalAsGenotypedFromPhase
+		procedure :: setIgnoreAnimals
 
 
 #ifdef MPIACTIVE
@@ -264,6 +265,32 @@ module PedigreeModule
 
 			close(unit)
 		end subroutine setSnpLengths
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets animals to be ignored based on a file containing id's as first column
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		subroutine setIgnoreAnimals(this, filePath)
+			class(PedigreeHolder) :: this
+			character(len=*),intent(in) :: filePath
+			character(len=IDLENGTH) :: id
+			integer :: fileUnit,intID,f
+			
+			open(newUnit=fileUnit,file=filePath,status="unknown")
+			
+
+			 do
+				read(fileUnit,*,iostat=f) id
+				if (f /= 0) then
+					exit
+				endif
+				intID = this%dictionary%getValue(id)
+				if (intID /= DICT_NULL) then
+					this%pedigree(intID)%ignoreMe = .true.
+				endif 
+     		 end do
+
+		end subroutine setIgnoreAnimals
 
 
 		!---------------------------------------------------------------------------
