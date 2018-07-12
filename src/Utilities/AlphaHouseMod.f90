@@ -1262,7 +1262,7 @@ module AlphaHouseMod
 			Hours = int(Minutes / 60)
 			Minutes = Minutes - (Hours * 60)
 
-			write(STDOUT, "(a1,f20.2,a1,3(i4,a1))") " CPU     time: ", Total, " seconds => ",&
+			write(STDOUT, "(a,f20.2,a,3(i4,a))") " CPU     time: ", Total, " seconds => ",&
 				Hours,   " hours ",&
 				Minutes, " minutes ",&
 				Seconds, " seconds"
@@ -1307,7 +1307,7 @@ module AlphaHouseMod
 			Hours = int(Minutes / 60)
 			Minutes = Minutes - (Hours * 60)
 
-			write(STDOUT, "(a1,f20.2,a1,3(i4,a1))") " Elapsed time: ", Total, " seconds => ",&
+			write(STDOUT, "(a,f20.2,a,3(i4,a))") " Elapsed time: ", Total, " seconds => ",&
 				Hours,   " hours ",&
 				Minutes, " minutes ",&
 				Seconds, " seconds"
