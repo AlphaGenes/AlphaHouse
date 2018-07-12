@@ -25,6 +25,7 @@ module AlphaEvolveModule
 
   use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
   use, intrinsic :: IEEE_Arithmetic
+  use IntelRNGMod
   use AlphaHouseMod, only : Int2Char, Real2Char, ToLower
 
   implicit none
@@ -75,11 +76,9 @@ module AlphaEvolveModule
     !> @return  The best evolved solution (BestSol); log on STDOUT and files
     !---------------------------------------------------------------------------
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
-      nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
-      LogFile, LogStdout, LogPop, LogPopFile, &
-      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
-      
-      use IntelRNGMod
+                                      nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
+                                      LogFile, LogStdout, LogPop, LogPopFile, &
+                                      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -107,19 +106,17 @@ module AlphaEvolveModule
 
       ! Other
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
-      integer(int32) :: Sol, a, b, c
+      integer(int32) :: Sol, a, b, c, RanNumLoc
 
       real(real32) :: AcceptPct
-      real(real64) :: RanNum, FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
+      real(real64) :: FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
       real(real64) :: Chrom(nParam), OldBestSolObjective
+      real(real64), allocatable, dimension(:) :: RanNum
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
       class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:)
 
-
-      real(real64), allocatable, dimension(:) :: randomNumbers
-      integer :: ranNumCount
       ! --- Trap errors ---
 
       if (nSol < 4) then
@@ -136,6 +133,8 @@ module AlphaEvolveModule
       LastIterPrint = 0
       BestSol%Objective = -huge(BestSol%Objective)
       OldBestSolObjective = BestSol%Objective
+
+      call IntitialiseIntelRNG()
 
       ! --- Logging ---
 
@@ -227,8 +226,7 @@ module AlphaEvolveModule
         nInit = 1
       end if
       do Sol = nInit, nSol
-        call random_number(Chrom)
-        call OldSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
+        call OldSol(Sol)%Evaluate(Chrom=SampleIntelUniformD(n=nParam), Spec=Spec, Data=Data)
       end do
 
       Sol = maxloc(OldSol(:)%Objective, dim=1)
@@ -282,74 +280,69 @@ module AlphaEvolveModule
 
         ! --- Generate competitors ---
 
-        !> @todo: Paralelize this loop? Need parallel RNG streams (random_number
-        !!        uses the system seed variable so the threads need to wait each other)
         BestSolChanged = .false.
         AcceptPct = 0.0
 
-
-          call IntitialiseIntelRNG()  
-        !$OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom, randomNumbers,ranNumCount)
+        !$OMP PARALLEL DO PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
         do Sol = 1, nSol
 
           ! --- Mutate and crossover ---
-          randomNumbers = SampleIntelUniformD(5*nParam)
-          ranNumCount = 1
+
+          RanNum = SampleIntelUniformD(5*nParam)
+          RanNumLoc = 0
           ! Get three different solutions
-          a = Sol
-          do while (a == Sol)
-            ! call random_number(RanNum)
-            RanNum = randomNumbers(RanNumCount)
-            RanNumCount = ranNumCount + 1
-            a = int(RanNum * nSol) + 1
+
+          ! a = Sol
+          ! do while (a == Sol)
+          !   RanNumLoc = RanNumLoc + 1
+          !   a = int(RanNum(RanNumLoc) * nSol) + 1
+          ! end do
+          ! b = Sol
+          ! do while ((b == Sol) .or. (b == a))
+          !   RanNumLoc = RanNumLoc + 1
+          !   b = int(RanNum(RanNumLoc) * nSol) + 1
+          ! end do
+          ! c = Sol
+          ! do while ((c == Sol) .or. (c == a) .or. (c == b))
+          !   RanNumLoc = RanNumLoc + 1
+          !   c = int(RanNum(RanNumLoc) * nSol) + 1
+          ! end do
+
+          RanNumLoc = RanNumLoc + 1
+          a = int(RanNum(RanNumLoc) * nSol) + 1
+          RanNumLoc = RanNumLoc + 1
+          b = int(RanNum(RanNumLoc) * nSol) + 1
+          do while (b == a)
+            RanNumLoc = RanNumLoc + 1
+            b = int(RanNum(RanNumLoc) * nSol) + 1
           end do
-          b = Sol
-          do while ((b == Sol) .or. (b == a))
-            ! call random_number(RanNum)
-            RanNum = randomNumbers(RanNumCount)
-            RanNumCount = ranNumCount + 1
-            b = int(RanNum * nSol) + 1
-          end do
-          c = Sol
-          do while ((c == Sol) .or. (c == a) .or. (c == b))
-            ! call random_number(RanNum)
-            RanNum = randomNumbers(RanNumCount)
-            RanNumCount = ranNumCount + 1
-            c = int(RanNum * nSol) + 1
+          RanNumLoc = RanNumLoc + 1
+          c = int(RanNum(RanNumLoc) * nSol) + 1
+          do while ((c == a) .or. (c == b))
+            RanNumLoc = RanNumLoc + 1
+            c = int(RanNum(RanNumLoc) * nSol) + 1
           end do
 
           ! Mate the solutions to get a new competitor solution
-          ! call random_number(RanNum)
-          RanNum = randomNumbers(ranNumCount)
-          ranNumCount = ranNumCount +1 
-          Param = int(RanNum * nParam) + 1 ! Cycle through parameters starting at a random point
+          RanNumLoc = RanNumLoc + 1
+          Param = int(RanNum(RanNumLoc) * nParam) + 1 ! Cycle through parameters starting at a random point
           do ParamLoc = 1, nParam
-            ! call random_number(RanNum)
-            RanNum = randomNumbers(ranNumCount)
-          ranNumCount = ranNumCount +1 
-            if ((RanNum < CRInt) .or. (ParamLoc == nParam)) then
+            RanNumLoc = RanNumLoc + 1
+            if ((RanNum(RanNumLoc) < CRInt) .or. (ParamLoc == nParam)) then
               ! Crossover
-              ! call random_number(RanNum)
-              RanNum = randomNumbers(ranNumCount)
-              ranNumCount = ranNumCount +1 
-              if ((RanNum < 0.8d0) .or. DiffOnly) then
+              RanNumLoc = RanNumLoc + 1
+              if ((RanNum(RanNumLoc) < 0.8d0) .or. DiffOnly) then
                 ! Differential mutation (with prob 0.8 or 1)
                 Chrom(Param) = OldSol(c)%Chrom(Param) + FInt * (OldSol(a)%Chrom(Param) - OldSol(b)%Chrom(Param))
               else
                 ! Non-differential mutation (to avoid getting stuck)
-                ! call random_number(RanNum)
-                RanNum = randomNumbers(ranNumCount)
-                ranNumCount = ranNumCount +1 
-                if (RanNum < 0.5d0) then
-                  ! call random_number(RanNum)
-                  RanNum = randomNumbers(ranNumCount)
-                  ranNumCount = ranNumCount +1 
-                  Chrom(Param) = OldSol(c)%Chrom(Param) * (0.9d0 + 0.2d0 * RanNum)
+                RanNumLoc = RanNumLoc + 1
+                if (RanNum(RanNumLoc) < 0.5d0) then
+                  RanNumLoc = RanNumLoc +1
+                  Chrom(Param) = OldSol(c)%Chrom(Param) * (0.9d0 + 0.2d0 * RanNum(RanNumLoc))
                 else
-                  ! call random_number(RanNum)
-                  RanNum = randomNumbers(ranNumCount)
-          ranNumCount = ranNumCount +1 
-                  Chrom(Param) = OldSol(c)%Chrom(Param) + 0.01d0 * FInt * (OldSol(a)%Chrom(Param) + 0.01d0) * (RanNum - 0.5d0)
+                  RanNumLoc = RanNumLoc + 1
+                  Chrom(Param) = OldSol(c)%Chrom(Param) + 0.01d0 * FInt * (OldSol(a)%Chrom(Param) + 0.01d0) * (RanNum(RanNumLoc) - 0.5d0)
                 end if
               end if
             else
@@ -375,8 +368,6 @@ module AlphaEvolveModule
           end if
         end do ! Sol
         !$OMP END PARALLEL DO
-      
-        call UnintitialiseIntelRNG
 
         AcceptPct = AcceptPct / nSol * 100.0
 
@@ -448,6 +439,7 @@ module AlphaEvolveModule
         close(LogPopUnit)
       end if
 
+      call UnintitialiseIntelRNG
     end subroutine
 
     !###########################################################################
@@ -462,8 +454,8 @@ module AlphaEvolveModule
     !!          log on STDOUT and files
     !---------------------------------------------------------------------------
     subroutine RandomSearch(Mode, Spec, Data, nParam, Init, &
-      nSamp, nSampStop, StopTolerance, &
-      nSampPrint, LogFile, LogStdout, BestSol) ! not pure due to IO & RNG
+                            nSamp, nSampStop, StopTolerance, &
+                            nSampPrint, LogFile, LogStdout, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -484,7 +476,7 @@ module AlphaEvolveModule
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
 
       real(real32) :: AcceptPct
-      real(real64) :: RanNum, OldBestSolObjective, BestSolObjective, Chrom(nParam)
+      real(real64) :: RanNum, OldBestSolObjective, BestSolObjective
 
       logical :: ModeAvg, ModeMax, BestSolChanged, LogStdoutInternal
 
@@ -531,6 +523,8 @@ module AlphaEvolveModule
         AcceptPct = 0.0
       end if
 
+      call IntitialiseIntelRNG()
+
       ! --- Printout log header ---
 
       if (present(LogFile)) then
@@ -568,19 +562,15 @@ module AlphaEvolveModule
 
       ! --- Search ---
 
-      !> @todo: parallelise this loop?
+      !$OMP PARALLEL DO PRIVATE(Samp)
       do Samp = nInit, nSamp
 
         BestSolChanged = .false.
 
-        ! --- Generate a competitor ---
+        ! --- Evaluate a competitor and Select ---
 
-        call random_number(Chrom)
-
-        ! --- Evaluate and Select ---
-
-        ! Merit of the competitor
-        call TestSol%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
+        ! Merit of a competitor
+        call TestSol%Evaluate(Chrom=SampleIntelUniformD(n=nParam), Spec=Spec, Data=Data)
 
         if      (ModeAvg) then
           ! Update the mean
@@ -637,6 +627,7 @@ module AlphaEvolveModule
         end if
 
       end do ! Samp
+      !$OMP END PARALLEL DO
 
       ! --- The winner solution ---
 
@@ -650,6 +641,8 @@ module AlphaEvolveModule
       if (LogStdoutInternal) then
         call BestSol%Log(Spec=Spec, Iteration=Samp, AcceptPct=AcceptPct)
       end if
+
+      call UnintitialiseIntelRNG
     end subroutine
 
     !###########################################################################
