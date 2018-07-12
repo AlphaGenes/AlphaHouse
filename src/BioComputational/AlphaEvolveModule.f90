@@ -562,7 +562,9 @@ module AlphaEvolveModule
 
       ! --- Search ---
 
-      !$OMP PARALLEL DO PRIVATE(Samp)
+      ! @todo must make outer and inner loop as in DifferentialEvolution, because
+      !       the exit statement must not be within the OMP look
+      ! $OMP PARALLEL DO PRIVATE(Samp)
       do Samp = nInit, nSamp
 
         BestSolChanged = .false.
@@ -627,7 +629,7 @@ module AlphaEvolveModule
         end if
 
       end do ! Samp
-      !$OMP END PARALLEL DO
+      ! $OMP END PARALLEL DO
 
       ! --- The winner solution ---
 

@@ -38,7 +38,6 @@ SET(ALPHAHOUSE_src
     Utilities/par_zig_mod.f90
     Utilities/LegacyRandom.f90
     BioComputational/AlphaEvolveModule.f90
-    BioComputational/RNGParallelModule.f90
     Utilities/baseSpecFileModule.f90
     main.f90
 )
@@ -55,7 +54,7 @@ if (ALPHAHOUSEEXE)
     target_link_libraries(${ALPHAHOUSEEXE} ${MKL_LAPACK_LIB})
 
     if (USE_NETCDF)
-         
+
     target_link_libraries (${ALPHAHOUSEEXE} ${NETCDF_LIBRARIES})
 
     endif()
