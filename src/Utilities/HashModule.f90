@@ -196,7 +196,7 @@ module HashModule
 		!> @date    October 26, 2016
 		!---------------------------------------------------------------------------
 		pure subroutine dict_create(dict,size)
-			class(DictStructure) ,intent(inout) :: dict !< Dictionary Object
+			class(DictStructure),intent(inout)  :: dict !< Dictionary Object
 			integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 			integer(kind=int64) :: i
 

@@ -78,6 +78,8 @@ module AlphaEvolveModule
       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
       LogFile, LogStdout, LogPop, LogPopFile, &
       CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
+      
+      use IntelRNGMod
       implicit none
 
       ! Arguments
@@ -115,6 +117,9 @@ module AlphaEvolveModule
 
       class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:)
 
+
+      real(real64), allocatable, dimension(:) :: randomNumbers
+      integer :: ranNumCount
       ! --- Trap errors ---
 
       if (nSol < 4) then
@@ -282,47 +287,68 @@ module AlphaEvolveModule
         BestSolChanged = .false.
         AcceptPct = 0.0
 
-        ! $OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom)
+
+          call IntitialiseIntelRNG()  
+        !$OMP PARALLEL DO PRIVATE(Sol, a, b, c, RanNum, Param, ParamLoc, Chrom, randomNumbers,ranNumCount)
         do Sol = 1, nSol
 
           ! --- Mutate and crossover ---
-
+          randomNumbers = SampleIntelUniformD(5*nParam)
+          ranNumCount = 1
           ! Get three different solutions
           a = Sol
           do while (a == Sol)
-            call random_number(RanNum)
+            ! call random_number(RanNum)
+            RanNum = randomNumbers(RanNumCount)
+            RanNumCount = ranNumCount + 1
             a = int(RanNum * nSol) + 1
           end do
           b = Sol
           do while ((b == Sol) .or. (b == a))
-            call random_number(RanNum)
+            ! call random_number(RanNum)
+            RanNum = randomNumbers(RanNumCount)
+            RanNumCount = ranNumCount + 1
             b = int(RanNum * nSol) + 1
           end do
           c = Sol
           do while ((c == Sol) .or. (c == a) .or. (c == b))
-            call random_number(RanNum)
+            ! call random_number(RanNum)
+            RanNum = randomNumbers(RanNumCount)
+            RanNumCount = ranNumCount + 1
             c = int(RanNum * nSol) + 1
           end do
 
           ! Mate the solutions to get a new competitor solution
-          call random_number(RanNum)
+          ! call random_number(RanNum)
+          RanNum = randomNumbers(ranNumCount)
+          ranNumCount = ranNumCount +1 
           Param = int(RanNum * nParam) + 1 ! Cycle through parameters starting at a random point
           do ParamLoc = 1, nParam
-            call random_number(RanNum)
+            ! call random_number(RanNum)
+            RanNum = randomNumbers(ranNumCount)
+          ranNumCount = ranNumCount +1 
             if ((RanNum < CRInt) .or. (ParamLoc == nParam)) then
               ! Crossover
-              call random_number(RanNum)
+              ! call random_number(RanNum)
+              RanNum = randomNumbers(ranNumCount)
+              ranNumCount = ranNumCount +1 
               if ((RanNum < 0.8d0) .or. DiffOnly) then
                 ! Differential mutation (with prob 0.8 or 1)
                 Chrom(Param) = OldSol(c)%Chrom(Param) + FInt * (OldSol(a)%Chrom(Param) - OldSol(b)%Chrom(Param))
               else
                 ! Non-differential mutation (to avoid getting stuck)
-                call random_number(RanNum)
+                ! call random_number(RanNum)
+                RanNum = randomNumbers(ranNumCount)
+                ranNumCount = ranNumCount +1 
                 if (RanNum < 0.5d0) then
-                  call random_number(RanNum)
+                  ! call random_number(RanNum)
+                  RanNum = randomNumbers(ranNumCount)
+                  ranNumCount = ranNumCount +1 
                   Chrom(Param) = OldSol(c)%Chrom(Param) * (0.9d0 + 0.2d0 * RanNum)
                 else
-                  call random_number(RanNum)
+                  ! call random_number(RanNum)
+                  RanNum = randomNumbers(ranNumCount)
+          ranNumCount = ranNumCount +1 
                   Chrom(Param) = OldSol(c)%Chrom(Param) + 0.01d0 * FInt * (OldSol(a)%Chrom(Param) + 0.01d0) * (RanNum - 0.5d0)
                 end if
               end if
@@ -348,7 +374,9 @@ module AlphaEvolveModule
             call NewSol(Sol)%Assign(OldSol(Sol))
           end if
         end do ! Sol
-        ! $OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
+      
+        call UnintitialiseIntelRNG
 
         AcceptPct = AcceptPct / nSol * 100.0
 

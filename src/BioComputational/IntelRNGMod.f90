@@ -42,6 +42,7 @@ module IntelRNGMod
   public :: IntitialiseIntelRNG,UnintitialiseIntelRNG
 
   ! Discrete
+  public :: getIntelUniformI
   public :: SampleIntelUniformI
   public :: SampleIntelBernoulliI
   public :: SampleIntelMultinomialI
@@ -52,6 +53,7 @@ module IntelRNGMod
   ! Continuous
   !>@todo: should we make an interface and have generic for either single or double precision
   !!       and determine single or double based on inputs or???
+  public :: getIntelUniformD
   public :: SampleIntelUniformS,SampleIntelUniformD
   public :: SampleIntelGaussS,SampleIntelGaussD
   public :: SampleIntelGammaS,SampleIntelGammaD
@@ -165,6 +167,31 @@ module IntelRNGMod
       end if
     end subroutine
 
+
+    integer function getIntelUniformI()
+    
+    integer,allocatable :: sample(:)
+
+
+    allocate(sample(1))
+    sample = SampleIntelUniformI()
+
+    getIntelUniformI = sample(1)
+
+    end function
+
+
+    function getIntelUniformD() result(res)
+    
+    real(real64),allocatable :: sample(:)
+    real(real64) :: res
+
+    allocate(sample(1))
+    sample = SampleIntelUniformD()
+
+    res = sample(1)
+
+    end function
     !###########################################################################
 
     !---------------------------------------------------------------------------

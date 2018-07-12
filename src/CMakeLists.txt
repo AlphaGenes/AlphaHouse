@@ -38,6 +38,7 @@ SET(ALPHAHOUSE_src
     Utilities/par_zig_mod.f90
     Utilities/LegacyRandom.f90
     BioComputational/AlphaEvolveModule.f90
+    BioComputational/RNGParallelModule.f90
     Utilities/baseSpecFileModule.f90
     main.f90
 )
