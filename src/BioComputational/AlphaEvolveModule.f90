@@ -78,7 +78,7 @@ module AlphaEvolveModule
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
                                       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
                                       LogFile, LogStdout, LogPop, LogPopFile, &
-                                      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, BestSol) ! not pure due to IO & RNG
+                                      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, Seed, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
@@ -102,6 +102,7 @@ module AlphaEvolveModule
       real(real64), intent(in), optional     :: FBase         !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
       real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
+      integer(int32), intent(in), optional   :: Seed          !< RNG seed value
       class(AlphaEvolveSol), intent(inout)   :: BestSol       !< The best evolved solution
 
       ! Other
@@ -134,7 +135,7 @@ module AlphaEvolveModule
       BestSol%Objective = -huge(BestSol%Objective)
       OldBestSolObjective = BestSol%Objective
 
-      call IntitialiseIntelRNG()
+      call IntitialiseIntelRNG(Seed=Seed)
 
       ! --- Logging ---
 
@@ -288,7 +289,7 @@ module AlphaEvolveModule
 
           ! --- Mutate and crossover ---
 
-          RanNum = SampleIntelUniformD(5*nParam)
+          RanNum = SampleIntelUniformD(n=5*nParam)
           RanNumLoc = 0
           ! Get three different solutions
 
