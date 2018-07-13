@@ -29,6 +29,7 @@ module IntelRNGMod
   use mkl_vsl_type
   use mkl_vsl
   use ISO_Fortran_Env, STDIN=>input_unit,STDOUT=>output_unit,STDERR=>error_unit
+  use AlphaHouseMod, only : GetSeed
 
   implicit none
 
@@ -64,7 +65,6 @@ module IntelRNGMod
 
   contains
 
-
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ module IntelRNGMod
       delta = maxIndex / real(amount);
       call IntitialiseIntelRNG()
       tmp = real(maxIndex)
-    do i=1, amount 
+    do i=1, amount
       res = SampleIntelUniformD(b=tmp)
         randomNumbers(i) = int(i*delta + res(1) * delta);
     enddo
@@ -110,36 +110,29 @@ module IntelRNGMod
       integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
 
       ! Other
-      integer(int32) :: Size,Unit,BRNG
-      integer(int32),allocatable :: SeedList(:)
+      integer(int32) :: SeedInt,Unit,BRNG
 
-      ! Get the size of seed array
-      call random_seed(size=Size)
-      allocate(SeedList(Size))
-
-      ! Set seed
-      if (present(Seed)) then ! using the given value
-        SeedList(1)=Seed
-      else                    ! using system/compiler value
-        call random_seed
-        call random_seed(get=SeedList)
+      if (present(Seed)) then
+        SeedInt=Seed
+      else
+        call GetSeed(Out=SeedInt)
       end if
 
       ! Save to a file
       if (present(SeedFile)) then
         open(newunit=Unit,file=trim(SeedFile),status="unknown")
-        write(Unit,*) SeedList(1)
+        write(Unit,*) SeedInt
         close(Unit)
       end if
 
       ! Output
       if (present(Out)) then
-        Out=SeedList(1)
+        Out=SeedInt
       end if
 
       ! Start a RNG stream
       BRNG=VSL_BRNG_MT19937
-      RNGErrCode=vslnewstream(RNGStream,brng,SeedList(1))
+      RNGErrCode=vslnewstream(RNGStream,BRNG,SeedInt)
       if (RNGErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: IntitialiseIntelRNG failed"
         write(STDERR,"(a)") " "
@@ -169,7 +162,7 @@ module IntelRNGMod
 
 
     integer function getIntelUniformI()
-    
+
     integer,allocatable :: sample(:)
 
 
@@ -182,7 +175,7 @@ module IntelRNGMod
 
 
     function getIntelUniformD() result(res)
-    
+
     real(real64),allocatable :: sample(:)
     real(real64) :: res
 
