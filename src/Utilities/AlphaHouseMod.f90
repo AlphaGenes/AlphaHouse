@@ -68,7 +68,7 @@ module AlphaHouseMod
 	public :: Append, CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
 	public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
 	public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
-	public :: isDelim, PrintCpuTime, PrintElapsedTime, PrintDateTime, intToChar, SetSeed
+	public :: isDelim, PrintCpuTime, PrintElapsedTime, PrintDateTime, intToChar, GetSeed, SetSeed
 	public :: Char2Int1Array,Char2Int32Array,Char2Int64Array
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
@@ -1187,8 +1187,8 @@ module AlphaHouseMod
 		!> @details Standard Fortran seed approach
 		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
 		!> @date    September 26, 2016
-		!> @return  Set seed, potentially created file (SeedFile), and potentially
-		!!          returned seed value (Out)
+		!> @return  Set seed, potentially create file (SeedFile), and potentially
+		!!          return seed value (Out)
 		!---------------------------------------------------------------------------
 		subroutine SetSeed(Seed,SeedFile,Out)
 			implicit none
@@ -1199,22 +1199,24 @@ module AlphaHouseMod
 			integer(int32),intent(out),optional   :: Out      !< Make the seed value available outside
 
 			! Other
-			integer(int32) :: Size,Unit
+			integer(int32) :: i,Size,SeedInt,Unit
 			integer(int32),allocatable :: SeedList(:)
 
-			! Get the size of seed array
-			call random_seed(size=Size)
+			call random_seed            ! Initialise to system value
+			call random_seed(size=Size) ! Get the size of seed array
 			allocate(SeedList(Size))
 
-			! Set seed
-			if (present(Seed)) then ! using the given value
-				SeedList(1)=Seed
-				SeedList(2:Size)=1
-				call random_seed(put=SeedList)
-			else                    ! using system/compiler value
-				call random_seed
+			if (.not. present(Seed)) then ! get system value
 				call random_seed(get=SeedList)
+				SeedInt = SeedList(1)
+			else
+				SeedInt=Seed                ! given value
 			end if
+			! note that the compiler might use more than one seed value, so we control this here for reproducibility
+			do i=1,Size
+				SeedList(i)=SeedInt+(i-1)
+			end do
+			call random_seed(put=SeedList)
 
 			! Save to a file
 			if (present(SeedFile)) then
@@ -1228,6 +1230,33 @@ module AlphaHouseMod
 				Out=SeedList(1)
 			end if
 			deallocate(SeedList)
+		end subroutine
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief   Get seed value
+		!> @details Standard Fortran approach to get seed
+		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date    July 13, 2018
+		!> @return  Current seed value
+		!---------------------------------------------------------------------------
+		subroutine GetSeed(Out)
+			implicit none
+
+			! Arguments
+			integer(int32),intent(out)   :: Out !< The seed value
+
+			! Other
+			integer(int32) :: Size
+			integer(int32),allocatable :: SeedList(:)
+
+			! Get the size of seed array
+			call random_seed(size=Size)
+			allocate(SeedList(Size))
+			! Get the seed value(s)
+			call random_seed(get=SeedList)
+			Out = SeedList(1) ! note that the compiler might use more than one seed value
 		end subroutine
 
 		!###########################################################################
