@@ -359,8 +359,9 @@ module AlphaEvolveModule
           ! --- Evaluate and Select ---
 
           ! Merit of competitor
-          call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data)
-          ! If competitor is better or equal, keep it ("equal" to force evolution)
+          call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data, Random=RanNum(RanNumLoc))
+          RanNumLoc = RanNumLoc + 1
+            ! If competitor is better or equal, keep it ("equal" to force evolution)
           if (NewSol(Sol)%Objective >= OldSol(Sol)%Objective) then
             AcceptPct = AcceptPct + 1.0
           else
@@ -725,7 +726,7 @@ module AlphaEvolveModule
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine EvaluateAlphaEvolveSol(This, Chrom, Spec, Data) ! Data used in future methods; Not pure as some future Evaluate methods might use RNG
+    subroutine EvaluateAlphaEvolveSol(This, Chrom, Spec, Data, Random) ! Data used in future methods; Not pure as some future Evaluate methods might use RNG
       implicit none
 
       ! Arguments
@@ -733,7 +734,7 @@ module AlphaEvolveModule
       real(real64), intent(in)                     :: Chrom(:) !< A solution
       class(AlphaEvolveSpec), intent(in)           :: Spec     !< AlphaEvolveSpec holder
       class(AlphaEvolveData), intent(in), optional :: Data     !< AlphaEvolveData holder (optional for future methods)
-
+      real(real64), intent(in), optional           :: Random !< random number to avoid reinitialistation
       call This%Initialise(Chrom=Chrom, Spec=Spec)
       This%Objective = sum(This%Chrom) ! just a sum here for simplicity
     end subroutine
