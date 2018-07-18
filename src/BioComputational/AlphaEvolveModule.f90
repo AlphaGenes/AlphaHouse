@@ -79,6 +79,11 @@ module AlphaEvolveModule
                                       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
                                       LogFile, LogStdout, LogPop, LogPopFile, &
                                       CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, Seed, BestSol) ! not pure due to IO & RNG
+      
+      use IntelRNGMod
+      use mkl_vsl_type
+      use mkl_vsl
+      USE omp_lib
       implicit none
 
       ! Arguments
@@ -117,7 +122,8 @@ module AlphaEvolveModule
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
       class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:)
-
+      type(vsl_stream_state) :: Stream
+      integer :: nthreads, ithread,  start, end
       ! --- Trap errors ---
 
       if (nSol < 4) then
@@ -135,7 +141,7 @@ module AlphaEvolveModule
       BestSol%Objective = -huge(BestSol%Objective)
       OldBestSolObjective = BestSol%Objective
 
-      call IntitialiseIntelRNG(Seed=Seed)
+      
 
       ! --- Logging ---
 
@@ -283,13 +289,23 @@ module AlphaEvolveModule
 
         BestSolChanged = .false.
         AcceptPct = 0.0
+        !$OMP PARALLEL PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom, stream, ithread, start, end)
+        
 
-        !$OMP PARALLEL DO PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
-        do Sol = 1, nSol
+        nthreads = omp_get_num_threads()
+        ithread = omp_get_thread_num()
+        start = (ithread*nSol/nthreads)+1
+        end = ((ithread+1)*nSol/nthreads)
+
+        call IntitialiseIntelRNGStream(stream, Seed=Seed)
+        
+
+        ! $OMP PARALLEL DO PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
+        do Sol = start, end
 
           ! --- Mutate and crossover ---
 
-          RanNum = SampleIntelUniformD(n=5*nParam)
+          RanNum = SampleIntelUniformD(n=5*nParam, stream=stream)
           RanNumLoc = 0
           ! Get three different solutions
 
@@ -369,7 +385,9 @@ module AlphaEvolveModule
             call NewSol(Sol)%Assign(OldSol(Sol))
           end if
         end do ! Sol
-        !$OMP END PARALLEL DO
+    
+        call UnintitialiseIntelRNGStream(stream)
+        !$OMP END PARALLEL
 
         AcceptPct = AcceptPct / nSol * 100.0
 
@@ -441,7 +459,7 @@ module AlphaEvolveModule
         close(LogPopUnit)
       end if
 
-      call UnintitialiseIntelRNG
+      
     end subroutine
 
     !###########################################################################
