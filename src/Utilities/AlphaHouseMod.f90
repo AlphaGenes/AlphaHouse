@@ -105,7 +105,7 @@ module AlphaHouseMod
 	end interface
 
 	interface Append
-		module procedure AppendReal64, AppendChar
+		module procedure AppendReal32, AppendReal64, AppendChar
 	end interface
 
 	interface countColumns
@@ -1452,6 +1452,35 @@ module AlphaHouseMod
 				yout = y
 			endif
 		end subroutine unPair
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief  Append value y at the end of a vector x - real32
+		!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date   July 14, 2018
+		!---------------------------------------------------------------------------
+		pure subroutine AppendReal32(x, y)
+			implicit none
+			real(real32), intent(inout), allocatable :: x(:) !< @return Appended vector
+			real(real32), intent(in)                 :: y    !< Value
+			integer(int32) :: n
+			real(real32), allocatable :: Tmp(:)
+			if (allocated(x)) then
+				n = size(x)
+				allocate(Tmp(n))
+				Tmp = x
+				deallocate(x)
+				allocate(x(n + 1))
+				x(1:n) = Tmp
+				n = n + 1
+				x(n) = y
+			else
+				n = 1
+				allocate(x(n))
+				x(n) = y
+			end if
+		end subroutine
 
 		!###########################################################################
 
