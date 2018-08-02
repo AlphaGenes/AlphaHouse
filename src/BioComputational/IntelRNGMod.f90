@@ -26,9 +26,9 @@ include "mkl_vsl.f90"
 !-------------------------------------------------------------------------------
 module IntelRngMod
 
-  use mkl_vsl_type
-  use mkl_vsl
-  use ISO_Fortran_Env, STDERR=>error_unit
+  use Mkl_Vsl_Type
+  use Mkl_Vsl
+  use Iso_Fortran_Env, STDERR=>error_unit
   use AlphaHouseMod, only : GetSeed
 
   implicit none
@@ -38,7 +38,7 @@ module IntelRngMod
   private
 
   ! Rng stream management
-  public :: IntitialiseIntelRng,IntitialiseIntelRngStream,UnintitialiseIntelRng,UnintitialiseIntelRngStream
+  public :: IntitialiseIntelRng,UnintitialiseIntelRng
 
   ! Discrete
   public :: RandomOrderIntel
@@ -76,11 +76,11 @@ module IntelRngMod
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional          :: Seed     !< A number to initialize RNG with
-      character(len=*),intent(in),optional        :: SeedFile !< File to save the seed in
-      integer(int32),intent(in),optional          :: Brng     !< Type of RNG, default is VSL_BRNG_MT19937
-      integer(int32),intent(out),optional         :: Out      !< Make the seed value available outside
-      type(vsl_stream_state),intent(out),optional :: Stream   !< Intel RNG stream, default is to use the module stream
+      integer(int32),intent(in),optional            :: Seed     !< A number to initialize RNG with
+      character(len=*),intent(in),optional          :: SeedFile !< File to save the seed in
+      integer(int32),intent(in),optional            :: Brng     !< Type of RNG, default is VSL_BRNG_MT19937, use VSL_BRNG_MT2203 for parallel applications
+      integer(int32),intent(out),optional           :: Out      !< Make the seed value available outside
+      type(vsl_stream_state),intent(inout),optional :: Stream   !< Intel RNG stream, default is to use the module stream
 
       ! Other
       integer(int32) :: SeedInt,Unit,BrngInt,RngErrCode
@@ -123,50 +123,6 @@ module IntelRngMod
       end if
     end subroutine
 
-    subroutine IntitialiseIntelRngStream(Stream,Seed,SeedFile,Out)
-      implicit none
-
-      ! Arguments
-      type(vsl_stream_state),intent(out)  :: Stream
-      integer(int32),intent(in),optional  :: Seed     !< A number to initialize RNG with
-      character(len=*),optional           :: SeedFile !< File to save the seed in
-      integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
-
-      ! Other
-      integer(int32) :: SeedInt,Unit,Brng,RngErrCode
-
-      print*,"REMOVE IntitialiseIntelRngStream"
-
-      if (present(Seed)) then
-        SeedInt=Seed
-      else
-        call GetSeed(Out=SeedInt)
-      end if
-
-      ! Save to a file
-      if (present(SeedFile)) then
-        open(newunit=Unit,file=trim(SeedFile),status="unknown")
-        write(Unit,*) SeedInt
-        close(Unit)
-      end if
-
-      ! Output
-      if (present(Out)) then
-        Out=SeedInt
-      end if
-
-      ! Start a RNG stream
-      Brng=VSL_BRNG_MT19937
-
-      RngErrCode=vslnewstream(Stream,BRng,SeedInt)
-
-      if (RngErrCode /= VSL_STATUS_OK) then
-        write(STDERR,"(a)") "ERROR: IntitialiseIntelRng failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-    end subroutine
-
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -176,7 +132,7 @@ module IntelRngMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine UnintitialiseIntelRNG(Stream)
+    subroutine UnintitialiseIntelRng(Stream)
       implicit none
 
       ! Arguments
@@ -190,25 +146,6 @@ module IntelRngMod
       else
         RngErrCode=vsldeletestream(ModuleStream)
       end if
-
-      if (RngErrCode /= VSL_STATUS_OK) then
-        write(STDERR,"(a)") "ERROR: UnintitialiseIntelRng failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-
-    end subroutine
-
-    subroutine UnintitialiseIntelRngStream(stream)
-      implicit none
-
-      type(vsl_stream_state),intent(out) :: Stream
-
-      integer(int32) :: RngErrCode
-
-      print*,"REMOVE UnintitialiseIntelRngStream"
-
-      RngErrCode=vsldeletestream(Stream)
 
       if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: UnintitialiseIntelRng failed"
@@ -283,7 +220,7 @@ module IntelRngMod
       tmpA = list
 
       ! @todo speed-up this code by sampling all the num random deviates at once
-      !       see how RandomOrder() does it
+      !       see how RandomOrderIntel() does it
       do i = 1, num
         r = SampleIntelUniformI(1,0,size(list) - i)
         pos = size(list) - r(1)
@@ -311,13 +248,13 @@ module IntelRngMod
       real(kind=int64) :: res(1)
       allocate(randomNumbers(amount))
       delta = maxIndex / real(amount);
-      call IntitialiseIntelRng()
+      call IntitialiseIntelRng
       tmp = real(maxIndex)
       do i=1, amount
         res = SampleIntelUniformD(b=tmp)
         randomNumbers(i) = int(i*delta + res(1) * delta);
       enddo
-      call UnintitialiseIntelRng()
+      call UnintitialiseIntelRng
     end subroutine generateIncreasingRandom
 
     !###########################################################################
@@ -647,18 +584,15 @@ module IntelRngMod
 
       allocate(Res(nOpt))
 
+      RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
       if (present(Accurate)) then
-        if (Accurate) then
-          RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
-        else
+        if (.not. Accurate) then
           RngMethod=VSL_RNG_METHOD_UNIFORM_STD
         end if
-      else
-        RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
       end if
 
-      if (present(stream)) then
-        RngErrCode=vsrnguniform(RngMethod,stream,nOpt,Res,aOpt,bOpt)
+      if (present(Stream)) then
+        RngErrCode=vsrnguniform(RngMethod,Stream,nOpt,Res,aOpt,bOpt)
       else
         RngErrCode=vsrnguniform(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt)
       endif
@@ -716,14 +650,11 @@ module IntelRngMod
 
       allocate(Res(nOpt))
 
+      RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
       if (present(Accurate)) then
-        if (Accurate) then
-          RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
-        else
+        if (.not. Accurate) then
           RngMethod=VSL_RNG_METHOD_UNIFORM_STD
         end if
-      else
-        RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
       end if
 
       if (present(Stream)) then

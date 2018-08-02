@@ -23,10 +23,13 @@
 !-------------------------------------------------------------------------------
 module AlphaEvolveModule
 
-  use ISO_Fortran_Env, STDIN => input_unit, STDOUT => output_unit, STDERR => error_unit
-  use, intrinsic :: IEEE_Arithmetic
-  use IntelRNGMod
-  use AlphaHouseMod, only : Int2Char, Real2Char, ToLower
+  use Iso_Fortran_Env, STDOUT => output_unit, STDERR => error_unit
+  use, intrinsic :: Ieee_Arithmetic
+  use IntelRngMod, only : IntitialiseIntelRng, UnintitialiseIntelRng, SampleIntelUniformD
+  use Mkl_Vsl_Type
+  use Mkl_Vsl
+  use Omp_Lib
+  use AlphaHouseMod, only : GetSeed, Int2Char, Real2Char, ToLower
 
   implicit none
 
@@ -78,52 +81,49 @@ module AlphaEvolveModule
     subroutine DifferentialEvolution(Spec, Data, nParam, nSol, Init, &
                                       nIter, nIterBurnIn, nIterStop, StopTolerance, nIterPrint, &
                                       LogFile, LogStdout, LogPop, LogPopFile, &
-                                      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, Seed, BestSol) ! not pure due to IO & RNG
-      
-      use IntelRNGMod
-      use mkl_vsl_type
-      use mkl_vsl
-      USE omp_lib
+                                      CRBurnIn, CRLate1, CRLate2, FBase, FHigh1, FHigh2, &
+                                      Stream, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
-      class(AlphaEvolveSpec), intent(in)     :: Spec          !< AlphaEvolveSpec holder
-      class(AlphaEvolveData), intent(in)     :: Data          !< AlphaEvolveData holder
-      integer(int32), intent(in)             :: nParam        !< No. of parameters in a solution
-      integer(int32), intent(in)             :: nSol          !< No. of solutions to test each generation/iteration
-      real(real64), intent(in), optional     :: Init(:, :)    !< Initial solutions to start with
-      integer(int32), intent(in)             :: nIter         !< No. of generations/iterations to run
-      integer(int32), intent(in)             :: nIterBurnIn   !< No. of generations/iterations with more loose parameters
-      integer(int32), intent(in)             :: nIterStop     !< Stop after no progress for nIterStop
-      real(real64), intent(in)               :: StopTolerance !< Stopping tolerance
-      integer(int32), intent(in)             :: nIterPrint    !< Print changed solution every nIterPrint
-      character(len=*), intent(in), optional :: LogFile       !< Which file to log best solution into
-      logical, intent(in), optional          :: LogStdout     !< Log to STDOUT? (default .true.)
-      logical, intent(in), optional          :: LogPop        !< Save all evaluated solutions to a file
-      character(len=*), intent(in), optional :: LogPopFile    !< File for the evaluated solutions
-      real(real64), intent(in), optional     :: CRBurnIn      !< Crossover rate for nIterBurnIn
-      real(real64), intent(in), optional     :: CRLate1       !< Crossover rate (for common small moves)
-      real(real64), intent(in), optional     :: CRLate2       !< Crossover rate (for rare large moves)
-      real(real64), intent(in), optional     :: FBase         !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh1        !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional     :: FHigh2        !< F is multiplier of difference used to mutate
-      integer(int32), intent(in), optional   :: Seed          !< RNG seed value
-      class(AlphaEvolveSol), intent(inout)   :: BestSol       !< The best evolved solution
+      class(AlphaEvolveSpec), intent(in)              :: Spec          !< AlphaEvolveSpec holder
+      class(AlphaEvolveData), intent(in)              :: Data          !< AlphaEvolveData holder
+      integer(int32), intent(in)                      :: nParam        !< No. of parameters in a solution
+      integer(int32), intent(in)                      :: nSol          !< No. of solutions to test each generation/iteration
+      real(real64), intent(in), optional              :: Init(:, :)    !< Initial solutions to start with
+      integer(int32), intent(in)                      :: nIter         !< No. of generations/iterations to run
+      integer(int32), intent(in)                      :: nIterBurnIn   !< No. of generations/iterations with more loose parameters
+      integer(int32), intent(in)                      :: nIterStop     !< Stop after no progress for nIterStop
+      real(real64), intent(in)                        :: StopTolerance !< Stopping tolerance
+      integer(int32), intent(in)                      :: nIterPrint    !< Print changed solution every nIterPrint
+      character(len=*), intent(in), optional          :: LogFile       !< Which file to log best solution into
+      logical, intent(in), optional                   :: LogStdout     !< Log to STDOUT? (default .true.)
+      logical, intent(in), optional                   :: LogPop        !< Save all evaluated solutions to a file
+      character(len=*), intent(in), optional          :: LogPopFile    !< File for the evaluated solutions
+      real(real64), intent(in), optional              :: CRBurnIn      !< Crossover rate for nIterBurnIn
+      real(real64), intent(in), optional              :: CRLate1       !< Crossover rate (for common small moves)
+      real(real64), intent(in), optional              :: CRLate2       !< Crossover rate (for rare large moves)
+      real(real64), intent(in), optional              :: FBase         !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional              :: FHigh1        !< F is multiplier of difference used to mutate
+      real(real64), intent(in), optional              :: FHigh2        !< F is multiplier of difference used to mutate
+      type(vsl_stream_state), intent(inout), optional :: Stream        !< Intel RNG stream to control sampling of seed value(s)
+      class(AlphaEvolveSol), intent(inout)            :: BestSol       !< The best evolved solution
 
       ! Other
       integer(int32) :: nInit, Param, ParamLoc, Iter, LastIterPrint, LogUnit, LogPopUnit
-      integer(int32) :: Sol, a, b, c, RanNumLoc
+      integer(int32) :: nThreads, ThreadLoc, RanNumLoc, Sol, a, b, c
 
       real(real32) :: AcceptPct
       real(real64) :: FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
       real(real64) :: Chrom(nParam), OldBestSolObjective
-      real(real64), allocatable, dimension(:) :: RanNum
+      real(real64), allocatable, dimension(:) :: SeedInt, RanNum
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
       class(AlphaEvolveSol), allocatable :: OldSol(:), NewSol(:)
-      type(vsl_stream_state) :: Stream
-      integer :: nthreads, ithread,  start, end
+
+      type(vsl_stream_state), allocatable, dimension(:) :: StreamInt
+
       ! --- Trap errors ---
 
       if (nSol < 4) then
@@ -131,6 +131,23 @@ module AlphaEvolveModule
         write(STDERR, "(a)") " "
         stop 1
       end if
+
+      ! --- Setup RNG stream(s) ---
+
+      nThreads = Omp_Get_Num_Procs()
+      allocate(StreamInt(nThreads))
+      allocate(SeedInt(nThreads))
+
+      if (present(Stream)) then
+        SeedInt = SampleIntelUniformD(n=nThreads, a=1.0d0, b=19791123.0d0, Stream=Stream)
+      else
+        call Random_Number(SeedInt)
+      end if
+
+      do ThreadLoc = 1, nThreads
+        ! Parallel RNG streams https://software.intel.com/en-us/mkl-vsnotes-mt2203
+        call IntitialiseIntelRng(Seed=int(SeedInt(ThreadLoc)), Brng=VSL_BRNG_MT2203 + ThreadLoc, Stream=StreamInt(ThreadLoc))
+      end do
 
       ! --- Allocate and initialise ---
 
@@ -140,8 +157,6 @@ module AlphaEvolveModule
       LastIterPrint = 0
       BestSol%Objective = -huge(BestSol%Objective)
       OldBestSolObjective = BestSol%Objective
-
-      
 
       ! --- Logging ---
 
@@ -226,23 +241,25 @@ module AlphaEvolveModule
       if (present(Init)) then
         nInit = size(Init, dim=2)
         do Sol = 1, nInit
-          call OldSol(Sol)%Evaluate(Chrom=Init(:, Sol), Spec=Spec, Data=Data)
+          call OldSol(Sol)%Evaluate(Chrom=Init(:, Sol), Spec=Spec, Data=Data, Stream=StreamInt(1))
         end do
         nInit = Sol
       else
         nInit = 1
       end if
       do Sol = nInit, nSol
-        call OldSol(Sol)%Evaluate(Chrom=SampleIntelUniformD(n=nParam), Spec=Spec, Data=Data)
+print*,"nParam",nParam
+        call OldSol(Sol)%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt(1)), &
+                                  Spec=Spec, Data=Data, Stream=StreamInt(1))
       end do
 
       Sol = maxloc(OldSol(:)%Objective, dim=1)
       call BestSol%Assign(OldSol(Sol))
       if (present(LogFile)) then
-        call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=0, AcceptPct=IEEE_Value(x=AcceptPct, class=IEEE_Quiet_NaN))
+        call BestSol%Log(Spec=Spec, LogUnit=LogUnit, Iteration=0, AcceptPct=Ieee_Value(x=AcceptPct, class=Ieee_Quiet_NaN))
       end if
       if (LogStdoutInternal) then
-        call BestSol%Log(Spec=Spec, Iteration=0, AcceptPct=IEEE_Value(x=AcceptPct, class=IEEE_Quiet_NaN))
+        call BestSol%Log(Spec=Spec, Iteration=0, AcceptPct=Ieee_Value(x=AcceptPct, class=Ieee_Quiet_NaN))
       end if
       if (LogPopInternal) then
         do Sol = 1, nSol
@@ -289,26 +306,19 @@ module AlphaEvolveModule
 
         BestSolChanged = .false.
         AcceptPct = 0.0
-        !$OMP PARALLEL PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom, stream, ithread, start, end)
-        
 
-        nthreads = omp_get_num_threads()
-        ithread = omp_get_thread_num()
-        start = (ithread*nSol/nthreads)+1
-        end = ((ithread+1)*nSol/nthreads)
-
-        call IntitialiseIntelRNGStream(stream, Seed=Seed)
-        
-
-        ! $OMP PARALLEL DO PRIVATE(Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
-        do Sol = start, end
+        !$OMP PARALLEL PRIVATE(ThreadLoc, Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
+        ThreadLoc = Omp_Get_Thread_Num() ! Note that this returns zero-based index: 0,1,...,nThreads-1
+        !$OMP DO
+        do Sol = 1, nSol
 
           ! --- Mutate and crossover ---
 
-          RanNum = SampleIntelUniformD(n=5*nParam, stream=stream)
+          RanNum = SampleIntelUniformD(n=5*nParam, Accurate=.false., Stream=StreamInt(ThreadLoc + 1))
           RanNumLoc = 0
           ! Get three different solutions
 
+! @todo
           ! a = Sol
           ! do while (a == Sol)
           !   RanNumLoc = RanNumLoc + 1
@@ -375,9 +385,8 @@ module AlphaEvolveModule
           ! --- Evaluate and Select ---
 
           ! Merit of competitor
-          call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data, Random=RanNum(RanNumLoc))
-          RanNumLoc = RanNumLoc + 1
-            ! If competitor is better or equal, keep it ("equal" to force evolution)
+          call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data, Stream=StreamInt(ThreadLoc + 1))
+          ! If competitor is better or equal, keep it ("equal" to force evolution)
           if (NewSol(Sol)%Objective >= OldSol(Sol)%Objective) then
             AcceptPct = AcceptPct + 1.0
           else
@@ -385,8 +394,7 @@ module AlphaEvolveModule
             call NewSol(Sol)%Assign(OldSol(Sol))
           end if
         end do ! Sol
-    
-        call UnintitialiseIntelRNGStream(stream)
+        !$OMP END DO
         !$OMP END PARALLEL
 
         AcceptPct = AcceptPct / nSol * 100.0
@@ -459,7 +467,12 @@ module AlphaEvolveModule
         close(LogPopUnit)
       end if
 
-      
+      ! --- Delete RNG stream(s) ---
+
+      do ThreadLoc = 1, nThreads
+        call UnintitialiseIntelRng(Stream=StreamInt(ThreadLoc))
+      end do
+
     end subroutine
 
     !###########################################################################
@@ -475,22 +488,23 @@ module AlphaEvolveModule
     !---------------------------------------------------------------------------
     subroutine RandomSearch(Mode, Spec, Data, nParam, Init, &
                             nSamp, nSampStop, StopTolerance, &
-                            nSampPrint, LogFile, LogStdout, BestSol) ! not pure due to IO & RNG
+                            nSampPrint, LogFile, LogStdout, Stream, BestSol) ! not pure due to IO & RNG
       implicit none
 
       ! Arguments
-      character(len=*), intent(in)           :: Mode           !< Mode of search (max or avg)
-      class(AlphaEvolveSpec), intent(in)     :: Spec           !< AlphaEvolveSpec holder
-      class(AlphaEvolveData), intent(in)     :: Data           !< AlphaEvolveData holder
-      integer(int32), intent(in)             :: nParam         !< No. of parameters in a solution
-      real(real64), intent(inout), optional  :: Init(:, :)     !< Initial solutions to test
-      integer(int32), intent(in)             :: nSamp          !< No. of samples to test
-      integer(int32), intent(in), optional   :: nSampStop      !< Stop after no progress for nSampStop
-      real(real64), intent(in)               :: StopTolerance  !< Stopping tolerance
-      integer(int32), intent(in)             :: nSampPrint     !< Print changed solution every nSampPrint
-      character(len=*), intent(in), optional :: LogFile        !< Which file to log best solution into
-      logical, intent(in), optional          :: LogStdout      !< Log to STDOUT?
-      class(AlphaEvolveSol), intent(inout)   :: BestSol        !< The best found solution
+      character(len=*), intent(in)                    :: Mode          !< Mode of search (max or avg)
+      class(AlphaEvolveSpec), intent(in)              :: Spec          !< AlphaEvolveSpec holder
+      class(AlphaEvolveData), intent(in)              :: Data          !< AlphaEvolveData holder
+      integer(int32), intent(in)                      :: nParam        !< No. of parameters in a solution
+      real(real64), intent(inout), optional           :: Init(:, :)    !< Initial solutions to test
+      integer(int32), intent(in)                      :: nSamp         !< No. of samples to test
+      integer(int32), intent(in), optional            :: nSampStop     !< Stop after no progress for nSampStop
+      real(real64), intent(in)                        :: StopTolerance !< Stopping tolerance
+      integer(int32), intent(in)                      :: nSampPrint    !< Print changed solution every nSampPrint
+      character(len=*), intent(in), optional          :: LogFile       !< Which file to log best solution into
+      logical, intent(in), optional                   :: LogStdout     !< Log to STDOUT?
+      type(vsl_stream_state), intent(inout), optional :: Stream        !< Intel RNG stream to control sampling of seed value(s)
+      class(AlphaEvolveSol), intent(inout)            :: BestSol       !< The best found solution
 
       ! Other
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
@@ -502,10 +516,16 @@ module AlphaEvolveModule
 
       class(AlphaEvolveSol), allocatable :: TestSol
 
+      type(vsl_stream_state) :: StreamInt
+
       if (present(LogStdout)) then
         LogStdoutInternal = LogStdout
       else
         LogStdoutInternal = .true.
+      end if
+
+      if (present(Stream)) then
+        StreamInt = Stream
       end if
 
       ! --- Mode ---
@@ -543,7 +563,7 @@ module AlphaEvolveModule
         AcceptPct = 0.0
       end if
 
-      call IntitialiseIntelRNG()
+      call IntitialiseIntelRng(Stream=StreamInt)
 
       ! --- Printout log header ---
 
@@ -560,7 +580,7 @@ module AlphaEvolveModule
       if (present(Init)) then
         nInit = size(Init, dim=2)
         do Samp = 1, nInit
-          call TestSol%Evaluate(Chrom=Init(:, Samp), Spec=Spec, Data=Data)
+          call TestSol%Evaluate(Chrom=Init(:, Samp), Spec=Spec, Data=Data, Stream=StreamInt)
           if      (ModeAvg) then
             if (Samp == 1) then
               call BestSol%Assign(TestSol)
@@ -583,8 +603,9 @@ module AlphaEvolveModule
       ! --- Search ---
 
       ! @todo must make outer and inner loop as in DifferentialEvolution, because
-      !       the exit statement must not be within the OMP look
-      ! $OMP PARALLEL DO PRIVATE(Samp)
+      !       the exit statement must not be within the OMP loop
+      ! $OMP PARALLEL PRIVATE(Samp)
+      ! $OMP DO
       do Samp = nInit, nSamp
 
         BestSolChanged = .false.
@@ -592,7 +613,9 @@ module AlphaEvolveModule
         ! --- Evaluate a competitor and Select ---
 
         ! Merit of a competitor
-        call TestSol%Evaluate(Chrom=SampleIntelUniformD(n=nParam), Spec=Spec, Data=Data)
+print*,"nParam",nParam
+        call TestSol%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt), &
+                              Spec=Spec, Data=Data, Stream=StreamInt)
 
         if      (ModeAvg) then
           ! Update the mean
@@ -649,7 +672,8 @@ module AlphaEvolveModule
         end if
 
       end do ! Samp
-      ! $OMP END PARALLEL DO
+      ! $OMP END DO
+      ! $OMP END PARALLEL
 
       ! --- The winner solution ---
 
@@ -664,7 +688,10 @@ module AlphaEvolveModule
         call BestSol%Log(Spec=Spec, Iteration=Samp, AcceptPct=AcceptPct)
       end if
 
-      call UnintitialiseIntelRNG
+      if (present(Stream)) then
+        Stream = StreamInt
+      end if
+      call UnintitialiseIntelRng(Stream=StreamInt)
     end subroutine
 
     !###########################################################################
@@ -744,7 +771,7 @@ module AlphaEvolveModule
     !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date   September 26, 2016
     !---------------------------------------------------------------------------
-    subroutine EvaluateAlphaEvolveSol(This, Chrom, Spec, Data, Random) ! Data used in future methods; Not pure as some future Evaluate methods might use RNG
+    subroutine EvaluateAlphaEvolveSol(This, Chrom, Spec, Data, Stream) ! Data & Stream used in future methods; Not pure due to RNG
       implicit none
 
       ! Arguments
@@ -752,7 +779,7 @@ module AlphaEvolveModule
       real(real64), intent(in)                     :: Chrom(:) !< A solution
       class(AlphaEvolveSpec), intent(in)           :: Spec     !< AlphaEvolveSpec holder
       class(AlphaEvolveData), intent(in), optional :: Data     !< AlphaEvolveData holder (optional for future methods)
-      real(real64), intent(in), optional           :: Random !< random number to avoid reinitialistation
+      type(vsl_stream_state), intent(inout)        :: Stream   !< Intel RNG stream
       call This%Initialise(Chrom=Chrom, Spec=Spec)
       This%Objective = sum(This%Chrom) ! just a sum here for simplicity
     end subroutine
