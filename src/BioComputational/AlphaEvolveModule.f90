@@ -248,7 +248,6 @@ module AlphaEvolveModule
         nInit = 1
       end if
       do Sol = nInit, nSol
-print*,"nParam",nParam
         call OldSol(Sol)%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt(1)), &
                                   Spec=Spec, Data=Data, Stream=StreamInt(1))
       end do
@@ -308,41 +307,31 @@ print*,"nParam",nParam
         AcceptPct = 0.0
 
         !$OMP PARALLEL PRIVATE(ThreadLoc, Sol, RanNum, RanNumLoc, a, b, c, Param, ParamLoc, Chrom)
-        ThreadLoc = Omp_Get_Thread_Num() ! Note that this returns zero-based index: 0,1,...,nThreads-1
+        ThreadLoc = Omp_Get_Thread_Num() ! Note that this returns zero-based index: 0, 1,..., nThreads-1
         !$OMP DO
         do Sol = 1, nSol
 
           ! --- Mutate and crossover ---
 
+          ! Presample random deviates
           RanNum = SampleIntelUniformD(n=5*nParam, Accurate=.false., Stream=StreamInt(ThreadLoc + 1))
           RanNumLoc = 0
-          ! Get three different solutions
 
-! @todo
-          ! a = Sol
-          ! do while (a == Sol)
-          !   RanNumLoc = RanNumLoc + 1
-          !   a = int(RanNum(RanNumLoc) * nSol) + 1
-          ! end do
-          ! b = Sol
-          ! do while ((b == Sol) .or. (b == a))
-          !   RanNumLoc = RanNumLoc + 1
-          !   b = int(RanNum(RanNumLoc) * nSol) + 1
-          ! end do
-          ! c = Sol
-          ! do while ((c == Sol) .or. (c == a) .or. (c == b))
-          !   RanNumLoc = RanNumLoc + 1
-          !   c = int(RanNum(RanNumLoc) * nSol) + 1
-          ! end do
-
+          ! Get three different solutions as source of new variation
           RanNumLoc = RanNumLoc + 1
           a = int(RanNum(RanNumLoc) * nSol) + 1
+          do while (a == Sol)
+            RanNumLoc = RanNumLoc + 1
+            a = int(RanNum(RanNumLoc) * nSol) + 1
+          end do
+
           RanNumLoc = RanNumLoc + 1
           b = int(RanNum(RanNumLoc) * nSol) + 1
           do while (b == a)
             RanNumLoc = RanNumLoc + 1
             b = int(RanNum(RanNumLoc) * nSol) + 1
           end do
+
           RanNumLoc = RanNumLoc + 1
           c = int(RanNum(RanNumLoc) * nSol) + 1
           do while ((c == a) .or. (c == b))
@@ -384,7 +373,7 @@ print*,"nParam",nParam
 
           ! --- Evaluate and Select ---
 
-          ! Merit of competitor
+          ! Merit of the competitor
           call NewSol(Sol)%Evaluate(Chrom=Chrom, Spec=Spec, Data=Data, Stream=StreamInt(ThreadLoc + 1))
           ! If competitor is better or equal, keep it ("equal" to force evolution)
           if (NewSol(Sol)%Objective >= OldSol(Sol)%Objective) then
@@ -613,7 +602,6 @@ print*,"nParam",nParam
         ! --- Evaluate a competitor and Select ---
 
         ! Merit of a competitor
-print*,"nParam",nParam
         call TestSol%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt), &
                               Spec=Spec, Data=Data, Stream=StreamInt)
 
