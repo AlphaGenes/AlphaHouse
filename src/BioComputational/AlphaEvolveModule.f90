@@ -1,3 +1,19 @@
+
+#ifdef SINGLEPREC
+#define FLOATTYPE real32
+#define DescStatType DescStatReal32
+#define DescStatMatrixType DescStatMatrixReal32
+#define CONVERSIONFUNCTION REAL
+#define RANDOMSAMPLE SampleIntelUniformS
+#warning "Got here"
+#else 
+#define FLOATTYPE real64
+#define DescStatType DescStatReal64
+#define DescStatMatrixType DescStatMatrixReal64
+#define CONVERSIONFUNCTION DBLE
+#define RANDOMSAMPLE SampleIntelUniformD
+#endif
+
 !###############################################################################
 !-------------------------------------------------------------------------------
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
@@ -25,7 +41,7 @@ module AlphaEvolveModule
 
   use Iso_Fortran_Env, STDOUT => output_unit, STDERR => error_unit
   use, intrinsic :: Ieee_Arithmetic
-  use IntelRngMod, only : IntitialiseIntelRng, UnintitialiseIntelRng, SampleIntelUniformD
+  use IntelRngMod, only : IntitialiseIntelRng, UnintitialiseIntelRng, SampleIntelUniformD,SampleIntelUniformS
   use Mkl_Vsl_Type
   use Mkl_Vsl
   use Omp_Lib
@@ -41,9 +57,9 @@ module AlphaEvolveModule
 
   !> @brief An evolutionary solution
   type :: AlphaEvolveSol
-    real(real64)              :: Objective
+    real(FLOATTYPE)              :: Objective
     integer(int32)            :: nParam
-    real(real64), allocatable :: Chrom(:)
+    real(FLOATTYPE), allocatable :: Chrom(:)
     contains
       procedure :: Initialise => InitialiseAlphaEvolveSol
       procedure :: Assign     => AssignAlphaEvolveSol
@@ -90,22 +106,22 @@ module AlphaEvolveModule
       class(AlphaEvolveData), intent(in)              :: Data          !< AlphaEvolveData holder
       integer(int32), intent(in)                      :: nParam        !< No. of parameters in a solution
       integer(int32), intent(in)                      :: nSol          !< No. of solutions to test each generation/iteration
-      real(real64), intent(in), optional              :: Init(:, :)    !< Initial solutions to start with
+      real(FLOATTYPE), intent(in), optional              :: Init(:, :)    !< Initial solutions to start with
       integer(int32), intent(in)                      :: nIter         !< No. of generations/iterations to run
       integer(int32), intent(in)                      :: nIterBurnIn   !< No. of generations/iterations with more loose parameters
       integer(int32), intent(in)                      :: nIterStop     !< Stop after no progress for nIterStop
-      real(real64), intent(in)                        :: StopTolerance !< Stopping tolerance
+      real(FLOATTYPE), intent(in)                        :: StopTolerance !< Stopping tolerance
       integer(int32), intent(in)                      :: nIterPrint    !< Print changed solution every nIterPrint
       character(len=*), intent(in), optional          :: LogFile       !< Which file to log best solution into
       logical, intent(in), optional                   :: LogStdout     !< Log to STDOUT? (default .true.)
       logical, intent(in), optional                   :: LogPop        !< Save all evaluated solutions to a file
       character(len=*), intent(in), optional          :: LogPopFile    !< File for the evaluated solutions
-      real(real64), intent(in), optional              :: CRBurnIn      !< Crossover rate for nIterBurnIn
-      real(real64), intent(in), optional              :: CRLate1       !< Crossover rate (for common small moves)
-      real(real64), intent(in), optional              :: CRLate2       !< Crossover rate (for rare large moves)
-      real(real64), intent(in), optional              :: FBase         !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional              :: FHigh1        !< F is multiplier of difference used to mutate
-      real(real64), intent(in), optional              :: FHigh2        !< F is multiplier of difference used to mutate
+      real(FLOATTYPE), intent(in), optional              :: CRBurnIn      !< Crossover rate for nIterBurnIn
+      real(FLOATTYPE), intent(in), optional              :: CRLate1       !< Crossover rate (for common small moves)
+      real(FLOATTYPE), intent(in), optional              :: CRLate2       !< Crossover rate (for rare large moves)
+      real(FLOATTYPE), intent(in), optional              :: FBase         !< F is multiplier of difference used to mutate
+      real(FLOATTYPE), intent(in), optional              :: FHigh1        !< F is multiplier of difference used to mutate
+      real(FLOATTYPE), intent(in), optional              :: FHigh2        !< F is multiplier of difference used to mutate
       type(vsl_stream_state), intent(inout), optional :: Stream        !< Intel RNG stream to control sampling of seed value(s)
       class(AlphaEvolveSol), intent(inout)            :: BestSol       !< The best evolved solution
 
@@ -114,9 +130,9 @@ module AlphaEvolveModule
       integer(int32) :: nThreads, ThreadLoc, RanNumLoc, Sol, a, b, c
 
       real(real32) :: AcceptPct
-      real(real64) :: FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
-      real(real64) :: Chrom(nParam), OldBestSolObjective
-      real(real64), allocatable, dimension(:) :: SeedInt, RanNum
+      real(FLOATTYPE) :: FInt, FBaseInt, FHigh1Int, FHigh2Int, CRInt, CRBurnInInt, CRLateInt1, CRLateInt2
+      real(FLOATTYPE) :: Chrom(nParam), OldBestSolObjective
+      real(FLOATTYPE), allocatable, dimension(:) :: SeedInt, RanNum
 
       logical :: DiffOnly, BestSolChanged, LogPopInternal, LogStdoutInternal
 
@@ -248,7 +264,7 @@ module AlphaEvolveModule
         nInit = 1
       end if
       do Sol = nInit, nSol
-        call OldSol(Sol)%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt(1)), &
+        call OldSol(Sol)%Evaluate(Chrom=RANDOMSAMPLE(n=nParam, Accurate=.false., Stream=StreamInt(1)), &
                                   Spec=Spec, Data=Data, Stream=StreamInt(1))
       end do
 
@@ -485,10 +501,10 @@ module AlphaEvolveModule
       class(AlphaEvolveSpec), intent(in)              :: Spec          !< AlphaEvolveSpec holder
       class(AlphaEvolveData), intent(in)              :: Data          !< AlphaEvolveData holder
       integer(int32), intent(in)                      :: nParam        !< No. of parameters in a solution
-      real(real64), intent(inout), optional           :: Init(:, :)    !< Initial solutions to test
+      real(FLOATTYPE), intent(inout), optional           :: Init(:, :)    !< Initial solutions to test
       integer(int32), intent(in)                      :: nSamp         !< No. of samples to test
       integer(int32), intent(in), optional            :: nSampStop     !< Stop after no progress for nSampStop
-      real(real64), intent(in)                        :: StopTolerance !< Stopping tolerance
+      real(FLOATTYPE), intent(in)                        :: StopTolerance !< Stopping tolerance
       integer(int32), intent(in)                      :: nSampPrint    !< Print changed solution every nSampPrint
       character(len=*), intent(in), optional          :: LogFile       !< Which file to log best solution into
       logical, intent(in), optional                   :: LogStdout     !< Log to STDOUT?
@@ -499,7 +515,7 @@ module AlphaEvolveModule
       integer(int32) :: nInit, Samp, LastSampPrint, LogUnit
 
       real(real32) :: AcceptPct
-      real(real64) :: RanNum, OldBestSolObjective, BestSolObjective
+      real(FLOATTYPE) :: RanNum, OldBestSolObjective, BestSolObjective
 
       logical :: ModeAvg, ModeMax, BestSolChanged, LogStdoutInternal
 
@@ -602,7 +618,7 @@ module AlphaEvolveModule
         ! --- Evaluate a competitor and Select ---
 
         ! Merit of a competitor
-        call TestSol%Evaluate(Chrom=SampleIntelUniformD(n=nParam, Accurate=.false., Stream=StreamInt), &
+        call TestSol%Evaluate(Chrom=RANDOMSAMPLE(n=nParam, Accurate=.false., Stream=StreamInt), &
                               Spec=Spec, Data=Data, Stream=StreamInt)
 
         if      (ModeAvg) then
@@ -694,7 +710,7 @@ module AlphaEvolveModule
 
       ! Argument
       class(AlphaEvolveSol), intent(out)           :: This     !< AlphaEvolveSol holder
-      real(real64), intent(in)                     :: Chrom(:) !< A solution
+      real(FLOATTYPE), intent(in)                     :: Chrom(:) !< A solution
       class(AlphaEvolveSpec), intent(in), optional :: Spec     !< Specifications (used in future methods)
 
       ! Initialisation
@@ -742,7 +758,7 @@ module AlphaEvolveModule
       integer(int32), intent(in)           :: n    !< number of previous solutions mean was based on
 
       ! Other
-      real(real64) :: kR
+      real(FLOATTYPE) :: kR
 
       ! Updates
       kR = (dble(n) - 1.0d0) / n
@@ -764,7 +780,7 @@ module AlphaEvolveModule
 
       ! Arguments
       class(AlphaEvolveSol), intent(inout)         :: This     !< @return solution
-      real(real64), intent(in)                     :: Chrom(:) !< A solution
+      real(FLOATTYPE), intent(in)                     :: Chrom(:) !< A solution
       class(AlphaEvolveSpec), intent(in)           :: Spec     !< AlphaEvolveSpec holder
       class(AlphaEvolveData), intent(in), optional :: Data     !< AlphaEvolveData holder (optional for future methods)
       type(vsl_stream_state), intent(inout)        :: Stream   !< Intel RNG stream
