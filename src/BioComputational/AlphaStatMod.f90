@@ -671,21 +671,21 @@ module AlphaStatMod
       real(real32) :: SumW
 
       if (.not. present(w)) then
-        Res = sum(x) / size(x)
+        Res = sum(dble(x)) / size(x)
       else
         if (any(w .lt. 0.0)) then
           write(STDERR, "(a)") "ERROR: Weights must not be negative"
           write(STDERR, "(a)") " "
           stop 1
         end if
-        SumW = sum(w)
+        SumW = sum(dble(w))
         if (SumW .lt. EPSILONS) then
           write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
           write(STDERR, "(a)") " "
           stop 1
         end if
         ! https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
-        Res = sum(x * w) / SumW
+        Res = sum(dble(x * w)) / SumW
       end if
       return
     end function
@@ -826,7 +826,7 @@ module AlphaStatMod
           write(STDERR, "(a)") " "
           stop 1
         end if
-        SumW = sum(w)
+        SumW = sum(dble(w))
         if (SumW .lt. EPSILONS) then
           write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
           write(STDERR, "(a)") " "
@@ -851,7 +851,7 @@ module AlphaStatMod
           Res = Res / (SumW - 1.0)
         end if
         if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
+          Res = Res / (SumW - (sum(dble(w * w)) / SumW))
         end if
       end if
 
@@ -1529,7 +1529,7 @@ module AlphaStatMod
           write(STDERR, "(a)") " "
           stop 1
         end if
-        SumW = sum(w)
+        SumW = sum(dble(w))
         if (SumW .lt. EPSILOND) then
           write(STDERR, "(a)") "ERROR: Sum of weights is smaller than EPSILON"
           write(STDERR, "(a)") " "
@@ -1553,7 +1553,7 @@ module AlphaStatMod
           Res = Res / (SumW - 1.0)
         end if
         if (trim(wtype) .eq. "freq") then
-          Res = Res / (SumW - (sum(w * w) / SumW))
+          Res = Res / (SumW - (sum(dble(w * w)) / SumW))
         end if
       end if
 

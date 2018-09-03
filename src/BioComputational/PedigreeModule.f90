@@ -176,6 +176,7 @@ module PedigreeModule
 		procedure :: deepCheckPedigree
 		procedure :: initPedigreeFromOutputFileFolder
 		procedure :: setAnimalAsGenotypedFromPhase
+		procedure :: setIgnoreAnimals
 
 
 #ifdef MPIACTIVE
@@ -264,6 +265,32 @@ module PedigreeModule
 
 			close(unit)
 		end subroutine setSnpLengths
+
+		!---------------------------------------------------------------------------
+		!< @brief Sets animals to be ignored based on a file containing id's as first column
+		!< @author  David Wilson david.wilson@roslin.ed.ac.uk
+		!---------------------------------------------------------------------------
+		subroutine setIgnoreAnimals(this, filePath)
+			class(PedigreeHolder) :: this
+			character(len=*),intent(in) :: filePath
+			character(len=IDLENGTH) :: id
+			integer :: fileUnit,intID,f
+			
+			open(newUnit=fileUnit,file=filePath,status="unknown")
+			
+
+			 do
+				read(fileUnit,*,iostat=f) id
+				if (f /= 0) then
+					exit
+				endif
+				intID = this%dictionary%getValue(id)
+				if (intID /= DICT_NULL) then
+					this%pedigree(intID)%ignoreMe = .true.
+				endif 
+     		 end do
+
+		end subroutine setIgnoreAnimals
 
 
 		!---------------------------------------------------------------------------
@@ -778,7 +805,7 @@ module PedigreeModule
 			integer, allocatable, dimension(:) :: tmpAnimalArray
 
 			! new%pedigreeSize = this%nHd
-			call initEmptyPedigree(new,this%nsnpsPopulation, this%pedigreeSize)
+			call initEmptyPedigree(new,this%nsnpsPopulation, this%pedigreeSize*2)
 			tmpAnimalCount = 0
 			new%nhd = 0
 			new%nDummys = 0
@@ -4234,13 +4261,17 @@ module PedigreeModule
 			integer, optional :: offspringId !< offspring recoded id canbe given here
 			logical, optional :: sireIn !< if true, assign to sire location
 			character(len=IDLENGTH) :: tmpCounterStr
-
+			type(Individual), pointer, dimension(:) :: tmp
 
 			this%pedigreeSize = this%pedigreeSize+1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
-				write(error_unit,*) "ERROR: too many undefined animals"
-				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+				write(error_unit,*) "WARNING: too many undefined animals - memory usage will increase"
+				this%maxPedigreeSize = this%maxPedigreeSize*2
+				allocate(tmp(this%maxPedigreeSize))
+				tmp(1:this%pedigreeSize-1) = this%pedigree(1:this%pedigreeSize-1)
+				deallocate(this%pedigree) 
+				this%pedigree => tmp
 
 			endif
 
@@ -4304,6 +4335,7 @@ module PedigreeModule
 			character(len=*) ,intent(in):: OriginalId
 			integer(kind=1), dimension(:), intent(in), optional :: geno
 			integer, intent(in), optional :: offspringId
+			type(Individual), pointer, dimension(:) :: tmp
 			! change pedigree to no longer be sorted
 
 			this%issorted = 0
@@ -4312,8 +4344,12 @@ module PedigreeModule
 			this%addedRealAnimals = this%addedRealAnimals + 1
 
 			if (this%pedigreeSize > this%maxPedigreeSize) then
-				write(error_unit,*) "ERROR: too many undefined animals"
-				call TRACEBACKQQ(string= "ERROR: too many undefined animals",user_exit_code=1)
+				write(error_unit,*) "WARNING: too many undefined animals - memory usage will increase"
+				this%maxPedigreeSize = this%maxPedigreeSize*2
+				allocate(tmp(this%maxPedigreeSize))
+				tmp(1:this%pedigreeSize-1) = this%pedigree(1:this%pedigreeSize-1) 
+				deallocate(this%pedigree)
+				this%pedigree => tmp
 
 			endif
 			call this%Pedigree(this%pedigreeSize)%initIndividual(OriginalId ,'0','0', this%pedigreeSize,nsnps=this%nsnpsPopulation)

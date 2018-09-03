@@ -48,10 +48,13 @@ endif()
 
 if (ALPHAHOUSEEXE)
     ADD_EXECUTABLE(${ALPHAHOUSEEXE} ${ALPHAHOUSE_src})
-    
+    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_CORE_LIB})
+    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_THREAD_LIB})
+    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_ILP_LIB})
+    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_LAPACK_LIB})
 
     if (USE_NETCDF)
-         
+
     target_link_libraries (${ALPHAHOUSEEXE} ${NETCDF_LIBRARIES})
 
     endif()

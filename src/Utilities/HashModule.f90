@@ -195,8 +195,8 @@ module HashModule
 		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!> @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine dict_create(dict,size)
-			class(DictStructure)  :: dict !< Dictionary Object
+		pure subroutine dict_create(dict,size)
+			class(DictStructure),intent(inout)  :: dict !< Dictionary Object
 			integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 			integer(kind=int64) :: i
 
@@ -219,8 +219,8 @@ module HashModule
 		!> @author  David Wilson david.wilson@roslin.ed.ac.uk
 		!> @date    October 26, 2016
 		!---------------------------------------------------------------------------
-		subroutine dict_create_val(dict,key, value, size )
-			class(DictStructure)  :: dict !< Dictionary Object
+		pure subroutine dict_create_val(dict,key, value, size )
+			class(DictStructure),intent(inout)  :: dict !< Dictionary Object
 			character(len=*), intent(in) ::  key !< key for value in dictionary
 			integer(kind=int64),intent(in), optional :: size !< size of underlying array datastructure
 			integer, intent(in)  :: value !< value to be stored in dictionary

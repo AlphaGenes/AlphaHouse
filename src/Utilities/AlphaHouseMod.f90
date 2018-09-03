@@ -68,12 +68,12 @@ module AlphaHouseMod
 	public :: Append, CountLines, int2Char, Real2Char, RandomOrder, ToLower, FindLoc, Match
 	public :: removeWhitespace, parseToFirstWhitespace, splitLineIntoTwoParts
 	public :: checkFileExists, char2Int, char2Real, char2Double, Log2Char
-	public :: isDelim, PrintElapsedTime, intToChar, SetSeed
+	public :: isDelim, PrintCpuTime, PrintElapsedTime, PrintDateTime, intToChar, GetSeed, SetSeed
 	public :: Char2Int1Array,Char2Int32Array,Char2Int64Array
 	public :: generatePairing, unPair
 	public :: CountLinesWithBlankLines
 	public :: countColumns, getColumnNumbers
-	public :: getExecutablePath, header, PrintVersion,printTitles
+	public :: getExecutablePath, header, PrintVersion, printTitles
 	!> @brief List of characters for case conversion in ToLower
 	CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
 	CHARACTER(*),PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -105,7 +105,7 @@ module AlphaHouseMod
 	end interface
 
 	interface Append
-		module procedure AppendReal64, AppendChar
+		module procedure AppendReal32, AppendReal64, AppendChar
 	end interface
 
 	interface countColumns
@@ -1187,8 +1187,8 @@ module AlphaHouseMod
 		!> @details Standard Fortran seed approach
 		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
 		!> @date    September 26, 2016
-		!> @return  Set seed, potentially created file (SeedFile), and potentially
-		!!          returned seed value (Out)
+		!> @return  Set seed, potentially create file (SeedFile), and potentially
+		!!          return seed value (Out)
 		!---------------------------------------------------------------------------
 		subroutine SetSeed(Seed,SeedFile,Out)
 			implicit none
@@ -1199,22 +1199,24 @@ module AlphaHouseMod
 			integer(int32),intent(out),optional   :: Out      !< Make the seed value available outside
 
 			! Other
-			integer(int32) :: Size,Unit
+			integer(int32) :: i,Size,SeedInt,Unit
 			integer(int32),allocatable :: SeedList(:)
 
-			! Get the size of seed array
-			call random_seed(size=Size)
+			call random_seed            ! Initialise to system value
+			call random_seed(size=Size) ! Get the size of seed array
 			allocate(SeedList(Size))
 
-			! Set seed
-			if (present(Seed)) then ! using the given value
-				SeedList(1)=Seed
-				SeedList(2:Size)=1
-				call random_seed(put=SeedList)
-			else                    ! using system/compiler value
-				call random_seed
+			if (.not. present(Seed)) then ! get system value
 				call random_seed(get=SeedList)
+				SeedInt = SeedList(1)
+			else
+				SeedInt=Seed                ! given value
 			end if
+			! note that the compiler might use more than one seed value, so we control this here for reproducibility
+			do i=1,Size
+				SeedList(i)=SeedInt+(i-1)
+			end do
+			call random_seed(put=SeedList)
 
 			! Save to a file
 			if (present(SeedFile)) then
@@ -1233,15 +1235,47 @@ module AlphaHouseMod
 		!###########################################################################
 
 		!---------------------------------------------------------------------------
-		!> @brief   Print elapsed time in a nice way
+		!> @brief   Get seed value
+		!> @details Standard Fortran approach to get seed
 		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-		!> @date    December 22, 2016
-		!> @return  Print on standard output
+		!> @date    July 13, 2018
+		!> @return  Current seed value
 		!---------------------------------------------------------------------------
-		subroutine PrintElapsedTime(Start, End)
+		subroutine GetSeed(Out)
+			implicit none
+
+			! Arguments
+			integer(int32),intent(out)   :: Out !< The seed value
+
+			! Other
+			integer(int32) :: Size
+			integer(int32),allocatable :: SeedList(:)
+
+			! Get the size of seed array
+			call random_seed(size=Size)
+			allocate(SeedList(Size))
+			! Get the seed value(s)
+			call random_seed(get=SeedList)
+			Out = SeedList(1) ! note that the compiler might use more than one seed value
+		end subroutine
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief  Print CPU time in a nice way
+		!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date   December 22, 2016
+		!> @return Print on standard output
+		!> @detail Usage:
+		!!         call cpu_time(StartTime)
+		!!         ...
+		!!         call cpu_time(EndTime)
+		!!         call PrintCpuTime(Start=StartIme, End=EndTime)
+		!---------------------------------------------------------------------------
+		subroutine PrintCpuTime(Start, End)
 			implicit none
 			real(real32) :: Start !< Start time from cpu_time()
-			real(real32) :: End   !< End time from cpu_time()
+			real(real32) :: End   !< End   time from cpu_time()
 
 			real(real32) :: Total
 			integer(int32) :: Hours, Minutes, Seconds
@@ -1257,14 +1291,102 @@ module AlphaHouseMod
 			Hours = int(Minutes / 60)
 			Minutes = Minutes - (Hours * 60)
 
-			write(STDOUT, "(a)") ""
-			write(STDOUT, "(a)") " Process ended"
-			write(STDOUT, "(a,f20.2,a,3(i4,a))") " Time elapsed: ", Total, " seconds => ",&
-			Hours,   " hours ",&
-			Minutes, " minutes ",&
-			Seconds, " seconds"
-			write(STDOUT, "(a)") ""
+			write(STDOUT, "(a,f20.2,a,3(i4,a))") " CPU     time: ", Total, " seconds => ",&
+				Hours,   " hours ",&
+				Minutes, " minutes ",&
+				Seconds, " seconds"
 		end subroutine
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief   Print elapsed time in a nice way
+		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date    July 12, 2018
+		!> @return  Print on standard output
+		!> @detail Usage:
+		!!         call system_clock(count_rate=CountRate, count_max=CountMax)
+		!!         call system_clock(count=StartCount)
+		!!         ...
+		!!         call system_clock(count=EndCount)
+		!!         call PrintElapsedTime(Start=StartCount, End=EndCount, Rate=CountRate, Max=CountMax)
+		!---------------------------------------------------------------------------
+		subroutine PrintElapsedTime(Start, End, Rate, Max)
+			implicit none
+			integer(int32) :: Start !< Start value of the clock tick counter from system_clock()
+			integer(int32) :: End   !< End   value of the clock tick counter from system_clock()
+			integer(int32) :: Rate  !< Rate of clock ticks per second
+			integer(int32) :: Max   !< Maximum value of clock counter
+
+			real(real32) :: Total
+			integer(int32) :: Hours, Minutes, Seconds
+
+			Total = 0.0
+			Hours = 0
+			Minutes = 0
+			Seconds = 0
+
+			Total = real(End - Start)
+			if (End .lt. Start) then
+				Total = Total + real(Max) ! @todo what if we go around more than once?
+			end if
+			Total = Total / Rate
+			Minutes = int(Total / 60)
+			Seconds = int(Total - (Minutes * 60))
+			Hours = int(Minutes / 60)
+			Minutes = Minutes - (Hours * 60)
+
+			write(STDOUT, "(a,f20.2,a,3(i4,a))") " Elapsed time: ", Total, " seconds => ",&
+				Hours,   " hours ",&
+				Minutes, " minutes ",&
+				Seconds, " seconds"
+		end subroutine
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief   Print date time in a nice way (yyyy-mm-dd hh:mm:ss)
+		!> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date    July 12, 2018
+		!> @return  Print on standard output
+		!---------------------------------------------------------------------------
+    subroutine PrintDateTime
+      implicit none
+      character(len=8) date
+      character(len=10) time
+      character(len=5) zone
+      integer(int32) values(8)
+      character(len=4) y
+      character(len=2) m, d, h, n, s
+      call date_and_time(date, time, zone, values)
+      y = Int2Char(values(1))
+      if (values(2) .lt. 10) then
+        m = "0"//trim(Int2Char(values(2)))
+      else
+        m = Int2Char(values(2))
+      end if
+      if (values(3) .lt. 10) then
+        d = "0"//trim(Int2Char(values(3)))
+      else
+        d = Int2Char(values(3))
+      end if
+      if (values(5) .lt. 10) then
+        h = "0"//trim(Int2Char(values(5)))
+      else
+        h = Int2Char(values(5))
+      end if
+      if (values(6) .lt. 10) then
+        n = "0"//trim(Int2Char(values(6)))
+      else
+        n = Int2Char(values(6))
+      end if
+      if (values(7) .lt. 10) then
+        s = "0"//trim(Int2Char(values(7)))
+      else
+        s = Int2Char(values(7))
+      end if
+      write(STDOUT, "(a)") " "//trim(y)//"-"//trim(m)//"-"//trim(d)//" "//trim(h)//":"//trim(n)//":"//trim(s)
+    end subroutine
 
 		!###########################################################################
 
@@ -1330,6 +1452,35 @@ module AlphaHouseMod
 				yout = y
 			endif
 		end subroutine unPair
+
+		!###########################################################################
+
+		!---------------------------------------------------------------------------
+		!> @brief  Append value y at the end of a vector x - real32
+		!> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+		!> @date   July 14, 2018
+		!---------------------------------------------------------------------------
+		pure subroutine AppendReal32(x, y)
+			implicit none
+			real(real32), intent(inout), allocatable :: x(:) !< @return Appended vector
+			real(real32), intent(in)                 :: y    !< Value
+			integer(int32) :: n
+			real(real32), allocatable :: Tmp(:)
+			if (allocated(x)) then
+				n = size(x)
+				allocate(Tmp(n))
+				Tmp = x
+				deallocate(x)
+				allocate(x(n + 1))
+				x(1:n) = Tmp
+				n = n + 1
+				x(n) = y
+			else
+				n = 1
+				allocate(x(n))
+				x(n) = y
+			end if
+		end subroutine
 
 		!###########################################################################
 

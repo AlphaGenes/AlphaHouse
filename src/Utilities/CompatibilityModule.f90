@@ -96,22 +96,29 @@ end type plinkInfoType
 contains
 
 
-function createBimInfoFromGenotypes(genotypes) result(bimOut)
+function createBimInfoFromGenotypes(genotypes,startPositionIn) result(bimOut)
 	type(bimHolder),allocatable, dimension(:) :: bimOut
 	integer(kind=1), dimension(:,:) :: genotypes
-	integer :: nsnps,i,nanimals
+	integer, optional, intent(in) :: startPositionIn
+	integer :: nsnps,i,nanimals,startPosition
 	character(len=16) :: snpNumber 
+
+	startPosition = 1
+
+	if (present(startPositionIn)) then
+		startPosition = startPositionIn
+	endif
 
 	nsnps = size(genotypes,2)
 	nanimals = size(genotypes,1)
 	allocate(bimOut(nsnps))
 	
 	do i=1,nsnps
-		write (snpNumber, '(a,I13.13)') "SNP",i
+		write (snpNumber, '(a,I13.13)') "SNP",i + (startPosition - 1)
 		bimOut(i)%id = snpNumber
 		bimOut(i)%chrom = "1"
 		bimOut(i)%pos = 0
-		bimOut(i)%chromPos = 1
+		bimOut(i)%chromPos = i + (startPosition - 1)
 		bimOut(i)%ref = "1"
 		bimOut(i)%alt = "2"
 	enddo
@@ -1180,7 +1187,7 @@ subroutine writeBimFile(bimFile, bimInfo)
 	open(newUnit=unit, file=bimFile, status="REPLACE")
 
 	do i =1, size(bimInfo)
-		write(unit, '(a2,a10,I6,I6,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
+		write(unit, '(a2,a20,I10,I10,a1,a2,a2)') bimInfo(i)%chrom, bimInfo(i)%id,bimInfo(i)%chrompos, bimInfo(i)%pos ," ",bimInfo(i)%ref, bimInfo(i)%alt
 	end do
 
 	close (unit)
@@ -1188,16 +1195,23 @@ subroutine writeBimFile(bimFile, bimInfo)
 end subroutine writeBimFile
 
 
-subroutine writeOutPlinkBinary(ped,path,bimInfo)
+subroutine writeOutPlinkBinary(ped,path,bimInfo, startPosIn)
 
 	type(PedigreeHolder) :: ped
 	character(len=*), intent(in) :: path !< file prepend (before the .)
 	type(bimHolder),dimension(:), allocatable, optional  :: bimInfo
+	integer, optional :: startPosIn
+	integer :: startPos
 
+	if (present(startPosIn)) then
+		startPos = startPosIn
+	else
+		startPos = 0
+	endif
 	if (present(bimInfo)) then
 		call writeBimFile(trim(path)//".bim", bimInfo)
 	else
-		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing()))
+		call writeBimFile(trim(path)//".bim", createBimInfoFromGenotypes(ped%getGenotypesAsArrayWitHMissing(),startPos))
 	endif 
 
 	call writeFamFile(ped,trim(path)//".fam")
