@@ -309,7 +309,7 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 			! write(refAlleleUnit, '(1i5,a5)') p, referenceAllelePerSnps(p)
 			if (maskedLogi(p)) then
 				count = count +1
-				write(refAlleleUnit, '(2i5,a5)') count,p, plinkInfo%referenceAllelePerSnps(p)
+				write(refAlleleUnit, '(2i5,a2)', iostat=result) count,p, plinkInfo%referenceAllelePerSnps(p)
 			endif
 		enddo
 		close(refAlleleUnit)
@@ -755,7 +755,6 @@ subroutine readPedFile(filename,ped, plinkInfo)
 	write(*,*) "Start Reading Ped File, number of ans:",size
 	do i=1,size
 		read(fileUnit,*) familyID(i),pedArray(1,i),pedArray(2,i),pedArray(3,i),genderArray(i),phenotypeArray(i), alleles(i,:)
-		print *, "finished formatting for animal:",i
 	enddo
 
 	close(fileUnit)
