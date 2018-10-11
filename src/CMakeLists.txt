@@ -1,4 +1,4 @@
-
+# Sets source files that are going to be compiled
 SET(ALPHAHOUSE_src
     Utilities/ConstantModule.f90
     Utilities/AlphaHouseMod.f90
@@ -48,16 +48,18 @@ endif()
 
 if (ALPHAHOUSEEXE)
     ADD_EXECUTABLE(${ALPHAHOUSEEXE} ${ALPHAHOUSE_src})
-    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_CORE_LIB})
-    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_THREAD_LIB})
-    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_ILP_LIB})
-    target_link_libraries(${ALPHAHOUSEEXE} ${MKL_LAPACK_LIB})
 
+    # link to the mkl libs
+    
+    TARGET_LINK_LIBRARIES(${ALPHAHOUSEEXE} ${MKL_MIX})
+
+    # link to netcdf if we need
     if (USE_NETCDF)
 
     target_link_libraries (${ALPHAHOUSEEXE} ${NETCDF_LIBRARIES})
 
     endif()
 else()
+# if we don't actually want to build an executable, just add library statically
 	ADD_LIBRARY(${AHLIB} STATIC ${ALPHAHOUSE_src})
 endif()

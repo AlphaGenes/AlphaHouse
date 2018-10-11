@@ -23,15 +23,25 @@ MESSAGE("Prog name ${ALPHAHOUSEEXE}")
 
 
 # Define some directories
+
+# source files
 SET(SRC ${CMAKE_SOURCE_DIR}/src)
+
+# where to put objects
 SET(OBJ ${CMAKE_SOURCE_DIR}/objs)
+
+# where to put binary outputs
 SET(BIN ${CMAKE_SOURCE_DIR}/bin)
+
+# where tests are  
 SET(TESTS ${CMAKE_SOURCE_DIR}/tests)
+
+# sets src of alpahouse, which in this case is just this directory
 SET(SRCALPHAHOUSE ${SRC}/)
 
+# Finds documentations
 INCLUDE(${CMAKE_MODULE_PATH}/findDoxygen.cmake)
 
-# Defined libary source
 
 # Uncomment if it is required that Fortran 90 is supported
 IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
@@ -43,9 +53,10 @@ ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 OPTION(USE_MPI "Use the MPI library for parallelization" OFF)
 OPTION(USE_OPENMP "Use OpenMP for parallelization" ON)
 OPTION(USE_NETCDF "Use NETCDF for IO" OFF)
+
 # Files below are fortran files that tests link to
 if (${RUN_TESTS})
-  # file(GLOB testDeps "${SRC}/*.f90")
+  
   SET(testDeps
     ${SRC}/Utilities/AlphaSortMod.f90
       ${SRC}/Utilities/ConstantModule.f90
@@ -71,23 +82,27 @@ if (${RUN_TESTS})
       ${SRC}/BioComputational/HaplotypeModule.f90
       ${SRC}/BioComputational/GenotypeModule.f90
 )
+
+# if we are going to useMPI, why better find it 
   if (${USE_MPI}) 
     SET(testDeps ${SRC}/Utilities/MPIUtilities.f90 ${testDeps})
   endif (${USE_MPI})
 
 endif (${RUN_TESTS})
 
+
+# set openMP up
 INCLUDE(${CMAKE_MODULE_PATH}/SetParallelizationLibrary.cmake)
 
+# find intels MKL
 INCLUDE(${CMAKE_MODULE_PATH}/findMKL.cmake)
-# Setup the LAPACK libraries.  This also takes care of peculiarities, such as
-# the fact the searching for MKL requires a C compiler, and that the results
-# are not stored in the cache.
-#INCLUDE(${CMAKE_MODULE_PATH}/SetUpLAPACK.cmake)
+
+# finds the HDF5Libraries
 if (${USE_HDF5})
 	INCLUDE(${CMAKE_MODULE_PATH}/findHDF5.cmake)
 endif(${USE_HDF5})
 
+# If we are using NetCDF, find these 
 if (${USE_NETCDF})
 message("Using netcdf")
   set (NETCDF_F90 "YES")
@@ -105,14 +120,15 @@ INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${OBJ})
 
 
-# TODO add tests to correct location
 ADD_SUBDIRECTORY(${SRCALPHAHOUSE} ${BIN})
 
 # Add a distclean target to the Makefile
+# This allows the programmer to type `make distclean` and clean up the directory
 ADD_CUSTOM_TARGET(distclean
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_MODULE_PATH}/distclean.cmake
 )
 
+# sets what test files there are
 set(TESTFILES
   ${TESTS}/testAlphaSort.pf
     ${TESTS}/TestAlphaStatMod.pf
@@ -133,6 +149,8 @@ set(TESTFILES
 )
 
 # file(GLOB TESTFILES ${TESTS}/*.pf)
+
+# if we are running tests - find pfunit
 if (${RUN_TESTS})
 	INCLUDE(${CMAKE_MODULE_PATH}/findPFUnit.cmake)
 endif(${RUN_TESTS})
