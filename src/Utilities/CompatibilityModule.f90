@@ -309,7 +309,7 @@ subroutine createOutputFiles(ped, outputPaths,plinkInfo, useChroms)
 			! write(refAlleleUnit, '(1i5,a5)') p, referenceAllelePerSnps(p)
 			if (maskedLogi(p)) then
 				count = count +1
-				write(refAlleleUnit, '(2i5,a5)') count,p, plinkInfo%referenceAllelePerSnps(p)
+				write(refAlleleUnit, '(2i5,a2)', iostat=result) count,p, plinkInfo%referenceAllelePerSnps(p)
 			endif
 		enddo
 		close(refAlleleUnit)
@@ -752,15 +752,15 @@ subroutine readPedFile(filename,ped, plinkInfo)
 		codes = (/ 2, 1, 0, MISSINGGENOTYPECODE /)
 		phaseCodes = (/ 1, 1, 0, MISSINGPHASECODE /)
 	endif
-	write(*,*) "Start Reading Ped File"
+	write(*,*) "Start Reading Ped File, number of ans:",size
 	do i=1,size
-		read(fileUnit,*) familyID(i),pedArray(1,i),pedArray(2,i),pedArray(3,i),gender,phenotype, alleles(i,:)
-
-		read(gender,*,iostat=stat)  genderArray(i)
-		read(phenotype,*,iostat=stat)  phenotypeArray(i)
+		read(fileUnit,*) familyID(i),pedArray(1,i),pedArray(2,i),pedArray(3,i),genderArray(i),phenotypeArray(i), alleles(i,:)
 	enddo
 
 	close(fileUnit)
+
+
+	write(*,*) "Finished reading - now processing"
 
 	! check if reference alleles have been passed in
 	if (.not. allocated(plinkInfo%referenceAllelePerSnps)) then

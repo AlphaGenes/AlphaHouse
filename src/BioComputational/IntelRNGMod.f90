@@ -7,10 +7,10 @@ include "mkl_vsl.f90"
 ! The Roslin Institute, The University of Edinburgh - AlphaGenes Group
 !-------------------------------------------------------------------------------
 !
-!> @file     IntelRNGMod.f90
+!> @file     IntelRngMod.f90
 !
 ! DESCRIPTION:
-!> @brief    Conventient interfaces to Intel MKL Vector Statistical Library (VSL) RNG capabilities
+!> @brief    Conventient interfaces to Intel MKL Vector Statistical Library (VSL) Random Number Generators
 !
 !> @details  See https://software.intel.com/en-us/node/470592 (2014-11-25)
 !
@@ -24,32 +24,31 @@ include "mkl_vsl.f90"
 ! 2016-09-26 GGorjanc - Initial Version
 !
 !-------------------------------------------------------------------------------
-module IntelRNGMod
+module IntelRngMod
 
-  use mkl_vsl_type
-  use mkl_vsl
-  use ISO_Fortran_Env, STDIN=>input_unit,STDOUT=>output_unit,STDERR=>error_unit
+  use Mkl_Vsl_Type
+  use Mkl_Vsl
+  use Iso_Fortran_Env, STDERR=>error_unit
   use AlphaHouseMod, only : GetSeed
 
   implicit none
 
-  integer(int32) RNGErrCode,RNGMethod
-
-  type(vsl_stream_state) :: RNGStream
+  type(vsl_stream_state) :: ModuleStream
 
   private
 
-  ! RNG stream management
-  public :: IntitialiseIntelRNG,IntitialiseIntelRNGStream,UnintitialiseIntelRNG,UnintitialiseIntelRNGStream
+  ! Rng stream management
+  public :: IntitialiseIntelRng,UnintitialiseIntelRng
 
   ! Discrete
+  public :: RandomOrderIntel
+  public :: RandomSample
   public :: getIntelUniformI
   public :: SampleIntelUniformI
+  public :: SingleSampleIntelUniformI ! a scalar version
   public :: SampleIntelBernoulliI
   public :: SampleIntelMultinomialI
   public :: SampleIntelPoissonI
-
-  public :: RandomSample
 
   ! Continuous
   !>@todo: should we make an interface and have generic for either single or double precision
@@ -60,15 +59,183 @@ module IntelRNGMod
   public :: SampleIntelGammaS,SampleIntelGammaD
   public :: SampleIntelGumbelS,SampleIntelGumbelD
 
-  ! Return a single sample ratger than an array
-  public :: SingleSampleIntelUniformI
-
   contains
 
     !###########################################################################
 
     !---------------------------------------------------------------------------
-    !> @brief   Subroutine that returns an  increasing set of random numbers up until a maximum
+    !> @brief   Start an Intel RNG stream
+    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
+    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !> @return  Started RNG stream, potentially created file
+    !!          (SeedFile), and potentially returned seed value (Out)
+    !---------------------------------------------------------------------------
+    subroutine IntitialiseIntelRng(Seed,SeedFile,Brng,Out,Stream)
+      implicit none
+
+      ! Arguments
+      integer(int32),intent(in),optional            :: Seed     !< A number to initialize RNG with
+      character(len=*),intent(in),optional          :: SeedFile !< File to save the seed in
+      integer(int32),intent(in),optional            :: Brng     !< Type of RNG, default is VSL_BRNG_MT19937, use VSL_BRNG_MT2203 for parallel applications
+      integer(int32),intent(out),optional           :: Out      !< Make the seed value available outside
+      type(vsl_stream_state),intent(inout),optional :: Stream   !< Intel RNG stream, default is to use the module stream
+
+      ! Other
+      integer(int32) :: SeedInt,Unit,BrngInt,RngErrCode
+
+      if (present(Seed)) then
+        SeedInt=Seed
+      else
+        call GetSeed(Out=SeedInt)
+      end if
+
+      ! Save to a file
+      if (present(SeedFile)) then
+        open(newunit=Unit,file=trim(SeedFile),status="unknown")
+        write(Unit,*) SeedInt
+        close(Unit)
+      end if
+
+      ! Output
+      if (present(Out)) then
+        Out=SeedInt
+      end if
+
+      ! Start an RNG stream
+      if (present(Brng)) then
+        BrngInt=Brng
+      else
+        BrngInt=VSL_BRNG_MT19937
+      end if
+
+      if (present(Stream)) then
+        RngErrCode=vslnewstream(Stream,BrngInt,SeedInt)
+      else
+        RngErrCode=vslnewstream(ModuleStream,BrngInt,SeedInt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
+        write(STDERR,"(a)") "ERROR: IntitialiseIntelRng failed"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+    end subroutine
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   End an Intel RNG stream
+    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
+    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
+    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date    September 26, 2016
+    !---------------------------------------------------------------------------
+    subroutine UnintitialiseIntelRng(Stream)
+      implicit none
+
+      ! Arguments
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+
+      ! Other
+      integer(int32) :: RngErrCode
+
+      if (present(Stream)) then
+        RngErrCode=vsldeletestream(Stream)
+      else
+        RngErrCode=vsldeletestream(ModuleStream)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
+        write(STDERR,"(a)") "ERROR: UnintitialiseIntelRng failed"
+        write(STDERR,"(a)") " "
+        stop 1
+      end if
+
+    end subroutine
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief  Generate a random ordering of the integers 1, 2, ..., n
+    !> @author Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+    !> @date   August 2, 2018
+    !---------------------------------------------------------------------------
+    function RandomOrderIntel(n,Stream) result(Order)
+      implicit none
+
+      ! Arguments
+      integer(int32),intent(in)                     :: n        !< number of values to shuffle
+      type(vsl_stream_state),intent(inout),optional :: Stream   !< Intel RNG stream, default is to use the module stream
+      integer(int32)                                :: Order(n) !< @return randomly ordered integers
+
+      ! Other
+      integer(int32) :: i,j,k
+
+      real(real64) :: wk(n)
+
+      do i=1,n
+        Order(i)=i
+      end do
+
+      ! Starting at the end, swap the current last indicator with one
+      ! randomly chosen from those preceeding it.
+      ! call random_number(wk)
+      wk = SampleIntelUniformI(n=n,Stream=Stream)
+      do i=n,2,-1
+        j=1 + i * wk(i)
+        if (j < i) then
+          k=Order(i)
+          Order(i)=Order(j)
+          Order(j)=k
+        end if
+      end do
+
+      return
+    end function
+
+    !###########################################################################
+
+    ! We should rename this function to RandomSampleIntel() to indicate that
+    ! one has to use Intel RNG stream system! Gregor
+    !---------------------------------------------------------------------------
+    !> @brief   ???
+    !> @author  ???
+    !> @date    ???
+    !> @return  ???
+    !---------------------------------------------------------------------------
+    function RandomSample(list,num) result(res)
+      implicit none
+
+      integer, dimension(:), intent(in) :: list
+      integer, intent(in) :: num
+
+      integer, dimension(num) :: res
+
+      integer, dimension(size(list)) :: tmpA
+      integer, dimension(:), allocatable :: r
+      integer :: tmp, pos, i
+
+      tmpA = list
+
+      ! @todo speed-up this code by sampling all the num random deviates at once
+      !       see how RandomOrderIntel() does it
+      do i = 1, num
+        r = SampleIntelUniformI(1,0,size(list) - i)
+        pos = size(list) - r(1)
+        tmp = tmpA(i)
+        tmpA(i) = tmpA(pos)
+        tmpA(pos) = tmp
+      end do
+
+      res = tmpA(1:num)
+    end function
+
+    !###########################################################################
+
+    !---------------------------------------------------------------------------
+    !> @brief   Subroutine that returns an increasing set of random numbers up until a maximum
     !> @author  David Wilson, david.wilson@roslin.ed.ac.uk
     !> @date    October 21, 2016
     !> @return  array of increasing random numbers
@@ -81,164 +248,15 @@ module IntelRNGMod
       real(kind=int64) :: res(1)
       allocate(randomNumbers(amount))
       delta = maxIndex / real(amount);
-      call IntitialiseIntelRNG()
+      call IntitialiseIntelRng
       tmp = real(maxIndex)
-    do i=1, amount
-      res = SampleIntelUniformD(b=tmp)
+      do i=1, amount
+        res = SampleIntelUniformD(b=tmp)
         randomNumbers(i) = int(i*delta + res(1) * delta);
-    enddo
-
-    call UnintitialiseIntelRNG()
+      enddo
+      call UnintitialiseIntelRng
     end subroutine generateIncreasingRandom
-    !###########################################################################
 
-    !---------------------------------------------------------------------------
-    !> @brief   Start an Intel RNG stream (including the seed)
-    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
-    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
-    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-    !> @date    September 26, 2016
-    !> @return  Started RNG stream in object RNGStream, potentially created file
-    !!          (SeedFile), and potentially returned seed value (Out)
-    !---------------------------------------------------------------------------
-    subroutine IntitialiseIntelRNG(Seed,SeedFile,Out)
-      implicit none
-
-      ! Arguments
-      integer(int32),intent(in),optional  :: Seed     !< A number to initialize RNG with
-      character(len=*),optional           :: SeedFile !< File to save the seed in
-      integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
-
-      ! Other
-      integer(int32) :: SeedInt,Unit,BRNG
-
-      if (present(Seed)) then
-        SeedInt=Seed
-      else
-        call GetSeed(Out=SeedInt)
-      end if
-
-      ! Save to a file
-      if (present(SeedFile)) then
-        open(newunit=Unit,file=trim(SeedFile),status="unknown")
-        write(Unit,*) SeedInt
-        close(Unit)
-      end if
-
-      ! Output
-      if (present(Out)) then
-        Out=SeedInt
-      end if
-
-      ! Start a RNG stream
-      BRNG=VSL_BRNG_MT19937
-      RNGErrCode=vslnewstream(RNGStream,BRNG,SeedInt)
-      if (RNGErrCode /= VSL_STATUS_OK) then
-        write(STDERR,"(a)") "ERROR: IntitialiseIntelRNG failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-    end subroutine
-
-
-    subroutine IntitialiseIntelRNGStream(Stream, Seed,SeedFile,Out)
-      implicit none
-
-      ! Arguments
-      type(vsl_stream_state), intent(out) :: Stream
-      integer(int32),intent(in),optional  :: Seed     !< A number to initialize RNG with
-      character(len=*),optional           :: SeedFile !< File to save the seed in
-      integer(int32),intent(out),optional :: Out      !< Make the seed value available outside
-
-      ! Other
-      integer(int32) :: SeedInt,Unit,BRNG
-
-      if (present(Seed)) then
-        SeedInt=Seed
-      else
-        call GetSeed(Out=SeedInt)
-      end if
-
-      ! Save to a file
-      if (present(SeedFile)) then
-        open(newunit=Unit,file=trim(SeedFile),status="unknown")
-        write(Unit,*) SeedInt
-        close(Unit)
-      end if
-
-      ! Output
-      if (present(Out)) then
-        Out=SeedInt
-      end if
-
-      ! Start a RNG stream
-      BRNG=VSL_BRNG_MT19937
-      RNGErrCode=vslnewstream(Stream,BRNG,SeedInt)
-      if (RNGErrCode /= VSL_STATUS_OK) then
-        write(STDERR,"(a)") "ERROR: IntitialiseIntelRNG failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-    end subroutine
-    !###########################################################################
-
-    !---------------------------------------------------------------------------
-    !> @brief   End an Intel RNG stream
-    !> @details See https://software.intel.com/en-us/node/470610 (2014-11-25)
-    !!          and https://software.intel.com/en-us/node/470612 (2014-11-25)
-    !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
-    !> @date    September 26, 2016
-    !---------------------------------------------------------------------------
-    subroutine UnintitialiseIntelRNG
-      implicit none
-
-      RNGErrCode=vsldeletestream(RNGStream)
-      if (RNGErrCode /= vsl_status_ok) then
-        write(STDERR,"(a)") "ERROR: UnintitialiseIntelRNG failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-    end subroutine
-
-
-  
-  subroutine UnintitialiseIntelRNGStream(stream)
-    type(vsl_stream_state), intent(out) :: Stream
-      
-
-      RNGErrCode=vsldeletestream(Stream)
-      if (RNGErrCode /= vsl_status_ok) then
-        write(STDERR,"(a)") "ERROR: UnintitialiseIntelRNG failed"
-        write(STDERR,"(a)") " "
-        stop 1
-      end if
-    end subroutine
-
-
-    integer function getIntelUniformI()
-
-    integer,allocatable :: sample(:)
-
-
-    allocate(sample(1))
-    sample = SampleIntelUniformI()
-
-    getIntelUniformI = sample(1)
-
-    end function
-
-
-    function getIntelUniformD() result(res)
-
-    real(real64),allocatable :: sample(:)
-    real(real64) :: res
-
-    allocate(sample(1))
-    sample = SampleIntelUniformD()
-
-    res = sample(1)
-
-    end function
     !###########################################################################
 
     !---------------------------------------------------------------------------
@@ -247,18 +265,18 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelUniformI(n,a,b,stream) result(Res)
+    function SampleIntelUniformI(n,a,b,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      integer(int32),intent(in),optional :: a      !< minimal value (inclusive) (default 0)
-      integer(int32),intent(in),optional :: b      !< maximal value (inclusive) (default 1)
-      type(vsl_stream_state), intent(in),optional :: Stream
-      integer(int32),allocatable         :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      integer(int32),intent(in),optional            :: a      !< minimal value (inclusive) (default 0)
+      integer(int32),intent(in),optional            :: b      !< maximal value (inclusive) (default 1)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      integer(int32),allocatable                    :: Res(:) !< @return samples
 
       ! Other
-      integer(int32) :: nOpt,aOpt,bOpt
+      integer(int32) :: nOpt,aOpt,bOpt,RngMethod,RngErrCode
 
       if (present(n)) then
         nOpt=n
@@ -280,19 +298,54 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_UNIFORM_STD
-      if (present(stream)) then
-      RNGErrCode=virnguniform(RNGMethod,Stream,nOpt,Res,aOpt,bOpt+1)
-      else 
-        RNGErrCode=virnguniform(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt+1)
+      RngMethod=VSL_RNG_METHOD_UNIFORM_STD
+
+      if (present(Stream)) then
+        RngErrCode=virnguniform(RngMethod,Stream,nOpt,Res,aOpt,bOpt+1)
+      else
+        RngErrCode=virnguniform(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt+1)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelUniformI failed"
         write(STDERR,"(a)") " "
         stop 1
       end if
 
       return
+    end function
+
+    ! A scalar version
+    function SingleSampleIntelUniformI(a,b) result(res)
+      integer, optional :: a, b
+      integer(int32) :: res
+
+      integer(int32), dimension(:), allocatable :: resA
+
+      if (present(a)) then
+        if (present(b)) then
+          resA = SampleIntelUniformI(1,a,b)
+        else
+          resA = SampleIntelUniformI(1,a)
+        end if
+      else
+        if (present(b)) then
+          resA = SampleIntelUniformI(1,b=b)
+        else
+          resA = SampleIntelUniformI(1)
+        end if
+      end if
+      res = resA(1)
+    end function SingleSampleIntelUniformI
+
+    ! Why do we need the function below?
+    ! We can simply call r = SampleIntelUniformI() to get a single uniform deviate
+    ! or call SingleSampleIntelUniformI?
+    integer function getIntelUniformI()
+      integer,allocatable :: sample(:)
+      allocate(sample(1))
+      sample = SampleIntelUniformI()
+      getIntelUniformI = sample(1)
     end function
 
     !###########################################################################
@@ -307,12 +360,13 @@ module IntelRNGMod
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: p      !< probability of of a success (default 0.5)
-      integer(int32),allocatable         :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: p      !< probability of of a success (default 0.5)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      integer(int32),allocatable                    :: Res(:) !< @return samples
+
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: pOpt
 
@@ -330,13 +384,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_BERNOULLI_ICDF
-      if (present(stream)) then
-        RNGErrCode=virngbernoulli(RNGMethod,stream,nOpt,Res,pOpt)
-      else 
-        RNGErrCode=virngbernoulli(RNGMethod,RNGStream,nOpt,Res,pOpt)
+      RngMethod=VSL_RNG_METHOD_BERNOULLI_ICDF
+
+      if (present(Stream)) then
+        RngErrCode=virngbernoulli(RngMethod,Stream,nOpt,Res,pOpt)
+      else
+        RngErrCode=virngbernoulli(RngMethod,ModuleStream,nOpt,Res,pOpt)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelBernoulliI failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -349,18 +405,19 @@ module IntelRNGMod
 
     !---------------------------------------------------------------------------
     !> @brief   Sample from a Multinomial(p) distribution
-    !> @details Not from Intel
+    !> @details Not from Intel - 2019 MKL has a function for this!
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelMultinomialI(n,p,stream) result(Res)
+    function SampleIntelMultinomialI(n,p,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in)            :: p(:)   !< probabilities for the different categories
-      integer(int32),allocatable         :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in)                       :: p(:)   !< probabilities for the different categories
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      integer(int32),allocatable                    :: Res(:) !< @return samples
+
       ! Other
       integer(int32) :: nOpt,i,j,k
       integer(int32) :: b(1)
@@ -399,12 +456,7 @@ module IntelRNGMod
               pi=pInternal(i)/psumtmp
 
               if (pi < 1.0d0) then ! likewise
-                if (present(stream)) then
-                  b=SampleIntelBernoulliI(p=pi,stream = stream)
-                else 
-                b=SampleIntelBernoulliI(p=pi)
-                endif
-
+                b=SampleIntelBernoulliI(p=pi,stream=Stream)
                 if (b(1) > 0) then
                   Res(j)=i
                   exit
@@ -439,16 +491,17 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelPoissonI(n,lambda) result(Res)
+    function SampleIntelPoissonI(n,lambda,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: lambda !< mean and variance of distribution (default 1.0)
-      integer(int32),allocatable         :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: lambda !< mean and variance of distribution (default 1.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      integer(int32),allocatable                    :: Res(:) !< @return samples
 
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: lambdaOpt
 
@@ -467,12 +520,18 @@ module IntelRNGMod
       allocate(Res(nOpt))
 
       if (lambdaOpt < 27.0d0) then ! based on Intel documentation https://software.intel.com/en-us/node/470598 (2014-12-01)
-        RNGMethod=VSL_RNG_METHOD_POISSON_POISNORM
+        RngMethod=VSL_RNG_METHOD_POISSON_POISNORM
       else
-        RNGMethod=VSL_RNG_METHOD_POISSON_PTPE
+        RngMethod=VSL_RNG_METHOD_POISSON_PTPE
       end if
-      RNGErrCode=virngpoisson(RNGMethod,RNGStream,nOpt,Res,lambdaOpt)
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (present(Stream)) then
+        RngErrCode=virngpoisson(RngMethod,Stream,nOpt,Res,lambdaOpt)
+      else
+        RngErrCode=virngpoisson(RngMethod,ModuleStream,nOpt,Res,lambdaOpt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelPoissonI failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -489,17 +548,19 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelUniformS(n,a,b,stream) result(Res)
+    function SampleIntelUniformS(n,a,b,Accurate,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real32),intent(in),optional   :: a      !< minimal value (default 0.0)
-      real(real32),intent(in),optional   :: b      !< maximal value (default 1.0)
-      real(real32),allocatable           :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n        !< number of samples to generate (default 1)
+      real(real32),intent(in),optional              :: a        !< minimal value (default 0.0)
+      real(real32),intent(in),optional              :: b        !< maximal value (default 1.0)
+      logical,intent(in),optional                   :: Accurate !< Use accurate, but slower method? Default is true
+      type(vsl_stream_state),intent(inout),optional :: Stream   !< Intel RNG stream, default is to use the module stream
+      real(real32),allocatable                      :: Res(:)   !< @return samples
+
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real32) :: aOpt,bOpt
 
@@ -523,13 +584,20 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_UNIFORM_STD ! should we use here VSL_RNG_METHOD_UNIFORM_STD_ACCURATE?
-      if (present(stream)) then
-        RNGErrCode=vsrnguniform(RNGMethod,stream,nOpt,Res,aOpt,bOpt)
+      RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
+      if (present(Accurate)) then
+        if (.not. Accurate) then
+          RngMethod=VSL_RNG_METHOD_UNIFORM_STD
+        end if
+      end if
+
+      if (present(Stream)) then
+        RngErrCode=vsrnguniform(RngMethod,Stream,nOpt,Res,aOpt,bOpt)
       else
-        RNGErrCode=vsrnguniform(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt)
+        RngErrCode=vsrnguniform(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelUniformS failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -546,17 +614,19 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelUniformD(n,a,b,stream) result(Res)
+    function SampleIntelUniformD(n,a,b,Accurate,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: a      !< minimal value (default 0.0)
-      real(real64),intent(in),optional   :: b      !< maximal value (default 1.0)
-      real(real64),allocatable           :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n        !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: a        !< minimal value (default 0.0)
+      real(real64),intent(in),optional              :: b        !< maximal value (default 1.0)
+      logical,intent(in),optional                   :: Accurate !< Use accurate, but slower method? Default is true
+      type(vsl_stream_state),intent(inout),optional :: Stream   !< Intel RNG stream, default is to use the module stream
+      real(real64),allocatable                      :: Res(:)   !< @return samples
+
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: aOpt,bOpt
 
@@ -580,19 +650,36 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
-      if (present(stream)) then
-        RNGErrCode=vdrnguniform(RNGMethod,stream,nOpt,Res,aOpt,bOpt)
-      else 
-        RNGErrCode=vdrnguniform(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt)
+      RngMethod=VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
+      if (present(Accurate)) then
+        if (.not. Accurate) then
+          RngMethod=VSL_RNG_METHOD_UNIFORM_STD
+        end if
+      end if
+
+      if (present(Stream)) then
+        RngErrCode=vdrnguniform(RngMethod,Stream,nOpt,Res,aOpt,bOpt)
+      else
+        RngErrCode=vdrnguniform(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelUniformD failed"
         write(STDERR,"(a)") " "
         stop 1
       end if
 
       return
+    end function
+
+    ! Why do we need the function below?
+    ! We can simply call r = SampleIntelUniformD() to get a single uniform deviate. Gregor
+    function getIntelUniformD() result(res)
+      real(real64),allocatable :: sample(:)
+      real(real64) :: res
+      allocate(sample(1))
+      sample = SampleIntelUniformD()
+      res = sample(1)
     end function
 
     !###########################################################################
@@ -603,17 +690,18 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGaussS(n,mu,sigma2,stream) result(Res)
+    function SampleIntelGaussS(n,mu,sigma2,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real32),intent(in),optional   :: mu     !< mean (default 0.0)
-      real(real32),intent(in),optional   :: sigma2 !< variance (default 1.0)
-      real(real32),allocatable           :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional              :: mu     !< mean (default 0.0)
+      real(real32),intent(in),optional              :: sigma2 !< variance (default 1.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real32),allocatable                      :: Res(:) !< @return samples
+
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real32) :: muOpt,sigma
 
@@ -637,14 +725,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
+      RngMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
 
-      if (present(stream)) then
-        RNGErrCode=vsrnggaussian(RNGMethod,stream,nOpt,Res,muOpt,sigma)
-      else 
-        RNGErrCode=vsrnggaussian(RNGMethod,RNGStream,nOpt,Res,muOpt,sigma)
+      if (present(Stream)) then
+        RngErrCode=vsrnggaussian(RngMethod,Stream,nOpt,Res,muOpt,sigma)
+      else
+        RngErrCode=vsrnggaussian(RngMethod,ModuleStream,nOpt,Res,muOpt,sigma)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGaussS failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -661,17 +750,18 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGaussD(n,mu,sigma2,stream) result(Res)
+    function SampleIntelGaussD(n,mu,sigma2,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: mu     !< mean (default 0.0)
-      real(real64),intent(in),optional   :: sigma2 !< variance (default 1.0)
-      real(real64),allocatable           :: Res(:) !< @return samples
-      type(vsl_stream_state), intent(in),optional :: Stream
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: mu     !< mean (default 0.0)
+      real(real64),intent(in),optional              :: sigma2 !< variance (default 1.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real64),allocatable                      :: Res(:) !< @return samples
+
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: muOpt,sigma
 
@@ -695,14 +785,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
-    
-      if (present(stream)) then
-        RNGErrCode=vdrnggaussian(RNGMethod,stream,nOpt,Res,muOpt,sigma)
+      RngMethod=VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
+
+      if (present(Stream)) then
+        RngErrCode=vdrnggaussian(RngMethod,Stream,nOpt,Res,muOpt,sigma)
       else
-        RNGErrCode=vdrnggaussian(RNGMethod,RNGStream,nOpt,Res,muOpt,sigma)
+        RngErrCode=vdrnggaussian(RngMethod,ModuleStream,nOpt,Res,muOpt,sigma)
       endif
-      if (RNGErrCode /= vsl_status_ok) then
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGaussD failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -719,21 +810,22 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGammaS(n,alpha,beta,shape,scale,rate,shift) result(Res)
+    function SampleIntelGammaS(n,alpha,beta,shape,scale,rate,shift,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real32),intent(in),optional   :: alpha  !< shape
-      real(real32),intent(in),optional   :: beta   !< scale
-      real(real32),intent(in),optional   :: shape  !< the same as alpha, but to make life easier
-      real(real32),intent(in),optional   :: scale  !< the same as beta, but to make life easier
-      real(real32),intent(in),optional   :: rate   !< the same as 1/beta, but to make life easier
-      real(real32),intent(in),optional   :: shift  !< shift or displacement (default 0.0)
-      real(real32),allocatable           :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional              :: alpha  !< shape
+      real(real32),intent(in),optional              :: beta   !< scale
+      real(real32),intent(in),optional              :: shape  !< the same as alpha, but to make life easier
+      real(real32),intent(in),optional              :: scale  !< the same as beta, but to make life easier
+      real(real32),intent(in),optional              :: rate   !< the same as 1/beta, but to make life easier
+      real(real32),intent(in),optional              :: shift  !< shift or displacement (default 0.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real32),allocatable                      :: Res(:) !< @return samples
 
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real32) :: shapeOpt,scaleOpt,shiftOpt
 
@@ -813,9 +905,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
-      RNGErrCode=vsrnggamma(RNGMethod,RNGStream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
-      if (RNGErrCode /= vsl_status_ok) then
+      RngMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
+
+      if (present(Stream)) then
+        RngErrCode=vsrnggamma(RngMethod,Stream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
+      else
+        RngErrCode=vsrnggamma(RngMethod,ModuleStream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGammaS failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -832,21 +930,22 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGammaD(n,alpha,beta,shape,scale,rate,shift) result(Res)
+    function SampleIntelGammaD(n,alpha,beta,shape,scale,rate,shift,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: alpha  !< shape
-      real(real64),intent(in),optional   :: beta   !< scale
-      real(real64),intent(in),optional   :: shape  !< the same as alpha, but to make life easier
-      real(real64),intent(in),optional   :: scale  !< the same as beta, but to make life easier
-      real(real64),intent(in),optional   :: rate   !< the same as 1/beta, but to make life easier
-      real(real64),intent(in),optional   :: shift  !< shift or displacement (default 0.0)
-      real(real64),allocatable           :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: alpha  !< shape
+      real(real64),intent(in),optional              :: beta   !< scale
+      real(real64),intent(in),optional              :: shape  !< the same as alpha, but to make life easier
+      real(real64),intent(in),optional              :: scale  !< the same as beta, but to make life easier
+      real(real64),intent(in),optional              :: rate   !< the same as 1/beta, but to make life easier
+      real(real64),intent(in),optional              :: shift  !< shift or displacement (default 0.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real64),allocatable                      :: Res(:) !< @return samples
 
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: shapeOpt,scaleOpt,shiftOpt
 
@@ -926,9 +1025,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
-      RNGErrCode=vdrnggamma(RNGMethod,RNGStream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
-      if (RNGErrCode /= vsl_status_ok) then
+      RngMethod=VSL_RNG_METHOD_GAMMA_GNORM_ACCURATE
+
+      if (present(Stream)) then
+        RngErrCode=vdrnggamma(RngMethod,Stream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
+      else
+        RngErrCode=vdrnggamma(RngMethod,ModuleStream,nOpt,Res,shapeOpt,shiftOpt,scaleOpt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGammaD failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -945,17 +1050,18 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGumbelS(n,a,b) result(Res)
+    function SampleIntelGumbelS(n,a,b,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real32),intent(in),optional   :: a      !< location (default 0.0)
-      real(real32),intent(in),optional   :: b      !< scale (default 1.0)
-      real(real32),allocatable           :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real32),intent(in),optional              :: a      !< location (default 0.0)
+      real(real32),intent(in),optional              :: b      !< scale (default 1.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real32),allocatable                      :: Res(:) !< @return samples
 
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real32) :: aOpt,bOpt
 
@@ -979,9 +1085,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GUMBEL_ICDF
-      RNGErrCode=vsrnggumbel(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt)
-      if (RNGErrCode /= vsl_status_ok) then
+      RngMethod=VSL_RNG_METHOD_GUMBEL_ICDF
+
+      if (present(Stream)) then
+        RngErrCode=vsrnggumbel(RngMethod,Stream,nOpt,Res,aOpt,bOpt)
+      else
+        RngErrCode=vsrnggumbel(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGumbelS failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -998,16 +1110,17 @@ module IntelRNGMod
     !> @author  Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
     !> @date    September 26, 2016
     !---------------------------------------------------------------------------
-    function SampleIntelGumbelD(n,a,b) result(Res)
+    function SampleIntelGumbelD(n,a,b,Stream) result(Res)
       implicit none
 
       ! Arguments
-      integer(int32),intent(in),optional :: n      !< number of samples to generate (default 1)
-      real(real64),intent(in),optional   :: a      !< location (default 0.0)
-      real(real64),intent(in),optional   :: b      !< scale (default 1.0)
-      real(real64),allocatable           :: Res(:) !< @return samples
+      integer(int32),intent(in),optional            :: n      !< number of samples to generate (default 1)
+      real(real64),intent(in),optional              :: a      !< location (default 0.0)
+      real(real64),intent(in),optional              :: b      !< scale (default 1.0)
+      type(vsl_stream_state),intent(inout),optional :: Stream !< Intel RNG stream, default is to use the module stream
+      real(real64),allocatable                      :: Res(:) !< @return samples
       ! Other
-      integer(int32) :: nOpt
+      integer(int32) :: nOpt,RngMethod,RngErrCode
 
       real(real64) :: aOpt,bOpt
 
@@ -1031,9 +1144,15 @@ module IntelRNGMod
 
       allocate(Res(nOpt))
 
-      RNGMethod=VSL_RNG_METHOD_GUMBEL_ICDF
-      RNGErrCode=vdrnggumbel(RNGMethod,RNGStream,nOpt,Res,aOpt,bOpt)
-      if (RNGErrCode /= vsl_status_ok) then
+      RngMethod=VSL_RNG_METHOD_GUMBEL_ICDF
+
+      if (present(Stream)) then
+        RngErrCode=vdrnggumbel(RngMethod,Stream,nOpt,Res,aOpt,bOpt)
+      else
+        RngErrCode=vdrnggumbel(RngMethod,ModuleStream,nOpt,Res,aOpt,bOpt)
+      end if
+
+      if (RngErrCode /= VSL_STATUS_OK) then
         write(STDERR,"(a)") "ERROR: SampleIntelGumbelD failed"
         write(STDERR,"(a)") " "
         stop 1
@@ -1041,55 +1160,6 @@ module IntelRNGMod
 
       return
     end function
-
-    function RandomSample(list,num) result(res)
-        implicit none
-
-        integer, dimension(:), intent(in) :: list
-        integer, intent(in) :: num
-
-        integer, dimension(num) :: res
-
-        integer, dimension(size(list)) :: tmpA
-        integer, dimension(:), allocatable :: r
-        integer :: tmp, pos, i
-
-
-        tmpA = list
-
-        do i = 1, num
-            r = SampleIntelUniformI(1,0,size(list) - i)
-            pos = size(list) - r(1)
-            tmp = tmpA(i)
-            tmpA(i) = tmpA(pos)
-            tmpA(pos) = tmp
-        end do
-
-        res = tmpA(1:num)
-    end function RandomSample
-
-    function SingleSampleIntelUniformI(a,b) result(res)
-        integer, optional :: a, b
-        integer(int32) :: res
-
-        integer(int32), dimension(:), allocatable :: resA
-
-        if (present(a)) then
-            if (present(b)) then
-                resA = SampleIntelUniformI(1,a,b)
-            else
-                resA = SampleIntelUniformI(1,a)
-            end if
-        else
-            if (present(b)) then
-                resA = SampleIntelUniformI(1,b=b)
-            else
-                resA = SampleIntelUniformI(1)
-            end if
-        end if
-
-        res = resA(1)
-    end function SingleSampleIntelUniformI
 
 end module
 
