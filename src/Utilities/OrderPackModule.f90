@@ -11,10 +11,14 @@ module OrderPackModule
   implicit none
 
   private
-  public :: MrgRnk, RnkPar, RapKnr, UniSta, UniInv
+  public :: MrgRnk, MulCnt, RnkPar, RapKnr, UniSta, UniInv
 
   interface MrgRnk
     module procedure D_MrgRnk, R_MrgRnk, I_MrgRnk
+  end interface
+
+  interface MulCnt
+    module procedure D_MulCnt, R_MulCnt, I_MulCnt
   end interface
 
   interface RnkPar
@@ -663,6 +667,118 @@ module OrderPackModule
           Return
         !
       End function
+
+      !#########################################################################
+
+    !###########################################################################
+
+    ! MulCnt - count occurence
+
+      !#########################################################################
+
+      !-------------------------------------------------------------------------
+      !> @brief   MulCnt - Give for each array value its multiplicity
+      !!          (number of times that it appears in the array)
+      !> @details The routine is similar to pure merge-sort ranking, but on the
+      !!          last pass, it sets indices in IGOEST to the rank of the value
+      !!          in the ordered set with duplicates removed. For performance reasons,
+      !!          the first 2 passes are taken out of the standard loop, and use
+      !!          dedicated coding.
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+      !> @date    2000
+      !-------------------------------------------------------------------------
+      pure function D_MulCnt (XDONT) result(IMULT)
+            Real(real64), Dimension (:), Intent (In) :: XDONT   !< Vector to tabulate
+            Integer(int32), allocatable, Dimension (:) :: IMULT !< @return Result
+
+            Integer, Dimension (Size(XDONT)) :: IWRKT
+            Integer, Dimension (Size(XDONT)) :: ICNTT
+            Integer :: ICRS
+
+            allocate(IMULT(Size(XDONT)))
+
+            IWRKT = UNIINV(XDONT)
+            ICNTT = 0
+            Do ICRS = 1, Size(XDONT)
+                  ICNTT(IWRKT(ICRS)) = ICNTT(IWRKT(ICRS)) + 1
+            End Do
+
+            Do ICRS = 1, Size(XDONT)
+                  IMULT(ICRS) = ICNTT(IWRKT(ICRS))
+            End Do
+            Return
+      end function
+
+      !#########################################################################
+
+      !-------------------------------------------------------------------------
+      !> @brief   MulCnt - Give for each array value its multiplicity
+      !!          (number of times that it appears in the array)
+      !> @details The routine is similar to pure merge-sort ranking, but on the
+      !!          last pass, it sets indices in IGOEST to the rank of the value
+      !!          in the ordered set with duplicates removed. For performance reasons,
+      !!          the first 2 passes are taken out of the standard loop, and use
+      !!          dedicated coding.
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+      !> @date    2000
+      !-------------------------------------------------------------------------
+      pure function R_MulCnt (XDONT) result(IMULT)
+          Real(real32), Dimension (:), Intent (In) :: XDONT   !< Vector to tabulate
+          Integer(int32), allocatable, Dimension (:) :: IMULT !< @return Result
+
+          Integer, Dimension (Size(XDONT)) :: IWRKT
+          Integer, Dimension (Size(XDONT)) :: ICNTT
+          Integer :: ICRS
+
+          allocate(IMULT(Size(XDONT)))
+
+          IWRKT = UNIINV(XDONT)
+          ICNTT = 0
+          Do ICRS = 1, Size(XDONT)
+                ICNTT(IWRKT(ICRS)) = ICNTT(IWRKT(ICRS)) + 1
+          End Do
+          Do ICRS = 1, Size(XDONT)
+                IMULT(ICRS) = ICNTT(IWRKT(ICRS))
+          End Do
+          Return
+      End Function
+
+      !#########################################################################
+
+      !-------------------------------------------------------------------------
+      !> @brief   MulCnt - Give for each array value its multiplicity
+      !!          (number of times that it appears in the array)
+      !> @details The routine is similar to pure merge-sort ranking, but on the
+      !!          last pass, it sets indices in IGOEST to the rank of the value
+      !!          in the ordered set with duplicates removed. For performance reasons,
+      !!          the first 2 passes are taken out of the standard loop, and use
+      !!          dedicated coding.
+      !> @author  Michel Olagnon, http://www.fortran-2000.com/rank, modified by
+      !!          Gregor Gorjanc, gregor.gorjanc@roslin.ed.ac.uk
+      !> @date    2000
+      !-------------------------------------------------------------------------
+      pure function I_MulCnt (XDONT) result(IMULT)
+          Integer(int32), Dimension (:), Intent (In) :: XDONT !< Vector to tabulate
+          Integer(int32), allocatable, Dimension (:) :: IMULT !< @return Result
+
+          Integer, Dimension (Size(XDONT)) :: IWRKT
+          Integer, Dimension (Size(XDONT)) :: ICNTT
+          Integer :: ICRS
+
+          allocate(IMULT(Size(XDONT)))
+
+          IWRKT = UNIINV(XDONT)
+          ICNTT = 0
+          Do ICRS = 1, Size(XDONT)
+                ICNTT(IWRKT(ICRS)) = ICNTT(IWRKT(ICRS)) + 1
+          End Do
+          Do ICRS = 1, Size(XDONT)
+                IMULT(ICRS) = ICNTT(IWRKT(ICRS))
+          End Do
+          Return
+      End Function
 
       !#########################################################################
 
@@ -4741,6 +4857,7 @@ module OrderPackModule
       !#########################################################################
 
     !###########################################################################
+
 end module
 
 !###############################################################################
