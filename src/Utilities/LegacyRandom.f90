@@ -4,7 +4,7 @@ module random
 
     implicit none
 
-    public :: RandomOrderPar, ran1,RandomOrder
+    public :: RandomOrderPar, ran1,RandomOrder, ran1_no_fixed_states
 
 contains
 
@@ -84,8 +84,38 @@ contains
             ran1=min(AM*iy,RNMX)
             RETURN
         END function ran1
-
         !  (C) Copr. 1986-92 Numerical Recipes Software 6
+
+    FUNCTION ran1_no_fixed_states(idum, iv, iy)
+        use iso_fortran_env
+        IMPLICIT NONE
+        INTEGER(kind=int32) idum
+        INTEGER IA,IM,IQ,IR,NTAB,NDIV
+        DOUBLE PRECISION ran1_no_fixed_states,AM,EPS,RNMX
+        PARAMETER (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+        INTEGER j,k, iy
+        integer, dimension(:) :: iv
+        IF (idum.le.0.or.iy.eq.0) then
+            idum=max(-idum,1)
+            DO 11 j=NTAB+8,1,-1
+                k=idum/IQ
+                idum=IA*(idum-k*IQ)-IR*k
+                IF (idum.lt.0) idum=idum+IM
+                IF (j.le.NTAB) iv(j)=idum
+
+                11 CONTINUE
+                iy=iv(1)
+            END IF
+            k=idum/IQ
+            idum=IA*(idum-k*IQ)-IR*k
+            IF (idum.lt.0) idum=idum+IM
+            j=1+iy/NDIV
+            iy=iv(j)
+            iv(j)=idum
+            ran1_no_fixed_states=min(AM*iy,RNMX)
+            RETURN
+        END function ran1_no_fixed_states
+
 
         !#############################################################################################################################################################################################################################
         subroutine RandomOrder(order, n, start, idum)
@@ -98,7 +128,10 @@ contains
             !     Local variables
             integer :: i, j, k
             double precision :: wk
+            integer:: iv(32), iy
 
+            iy = 0
+            iv = 0
 
             do i = 1, n
             order(i) = start - 1 + i
@@ -108,7 +141,7 @@ contains
             !     randomly chosen from those preceeding it.
 
             do i = n, 2, -1
-            wk = ran1(idum)
+            wk = ran1_no_fixed_states(idum, iv, iy)
             j = 1 + i * wk
             if (j < i) then
                 k = order(i)
