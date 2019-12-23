@@ -437,9 +437,9 @@ module HashModule
 		! PARAMETERS:
 		!> @param[in] sizeOut. String.
 		!---------------------------------------------------------------------------
-		function hashKey(dict, key)
+		pure function hashKey(dict, key)
 			character(len=*), intent(in) :: key
-			class(DictStructure) :: dict
+			class(DictStructure), intent(in) :: dict
 
 			integer(kind=int64) :: i
 			integer(kind=int64) :: hashKey !<hashkey out

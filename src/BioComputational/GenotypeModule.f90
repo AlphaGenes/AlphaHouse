@@ -364,7 +364,7 @@ module GenotypeModule
 		!> @date    November 26, 2016
 		!> @return	Integer array representing the genotype
 		!---------------------------------------------------------------------------
-		function genotypeToIntegerArray(g, nsnp) result(array)
+		pure function genotypeToIntegerArray(g, nsnp) result(array)
 			class(Genotype), intent(in) :: g
 			integer, intent(in),optional :: nsnp
 			integer(kind=1), dimension(:), allocatable :: array

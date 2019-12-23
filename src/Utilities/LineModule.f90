@@ -316,7 +316,7 @@ contains
     end if
   end function compareLine
 
-  function getNumWords(this) result(numWords)
+  pure function getNumWords(this) result(numWords)
     class(Line), intent(in):: this
     integer(int32)::numWords
 

@@ -204,7 +204,7 @@ contains
   !> @param[out] sizeOut. Integer( int32).
   !---------------------------------------------------------------------------
 
-  function getSize(this) result(sizeOut)
+  pure function getSize(this) result(sizeOut)
   class(String), intent(in):: this
     integer(int32):: sizeOut
 
